@@ -1,0 +1,13 @@
+*.swp
+*.swo
+*.o
+*.ascii
+*.log
+forth
+memory.txt
+*.gcov
+*.gcda
+*.gcno
+gcov.vim
+*.html
+*.htm
