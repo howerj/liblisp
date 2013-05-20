@@ -37,6 +37,8 @@ union io_ptr_u {
 /*IO redirections.*/
 struct file_io_struct {
         enum file_io_type fiot;
+        int ungetc_flag;         /*for wrap_ungetc, flag*/
+        char ungetc_char;       
         int str_index;           /*index into string */
         int str_max_len;         /*max string length */
         union io_ptr_u io_ptr;
