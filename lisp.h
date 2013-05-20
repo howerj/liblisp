@@ -18,9 +18,35 @@
 
 #define MAX_STR 256
 
+enum file_io_type{
+        io_stdin,               /*read from stdin */
+        io_stdout,              /*write to stdout */
+        io_stderr,              /*output to stderr */
+        io_wr_file,             /*write to file */
+        io_rd_file,             /*read from file */
+        io_wr_str,              /*write to a string */
+        io_rd_str               /*read from a string (null terminated!) */
+};
+
+/*if input or output is a file or string, store point to it*/
+union io_ptr_u {
+        FILE *f;
+        char *s;
+};
+
+/*IO redirections.*/
+struct file_io_struct {
+        enum file_io_type fiot;
+        int str_index;           /*index into string */
+        int str_max_len;         /*max string length */
+        union io_ptr_u io_ptr;
+};
+
+typedef struct file_io_struct file_io_t;
+
 enum error_type{
-  err_ok,
-  err_generic_parse
+  ERR_OK,
+  ERR_GENERIC_PARSE
 };
 
 enum cell_type{

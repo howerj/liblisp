@@ -9,6 +9,7 @@
  * @license        LGPL      
  * @email          howe.r.j.89@gmail.com
  */
+#include <stdio.h>
 #include "lisp.h"
 
 int main(void){
