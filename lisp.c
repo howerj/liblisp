@@ -22,8 +22,8 @@ static void   wrap_ungetc(file_io_t *in, char c);
 
 static cell_t *parse_string(file_io_t *in);
 static cell_t *parse_symbol(file_io_t *in);
-/*static cell_t *parse_int(file_io_t *in);
-static cell_t *parse_list(file_io_t *in);*/
+/*static cell_t *parse_int(file_io_t *in);*/
+static cell_t *parse_list(file_io_t *in);
 cell_t        *parse_sexpr(file_io_t *in);
 void           print_sexpr(cell_t *list);
 void           free_sexpr(cell_t *list);
@@ -217,6 +217,7 @@ SUCCESS:
     error("calloc() failed");
     goto FAIL;
   }
+  cell_sym->type = type_symbol;
   memcpy(cell_sym->car.s,buf,i);
   cell_sym->cdr.cell=NULL; /*stating this explicitly.*/
   return cell_sym;
@@ -226,3 +227,58 @@ FAIL:
   return NULL;
 }
 
+int append(cell_t* head, cell_t* child){
+  if(head==NULL||child==NULL){
+    error("append failed, head or child is null");
+    return 1;
+  }
+  head->cdr.cell = child;
+  return 0;
+}
+
+static cell_t *parse_list(file_io_t *in){
+  cell_t *head,*child=NULL,*cell_lst = calloc(1,sizeof(cell_t));
+  int c;
+  head=cell_lst;
+  if(cell_lst == NULL){
+    error("calloc() failed");
+    return NULL;
+  }
+  while((c=wrap_get(in))!=EOF){
+    if(isspace(c))
+      continue;
+
+    switch(c){
+      case ')': /*finished*/
+        goto SUCCESS;
+      case '(': /*encountered a nested list*/
+        head->car.cell = parse_list(in);
+        if(head->car.cell == NULL) goto FAIL;
+        head->type = type_list;
+      case '"': /*parse string*/
+        child = parse_string(in);
+        if(append(head,child)) goto FAIL;
+        head=child;
+      case EOF: /*Failed*/
+        error("EOF occured before end of list did.");
+        goto FAIL;
+      default: /*parse symbol*/
+        child = parse_symbol(in);
+        if(append(head,child)) goto FAIL;
+        head=child;
+        continue;
+    }
+
+  }
+SUCCESS:
+  cell_lst->type = type_list;
+  return cell_lst;
+FAIL:
+  error("parsing list failed.");
+  free(cell_lst);
+  return NULL;
+}
+
+static cell_lst* parse_sexpr(in){
+
+}
