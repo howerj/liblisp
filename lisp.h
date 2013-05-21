@@ -18,7 +18,7 @@
 
 #define MAX_STR 256
 
-enum file_io_type{
+enum file_io_type {
         io_stdin,               /*read from stdin */
         io_stdout,              /*write to stdout */
         io_stderr,              /*output to stderr */
@@ -37,41 +37,46 @@ union io_ptr_u {
 /*IO redirections.*/
 struct file_io_struct {
         enum file_io_type fiot;
-        int ungetc_flag;         /*for wrap_ungetc, flag*/
-        char ungetc_char;       
-        int str_index;           /*index into string */
-        int str_max_len;         /*max string length */
+        int ungetc_flag;        /*for wrap_ungetc, flag */
+        char ungetc_char;
+        int str_index;          /*index into string */
+        int str_max_len;        /*max string length */
         union io_ptr_u io_ptr;
 };
 
 typedef struct file_io_struct file_io_t;
 
-enum error_type{
-  ERR_OK,
-  ERR_GENERIC_PARSE
+enum error_type {
+        ERR_OK,
+        ERR_GENERIC_PARSE
 };
 
-enum cell_type{
-  type_null,
-  type_list,
-  type_int,
-  type_symbol,
-  type_str,
-  type_error
+enum cell_type {
+        type_null,
+        type_list,
+        type_int,
+        type_symbol,
+        type_str,
+        type_error
 };
 
-union cell_content{
-  int i;
-  struct cell *cell;
-  char *s;
+union cell_content {
+        int i;
+        struct cell *cell;
+        char *s;
 };
 
-struct cell{
-  enum cell_type type;
-  union cell_content car;
-  union cell_content cdr;
+struct cell {
+        enum cell_type type;
+        union cell_content car;
+        union cell_content cdr;
 };
 
 typedef struct cell cell_t;
+
+/*Export these functions*/
+cell_t *parse_sexpr(file_io_t * in);
+void print_sexpr(cell_t * list, int depth);
+void free_sexpr(cell_t * list);
 
 #endif

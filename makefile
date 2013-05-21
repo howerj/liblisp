@@ -26,7 +26,7 @@ CCOPTS=-ansi -g -Wall -Wno-write-strings -Wshadow -Wextra -pedantic -O2
 all: banner lisp
 
 banner:
-	@echo -e "Howe Lsip, GNU Makefile\n"
+	@echo -e "Howe Lisp, GNU Makefile\n"
 	@echo -e "Author:    $(BLUE)Richard James Howe$(DEFAULT)."
 	@echo -e "Copyright: $(BLUE)Copyright 2013 Richard James Howe.$(DEFAULT)."
 	@echo -e "License:   $(BLUE)LGPL$(DEFAULT)."

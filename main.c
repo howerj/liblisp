@@ -12,6 +12,17 @@
 #include <stdio.h>
 #include "lisp.h"
 
-int main(void){
-  return 0;
+int main(void)
+{
+        file_io_t in;
+        cell_t *list;
+        in.fiot = io_stdin;
+        in.ungetc_flag = 0;
+        in.ungetc_char = '\0';
+
+
+        list = parse_sexpr(&in);
+        print_sexpr(list,0);
+        free_sexpr(list);
+        return 0;
 }
