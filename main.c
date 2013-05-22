@@ -20,9 +20,8 @@ int main(void)
         in.ungetc_flag = 0;
         in.ungetc_char = '\0';
 
-
         list = parse_sexpr(&in);
-        print_sexpr(list,0);
+        print_sexpr(list, 0);
         free_sexpr(list);
         return 0;
 }

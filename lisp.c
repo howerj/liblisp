@@ -111,7 +111,7 @@ static void wrap_ungetc(file_io_t * in, char c)
 static cell_t *parse_string(file_io_t * in)
 {
         char buf[MAX_STR];
-        int i=0, c;
+        int i = 0, c;
         cell_t *cell_str = calloc(1, sizeof(cell_t));
         if (cell_str == NULL) {
                 error("calloc() failed");
@@ -173,7 +173,7 @@ static cell_t *parse_string(file_io_t * in)
 static cell_t *parse_symbol(file_io_t * in)
 {
         char buf[MAX_STR];
-        int i=0, c;
+        int i = 0, c;
         cell_t *cell_sym = calloc(1, sizeof(cell_t));
         if (cell_sym == NULL) {
                 error("calloc() failed");
@@ -260,10 +260,14 @@ static cell_t *parse_list(file_io_t * in)
                 case ')':      /*finished */
                         goto SUCCESS;
                 case '(':      /*encountered a nested list */
-                        head->car.cell = parse_list(in);
-                        if (head->car.cell == NULL)
+                        child = calloc(1,sizeof(cell_t));
+                        if(child==NULL)
+                          goto FAIL;
+                        head->cdr.cell = child;
+                        child->car.cell = parse_list(in);
+                        if (child->car.cell == NULL)
                                 goto FAIL;
-                        head->type = type_list;
+                        child->type = type_list;
                         break;
                 case '"':      /*parse string */
                         child = parse_string(in);
@@ -275,7 +279,7 @@ static cell_t *parse_list(file_io_t * in)
                         error("EOF occured before end of list did.");
                         goto FAIL;
                 default:       /*parse symbol */
-                        wrap_ungetc(in,c);
+                        wrap_ungetc(in, c);
                         child = parse_symbol(in);
                         if (append(head, child))
                                 goto FAIL;
@@ -295,86 +299,95 @@ static cell_t *parse_list(file_io_t * in)
 
 cell_t *parse_sexpr(file_io_t * in)
 {
-  int c;
-  if(in!=NULL)
-    while((c=wrap_get(in))!='\0'){
-      if(isspace(c))
-        continue;
+        int c;
+        if (in != NULL)
+                while ((c = wrap_get(in)) != '\0') {
+                        if (isspace(c))
+                                continue;
 
-      switch(c){
-        case '(':
-          return parse_list(in);
-        case '"':
-          return parse_string(in);
-        case EOF:
-          error("EOF, nothing to parse");
-          return NULL;
-        case ')':
-          error("Unmatched ')'");
-          return NULL;
-        default:
-          wrap_ungetc(in,c);
-          return parse_symbol(in);
-      }
+                        switch (c) {
+                        case '(':
+                                return parse_list(in);
+                        case '"':
+                                return parse_string(in);
+                        case EOF:
+                                error("EOF, nothing to parse");
+                                return NULL;
+                        case ')':
+                                error("Unmatched ')'");
+                                return NULL;
+                        default:
+                                wrap_ungetc(in, c);
+                                return parse_symbol(in);
+                        }
 
-    }
+                }
 
-    error("parse_expr in == NULL");
-    return NULL;
+        error("parse_expr in == NULL");
+        return NULL;
 }
 
-void print_sexpr(cell_t * list, int depth){
-  int i;
-  cell_t *tmp;
-  if(list==NULL){
-    error("print_sexpr was passed a NULL!");
-    return;
-  }
+void print_sexpr(cell_t * list, int depth)
+{
+        int i;
+        cell_t *tmp;
+        if (list == NULL) {
+                error("print_sexpr was passed a NULL!");
+                return;
+        }
 
-  if(list->type==type_null){
-    for(i=0;i<depth;i++)
-      printf(" ");
-    printf("Null");
-    return;
-  } else if(list->type==type_str){
-    for(i=0;i<depth;i++)
-      printf(" ");
-    printf("\"%s\"\n",list->car.s);
-    return;
-  } else if(list->type==type_symbol){
-    for(i=0;i<depth;i++)
-      printf(" ");
-    printf("%s\n",list->car.s);
-    return;
-  } else if(list->type==type_list){
-    
-    for(tmp=list;tmp!=NULL;tmp=tmp->cdr.cell){
-      if(tmp->car.cell!=NULL&&tmp->type==type_list){
-        print_sexpr(tmp->car.cell,depth+1);
-      }
+        if (list->type == type_null) {
+                for (i = 0; i < depth; i++)
+                        printf(" ");
+                printf("Null");
+                return;
+        } else if (list->type == type_str) {
+                for (i = 0; i < depth; i++)
+                        printf(" ");
+                printf("\"%s\"\n", list->car.s);
+                return;
+        } else if (list->type == type_symbol) {
+                for (i = 0; i < depth; i++)
+                        printf(" ");
+                printf("%s\n", list->car.s);
+                return;
+        } else if (list->type == type_list) {
+                for (tmp = list; tmp != NULL; tmp = tmp->cdr.cell) {
+                        if (tmp->car.cell != NULL && tmp->type == type_list) {
+                                for (i = 0; i < depth; i++)
+                                        printf(" ");
 
-      if(tmp->type!=type_list){
-        print_sexpr(tmp,depth);
-      }
-    }
-  }
+                                printf("(\n");
+                                print_sexpr(tmp->car.cell, depth + 1);
+                                for (i = 0; i < depth; i++)
+                                        printf(" ");
 
-  return;
+                                printf(")\n");
+                        }
+
+                        if (tmp->type != type_list) {
+                                print_sexpr(tmp, depth);
+                        }
+                }
+        }
+
+        return;
 }
 
-void free_sexpr(cell_t * list){
-  if(list==NULL)
-    return;
-  if(list->type==type_str){
-    free(list->car.s);
-    return;
-  } else if(list->type==type_symbol){
-    free(list->car.s);
-    return;
-  } else if(list->type==type_list){
+void free_sexpr(cell_t * list)
+{
+        if (list == NULL)
+                return;
+        if (list->type == type_str) {
+                free(list->car.s);
+                return;
+        } else if (list->type == type_symbol) {
+                free(list->car.s);
+                return;
+        } else if (list->type == type_list) {
 
-    return;
-  }
+                return;
+        }
 
-  return;
+        return;
 }
