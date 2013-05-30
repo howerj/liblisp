@@ -20,12 +20,12 @@ static int wrap_get(file_io_t * in);
 static int wrap_put(file_io_t * out, char c);
 static void wrap_ungetc(file_io_t * in, char c);
 
-static cell_t *parse_string(file_io_t * in);
-static cell_t *parse_symbol(file_io_t * in);
+static cell_t *parse_string(file_io_t * in, file_io_t * err);
+static cell_t *parse_symbol(file_io_t * in, file_io_t * err);
 /*static cell_t *parse_int(file_io_t *in);*/
 static int append(cell_t * head, cell_t * child);
-static cell_t *parse_list(file_io_t * in);
-
+static cell_t *parse_list(file_io_t * in, file_io_t * err);
+void print_space(int depth, file_io_t * out);
 /* 
 \\ "cell_t *list" will need replacing with a "lisp" object
 \\ containing everything the interpreter needs to run.
@@ -108,7 +108,7 @@ static void wrap_ungetc(file_io_t * in, char c)
 /*****************************************************************************/
 
 /*parse a string*/
-static cell_t *parse_string(file_io_t * in)
+static cell_t *parse_string(file_io_t * in, file_io_t * err)
 {
         char buf[MAX_STR];
         int i = 0, c;
@@ -170,7 +170,7 @@ static cell_t *parse_string(file_io_t * in)
 }
 
 /*parse a symbol*/
-static cell_t *parse_symbol(file_io_t * in)
+static cell_t *parse_symbol(file_io_t * in, file_io_t * err)
 {
         char buf[MAX_STR];
         int i = 0, c;
@@ -243,7 +243,7 @@ static int append(cell_t * head, cell_t * child)
         return 0;
 }
 
-static cell_t *parse_list(file_io_t * in)
+static cell_t *parse_list(file_io_t * in, file_io_t * err)
 {
         cell_t *head, *child = NULL, *cell_lst = calloc(1, sizeof(cell_t));
         int c;
@@ -260,17 +260,17 @@ static cell_t *parse_list(file_io_t * in)
                 case ')':      /*finished */
                         goto SUCCESS;
                 case '(':      /*encountered a nested list */
-                        child = calloc(1,sizeof(cell_t));
-                        if(child==NULL)
-                          goto FAIL;
+                        child = calloc(1, sizeof(cell_t));
+                        if (child == NULL)
+                                goto FAIL;
                         head->cdr.cell = child;
-                        child->car.cell = parse_list(in);
+                        child->car.cell = parse_list(in, err);
                         if (child->car.cell == NULL)
                                 goto FAIL;
                         child->type = type_list;
                         break;
                 case '"':      /*parse string */
-                        child = parse_string(in);
+                        child = parse_string(in, err);
                         if (append(head, child))
                                 goto FAIL;
                         head = child;
@@ -280,7 +280,7 @@ static cell_t *parse_list(file_io_t * in)
                         goto FAIL;
                 default:       /*parse symbol */
                         wrap_ungetc(in, c);
-                        child = parse_symbol(in);
+                        child = parse_symbol(in, err);
                         if (append(head, child))
                                 goto FAIL;
                         head = child;
@@ -297,7 +297,7 @@ static cell_t *parse_list(file_io_t * in)
         return NULL;
 }
 
-cell_t *parse_sexpr(file_io_t * in)
+cell_t *parse_sexpr(file_io_t * in, file_io_t * err)
 {
         int c;
         if (in != NULL)
@@ -307,9 +307,9 @@ cell_t *parse_sexpr(file_io_t * in)
 
                         switch (c) {
                         case '(':
-                                return parse_list(in);
+                                return parse_list(in, err);
                         case '"':
-                                return parse_string(in);
+                                return parse_string(in, err);
                         case EOF:
                                 error("EOF, nothing to parse");
                                 return NULL;
@@ -318,7 +318,7 @@ cell_t *parse_sexpr(file_io_t * in)
                                 return NULL;
                         default:
                                 wrap_ungetc(in, c);
-                                return parse_symbol(in);
+                                return parse_symbol(in, err);
                         }
 
                 }
@@ -327,7 +327,15 @@ cell_t *parse_sexpr(file_io_t * in)
         return NULL;
 }
 
-void print_sexpr(cell_t * list, int depth)
+void print_space(int depth, file_io_t * out)
+{
+        int i;
+        for (i = 0; i < depth; i++) {
+                fprintf(stdout, " ");
+        }
+}
+
+void print_sexpr(cell_t * list, int depth, file_io_t * out, file_io_t * err)
 {
         int i;
         cell_t *tmp;
@@ -337,36 +345,31 @@ void print_sexpr(cell_t * list, int depth)
         }
 
         if (list->type == type_null) {
-                for (i = 0; i < depth; i++)
-                        printf(" ");
+                print_space(depth, out);
                 printf("Null");
                 return;
         } else if (list->type == type_str) {
-                for (i = 0; i < depth; i++)
-                        printf(" ");
+                print_space(depth, out);
                 printf("\"%s\"\n", list->car.s);
                 return;
         } else if (list->type == type_symbol) {
-                for (i = 0; i < depth; i++)
-                        printf(" ");
+                print_space(depth, out);
                 printf("%s\n", list->car.s);
                 return;
         } else if (list->type == type_list) {
                 for (tmp = list; tmp != NULL; tmp = tmp->cdr.cell) {
                         if (tmp->car.cell != NULL && tmp->type == type_list) {
-                                for (i = 0; i < depth; i++)
-                                        printf(" ");
+                                print_space(depth, out);
 
                                 printf("(\n");
-                                print_sexpr(tmp->car.cell, depth + 1);
-                                for (i = 0; i < depth; i++)
-                                        printf(" ");
+                                print_sexpr(tmp->car.cell, depth + 1, out, err);
+                                print_space(depth, out);
 
                                 printf(")\n");
                         }
 
                         if (tmp->type != type_list) {
-                                print_sexpr(tmp, depth);
+                                print_sexpr(tmp, depth, out, err);
                         }
                 }
         }
@@ -374,7 +377,7 @@ void print_sexpr(cell_t * list, int depth)
         return;
 }
 
-void free_sexpr(cell_t * list)
+void free_sexpr(cell_t * list, file_io_t * err)
 {
         if (list == NULL)
                 return;

@@ -75,8 +75,8 @@ struct cell {
 typedef struct cell cell_t;
 
 /*Export these functions*/
-cell_t *parse_sexpr(file_io_t * in);
-void print_sexpr(cell_t * list, int depth);
-void free_sexpr(cell_t * list);
+cell_t *parse_sexpr(file_io_t * in, file_io_t * err);
+void print_sexpr(cell_t * list, int depth, file_io_t * out, file_io_t * err);
+void free_sexpr(cell_t * list, file_io_t * err);
 
 #endif
