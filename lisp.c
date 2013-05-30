@@ -263,13 +263,12 @@ static cell_t *parse_list(file_io_t * in, file_io_t * err)
                         child = calloc(1, sizeof(cell_t));
                         if (child == NULL)
                                 goto FAIL;
-                        /*head->cdr.cell = child;*/
+                        head->cdr.cell = child;
                         child->car.cell = parse_list(in, err);
                         if (child->car.cell == NULL)
                                 goto FAIL;
                         child->type = type_list;
                         head=child;
-
                         break;
                 case '"':      /*parse string */
                         child = parse_string(in, err);
@@ -332,7 +331,7 @@ cell_t *parse_sexpr(file_io_t * in, file_io_t * err)
 void print_space(int depth, file_io_t * out)
 {
         int i;
-        for (i = 0; i < depth; i++) {
+        for (i = 0; i < ((depth*2)); i++) {
                 fprintf(stdout, " ");
         }
 }
@@ -346,34 +345,41 @@ void print_sexpr(cell_t * list, int depth, file_io_t * out, file_io_t * err)
                 return;
         }
 
+
         if (list->type == type_null) {
-                print_space(depth, out);
+                print_space(depth+1, out);
                 printf("Null");
                 return;
         } else if (list->type == type_str) {
-                print_space(depth, out);
+                print_space(depth+1, out);
                 printf("\"%s\"\n", list->car.s);
                 return;
         } else if (list->type == type_symbol) {
-                print_space(depth, out);
+                print_space(depth+1, out);
                 printf("%s\n", list->car.s);
                 return;
         } else if (list->type == type_list) {
+          if(depth==0){
+            printf("(\n");
+          }
                 for (tmp = list; tmp != NULL; tmp = tmp->cdr.cell) {
                         if (tmp->car.cell != NULL && tmp->type == type_list) {
-                                print_space(depth, out);
+                                print_space(depth+1, out);
 
                                 printf("(\n");
                                 print_sexpr(tmp->car.cell, depth + 1, out, err);
-                                print_space(depth, out);
+                                print_space(depth+1, out);
 
                                 printf(")\n");
                         }
 
                         if (tmp->type != type_list) {
-                                print_sexpr(tmp, depth, out, err);
+                                print_sexpr(tmp, depth+1, out, err);
                         }
                 }
+          if(depth==0){
+            printf(")\n");
+          }
         }
 
         return;
