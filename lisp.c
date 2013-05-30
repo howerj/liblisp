@@ -263,11 +263,13 @@ static cell_t *parse_list(file_io_t * in, file_io_t * err)
                         child = calloc(1, sizeof(cell_t));
                         if (child == NULL)
                                 goto FAIL;
-                        head->cdr.cell = child;
+                        /*head->cdr.cell = child;*/
                         child->car.cell = parse_list(in, err);
                         if (child->car.cell == NULL)
                                 goto FAIL;
                         child->type = type_list;
+                        head=child;
+
                         break;
                 case '"':      /*parse string */
                         child = parse_string(in, err);

@@ -82,7 +82,7 @@ pretty:
 # Clean up directory.
 clean:
 	@echo -e "$(RED)"
-	@rm -vf forth memory.txt *.log *.swo *.swp *.o *~ *.gcov *.gcda *.gcno *.html *.htm;
+	@rm -vf lisp memory.txt *.log *.swo *.swp *.o *~ *.gcov *.gcda *.gcno *.html *.htm;
 	@echo -e "$(DEFAULT)"
 
 # Static checking.
