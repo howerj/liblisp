@@ -25,7 +25,8 @@ static cell_t *parse_symbol(file_io_t * in, file_io_t * err);
 /*static cell_t *parse_int(file_io_t *in);*/
 static int append(cell_t * head, cell_t * child);
 static cell_t *parse_list(file_io_t * in, file_io_t * err);
-void print_space(int depth, file_io_t * out);
+static void print_space(int depth, file_io_t * out);
+static void print_string(char *s, file_io_t * out);
 /* 
 \\ "cell_t *list" will need replacing with a "lisp" object
 \\ containing everything the interpreter needs to run.
@@ -268,7 +269,7 @@ static cell_t *parse_list(file_io_t * in, file_io_t * err)
                         if (child->car.cell == NULL)
                                 goto FAIL;
                         child->type = type_list;
-                        head=child;
+                        head = child;
                         break;
                 case '"':      /*parse string */
                         child = parse_string(in, err);
@@ -328,58 +329,67 @@ cell_t *parse_sexpr(file_io_t * in, file_io_t * err)
         return NULL;
 }
 
-void print_space(int depth, file_io_t * out)
+static void print_space(int depth, file_io_t * out)
 {
         int i;
-        for (i = 0; i < ((depth*2)); i++) {
-                fprintf(stdout, " ");
-        }
+        for (i = 0; i < ((depth * 2)); i++)
+                (void)wrap_put(out, ' ');
+}
+
+static void print_string(char *s, file_io_t * out)
+{
+        int i;
+        for (i = 0; s[i] != '\0'; i++)
+                (void)wrap_put(out, s[i]);
 }
 
 void print_sexpr(cell_t * list, int depth, file_io_t * out, file_io_t * err)
 {
-        int i;
         cell_t *tmp;
         if (list == NULL) {
                 error("print_sexpr was passed a NULL!");
                 return;
         }
 
-
         if (list->type == type_null) {
-                print_space(depth+1, out);
-                printf("Null");
+                print_space(depth + 1, out);
+                print_string("Null\n", out);
                 return;
         } else if (list->type == type_str) {
-                print_space(depth+1, out);
-                printf("\"%s\"\n", list->car.s);
+                print_space(depth + 1, out);
+                wrap_put(out, '"');
+                print_string(list->car.s, out);
+                wrap_put(out, '"');
+                wrap_put(out, '\n');
+                /*printf("\"%s\"\n", list->car.s); */
                 return;
         } else if (list->type == type_symbol) {
-                print_space(depth+1, out);
-                printf("%s\n", list->car.s);
+                print_space(depth + 1, out);
+                print_string(list->car.s, out);
+                wrap_put(out, '\n');
                 return;
         } else if (list->type == type_list) {
-          if(depth==0){
-            printf("(\n");
-          }
+                if (depth == 0) {
+                        print_string("(\n", out);
+                }
                 for (tmp = list; tmp != NULL; tmp = tmp->cdr.cell) {
                         if (tmp->car.cell != NULL && tmp->type == type_list) {
-                                print_space(depth+1, out);
+                                print_space(depth + 1, out);
+                                print_string("(\n", out);
 
-                                printf("(\n");
                                 print_sexpr(tmp->car.cell, depth + 1, out, err);
-                                print_space(depth+1, out);
 
-                                printf(")\n");
+                                print_space(depth + 1, out);
+                                print_string(")\n", out);
                         }
 
                         if (tmp->type != type_list) {
-                                print_sexpr(tmp, depth+1, out, err);
+                                print_sexpr(tmp, depth + 1, out, err);
                         }
                 }
-          if(depth==0){
-            printf(")\n");
-          }
+                if (depth == 0) {
+                        print_string(")\n", out);
+                }
         }
 
         return;
@@ -387,6 +397,7 @@ void print_sexpr(cell_t * list, int depth, file_io_t * out, file_io_t * err)
 
 void free_sexpr(cell_t * list, file_io_t * err)
 {
+        cell_t *tmp,*free_me;
         if (list == NULL)
                 return;
         if (list->type == type_str) {
@@ -396,7 +407,19 @@ void free_sexpr(cell_t * list, file_io_t * err)
                 free(list->car.s);
                 return;
         } else if (list->type == type_list) {
+                for (tmp = list; tmp != NULL; ) {
+                        if (tmp->car.cell != NULL && tmp->type == type_list) {
+                                free_sexpr(tmp->car.cell, err);
+                        }
 
+                        if (tmp->type != type_list) {
+                                free_sexpr(tmp, err);
+                        }
+
+                        free_me=tmp;
+                        tmp = tmp -> cdr.cell;
+                        free(free_me);
+                }
                 return;
         }
 

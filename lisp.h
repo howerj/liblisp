@@ -16,7 +16,7 @@
 #define true    1
 #define false   0
 
-#define MAX_STR 256
+#define MAX_STR  256            /*maximum length of allocated symbol or string */
 
 enum file_io_type {
         io_stdin,               /*read from stdin */
