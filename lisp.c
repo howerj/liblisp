@@ -138,10 +138,9 @@ static cell_t *parse_number(file_io_t * in, file_io_t * err){
         goto FAIL;
       }
 
-      if(isalpha(c)){
+      if(isdigit(c)){
         buf[i] = c;
         i++;
-        continue;
       } else if(c=='('||c==')'||c=='"'){
         wrap_ungetc(in,c);
         goto SUCCESS;
@@ -312,6 +311,15 @@ static cell_t *parse_list(file_io_t * in, file_io_t * err)
                 if (isspace(c))
                         continue;
 
+                if(isdigit(c)){
+                  wrap_ungetc(in, c);
+                  child = parse_number(in, err);
+                  if (append(head, child,err))
+                          goto FAIL;
+                  head = child;
+                  continue;
+                }
+
                 switch (c) {
                 case ')':      /*finished */
                         goto SUCCESS;
@@ -362,6 +370,11 @@ cell_t *parse_sexpr(file_io_t * in, file_io_t * err)
                         if (isspace(c))
                                 continue;
 
+                        if(isdigit(c)){
+                            wrap_ungetc(in,c);
+                            return parse_number(in, err);
+                        }
+
                         switch (c) {
                         case '(':
                                 return parse_list(in, err);
@@ -393,6 +406,7 @@ static void print_space(int depth, file_io_t * out)
 
 void print_sexpr(cell_t * list, int depth, file_io_t * out, file_io_t * err)
 {
+        char buf[MAX_STR];
         cell_t *tmp;
         if (list == NULL) {
                 print_error("print_sexpr was passed a NULL!",err);
@@ -403,6 +417,11 @@ void print_sexpr(cell_t * list, int depth, file_io_t * out, file_io_t * err)
                 print_space(depth + 1, out);
                 print_string("Null\n", out);
                 return;
+        } else if (list->type == type_number){
+                print_space(depth + 1, out);
+                sprintf(buf,"%d",list->car.i);
+                print_string(buf,out);
+                wrap_put(out, '\n');
         } else if (list->type == type_str) {
                 print_space(depth + 1, out);
                 wrap_put(out, '"');
@@ -448,7 +467,9 @@ void free_sexpr(cell_t * list, file_io_t * err)
         cell_t *tmp,*free_me;
         if (list == NULL)
                 return;
-        if (list->type == type_str) {
+        if (list->type == type_number){
+          /*do not need to do anything*/
+        } else if (list->type == type_str) {
                 free(list->car.s);
                 return;
         } else if (list->type == type_symbol) {

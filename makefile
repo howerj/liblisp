@@ -97,7 +97,7 @@ html:
 valgrind: lisp
 	@echo "Running valgrind on ./lisp"
 	@echo "  This command needs changing in the makefile"
-	-valgrind ./lisp &> valgrind.log << EOF
+	-valgrind ./lisp &> valgrind.log 
 
 gcov: CCOPTS:=$(CCOPTS) --coverage
 gcov: clean lisp 
