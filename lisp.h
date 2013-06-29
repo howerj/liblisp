@@ -54,7 +54,7 @@ enum error_type {
 enum cell_type {
         type_null,
         type_list,
-        type_int,
+        type_number,
         type_symbol,
         type_str,
         type_error

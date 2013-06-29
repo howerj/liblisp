@@ -19,14 +19,16 @@
 static int wrap_get(file_io_t * in);
 static int wrap_put(file_io_t * out, char c);
 static void wrap_ungetc(file_io_t * in, char c);
+static void print_string(char *s, file_io_t * out);
+static void print_error(char *s, file_io_t *err);
 
+static cell_t *parse_number(file_io_t * in, file_io_t * err);
 static cell_t *parse_string(file_io_t * in, file_io_t * err);
 static cell_t *parse_symbol(file_io_t * in, file_io_t * err);
 /*static cell_t *parse_int(file_io_t *in);*/
-static int append(cell_t * head, cell_t * child);
+static int append(cell_t * head, cell_t * child, file_io_t * err);
 static cell_t *parse_list(file_io_t * in, file_io_t * err);
 static void print_space(int depth, file_io_t * out);
-static void print_string(char *s, file_io_t * out);
 /* 
 \\ "cell_t *list" will need replacing with a "lisp" object
 \\ containing everything the interpreter needs to run.
@@ -35,10 +37,6 @@ int     lisp_monitor(cell_t *list);
 */
 
 /*****************************************************************************/
-#define error(X) do{\
-    fprintf(stderr, "(error \"%s\" \"%s\" %d)\n",(X),__FILE__,__LINE__);\
-  }while(0);
-
 /*Input / output wrappers.*/
 
 static int wrap_get(file_io_t * in)
@@ -106,7 +104,64 @@ static void wrap_ungetc(file_io_t * in, char c)
         return;
 }
 
+
+static void print_string(char *s, file_io_t * out)
+{
+        int i;
+        for (i = 0; s[i] != '\0'; i++)
+                (void)wrap_put(out, s[i]);
+}
+
+static void print_error(char *s, file_io_t * err){
+  /*fprintf(stderr, "(error \"%s\" \"%s\" %d)\n",(X),__FILE__,__LINE__);*/
+  print_string("(error \"",err);
+  print_string(s,err);
+  print_string("\" "__FILE__")",err);
+  /*PRINT LINE NUMBER*/
+  (void)wrap_put(err,'\n');
+}
+
 /*****************************************************************************/
+
+/*parse a number*/
+static cell_t *parse_number(file_io_t * in, file_io_t * err){
+  char buf[MAX_STR];
+  int i = 0, c;
+  cell_t *cell_num = calloc(1, sizeof(cell_t));
+  if (cell_num == NULL){
+             print_error("calloc() failed",err);
+             return NULL;
+  }
+  while((c = wrap_get(in))!= EOF){
+      if(i >= MAX_STR){ /*This should instead be set the maximum length of a number-string*/
+        print_error("String too long for a number.", err);
+        goto FAIL;
+      }
+
+      if(isalpha(c)){
+        buf[i] = c;
+        i++;
+        continue;
+      } else if(c=='('||c==')'||c=='"'){
+        wrap_ungetc(in,c);
+        goto SUCCESS;
+      } else if(isspace(c)){ 
+        goto SUCCESS;
+      } else {
+        print_error("Not a valid digit.",err);
+        goto FAIL;
+      }
+    }
+SUCCESS:
+  cell_num->type = type_number;
+  cell_num->car.i = atoi(buf);
+  cell_num->cdr.cell = NULL;      /*stating this explicitly. */
+  return cell_num;
+FAIL:
+  print_error("parsing number failed.",err);
+  free(cell_num);
+  return NULL;
+}
 
 /*parse a string*/
 static cell_t *parse_string(file_io_t * in, file_io_t * err)
@@ -115,13 +170,13 @@ static cell_t *parse_string(file_io_t * in, file_io_t * err)
         int i = 0, c;
         cell_t *cell_str = calloc(1, sizeof(cell_t));
         if (cell_str == NULL) {
-                error("calloc() failed");
+                print_error("calloc() failed",err);
                 return NULL;
         }
 
         while ((c = wrap_get(in)) != EOF) {
                 if (i >= MAX_STR) {
-                        error("String too long.");
+                        print_error("String too long.",err);
                         goto FAIL;
                 }
 
@@ -131,7 +186,7 @@ static cell_t *parse_string(file_io_t * in, file_io_t * err)
                         /*could add in string length here. */
                         cell_str->car.s = calloc(i + 1, sizeof(char));
                         if (cell_str->car.s == NULL) {
-                                error("calloc() failed");
+                                print_error("calloc() failed",err);
                                 goto FAIL;
                         }
                         memcpy(cell_str->car.s, buf, i);
@@ -149,15 +204,15 @@ static cell_t *parse_string(file_io_t * in, file_io_t * err)
                                 i++;
                                 continue;
                         case EOF:
-                                error
-                                    ("EOF encountered while processing escape char");
+                                print_error
+                                    ("EOF encountered while processing escape char",err);
                                 goto FAIL;
                         default:
-                                error("Not an escape character");
+                                print_error("Not an escape character",err);
                                 goto FAIL;
                         }
                 case EOF:
-                        error("EOF encountered while processing symbol");
+                        print_error("EOF encountered while processing symbol",err);
                         goto FAIL;
                 default:       /*just add the character into the buffer */
                         buf[i] = c;
@@ -165,7 +220,7 @@ static cell_t *parse_string(file_io_t * in, file_io_t * err)
                 }
         }
  FAIL:
-        error("parsing string failed.");
+        print_error("parsing string failed.",err);
         free(cell_str);
         return NULL;
 }
@@ -177,13 +232,13 @@ static cell_t *parse_symbol(file_io_t * in, file_io_t * err)
         int i = 0, c;
         cell_t *cell_sym = calloc(1, sizeof(cell_t));
         if (cell_sym == NULL) {
-                error("calloc() failed");
+                print_error("calloc() failed",err);
                 return NULL;
         }
 
         while ((c = wrap_get(in)) != EOF) {
                 if (i >= MAX_STR) {
-                        error("String (symbol) too long.");
+                        print_error("String (symbol) too long.",err);
                         goto FAIL;
                 }
                 if (isspace(c))
@@ -204,14 +259,14 @@ static cell_t *parse_symbol(file_io_t * in, file_io_t * err)
                                 i++;
                                 continue;
                         default:
-                                error("Not an escape character");
+                                print_error("Not an escape character",err);
                                 goto FAIL;
                         }
                 case '"':
-                        error("Unescaped \" or incorrectly formatted input.");
+                        print_error("Unescaped \" or incorrectly formatted input.",err);
                         goto FAIL;
                 case EOF:
-                        error("EOF encountered while processing symbol");
+                        print_error("EOF encountered while processing symbol",err);
                         goto FAIL;
                 default:       /*just add the character into the buffer */
                         buf[i] = c;
@@ -221,7 +276,7 @@ static cell_t *parse_symbol(file_io_t * in, file_io_t * err)
  SUCCESS:
         cell_sym->car.s = calloc(i + 1, sizeof(char));
         if (cell_sym->car.s == NULL) {
-                error("calloc() failed");
+                print_error("calloc() failed",err);
                 goto FAIL;
         }
         cell_sym->type = type_symbol;
@@ -229,15 +284,15 @@ static cell_t *parse_symbol(file_io_t * in, file_io_t * err)
         cell_sym->cdr.cell = NULL;      /*stating this explicitly. */
         return cell_sym;
  FAIL:
-        error("parsing symbol failed.");
+        print_error("parsing symbol failed.",err);
         free(cell_sym);
         return NULL;
 }
 
-static int append(cell_t * head, cell_t * child)
+static int append(cell_t * head, cell_t * child,file_io_t *err)
 {
         if (head == NULL || child == NULL) {
-                error("append failed, head or child is null");
+                print_error("append failed, head or child is null",err);
                 return 1;
         }
         head->cdr.cell = child;
@@ -250,7 +305,7 @@ static cell_t *parse_list(file_io_t * in, file_io_t * err)
         int c;
         head = cell_lst;
         if (cell_lst == NULL) {
-                error("calloc() failed");
+                print_error("calloc() failed",err);
                 return NULL;
         }
         while ((c = wrap_get(in)) != EOF) {
@@ -273,17 +328,17 @@ static cell_t *parse_list(file_io_t * in, file_io_t * err)
                         break;
                 case '"':      /*parse string */
                         child = parse_string(in, err);
-                        if (append(head, child))
+                        if (append(head, child,err))
                                 goto FAIL;
                         head = child;
                         break;
                 case EOF:      /*Failed */
-                        error("EOF occured before end of list did.");
+                        print_error("EOF occured before end of list did.",err);
                         goto FAIL;
                 default:       /*parse symbol */
                         wrap_ungetc(in, c);
                         child = parse_symbol(in, err);
-                        if (append(head, child))
+                        if (append(head, child,err))
                                 goto FAIL;
                         head = child;
                         break;
@@ -294,7 +349,7 @@ static cell_t *parse_list(file_io_t * in, file_io_t * err)
         cell_lst->type = type_list;
         return cell_lst;
  FAIL:
-        error("parsing list failed.");
+        print_error("parsing list failed.",err);
         free(cell_lst);
         return NULL;
 }
@@ -313,10 +368,10 @@ cell_t *parse_sexpr(file_io_t * in, file_io_t * err)
                         case '"':
                                 return parse_string(in, err);
                         case EOF:
-                                error("EOF, nothing to parse");
+                                print_error("EOF, nothing to parse",err);
                                 return NULL;
                         case ')':
-                                error("Unmatched ')'");
+                                print_error("Unmatched ')'",err);
                                 return NULL;
                         default:
                                 wrap_ungetc(in, c);
@@ -325,7 +380,7 @@ cell_t *parse_sexpr(file_io_t * in, file_io_t * err)
 
                 }
 
-        error("parse_expr in == NULL");
+        print_error("parse_expr in == NULL",err);
         return NULL;
 }
 
@@ -336,18 +391,11 @@ static void print_space(int depth, file_io_t * out)
                 (void)wrap_put(out, ' ');
 }
 
-static void print_string(char *s, file_io_t * out)
-{
-        int i;
-        for (i = 0; s[i] != '\0'; i++)
-                (void)wrap_put(out, s[i]);
-}
-
 void print_sexpr(cell_t * list, int depth, file_io_t * out, file_io_t * err)
 {
         cell_t *tmp;
         if (list == NULL) {
-                error("print_sexpr was passed a NULL!");
+                print_error("print_sexpr was passed a NULL!",err);
                 return;
         }
 
