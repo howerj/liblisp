@@ -500,3 +500,5 @@ void free_sexpr(cell_t * list, file_io_t * err)
 
         return;
 }
+
+/*int eval_sexpr( ENVIRONMENT ) */
