@@ -30,7 +30,7 @@ static cell_t *parse_list(file_io_t * in, file_io_t * err);
 static void print_space(int depth, file_io_t * out);
 
 int evaluate_expr(lenv_t *le);  /*The lisp interprer*/
-int init_lisp(lenv_t *le);      /*Initialize the interpreter*/
+lenv_t *init_lisp(void);        /*Initialize the interpreter*/
 int lisp(lenv_t *le);           /*Wrapper, sets things up and monitors things*/
 
 /*****************************************************************************/
@@ -498,6 +498,40 @@ void free_sexpr(cell_t * list, file_io_t * err)
         return;
 }
 
+lenv_t *init_lisp(void)
+{
+  lenv_t *le = calloc(1,sizeof (lenv_t));
+  if(le == NULL)
+    return NULL;
+
+
+  le->in  = calloc(1,sizeof(file_io_t));
+  le->out = calloc(1,sizeof(file_io_t));
+  le->err = calloc(1,sizeof(file_io_t));
+  if(le->in == NULL || le->out == NULL || le->err == NULL){
+    free(le);
+    return NULL;
+  }
+
+  le->return_code = ERR_OK;
+
+  /*Set up io*/
+  le->in->fiot = io_stdin;
+  le->in->ungetc_flag = 0;
+  le->in->ungetc_char = '\0';
+
+  le->out->fiot = io_stdout;
+  le->out->ungetc_flag = 0;
+  le->out->ungetc_char = '\0';
+
+  le->err->fiot = io_stderr;
+  le->err->ungetc_flag = 0;
+  le->err->ungetc_char = '\0';
+
+  /*TODO: alloc everything else...*/
+
+  return le;
+}
+
 int evaluate_expr(lenv_t *le){} 
-int init_lisp(lenv_t *le){}
 int lisp(lenv_t *le){}         
