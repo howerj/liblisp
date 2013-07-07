@@ -16,7 +16,8 @@
 #define true    1
 #define false   0
 
-#define MAX_STR  256            /*maximum length of allocated symbol or string */
+#define MAX_STR   256            /*maximum length of allocated symbol or string */
+#define STK_SIZ   128            /*variable stack size*/
 
 enum file_io_type {
         io_stdin,               /*read from stdin */
@@ -48,7 +49,8 @@ typedef struct file_io_struct file_io_t;
 
 enum error_type {
         ERR_OK,
-        ERR_GENERIC_PARSE
+        ERR_GENERIC_PARSE,
+        ERR_MALLOC
 };
 
 enum cell_type {
@@ -95,5 +97,11 @@ typedef struct lisp_environment lenv_t;
 cell_t *parse_sexpr(file_io_t * in, file_io_t * err);
 void print_sexpr(cell_t * list, int depth, file_io_t * out, file_io_t * err);
 void free_sexpr(cell_t * list, file_io_t * err);
+
+int evaluate_expr(lenv_t *le);  /*The lisp interprer*/
+lenv_t *init_lisp(void);        /*Initialize the interpreter*/
+int lisp(lenv_t *le);           /*Wrapper, sets things up and monitors things*/
+int destroy_lisp(lenv_t *le);         /*Destroy the lisp environment*/
+
 
 #endif

@@ -32,7 +32,7 @@ static void print_space(int depth, file_io_t * out);
 int evaluate_expr(lenv_t *le);  /*The lisp interprer*/
 lenv_t *init_lisp(void);        /*Initialize the interpreter*/
 int lisp(lenv_t *le);           /*Wrapper, sets things up and monitors things*/
-
+int destroy_lisp(lenv_t *le);         /*Destroy the lisp environment*/
 /*****************************************************************************/
 /*Input / output wrappers.*/
 
@@ -528,10 +528,47 @@ lenv_t *init_lisp(void)
   le->err->ungetc_flag = 0;
   le->err->ungetc_char = '\0';
 
-  /*TODO: alloc everything else...*/
+  /*Allocating stack*/
+  le->variable_stack = calloc(STK_SIZ,sizeof(cell_t));
+
+  /*creating initial dictionary entry*/
+  le->dictionary = calloc(1, sizeof(cell_t));
+  if(le->dictionary == NULL){
+    free(le->in);
+    free(le->out);
+    free(le->err);
+    free(le);
+    return NULL;
+  }
+  le->dictionary->type = type_null; /*first entry is of type null*/
+
+
+  le->current_expression = NULL; /*making this explicit*/
 
   return le;
 }
 
 int evaluate_expr(lenv_t *le){} 
-int lisp(lenv_t *le){}         
+
+int lisp(lenv_t *le){
+  cell_t *tmp;
+
+  if(le==NULL){
+    le = init_lisp();
+    if(le==NULL){
+      return ERR_MALLOC;
+    }
+  }
+  while(true){
+    tmp = parse_sexpr(le->in, le->err);
+    if(tmp == NULL)
+      return ERR_GENERIC_PARSE;
+    print_sexpr(tmp, 0, le->out, le->err);
+    free_sexpr(tmp,le->err);
+    /*evaluate_expr(le);*/
+  }
+  return ERR_OK;
+}
+int destroy_lisp(lenv_t *le){
+  
+}
