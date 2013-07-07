@@ -52,18 +52,20 @@ enum error_type {
 };
 
 enum cell_type {
-        type_null,
-        type_list,
-        type_number,
-        type_symbol,
-        type_str,
-        type_error
+        type_null,        /*null*/
+        type_list,        /*list*/
+        type_number,      /*a number, integer of type int*/
+        type_symbol,      /*a symbol*/
+        type_str,         /*string*/
+        type_function,   /*function pointer to a primitive*/
+        type_error        /*error type*/
 };
 
 union cell_content {
-        int i;
-        struct cell *cell;
-        char *s;
+        int i;                                /*simple integer*/
+        struct cell *cell;                    /*pointer to a cell*/
+        int (*function)(struct cell *cell);   /*function pointer*/ 
+        char *s;                              /*string*/
 };
 
 struct cell {
@@ -71,6 +73,16 @@ struct cell {
         union cell_content car;
         union cell_content cdr;
 };
+
+/*
+ * Struct environment{
+ *  Stack variable (of objects)
+ *  Stack return (of objects)
+ *  Last error code
+ *  Dictionary ptr (list)
+ *  Current expression ptr
+ * }
+ */
 
 typedef struct cell cell_t;
 
