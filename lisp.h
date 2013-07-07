@@ -68,23 +68,28 @@ union cell_content {
         char *s;                              /*string*/
 };
 
+/*Our basic lispy data type*/
 struct cell {
         enum cell_type type;
         union cell_content car;
         union cell_content cdr;
 };
 
-/*
- * Struct environment{
- *  Stack variable (of objects)
- *  Stack return (of objects)
- *  Last error code
- *  Dictionary ptr (list)
- *  Current expression ptr
- * }
- */
-
 typedef struct cell cell_t;
+
+/*The entire lisp environment should be stored here*/
+struct lisp_environment{
+  file_io_t *in;
+  file_io_t *out;
+  file_io_t *err;
+  int return_code;
+  cell_t *variable_stack;
+  cell_t *dictionary;
+  cell_t *current_expression;
+};
+
+typedef struct lisp_environment lenv_t;
+
 
 /*Export these functions*/
 cell_t *parse_sexpr(file_io_t * in, file_io_t * err);

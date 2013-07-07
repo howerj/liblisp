@@ -25,16 +25,13 @@ static void print_error(char *s, file_io_t * err);
 static cell_t *parse_number(file_io_t * in, file_io_t * err);
 static cell_t *parse_string(file_io_t * in, file_io_t * err);
 static cell_t *parse_symbol(file_io_t * in, file_io_t * err);
-/*static cell_t *parse_int(file_io_t *in);*/
 static int append(cell_t * head, cell_t * child, file_io_t * err);
 static cell_t *parse_list(file_io_t * in, file_io_t * err);
 static void print_space(int depth, file_io_t * out);
-/* 
-\\ "cell_t *list" will need replacing with a "lisp" object
-\\ containing everything the interpreter needs to run.
-int     lisp_interpret(cell_t *list);
-int     lisp_monitor(cell_t *list);
-*/
+
+int evaluate_expr(lenv_t *le);  /*The lisp interprer*/
+int init_lisp(lenv_t *le);      /*Initialize the interpreter*/
+int lisp(lenv_t *le);           /*Wrapper, sets things up and monitors things*/
 
 /*****************************************************************************/
 /*Input / output wrappers.*/
@@ -501,4 +498,6 @@ void free_sexpr(cell_t * list, file_io_t * err)
         return;
 }
 
-/*int eval_sexpr( ENVIRONMENT ) */
+int evaluate_expr(lenv_t *le){} 
+int init_lisp(lenv_t *le){}
+int lisp(lenv_t *le){}         
