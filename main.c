@@ -14,6 +14,6 @@
 
 int main(void)
 {
-        lisp(NULL);
+        destroy_lisp(lisp(NULL));
         return 0;
 }

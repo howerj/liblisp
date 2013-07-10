@@ -50,6 +50,7 @@ typedef struct file_io_struct file_io_t;
 enum error_type {
         ERR_OK,
         ERR_GENERIC_PARSE,
+        ERR_NULL_REF,
         ERR_MALLOC
 };
 
@@ -92,15 +93,14 @@ struct lisp_environment{
 
 typedef struct lisp_environment lenv_t;
 
-
 /*Export these functions*/
 cell_t *parse_sexpr(file_io_t * in, file_io_t * err);
 void print_sexpr(cell_t * list, int depth, file_io_t * out, file_io_t * err);
 void free_sexpr(cell_t * list, file_io_t * err);
 
-int evaluate_expr(lenv_t *le);  /*The lisp interprer*/
+int evaluate_expr(lenv_t *le, cell_t *list);  /*The lisp interprer*/
 lenv_t *init_lisp(void);        /*Initialize the interpreter*/
-int lisp(lenv_t *le);           /*Wrapper, sets things up and monitors things*/
+lenv_t *lisp(lenv_t *le);           /*Wrapper, sets things up and monitors things*/
 int destroy_lisp(lenv_t *le);         /*Destroy the lisp environment*/
 
 

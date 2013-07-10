@@ -16,23 +16,19 @@
 #include "lisp.h"
 
 /*****************************************************************************/
+/*basic io*/
 static int wrap_get(file_io_t * in);
 static int wrap_put(file_io_t * out, char c);
 static void wrap_ungetc(file_io_t * in, char c);
 static void print_string(char *s, file_io_t * out);
 static void print_error(char *s, file_io_t * err);
-
+/*parser*/
 static cell_t *parse_number(file_io_t * in, file_io_t * err);
 static cell_t *parse_string(file_io_t * in, file_io_t * err);
 static cell_t *parse_symbol(file_io_t * in, file_io_t * err);
 static int append(cell_t * head, cell_t * child, file_io_t * err);
 static cell_t *parse_list(file_io_t * in, file_io_t * err);
 static void print_space(int depth, file_io_t * out);
-
-int evaluate_expr(lenv_t *le);  /*The lisp interprer*/
-lenv_t *init_lisp(void);        /*Initialize the interpreter*/
-int lisp(lenv_t *le);           /*Wrapper, sets things up and monitors things*/
-int destroy_lisp(lenv_t *le);         /*Destroy the lisp environment*/
 /*****************************************************************************/
 /*Input / output wrappers.*/
 
@@ -431,7 +427,6 @@ void print_sexpr(cell_t * list, int depth, file_io_t * out, file_io_t * err)
                 print_string(list->car.s, out);
                 wrap_put(out, '"');
                 wrap_put(out, '\n');
-                /*printf("\"%s\"\n", list->car.s); */
                 return;
         } else if (list->type == type_symbol) {
                 print_space(depth + 1, out);
@@ -548,26 +543,56 @@ lenv_t *init_lisp(void)
   return le;
 }
 
-int evaluate_expr(lenv_t *le){} 
 
-int lisp(lenv_t *le){
+int evaluate_expr(lenv_t *le, cell_t *list){
+        if(le==NULL||list==NULL)
+          return ERR_NULL_REF;
+
+        if (list == NULL){
+          /*add null to stack*/
+        }
+        if (list->type == type_number) {
+          /*add number to stack*/
+        } else if (list->type == type_str) {
+          /*add string to stack*/
+        } else if (list->type == type_symbol) {
+          /*add symbol to stack? execute? */
+        } else if (list->type == type_list) {
+          /*first element treated as symbol in dictionary*/
+        }
+
+        return ERR_OK;
+} 
+
+lenv_t *lisp(lenv_t *le){
   cell_t *tmp;
 
   if(le==NULL){
     le = init_lisp();
     if(le==NULL){
-      return ERR_MALLOC;
+      return NULL;
     }
   }
   while(true){
+    /*
+     * Interpreter outline:
+     *  Read/Parse expression
+     *  Evaluate expression
+     *    - Look up symbols in table (X ... ), X should be a symbol
+     *      - Dictionary of primitives/expressions
+     *    - Single variable stack
+     *  Print anything necessary
+     *  Loop
+     *
+     */
     tmp = parse_sexpr(le->in, le->err);
     if(tmp == NULL)
-      return ERR_GENERIC_PARSE;
+      return le;
     print_sexpr(tmp, 0, le->out, le->err);
     free_sexpr(tmp,le->err);
     /*evaluate_expr(le);*/
   }
-  return ERR_OK;
+  return le;
 }
 int destroy_lisp(lenv_t *le){
   
