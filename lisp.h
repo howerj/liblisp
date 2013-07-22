@@ -86,8 +86,11 @@ struct lisp_environment{
   file_io_t *out;
   file_io_t *err;
   int return_code;
+
+  int stkp;
   cell_t *variable_stack;
-  cell_t *dictionary;
+  int dictionary_len;
+  cell_t *dictionary_array;
   cell_t *current_expression;
 };
 

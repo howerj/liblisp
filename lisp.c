@@ -527,15 +527,15 @@ lenv_t *init_lisp(void)
   le->variable_stack = calloc(STK_SIZ,sizeof(cell_t));
 
   /*creating initial dictionary entry*/
-  le->dictionary = calloc(1, sizeof(cell_t));
-  if(le->dictionary == NULL){
+  le->dictionary_array = calloc(1, sizeof(cell_t));
+  if(le->dictionary_array == NULL){
     free(le->in);
     free(le->out);
     free(le->err);
     free(le);
     return NULL;
   }
-  le->dictionary->type = type_null; /*first entry is of type null*/
+  le->dictionary_array->type = type_null; /*first entry is of type null*/
 
 
   le->current_expression = NULL; /*making this explicit*/
