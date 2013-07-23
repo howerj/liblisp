@@ -90,7 +90,7 @@ struct lisp_environment {
         int stkp;
         cell_t *variable_stack;
         int dictionary_len;
-        cell_t *dictionary_array;
+        cell_t *dictionary_head;
         cell_t *current_expression;
 };
 

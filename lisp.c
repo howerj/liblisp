@@ -527,26 +527,26 @@ lenv_t *init_lisp(void)
         le->variable_stack = calloc(STK_SIZ, sizeof(cell_t));
 
         /*creating initial dictionary entry */
-        le->dictionary_array = calloc(1, sizeof(cell_t));
-        if (le->dictionary_array == NULL) {
+        le->dictionary_head= calloc(1, sizeof(cell_t));
+        if (le->dictionary_head== NULL) {
                 free(le->in);
                 free(le->out);
                 free(le->err);
                 free(le);
                 return NULL;
         }
-        le->dictionary_array->type = type_null; /*first entry is of type null */
+        le->dictionary_head->type = type_null; /*first entry is of type null */
         le->current_expression = NULL;  /*making this explicit */
 
         return le;
 }
+/*define static*/
+int add_symbol_to_dictionary(char *s, cell_t *dictionary_head, cell_t *add_me){
+  return false;
+}
 
-/*define non-static*/
-int find_symbol_in_dictionary(char *s, int dictionary_len, cell_t *dictionary_array){
-  unsigned int i;
-  for(i=dictionary_array;i!=0;i--){
-    
-  }
+/*define static*/
+int find_symbol_in_dictionary(char *s, cell_t *dictionary_head){
   return false;
 }
 
