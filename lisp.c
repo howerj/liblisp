@@ -527,27 +527,34 @@ lenv_t *init_lisp(void)
         le->variable_stack = calloc(STK_SIZ, sizeof(cell_t));
 
         /*creating initial dictionary entry */
-        le->dictionary_head= calloc(1, sizeof(cell_t));
-        if (le->dictionary_head== NULL) {
+        le->dictionary= calloc(1, sizeof(cell_t));
+        if (le->dictionary== NULL) {
                 free(le->in);
                 free(le->out);
                 free(le->err);
                 free(le);
                 return NULL;
         }
-        le->dictionary_head->type = type_null; /*first entry is of type null */
+        le->dictionary->type = type_null; /*first entry is of type null */
         le->current_expression = NULL;  /*making this explicit */
 
         return le;
 }
 /*define static*/
-int add_symbol_to_dictionary(char *s, cell_t *dictionary_head, cell_t *add_me){
+int add_symbol_to_dictionary(char *s, cell_t *dictionary, cell_t *add_me){
+  cell_t *cur;
+  for(cur=dictionary;cur!=NULL;cur=cur->cdr.cell){
+  }
   return false;
 }
 
-/*define static*/
-int find_symbol_in_dictionary(char *s, cell_t *dictionary_head){
-  return false;
+/*define static, should check for NULLs*/
+cell_t *find_symbol_in_dictionary(char *s, cell_t *dictionary){
+  cell_t *cur;
+  for(cur=dictionary;cur!=NULL;cur=cur->cdr.cell){
+    if(!strcmp(s,(cur->car.cell)->car.s)) return cur->car.cell;
+  }
+  return NULL;
 }
 
 int evaluate_expr(lenv_t * le, cell_t * list)

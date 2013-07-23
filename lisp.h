@@ -89,8 +89,9 @@ struct lisp_environment {
 
         int stkp;
         cell_t *variable_stack;
-        int dictionary_len;
-        cell_t *dictionary_head;
+        int dictionary_len;  /*total items*/
+        int dictionary_used; /*items used*/
+        cell_t *dictionary;
         cell_t *current_expression;
 };
 
