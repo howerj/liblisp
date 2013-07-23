@@ -536,8 +536,6 @@ lenv_t *init_lisp(void)
     return NULL;
   }
   le->dictionary_array->type = type_null; /*first entry is of type null*/
-
-
   le->current_expression = NULL; /*making this explicit*/
 
   return le;
@@ -545,20 +543,28 @@ lenv_t *init_lisp(void)
 
 
 int evaluate_expr(lenv_t *le, cell_t *list){
+  char buf[MAX_STR];
         if(le==NULL||list==NULL)
           return ERR_NULL_REF;
 
         if (list == NULL){
-          /*add null to stack*/
         }
         if (list->type == type_number) {
-          /*add number to stack*/
+            /*just print out a number*/
+            sprintf(buf, "%d", list->car.i);
+            print_string(buf, le->out);
+            wrap_put(le->out, '\n');
         } else if (list->type == type_str) {
-          /*add string to stack*/
+          /*print out string*/
+            wrap_put(le->out, '"');
+            print_string(list->car.s, le->out);
+            wrap_put(le->out, '"');
+            wrap_put(le->out, '\n');
         } else if (list->type == type_symbol) {
-          /*add symbol to stack? execute? */
+         /*find*/
         } else if (list->type == type_list) {
-          /*first element treated as symbol in dictionary*/
+          /*first element treated as symbol in dictionary, cede control
+           *to that function*/
         }
 
         return ERR_OK;
