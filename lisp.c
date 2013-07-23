@@ -29,6 +29,7 @@ static cell_t *parse_symbol(file_io_t * in, file_io_t * err);
 static int append(cell_t * head, cell_t * child, file_io_t * err);
 static cell_t *parse_list(file_io_t * in, file_io_t * err);
 static void print_space(int depth, file_io_t * out);
+/*internal lisp*/
 /*****************************************************************************/
 /*Input / output wrappers.*/
 
@@ -495,111 +496,122 @@ void free_sexpr(cell_t * list, file_io_t * err)
 
 lenv_t *init_lisp(void)
 {
-  lenv_t *le = calloc(1,sizeof (lenv_t));
-  if(le == NULL)
-    return NULL;
+        lenv_t *le = calloc(1, sizeof(lenv_t));
+        if (le == NULL)
+                return NULL;
 
+        le->in = calloc(1, sizeof(file_io_t));
+        le->out = calloc(1, sizeof(file_io_t));
+        le->err = calloc(1, sizeof(file_io_t));
+        if (le->in == NULL || le->out == NULL || le->err == NULL) {
+                free(le);
+                return NULL;
+        }
 
-  le->in  = calloc(1,sizeof(file_io_t));
-  le->out = calloc(1,sizeof(file_io_t));
-  le->err = calloc(1,sizeof(file_io_t));
-  if(le->in == NULL || le->out == NULL || le->err == NULL){
-    free(le);
-    return NULL;
-  }
+        le->return_code = ERR_OK;
 
-  le->return_code = ERR_OK;
+        /*Set up io */
+        le->in->fiot = io_stdin;
+        le->in->ungetc_flag = 0;
+        le->in->ungetc_char = '\0';
 
-  /*Set up io*/
-  le->in->fiot = io_stdin;
-  le->in->ungetc_flag = 0;
-  le->in->ungetc_char = '\0';
+        le->out->fiot = io_stdout;
+        le->out->ungetc_flag = 0;
+        le->out->ungetc_char = '\0';
 
-  le->out->fiot = io_stdout;
-  le->out->ungetc_flag = 0;
-  le->out->ungetc_char = '\0';
+        le->err->fiot = io_stderr;
+        le->err->ungetc_flag = 0;
+        le->err->ungetc_char = '\0';
 
-  le->err->fiot = io_stderr;
-  le->err->ungetc_flag = 0;
-  le->err->ungetc_char = '\0';
+        /*Allocating stack */
+        le->variable_stack = calloc(STK_SIZ, sizeof(cell_t));
 
-  /*Allocating stack*/
-  le->variable_stack = calloc(STK_SIZ,sizeof(cell_t));
+        /*creating initial dictionary entry */
+        le->dictionary_array = calloc(1, sizeof(cell_t));
+        if (le->dictionary_array == NULL) {
+                free(le->in);
+                free(le->out);
+                free(le->err);
+                free(le);
+                return NULL;
+        }
+        le->dictionary_array->type = type_null; /*first entry is of type null */
+        le->current_expression = NULL;  /*making this explicit */
 
-  /*creating initial dictionary entry*/
-  le->dictionary_array = calloc(1, sizeof(cell_t));
-  if(le->dictionary_array == NULL){
-    free(le->in);
-    free(le->out);
-    free(le->err);
-    free(le);
-    return NULL;
-  }
-  le->dictionary_array->type = type_null; /*first entry is of type null*/
-  le->current_expression = NULL; /*making this explicit*/
-
-  return le;
+        return le;
 }
 
+/*define non-static*/
+int find_symbol_in_dictionary(char *s, int dictionary_len, cell_t *dictionary_array){
+  unsigned int i;
+  for(i=dictionary_array;i!=0;i--){
+    
+  }
+  return false;
+}
 
-int evaluate_expr(lenv_t *le, cell_t *list){
-  char buf[MAX_STR];
-        if(le==NULL||list==NULL)
-          return ERR_NULL_REF;
+int evaluate_expr(lenv_t * le, cell_t * list)
+{
+        char buf[MAX_STR];
+        if (le == NULL || list == NULL)
+                return ERR_NULL_REF;
 
-        if (list == NULL){
+        if (list == NULL) {
         }
         if (list->type == type_number) {
-            /*just print out a number*/
-            sprintf(buf, "%d", list->car.i);
-            print_string(buf, le->out);
-            wrap_put(le->out, '\n');
+                /*just print out a number */
+                sprintf(buf, "%d", list->car.i);
+                print_string(buf, le->out);
+                wrap_put(le->out, '\n');
         } else if (list->type == type_str) {
-          /*print out string*/
-            wrap_put(le->out, '"');
-            print_string(list->car.s, le->out);
-            wrap_put(le->out, '"');
-            wrap_put(le->out, '\n');
+                /*print out string */
+                wrap_put(le->out, '"');
+                print_string(list->car.s, le->out);
+                wrap_put(le->out, '"');
+                wrap_put(le->out, '\n');
         } else if (list->type == type_symbol) {
-         /*find*/
+                /*find */
         } else if (list->type == type_list) {
-          /*first element treated as symbol in dictionary, cede control
-           *to that function*/
+                /*first element treated as symbol in dictionary, cede control
+                 *to that function*/
         }
 
         return ERR_OK;
-} 
-
-lenv_t *lisp(lenv_t *le){
-  cell_t *tmp;
-
-  if(le==NULL){
-    le = init_lisp();
-    if(le==NULL){
-      return NULL;
-    }
-  }
-  while(true){
-    /*
-     * Interpreter outline:
-     *  Read/Parse expression
-     *  Evaluate expression
-     *    - Look up symbols in table (X ... ), X should be a symbol
-     *      - Dictionary of primitives/expressions
-     *    - Single variable stack
-     *  Print anything necessary
-     *  Loop
-     *
-     */
-    tmp = parse_sexpr(le->in, le->err);
-    if(tmp == NULL)
-      return le;
-    print_sexpr(tmp, 0, le->out, le->err);
-    free_sexpr(tmp,le->err);
-    /*evaluate_expr(le);*/
-  }
-  return le;
 }
-int destroy_lisp(lenv_t *le){
-  
+
+lenv_t *lisp(lenv_t * le)
+{
+        cell_t *tmp;
+
+        if (le == NULL) {
+                le = init_lisp();
+                if (le == NULL) {
+                        return NULL;
+                }
+        }
+        while (true) {
+                /*
+                 * Interpreter outline:
+                 *  Read/Parse expression
+                 *  Evaluate expression
+                 *    - Look up symbols in table (X ... ), X should be a symbol
+                 *      - Dictionary of primitives/expressions
+                 *    - Single variable stack
+                 *  Print anything necessary
+                 *  Loop
+                 *
+                 */
+                tmp = parse_sexpr(le->in, le->err);
+                if (tmp == NULL)
+                        return le;
+                print_sexpr(tmp, 0, le->out, le->err);
+                free_sexpr(tmp, le->err);
+                /*evaluate_expr(le); */
+        }
+        return le;
+}
+
+int destroy_lisp(lenv_t * le)
+{
+
 }

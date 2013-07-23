@@ -16,8 +16,8 @@
 #define true    1
 #define false   0
 
-#define MAX_STR   256            /*maximum length of allocated symbol or string */
-#define STK_SIZ   128            /*variable stack size*/
+#define MAX_STR   256           /*maximum length of allocated symbol or string */
+#define STK_SIZ   128           /*variable stack size */
 
 enum file_io_type {
         io_stdin,               /*read from stdin */
@@ -55,20 +55,20 @@ enum error_type {
 };
 
 enum cell_type {
-        type_null,        /*null*/
-        type_list,        /*list*/
-        type_number,      /*a number, integer of type int*/
-        type_symbol,      /*a symbol*/
-        type_str,         /*string*/
-        type_function,   /*function pointer to a primitive*/
-        type_error        /*error type*/
+        type_null,              /*null */
+        type_list,              /*list */
+        type_number,            /*a number, integer of type int */
+        type_symbol,            /*a symbol */
+        type_str,               /*string */
+        type_function,          /*function pointer to a primitive */
+        type_error              /*error type */
 };
 
 union cell_content {
-        int i;                                /*simple integer*/
-        struct cell *cell;                    /*pointer to a cell*/
-        int (*function)(struct cell *cell);   /*function pointer*/ 
-        char *s;                              /*string*/
+        int i;                  /*simple integer */
+        struct cell *cell;      /*pointer to a cell */
+        int (*function) (struct cell * cell);   /*function pointer */
+        char *s;                /*string */
 };
 
 /*Our basic lispy data type*/
@@ -81,17 +81,17 @@ struct cell {
 typedef struct cell cell_t;
 
 /*The entire lisp environment should be stored here*/
-struct lisp_environment{
-  file_io_t *in;
-  file_io_t *out;
-  file_io_t *err;
-  int return_code;
+struct lisp_environment {
+        file_io_t *in;
+        file_io_t *out;
+        file_io_t *err;
+        int return_code;
 
-  int stkp;
-  cell_t *variable_stack;
-  int dictionary_len;
-  cell_t *dictionary_array;
-  cell_t *current_expression;
+        int stkp;
+        cell_t *variable_stack;
+        int dictionary_len;
+        cell_t *dictionary_array;
+        cell_t *current_expression;
 };
 
 typedef struct lisp_environment lenv_t;
@@ -101,10 +101,9 @@ cell_t *parse_sexpr(file_io_t * in, file_io_t * err);
 void print_sexpr(cell_t * list, int depth, file_io_t * out, file_io_t * err);
 void free_sexpr(cell_t * list, file_io_t * err);
 
-int evaluate_expr(lenv_t *le, cell_t *list);  /*The lisp interprer*/
-lenv_t *init_lisp(void);        /*Initialize the interpreter*/
-lenv_t *lisp(lenv_t *le);           /*Wrapper, sets things up and monitors things*/
-int destroy_lisp(lenv_t *le);         /*Destroy the lisp environment*/
-
+int evaluate_expr(lenv_t * le, cell_t * list);  /*The lisp interprer */
+lenv_t *init_lisp(void);        /*Initialize the interpreter */
+lenv_t *lisp(lenv_t * le);      /*Wrapper, sets things up and monitors things */
+int destroy_lisp(lenv_t * le);  /*Destroy the lisp environment */
 
 #endif
