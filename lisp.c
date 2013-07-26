@@ -541,10 +541,21 @@ lenv_t *init_lisp(void)
         return le;
 }
 /*define static*/
-int add_symbol_to_dictionary(char *s, cell_t *dictionary_tail, cell_t *add_me){
-  cell_t *cur;
+int add_symbol_to_dictionary(char *s, cell_t **dictionary_tail, cell_t *add_me){
+  /*add_me refers to the content, char *s refers to the symbol to refer that
+   *content by*/
+  cell_t *tmp;
+  if((tmp=calloc(1,sizeof(cell_t)))==NULL) return ERR_MALLOC;
 
-  return false;
+  tmp->type=type_list;
+  (*dictionary_tail)->cdr.cell=tmp;
+  (*dictionary_tail)=tmp;
+
+  tmp->car.cell = add_me;
+  add_me->type = type_dictionary_atom;
+  add_me->car.s = s;
+
+  return ERR_OK;
 }
 
 /*define static, should check for NULLs*/

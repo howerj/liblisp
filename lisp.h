@@ -56,6 +56,9 @@ enum error_type {
 
 enum cell_type {
         type_null,              /*null */
+        type_dictionary_atom,   /*Just for the dictionary, means it is not part
+                                  of the dictionary backbone but is one of it's
+                                  objects the dictionary points to.*/
         type_list,              /*list */
         type_number,            /*a number, integer of type int */
         type_symbol,            /*a symbol */
