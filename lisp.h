@@ -82,17 +82,25 @@ typedef struct cell cell_t;
 
 /*The entire lisp environment should be stored here*/
 struct lisp_environment {
+        /*File IO*/
         file_io_t *in;
         file_io_t *out;
         file_io_t *err;
+
+        /*Errors*/
         int return_code;
 
+        /*The stack*/
         int stkp;
         cell_t *variable_stack;
+
+        /*Dictionary*/
         int dictionary_len;  /*total items*/
         int dictionary_used; /*items used*/
-        cell_t *dictionary;
-        cell_t *current_expression;
+        cell_t *dictionary;  /*The beginning of the dictionary...*/
+        cell_t *dictionary_tail; /*...the end of it*/
+
+        cell_t *current_expression; /*Expression being currently parsed*/
 };
 
 typedef struct lisp_environment lenv_t;

@@ -541,10 +541,9 @@ lenv_t *init_lisp(void)
         return le;
 }
 /*define static*/
-int add_symbol_to_dictionary(char *s, cell_t *dictionary, cell_t *add_me){
+int add_symbol_to_dictionary(char *s, cell_t *dictionary_tail, cell_t *add_me){
   cell_t *cur;
-  for(cur=dictionary;cur!=NULL;cur=cur->cdr.cell){
-  }
+
   return false;
 }
 
