@@ -561,12 +561,16 @@ lenv_t *init_lisp(void)
         add_primitive_to_dictionary("cond",le,prim_null);
         add_primitive_to_dictionary("car",le,prim_null);
         add_primitive_to_dictionary("cdr",le,prim_null);
+        add_primitive_to_dictionary("=",le,prim_null);
+        add_primitive_to_dictionary(">",le,prim_null);
+        add_primitive_to_dictionary("<",le,prim_null);
         add_primitive_to_dictionary("+",le,prim_null);
         add_primitive_to_dictionary("-",le,prim_null);
         add_primitive_to_dictionary("*",le,prim_null);
         add_primitive_to_dictionary("and",le,prim_null);
+        add_primitive_to_dictionary("not",le,prim_null);
         add_primitive_to_dictionary("or",le,prim_null);
-        add_primitive_to_dictionary("if",le,prim_null);
+        add_primitive_to_dictionary("for",le,prim_null);    /*for loop*/
         add_primitive_to_dictionary("define",le,prim_null);
 
         return le;
@@ -609,13 +613,13 @@ cell_t *find_symbol_in_dictionary(char *s, cell_t * dictionary)
         return NULL;
 }
 
-int evaluate_expr(lenv_t * le, int depth, cell_t * list)
+cell_t *evaluate_expr(lenv_t * le, int depth, cell_t * list)
 {
         char buf[MAX_STR];
         cell_t * tmp, *retn;
         le->current_expression = list;
         if (le == NULL || list == NULL)
-                return ERR_NULL_REF;
+                return NULL;
 
         if (list == NULL) {
         }
@@ -635,12 +639,10 @@ int evaluate_expr(lenv_t * le, int depth, cell_t * list)
         } else if (list->type == type_list) {
                 /*first element treated as symbol in dictionary, cede control
                  *to that function*/
-                if(list->car.cell != NULL){
-                  evaluate_expr(le,depth+1, list);
-                }
 
                 for (tmp = list; tmp != NULL;) {
                         if (tmp->car.cell != NULL && tmp->type == type_list) {
+                          evaluate_expr(le,depth+1,tmp->car.cell);
                         }
 
                         if (tmp->type == type_symbol) {
@@ -654,10 +656,10 @@ int evaluate_expr(lenv_t * le, int depth, cell_t * list)
 
                         tmp = tmp->cdr.cell;
                 }
-                return ERR_OK;
+                return NULL;
         }
 
-        return ERR_OK;
+        return NULL;
 }
 
 lenv_t *lisp(lenv_t * le)
@@ -688,7 +690,7 @@ lenv_t *lisp(lenv_t * le)
                 print_sexpr(tmp, 0, le->out, le->err);
                 evaluate_expr(le,0,tmp);
                 /*free will not be performed in final program*/
-                free_sexpr(tmp, le->err);
+                /*free_sexpr(tmp, le->err);*/
         }
         return le;
 }
