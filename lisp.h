@@ -56,9 +56,6 @@ enum error_type {
 
 enum cell_type {
         type_null,              /*null */
-        type_dictionary_atom,   /*Just for the dictionary, means it is not part
-                                  of the dictionary backbone but is one of it's
-                                  objects the dictionary points to.*/
         type_list,              /*list */
         type_number,            /*a number, integer of type int */
         type_symbol,            /*a symbol */
@@ -70,7 +67,7 @@ enum cell_type {
 union cell_content {
         int i;                  /*simple integer */
         struct cell *cell;      /*pointer to a cell */
-        int (*function) (struct cell * cell);   /*function pointer */
+        int (*function) (void *p);   /*function pointer */
         char *s;                /*string */
 };
 
@@ -85,25 +82,25 @@ typedef struct cell cell_t;
 
 /*The entire lisp environment should be stored here*/
 struct lisp_environment {
-        /*File IO*/
+        /*File IO */
         file_io_t *in;
         file_io_t *out;
         file_io_t *err;
 
-        /*Errors*/
+        /*Errors */
         int return_code;
 
-        /*The stack*/
+        /*The stack */
         int stkp;
         cell_t *variable_stack;
 
-        /*Dictionary*/
-        int dictionary_len;  /*total items*/
-        int dictionary_used; /*items used*/
-        cell_t *dictionary;  /*The beginning of the dictionary...*/
-        cell_t *dictionary_tail; /*...the end of it*/
+        /*Dictionary */
+        int dictionary_len;     /*total items */
+        int dictionary_used;    /*items used */
+        cell_t *dictionary;     /*The beginning of the dictionary... */
+        cell_t *dictionary_tail;        /*...the end of it */
 
-        cell_t *current_expression; /*Expression being currently parsed*/
+        cell_t *current_expression;     /*Expression being currently parsed */
 };
 
 typedef struct lisp_environment lenv_t;

@@ -51,7 +51,7 @@ help:
 	@/bin/echo "make valgrind"
 	@/bin/echo "     Run program with valgrind on start up lisp file only."
 
-## Main forth program
+## Main lisp program
 
 lisp: main.c lisp.h lisp.o
 	$(CC) $(CCOPTS) main.c lisp.o -o lisp
@@ -69,7 +69,7 @@ pretty:
 	@/bin/echo "indent -nut -linux *.h *.c";
 	@indent -nut -linux *.h *c;
 	@/bin/echo -e "$(RED)"
-	@rm -vf forth memory.txt *.log *.swo *.swp *.o *~ *.gcov *.gcda *.gcno *.html *.htm;
+	@rm -vf lisp memory.txt *.log *.swo *.swp *.o *~ *.gcov *.gcda *.gcno *.html *.htm;
 	@/bin/echo -e "$(DEFAULT)"
 	@wc *.c *.h makefile
 
@@ -95,7 +95,7 @@ valgrind: lisp
 
 gcov: CCOPTS:=$(CCOPTS) --coverage
 gcov: clean lisp 
-	@/bin/echo "Providing gcov statistics for forth program."
+	@/bin/echo "Providing gcov statistics for lisp program."
 	@./lisp << EOF
 	@gcov lisp.c main.c
 

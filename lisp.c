@@ -30,6 +30,10 @@ static int append(cell_t * head, cell_t * child, file_io_t * err);
 static cell_t *parse_list(file_io_t * in, file_io_t * err);
 static void print_space(int depth, file_io_t * out);
 /*internal lisp*/
+
+static int add_primitive_to_dictionary(char *s, cell_t ** dictionary_tail,
+                             int (*function)(void *p));
+
 /*****************************************************************************/
 /*Input / output wrappers.*/
 
@@ -494,6 +498,16 @@ void free_sexpr(cell_t * list, file_io_t * err)
         return;
 }
 
+/*******************************************************************************/
+/***PRIMITIVES!*****************************************************************/
+/*******************************************************************************/
+
+int prim_null(void *p){
+  lenv_t *le = p;
+  print_error("It appears this primitive has not been implemented yet...", le->err);
+  return 0;
+}
+
 lenv_t *init_lisp(void)
 {
         lenv_t *le = calloc(1, sizeof(lenv_t));
@@ -527,49 +541,79 @@ lenv_t *init_lisp(void)
         le->variable_stack = calloc(STK_SIZ, sizeof(cell_t));
 
         /*creating initial dictionary entry */
-        le->dictionary= calloc(1, sizeof(cell_t));
-        if (le->dictionary== NULL) {
+        le->dictionary = calloc(1, sizeof(cell_t));
+        if (le->dictionary == NULL) {
                 free(le->in);
                 free(le->out);
                 free(le->err);
                 free(le);
                 return NULL;
         }
-        le->dictionary->type = type_null; /*first entry is of type null */
-        le->current_expression = NULL;  /*making this explicit */
+        le->dictionary_tail = le->dictionary;
+        le->dictionary->type = type_list;       
+        le->current_expression = NULL; 
+
+      /*put things in the dictionary*/ 
+        add_primitive_to_dictionary("quote",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("atom",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("eq",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("cons",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("cond",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("car",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("cdr",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("+",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("-",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("*",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("and",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("or",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("if",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("define",&(le->dictionary_tail),prim_null);
 
         return le;
 }
+
 /*define static*/
-int add_symbol_to_dictionary(char *s, cell_t **dictionary_tail, cell_t *add_me){
-  /*add_me refers to the content, char *s refers to the symbol to refer that
-   *content by*/
-  cell_t *tmp;
-  if((tmp=calloc(1,sizeof(cell_t)))==NULL) return ERR_MALLOC;
+int add_primitive_to_dictionary(char *s, cell_t ** dictionary_tail,
+                             int (*function)(void *p))
+{
+        /*add_me refers to the content, char *s refers to the symbol to refer that
+         *content by*/
+        cell_t *tmp, *add_me;
+        if ((tmp = calloc(1, sizeof(cell_t))) == NULL)
+                return ERR_MALLOC;
 
-  tmp->type=type_list;
-  (*dictionary_tail)->cdr.cell=tmp;
-  (*dictionary_tail)=tmp;
+        if ((add_me = calloc(1, sizeof(cell_t))) == NULL)
+                return ERR_MALLOC;
 
-  tmp->car.cell = add_me;
-  add_me->type = type_dictionary_atom;
-  add_me->car.s = s;
 
-  return ERR_OK;
+
+        tmp->type = type_list;
+        (*dictionary_tail)->cdr.cell = tmp;
+        (*dictionary_tail) = tmp;
+
+        tmp->car.cell = add_me;
+        add_me->type = type_function;
+        add_me->car.s = s;
+        add_me->cdr.function = function;
+
+        return ERR_OK;
 }
 
 /*define static, should check for NULLs*/
-cell_t *find_symbol_in_dictionary(char *s, cell_t *dictionary){
-  cell_t *cur;
-  for(cur=dictionary;cur!=NULL;cur=cur->cdr.cell){
-    if(!strcmp(s,(cur->car.cell)->car.s)) return cur->car.cell;
-  }
-  return NULL;
+cell_t *find_symbol_in_dictionary(char *s, cell_t * dictionary)
+{
+        cell_t *cur;
+        for (cur = dictionary; cur != NULL; cur = cur->cdr.cell) {
+                if (!strcmp(s, (cur->car.cell)->car.s))
+                        return cur->car.cell;
+        }
+        return NULL;
 }
 
 int evaluate_expr(lenv_t * le, cell_t * list)
 {
         char buf[MAX_STR];
+        le->current_expression = list;
         if (le == NULL || list == NULL)
                 return ERR_NULL_REF;
 
@@ -622,13 +666,15 @@ lenv_t *lisp(lenv_t * le)
                 if (tmp == NULL)
                         return le;
                 print_sexpr(tmp, 0, le->out, le->err);
+                evaluate_expr(le,tmp);
+                /*free will not be performed in final program*/
                 free_sexpr(tmp, le->err);
-                /*evaluate_expr(le); */
         }
         return le;
 }
 
 int destroy_lisp(lenv_t * le)
 {
-
+  print_error("It appears this function has not been implemented yet...", le->err);
+  return 0;
 }
