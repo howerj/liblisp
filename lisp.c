@@ -31,7 +31,7 @@ static cell_t *parse_list(file_io_t * in, file_io_t * err);
 static void print_space(int depth, file_io_t * out);
 /*internal lisp*/
 
-static int add_primitive_to_dictionary(char *s, cell_t ** dictionary_tail,
+static int add_primitive_to_dictionary(char *s, lenv_t * le,
                              int (*function)(void *p));
 
 /*****************************************************************************/
@@ -554,26 +554,26 @@ lenv_t *init_lisp(void)
         le->current_expression = NULL; 
 
       /*put things in the dictionary*/ 
-        add_primitive_to_dictionary("quote",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("atom",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("eq",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("cons",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("cond",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("car",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("cdr",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("+",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("-",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("*",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("and",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("or",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("if",&(le->dictionary_tail),prim_null);
-        add_primitive_to_dictionary("define",&(le->dictionary_tail),prim_null);
+        add_primitive_to_dictionary("quote",le,prim_null);
+        add_primitive_to_dictionary("atom",le,prim_null);
+        add_primitive_to_dictionary("eq",le,prim_null);
+        add_primitive_to_dictionary("cons",le,prim_null);
+        add_primitive_to_dictionary("cond",le,prim_null);
+        add_primitive_to_dictionary("car",le,prim_null);
+        add_primitive_to_dictionary("cdr",le,prim_null);
+        add_primitive_to_dictionary("+",le,prim_null);
+        add_primitive_to_dictionary("-",le,prim_null);
+        add_primitive_to_dictionary("*",le,prim_null);
+        add_primitive_to_dictionary("and",le,prim_null);
+        add_primitive_to_dictionary("or",le,prim_null);
+        add_primitive_to_dictionary("if",le,prim_null);
+        add_primitive_to_dictionary("define",le,prim_null);
 
         return le;
 }
 
 /*define static*/
-int add_primitive_to_dictionary(char *s, cell_t ** dictionary_tail,
+int add_primitive_to_dictionary(char *s, lenv_t *le,
                              int (*function)(void *p))
 {
         /*add_me refers to the content, char *s refers to the symbol to refer that
@@ -585,11 +585,9 @@ int add_primitive_to_dictionary(char *s, cell_t ** dictionary_tail,
         if ((add_me = calloc(1, sizeof(cell_t))) == NULL)
                 return ERR_MALLOC;
 
-
-
         tmp->type = type_list;
-        (*dictionary_tail)->cdr.cell = tmp;
-        (*dictionary_tail) = tmp;
+        le->dictionary_tail->cdr.cell = tmp;
+        le->dictionary_tail = tmp;
 
         tmp->car.cell = add_me;
         add_me->type = type_function;
@@ -603,16 +601,18 @@ int add_primitive_to_dictionary(char *s, cell_t ** dictionary_tail,
 cell_t *find_symbol_in_dictionary(char *s, cell_t * dictionary)
 {
         cell_t *cur;
-        for (cur = dictionary; cur != NULL; cur = cur->cdr.cell) {
+        /*TODO: fix dictionary->cdr.cell hack job*/
+        for (cur = dictionary->cdr.cell; cur != NULL; cur = cur->cdr.cell) {
                 if (!strcmp(s, (cur->car.cell)->car.s))
                         return cur->car.cell;
         }
         return NULL;
 }
 
-int evaluate_expr(lenv_t * le, cell_t * list)
+int evaluate_expr(lenv_t * le, int depth, cell_t * list)
 {
         char buf[MAX_STR];
+        cell_t * tmp;
         le->current_expression = list;
         if (le == NULL || list == NULL)
                 return ERR_NULL_REF;
@@ -635,6 +635,25 @@ int evaluate_expr(lenv_t * le, cell_t * list)
         } else if (list->type == type_list) {
                 /*first element treated as symbol in dictionary, cede control
                  *to that function*/
+                if(list->car.cell != NULL){
+                  evaluate_expr(le,depth+1, list);
+                }
+
+                for (tmp = list; tmp != NULL;) {
+                        if (tmp->car.cell != NULL && tmp->type == type_list) {
+                        }
+
+                        if (tmp->type == type_symbol) {
+                          if(find_symbol_in_dictionary(tmp->car.s, le->dictionary)!=NULL){
+                            printf("FOUND!\n");
+                          } else {
+                            printf("NOT FOUND!\n");
+                          }
+                        }
+
+                        tmp = tmp->cdr.cell;
+                }
+                return ERR_OK;
         }
 
         return ERR_OK;
@@ -666,7 +685,7 @@ lenv_t *lisp(lenv_t * le)
                 if (tmp == NULL)
                         return le;
                 print_sexpr(tmp, 0, le->out, le->err);
-                evaluate_expr(le,tmp);
+                evaluate_expr(le,0,tmp);
                 /*free will not be performed in final program*/
                 free_sexpr(tmp, le->err);
         }
