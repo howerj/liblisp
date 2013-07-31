@@ -636,6 +636,12 @@ cell_t *evaluate_expr(lenv_t * le, int depth, cell_t * list)
                 wrap_put(le->out, '\n');
         } else if (list->type == type_symbol) {
                 /*find */
+              if((retn=find_symbol_in_dictionary(list->car.s, le->dictionary))!=NULL){
+                printf("FOUND!\n");
+                retn->cdr.function(le);
+              } else {
+                printf("NOT FOUND!\n");
+              }
         } else if (list->type == type_list) {
                 /*first element treated as symbol in dictionary, cede control
                  *to that function*/
@@ -645,13 +651,8 @@ cell_t *evaluate_expr(lenv_t * le, int depth, cell_t * list)
                           evaluate_expr(le,depth+1,tmp->car.cell);
                         }
 
-                        if (tmp->type == type_symbol) {
-                          if((retn=find_symbol_in_dictionary(tmp->car.s, le->dictionary))!=NULL){
-                            printf("FOUND!\n");
-                            retn->cdr.function(le);
-                          } else {
-                            printf("NOT FOUND!\n");
-                          }
+                        if (tmp->type != type_list) {
+                          evaluate_expr(le,depth+1,tmp);
                         }
 
                         tmp = tmp->cdr.cell;
