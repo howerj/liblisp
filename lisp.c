@@ -612,7 +612,7 @@ cell_t *find_symbol_in_dictionary(char *s, cell_t * dictionary)
 int evaluate_expr(lenv_t * le, int depth, cell_t * list)
 {
         char buf[MAX_STR];
-        cell_t * tmp;
+        cell_t * tmp, *retn;
         le->current_expression = list;
         if (le == NULL || list == NULL)
                 return ERR_NULL_REF;
@@ -644,8 +644,9 @@ int evaluate_expr(lenv_t * le, int depth, cell_t * list)
                         }
 
                         if (tmp->type == type_symbol) {
-                          if(find_symbol_in_dictionary(tmp->car.s, le->dictionary)!=NULL){
+                          if((retn=find_symbol_in_dictionary(tmp->car.s, le->dictionary))!=NULL){
                             printf("FOUND!\n");
+                            retn->cdr.function(le);
                           } else {
                             printf("NOT FOUND!\n");
                           }

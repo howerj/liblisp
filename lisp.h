@@ -93,6 +93,7 @@ struct lisp_environment {
         /*The stack */
         int stkp;
         cell_t *variable_stack;
+        int accumulator;
 
         /*Dictionary */
         int dictionary_len;     /*total items */
