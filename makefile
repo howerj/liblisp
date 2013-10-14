@@ -1,12 +1,11 @@
 #
-# Howe Lisp: Makefile
+# Howe Forth: Makefile
 # @author         Richard James Howe.
 # @copyright      Copyright 2013 Richard James Howe.
 # @license        LGPL      
 # @email          howe.r.j.89@gmail.com
 #
 #
-
 
 ## Colors
 
@@ -18,26 +17,48 @@ DEFAULT=\e[0m
 ## Compiler options
 
 CC=gcc
-CCOPTS=-ansi -g -Wall -Wno-write-strings -Wshadow -Wextra -pedantic -O2
+CCOPTS=-ansi -Wall -g -Wno-write-strings -Wshadow -Wextra -pedantic -O2 -save-temps  -DWORD_TYPE=2
 #CCOPTS=-ansi --coverage -g -Wall -Wno-write-strings -Wshadow -Wextra -pedantic -O2
+
+## Options for clang (catch undefined behavior and trap on signed overflow)
+#CC=clang
+#CCOPTS=-ansi -Wall -g -Wno-write-strings -Wshadow -Wextra -pedantic -O2 -save-temps -ftrapv -fcatch-undefined-behavior
+
+
+## Long strings passed to commands
+
+RMSTR=bin/forth bin/*.o memory.txt *.log *.swo *.swp *.o lib/*~ *~ *.gcov *.gcda *.gcno doc/*.html doc/*.htm log/* *.i *.s log/*.i log/*.s tags
+
+INDENTSTR=-v -linux -nut -i2 -l120 -lc120 lib/*.h lib/*.c lib/main.c
+SPLINTSTR=-forcehint lib/*.h lib/*.c
+
+DOXYFILE=doc/doxygen.conf
 
 ## Help
 
-all: banner lisp
+all: banner bin/forth fth/auto.4th
 
 banner:
-	@/bin/echo -e "Howe Lisp, GNU Makefile\n"
+	@/bin/echo -e "Howe Forth, GNU Makefile\n"
 	@/bin/echo -e "Author:    $(BLUE)Richard James Howe$(DEFAULT)."
 	@/bin/echo -e "Copyright: $(BLUE)Copyright 2013 Richard James Howe.$(DEFAULT)."
 	@/bin/echo -e "License:   $(BLUE)LGPL$(DEFAULT)."
 	@/bin/echo -e "Email:     $(BLUE)howe.r.j.89@gmail.com$(DEFAULT)."
+	@/bin/echo -e "Add the following to \"CCOPT\" for different functionality"
+	@/bin/echo -e "To compile with debug flags enable type $(BLUE)\"-DDEBUG_PRN\".$(DEFAULT)";
+	@/bin/echo -e "To compile with debug cycle counter enabled $(BLUE)\"-DRUN4X\".$(DEFAULT)";
+	@/bin/echo -e "To compile $(RED)without$(DEFAULT) bounds checking:$(BLUE) \"-DUNCHECK\".$(DEFAULT)";
+	@/bin/echo -e "-DWORD_TYPE defaults to 2 (use int32_t as default).$(DEFAULT)";
+	@/bin/echo -e "\n"
 
 help:
 	@/bin/echo "Options:"
 	@/bin/echo "make"
 	@/bin/echo "     Print out banner, this help message and compile program."
-	@/bin/echo "make lisp"
-	@/bin/echo "     Compile Howe Lisp."
+	@/bin/echo "make forth"
+	@/bin/echo "     Compile Howe forth."
+	@/bin/echo "make run"
+	@/bin/echo "     Run Howe forth."
 	@/bin/echo "make pretty"
 	@/bin/echo "     Indent source, print out word count, clean up directory."
 	@/bin/echo "make clean"
@@ -49,54 +70,87 @@ help:
 	@/bin/echo "make html"
 	@/bin/echo "     Compile the documentation."
 	@/bin/echo "make valgrind"
-	@/bin/echo "     Run program with valgrind on start up lisp file only."
+	@/bin/echo "     Run program with valgrind on start up forth file only."
 
-## Main lisp program
+## Main forth program
 
-lisp: main.c lisp.h lisp.o
-	$(CC) $(CCOPTS) main.c lisp.o -o lisp
+fth/auto.4th: bin/forth
+	@/bin/echo "Automatically generating a list of constants using:"
+	@/bin/echo "  bin/./forth -E > fth/auto.4th"
+	@bin/./forth -E > fth/auto.4th
+	@/bin/echo "Autogen done!"
 
-lisp.o: lisp.c lisp.h
-	$(CC) $(CCOPTS) -c lisp.c -o lisp.o
+# The Forth interpreter top level
+bin/forth: lib/main.c bin/forth.o bin/hosted.o
+	$(CC) $(CCOPTS) lib/main.c bin/hosted.o bin/forth.o -o bin/forth
+	@mv *.i *.s log/
+	@mv main.o bin/
+
+# Desktop interface
+bin/hosted.o: lib/hosted.c lib/hosted.h
+	$(CC) $(CCOPTS) -c lib/hosted.c -o bin/hosted.o
+
+# The forth interpreter library
+bin/forth.o: lib/forth.c lib/forth.h
+	$(CC) $(CCOPTS) -c lib/forth.c -o bin/forth.o
 
 ## Optional extras, helper functions
+
+# Run the interpreter
+
+run: bin/forth
+	@cd bin; ./forth
 
 # Indent the files, clean up directory, word count.
 pretty: 
 	@/bin/echo -e "$(BLUE)"
 	@/bin/echo -e "Indent files and clean up system.$(DEFAULT)"
 	@/bin/echo -e "$(GREEN)"
-	@/bin/echo "indent -nut -linux *.h *.c";
-	@indent -nut -linux *.h *c;
+	@/bin/echo "indent $(INDENTSTR)"
+	@indent $(INDENTSTR);
 	@/bin/echo -e "$(RED)"
-	@rm -vf lisp memory.txt *.log *.swo *.swp *.o *~ *.gcov *.gcda *.gcno *.html *.htm;
+	@rm -vf $(RMSTR);
+	@rm -vrf doc/doxygen;
 	@/bin/echo -e "$(DEFAULT)"
-	@wc *.c *.h makefile
+	@wc lib/*.c lib/*.h *.c fth/*.4th makefile
 
 # Clean up directory.
 clean:
 	@/bin/echo -e "$(RED)"
-	@rm -vf lisp memory.txt *.log *.swo *.swp *.o *~ *.gcov *.gcda *.gcno *.html *.htm;
+	@rm -vf $(RMSTR);
+	@rm -vrf doc/doxygen;
 	@/bin/echo -e "$(DEFAULT)"
 
 # Static checking.
 splint:
-	@/bin/echo "Running \"splint *.c *.h &> splint.log\""
-	-splint *.c *.h &> splint.log 
+	@/bin/echo "$(SPLINTSTR)";
+	-splint $(SPLINTSTR);
 
 html:
 	@/bin/echo -e "Compiling markdown to html."
-	@for i in *.md; do /bin/echo "$$i > $$i.html"; markdown $$i > $$i.html; done
+	for i in doc/*.md; do\
+		/bin/echo "$$i > $$i.html";\
+		markdown $$i > $$i.html;\
+	done
 
-valgrind: lisp
-	@/bin/echo "Running valgrind on ./lisp"
+valgrind: bin/forth
+	@/bin/echo "Running valgrind on ./forth"
 	@/bin/echo "  This command needs changing in the makefile"
-	-valgrind ./lisp &> valgrind.log 
+	-cd bin/; valgrind ./forth << EOF
+
+ctags:
+	@ctags -R .
+
+doxy:
+	@doxygen $(DOXYFILE)
+
+doxygen: doxy
 
 gcov: CCOPTS:=$(CCOPTS) --coverage
-gcov: clean lisp 
-	@/bin/echo "Providing gcov statistics for lisp program."
-	@./lisp << EOF
-	@gcov lisp.c main.c
-
-
+gcov: clean bin/forth
+	@/bin/echo "Providing gcov statistics for forth program."
+	@cd bin/; ./forth << EOF
+	@mv bin/*.gcda bin/*.gcno .
+	@gcov forth.c hosted.c main.c
+	@if [ ! -d log/ ]; then mkdir log; fi
+	@mv *.gcda *.gcno *.gcov log/
