@@ -39,19 +39,11 @@ typedef enum{
 
 struct cell;
 
-typedef union{
-        int i;                  
-        struct cell *p;     
-        struct cell (*f) (struct cell *cell);   
-        char *sym;
-        char *str;
-}cell_u;
-
 /*Our basic lispy data type*/
 struct cell {
         cell_e type;
-        cell_u car;
-        cell_u cdr;
+        void *car;
+        void *cdr;
 };
 
 
@@ -64,13 +56,11 @@ typedef struct cell cell_t;
 #define setcar(x,y)   ((x)->car  = (y))  
 #define setcdr(x,y)   ((x)->cdr  = (y))
 #define isnil(x)      ((x) == nil)      /** points to null cell? */
-#define symname(x)    ((x)->car->sym)   /** symbol name */
-#define strname(x)    ((x)->car->str)   /** string name */
 #define mksym(x)        /** make a symbol cell */
 #define mkstr(x)        /** make a string cell */
 #define mkint(x)        /** make an integer cell */
-#define mkprim(x)     /** make a primitive operation cell */
-#define mkproc(x)     /** make a process cell */
+#define mkprim(x)       /** make a primitive operation cell */
+#define mkproc(x,y,x)   /** make a process cell */
 
 typedef struct{
   FILE *input;
@@ -82,6 +72,29 @@ typedef struct{
   cell_t *print;
 } environment_t;
 
+cell_t *mkcell(cell_e type, FILE *e, void *p, void *q, void *r){
+  cell_t *cell = calloc(1,sizeof(cell_t));
+  calloc_fail(e,cell);
+  settype(cell,type);
+  switch(type){
+    case number:    
+      car(cell) = p; break;
+    case string:
+      car(cell) = calloc(strlen(p),sizeof(char));
+      calloc_fail(e,cell);
+      strcpy(car(cell),p);
+    case symbol:
+      car(cell) = calloc(strlen(p),sizeof(char));
+      calloc_fail(e,cell);
+      strcpy(car(cell),p);
+    case procedure:
+    case primitive:
+    default:
+      error_m(e,"not implemented");
+      exit(1);
+  }
+  return cell;
+}
 
 /*cell_t *parse(FILE *input, FILE *error){
   int c;
