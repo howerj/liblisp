@@ -1,5 +1,5 @@
 #
-# Howe Forth: Makefile
+# Howe Lisp: Makefile
 # @author         Richard James Howe.
 # @copyright      Copyright 2013 Richard James Howe.
 # @license        LGPL      
@@ -17,48 +17,37 @@ DEFAULT=\e[0m
 ## Compiler options
 
 CC=gcc
-CCOPTS=-ansi -Wall -g -Wno-write-strings -Wshadow -Wextra -pedantic -O2 -save-temps  -DWORD_TYPE=2
-#CCOPTS=-ansi --coverage -g -Wall -Wno-write-strings -Wshadow -Wextra -pedantic -O2
-
-## Options for clang (catch undefined behavior and trap on signed overflow)
-#CC=clang
-#CCOPTS=-ansi -Wall -g -Wno-write-strings -Wshadow -Wextra -pedantic -O2 -save-temps -ftrapv -fcatch-undefined-behavior
+CCOPTS=-ansi -Wall -g -Wno-write-strings -Wshadow -Wextra -pedantic -O2 -save-temps  
 
 
 ## Long strings passed to commands
 
-RMSTR=bin/forth bin/*.o memory.txt *.log *.swo *.swp *.o lib/*~ *~ *.gcov *.gcda *.gcno doc/*.html doc/*.htm log/* *.i *.s log/*.i log/*.s tags
+RMSTR=*.o *.log *.swo *.swp *.o *.gcov *.gcda *.gcno *.i *.s tags
 
-INDENTSTR=-v -linux -nut -i2 -l120 -lc120 lib/*.h lib/*.c lib/main.c
-SPLINTSTR=-forcehint lib/*.h lib/*.c
+INDENTSTR=-v -linux -nut -i2 -l120 -lc120 *.h *.c 
+SPLINTSTR=-forcehint *.h *.c
 
 DOXYFILE=doc/doxygen.conf
 
 ## Help
 
-all: banner bin/forth fth/auto.4th
+all: banner lisp
 
 banner:
-	@/bin/echo -e "Howe Forth, GNU Makefile\n"
+	@/bin/echo -e "Howe Lisp, GNU Makefile\n"
 	@/bin/echo -e "Author:    $(BLUE)Richard James Howe$(DEFAULT)."
 	@/bin/echo -e "Copyright: $(BLUE)Copyright 2013 Richard James Howe.$(DEFAULT)."
 	@/bin/echo -e "License:   $(BLUE)LGPL$(DEFAULT)."
 	@/bin/echo -e "Email:     $(BLUE)howe.r.j.89@gmail.com$(DEFAULT)."
-	@/bin/echo -e "Add the following to \"CCOPT\" for different functionality"
-	@/bin/echo -e "To compile with debug flags enable type $(BLUE)\"-DDEBUG_PRN\".$(DEFAULT)";
-	@/bin/echo -e "To compile with debug cycle counter enabled $(BLUE)\"-DRUN4X\".$(DEFAULT)";
-	@/bin/echo -e "To compile $(RED)without$(DEFAULT) bounds checking:$(BLUE) \"-DUNCHECK\".$(DEFAULT)";
-	@/bin/echo -e "-DWORD_TYPE defaults to 2 (use int32_t as default).$(DEFAULT)";
-	@/bin/echo -e "\n"
 
 help:
 	@/bin/echo "Options:"
 	@/bin/echo "make"
 	@/bin/echo "     Print out banner, this help message and compile program."
-	@/bin/echo "make forth"
-	@/bin/echo "     Compile Howe forth."
+	@/bin/echo "make lisp"
+	@/bin/echo "     Compile Howe Lisp."
 	@/bin/echo "make run"
-	@/bin/echo "     Run Howe forth."
+	@/bin/echo "     Run Howe Lisp."
 	@/bin/echo "make pretty"
 	@/bin/echo "     Indent source, print out word count, clean up directory."
 	@/bin/echo "make clean"
@@ -70,36 +59,22 @@ help:
 	@/bin/echo "make html"
 	@/bin/echo "     Compile the documentation."
 	@/bin/echo "make valgrind"
-	@/bin/echo "     Run program with valgrind on start up forth file only."
+	@/bin/echo "     Run program with valgrind on start up Lisp file only."
 
-## Main forth program
+## Main program
 
-fth/auto.4th: bin/forth
-	@/bin/echo "Automatically generating a list of constants using:"
-	@/bin/echo "  bin/./forth -E > fth/auto.4th"
-	@bin/./forth -E > fth/auto.4th
-	@/bin/echo "Autogen done!"
-
-# The Forth interpreter top level
-bin/forth: lib/main.c bin/forth.o bin/hosted.o
-	$(CC) $(CCOPTS) lib/main.c bin/hosted.o bin/forth.o -o bin/forth
+# Top level
+lisp: lisp.c
+	$(CC) $(CCOPTS) lisp.c -o lisp
 	@mv *.i *.s log/
-	@mv main.o bin/
 
-# Desktop interface
-bin/hosted.o: lib/hosted.c lib/hosted.h
-	$(CC) $(CCOPTS) -c lib/hosted.c -o bin/hosted.o
-
-# The forth interpreter library
-bin/forth.o: lib/forth.c lib/forth.h
-	$(CC) $(CCOPTS) -c lib/forth.c -o bin/forth.o
 
 ## Optional extras, helper functions
 
 # Run the interpreter
 
-run: bin/forth
-	@cd bin; ./forth
+run: lisp
+	@./lisp
 
 # Indent the files, clean up directory, word count.
 pretty: 
@@ -110,7 +85,6 @@ pretty:
 	@indent $(INDENTSTR);
 	@/bin/echo -e "$(RED)"
 	@rm -vf $(RMSTR);
-	@rm -vrf doc/doxygen;
 	@/bin/echo -e "$(DEFAULT)"
 	@wc lib/*.c lib/*.h *.c fth/*.4th makefile
 
@@ -133,10 +107,10 @@ html:
 		markdown $$i > $$i.html;\
 	done
 
-valgrind: bin/forth
-	@/bin/echo "Running valgrind on ./forth"
+valgrind: lisp
+	@/bin/echo "Running valgrind on ./lisp"
 	@/bin/echo "  This command needs changing in the makefile"
-	-cd bin/; valgrind ./forth << EOF
+	-cd bin/; valgrind ./lisp << EOF
 
 ctags:
 	@ctags -R .
@@ -147,10 +121,5 @@ doxy:
 doxygen: doxy
 
 gcov: CCOPTS:=$(CCOPTS) --coverage
-gcov: clean bin/forth
-	@/bin/echo "Providing gcov statistics for forth program."
-	@cd bin/; ./forth << EOF
-	@mv bin/*.gcda bin/*.gcno .
-	@gcov forth.c hosted.c main.c
-	@if [ ! -d log/ ]; then mkdir log; fi
-	@mv *.gcda *.gcno *.gcov log/
+gcov: clean bin/lisp
+	@/bin/echo "not implemented yet"

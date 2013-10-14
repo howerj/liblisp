@@ -11,3 +11,5 @@ memory.txt
 gcov.vim
 *.html
 *.htm
+*.i
+*.s
