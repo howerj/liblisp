@@ -161,9 +161,10 @@ lisp initlisp(void){ /** initializes the environment, nothing special here */
 }
 
 void extend(expr sym, expr val, lisp l){
-  /** TODO: Error handling */
+  /** TODO: Error handling, sort on list after appending */
   append(l->global,sym,&l->e);
   append(l->global,val,&l->e);
+  /** SORT LIST*/
 }
 
 expr mkobj(sexpr_e type,io *e){
