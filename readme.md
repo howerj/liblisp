@@ -39,3 +39,4 @@ primitives:
 * file manipulation and i/o: read, format, read-char read-line write-string
 * max, min
 * not, and, or
+* "recurse" keyword; simple (tail) recursion 

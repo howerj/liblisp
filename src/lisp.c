@@ -3,7 +3,15 @@
  *
  *  License: GPL
  *
- *  Experimental, small, lisp interpreter.
+ *  Experimental, small, lisp interpreter. 
+ *
+ *  Meaning of symbols:
+ *  ERR HANDLE: A restart function should be implemented, this
+ *    error should cause a restart.
+ *  i: input
+ *  o: output
+ *  e: standard err
+ *  x: expression
  *
  */
 #include <stdio.h>
@@ -151,7 +159,7 @@ static expr mkobj(sexpr_e type,io *e){
 
 bool primcmp(expr x, char *s, io *e){
   if(NULL == (car(x)->data.symbol)){
-    report("null passed to primcmp!");
+    report("null passed to primcmp!");/** ERR HANDLE*/
     abort();
   }
   return !strcmp(car(x)->data.symbol,s);
@@ -192,13 +200,13 @@ expr eval(expr x, expr env, lisp l){
           return eval((expr)(x->data.list[i]),env,l);
         } else if (primcmp(x,"quote",e)){ /* (quote exp) */
           if(!tstlen(x,2)){
-            report("special form 'quote', expected list of size 2");
+            report("special form 'quote', expected list of size 2");/** ERR HANDLE*/
             return nil;
           }
           return cdr(x);
         } else if (primcmp(x,"set",e)){
           if(!tstlen(x,3)){
-            report("special form 'set', expected list of size 3");
+            report("special form 'set', expected list of size 3");/** ERR HANDLE*/
             return nil;
           }
         } else if (primcmp(x,"define",e)){
@@ -208,7 +216,7 @@ expr eval(expr x, expr env, lisp l){
           return apply(x,env,l);
         }
       } else {
-        report("cannot apply");
+        report("cannot apply");/** ERR HANDLE*/
         print_expr(car(x),&l->o,0,e);
       }
 
@@ -227,14 +235,18 @@ expr eval(expr x, expr env, lisp l){
     case S_PRIMITIVE:
       return x; 
     default:
-      report("Serious error, unknown type");
+      report("Serious error, unknown type"); /** ERR HANDLE*/
       abort();
   }
 
-  printf("should never get here\n");
+  report("should never get here\n");
   return x;
 }
 
 expr apply(expr x, expr env, lisp l){
+  if(S_PRIMITIVE == x->type);
+  if(S_PROC == x->type);
+
+  report("Cannot apply expression"); /** ERR HANDLE*/
   return x;
 }
