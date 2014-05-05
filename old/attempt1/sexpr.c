@@ -169,7 +169,6 @@ static expr parse_string(io *i, io *e)
   unsigned int count = 0;
   char c, buf[BUFLEN];
 
-
   memset(buf, '\0', BUFLEN);
   CALLOC_OR_FAIL();
 
