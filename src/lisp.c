@@ -13,6 +13,10 @@
  *  e: standard err
  *  x: expression
  *
+ *  TODO:
+ *    Better notation for functions being passed in as arguments, must
+ *    be some typedef'in that could help
+ *
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,11 +58,16 @@ static int getopt(int argc, char *argv[]);
 #define cdddr(X)  ((expr)((X)->data.list[3]))
 #define tstlen(X,Y) ((Y)==(X)->len)
 
-static expr mkobj(sexpr_e type, io *e);
+expr mkobj(sexpr_e type, io *e);
+expr mksym(char *s,io *e);
+expr mkprimop(struct sexpr_t *(*func)(struct sexpr_t *arg, io *e),io *e);
 expr eval(expr x, expr env, lisp l);
 expr apply(expr x, expr env, lisp l);
+void extend(expr sym, expr val, lisp l);
 lisp initlisp(void);
 bool primcmp(expr x, char *s, io *e);
+
+expr primop_add(expr arg, io *e);
 
 static expr nil;
 
@@ -145,17 +154,44 @@ lisp initlisp(void){ /** initializes the environment, nothing special here */
 
   global->type  = S_LIST;
   nil = mkobj(S_NIL,&l->e);
+
+  extend(mksym("add",&l->e),mkprimop(primop_add,&l->e),l);
+
   return l;
 }
 
+void extend(expr sym, expr val, lisp l){
+  /** TODO: Error handling */
+  append(l->global,sym,&l->e);
+  append(l->global,val,&l->e);
+}
 
-
-static expr mkobj(sexpr_e type,io *e){
+expr mkobj(sexpr_e type,io *e){
   expr x;
   x = wcalloc(sizeof(sexpr_t), 1,e);
   x->len = 0;
   x->type = type;
   return x;
+}
+
+expr mksym(char *s,io *e){
+  expr x;
+  x = mkobj(S_SYMBOL,e);
+  x->len = strlen(s);
+  x->data.symbol = s;
+  return x;
+}
+
+expr mkprimop(struct sexpr_t *(*func)(struct sexpr_t *arg, io *e),io *e){
+  expr x;
+  x = mkobj(S_PRIMITIVE,e);
+  x->data.func = x;
+  return x;
+}
+
+expr primop_add(expr arg, io *e){
+  
+  return nil;
 }
 
 bool primcmp(expr x, char *s, io *e){
@@ -169,7 +205,6 @@ bool primcmp(expr x, char *s, io *e){
 expr eval(expr x, expr env, lisp l){
   unsigned int i;
   io *e = &l->e;
-  expr ne; /* new expression */
 
   if(NULL==x){
     report("passed null!");
@@ -240,7 +275,7 @@ expr eval(expr x, expr env, lisp l){
       abort();
   }
 
-  report("should never get here\n");
+  report("should never get here");
   return x;
 }
 

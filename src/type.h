@@ -51,6 +51,7 @@ typedef struct { /** base type for our expressions */
     char *symbol;
     struct sexpr_t **list;
     io *io;
+    struct sexpr_t *(*func)(struct sexpr_t *arg, io *e);
   } data;
 } sexpr_t, *expr;
 

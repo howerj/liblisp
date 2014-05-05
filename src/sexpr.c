@@ -18,7 +18,6 @@
 
 static expr parse_string(io *i, io *e);
 static expr parse_symbol(io *i, io *e); /** and integers!*/
-void append(expr list, expr ele, io *e);
 static expr parse_list(io *i, io *e);
 
 static expr parse_symbol(io *i, io *e){ /** and integers!*/
@@ -129,7 +128,7 @@ static expr parse_string(io *i, io *e){
 }
 
 void append(expr list, expr ele, io *e)
-{
+{ /**TODO: Error recovery, check for list type as well*/
   NULLCHK(list);
   NULLCHK(ele);
   list->data.list = wrealloc(list->data.list, sizeof(expr) * ++list->len,e);

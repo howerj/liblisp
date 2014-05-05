@@ -34,10 +34,9 @@ primitives:
 * car,cdr,cons,listlen,reverse, ...
 * + - * % / , 
 * eq = > < <= >=
-* string manipulation and regexes
+* string manipulation and regexes; tr, s, //m, pack, unpack
 * type? <- returns type of expr
 * file manipulation and i/o: read, format, read-char read-line write-string,
-  pack/unpack, ...
 * max, min
 * not, and, or
 * "recurse" keyword; simple (tail) recursion 
