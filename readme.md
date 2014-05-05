@@ -17,6 +17,9 @@ Create lisp interpreter in stages:
 5. Extend interpreter.
 6. Extend interpreter in lisp.
 
+Misc:
+Vim syntax highlighting.
+
 ## TODO
 
 * Improve makefile
@@ -32,6 +35,7 @@ primitives:
 * + - * % / , 
 * eq = > < <= >=
 * string manipulation and regexes
+* type? <- returns type of expr
 * file manipulation and i/o: read, format, read-char read-line write-string
 * max, min
 * not, and, or

@@ -167,6 +167,7 @@ expr eval(expr x, expr env, lisp l){
 
   switch(x->type){
     case S_LIST: /** most of eval goes here! */
+      /** what should ((quote +) 2 3) do ?*/
       if(tstlen(x,0)) /* () */
         return nil;
       if(S_SYMBOL==car(x)->type){
@@ -176,9 +177,9 @@ expr eval(expr x, expr env, lisp l){
             return nil;
           }
           if(nil == eval(cdr(x),env,l)){
-            return eval(cddr(x),env,l);
-          } else {
             return eval(cdddr(x),env,l);
+          } else {
+            return eval(cddr(x),env,l);
           }
         } else if (primcmp(x,"begin",e)){ /* (begin exp ... ) */
           if(tstlen(x,1)){

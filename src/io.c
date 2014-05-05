@@ -68,9 +68,9 @@ void doreport(const char *s, char *cfile, unsigned int linenum, io *e)
   }
 
   if(file_out == e->type){
-    fprintf(e->ptr.file, "(error\n\t\"%s\"\n\t\"%s\"\n\t%d\n)\n", s, cfile, linenum);
+    fprintf(e->ptr.file, "(\n\terror\n\t\"%s\"\n\t\"%s\"\n\t%d\n)\n", s, cfile, linenum);
   } else if (string_out == e->type){
-    sprintf(e->ptr.string,"(error\n\t\"%s\"\n\t\"%s\"\n\t%d\n)\n",s,cfile,linenum);
+    sprintf(e->ptr.string,"(\n\terror\n\t\"%s\"\n\t\"%s\"\n\t%d\n)\n",s,cfile,linenum);
   } else {
     fprintf(stderr,"unknown error output stream.\n");
     exit(-1);
