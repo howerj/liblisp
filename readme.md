@@ -22,3 +22,16 @@ Create lisp interpreter in stages:
 * Improve makefile
 * Getopts
 * Eval
+* dynamic strings
+* Unit tests; tests for each module.
+
+primitives:
+* Register internal functions as lisp primitives.
+* random!
+* car,cdr,cons,listlen
+* + - * % / , 
+* eq = > < <= >=
+* string manipulation and regexes
+* file manipulation and i/o: read, format, read-char read-line write-string
+* max, min
+* not, and, or
