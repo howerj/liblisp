@@ -149,6 +149,7 @@ lisp initlisp(void){ /** initializes the environment, nothing special here */
 }
 
 
+
 static expr mkobj(sexpr_e type,io *e){
   expr x;
   x = wcalloc(sizeof(sexpr_t), 1,e);
@@ -244,6 +245,7 @@ expr eval(expr x, expr env, lisp l){
 }
 
 expr apply(expr x, expr env, lisp l){
+  io *e = &l->e;
   if(S_PRIMITIVE == x->type);
   if(S_PROC == x->type);
 

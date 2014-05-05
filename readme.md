@@ -31,12 +31,13 @@ Vim syntax highlighting.
 primitives:
 * Register internal functions as lisp primitives.
 * random!
-* car,cdr,cons,listlen
+* car,cdr,cons,listlen,reverse, ...
 * + - * % / , 
 * eq = > < <= >=
 * string manipulation and regexes
 * type? <- returns type of expr
-* file manipulation and i/o: read, format, read-char read-line write-string
+* file manipulation and i/o: read, format, read-char read-line write-string,
+  pack/unpack, ...
 * max, min
 * not, and, or
 * "recurse" keyword; simple (tail) recursion 
