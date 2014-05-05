@@ -258,7 +258,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     report("UNIMPLEMENTED (TODO)");
     break;
   default:
-    report("unassigned type");
+    report("print: unassigned type");
     exit(-1);
     return;
   }
@@ -274,7 +274,7 @@ void free_expr(expr x, io *e){
 
   switch (x->type) {
   case S_NIL:
-      report("unassigned type");
+      wfree(x,e);
       break;
   case S_LIST:
     for (i = 0; i < x->len; i++)
@@ -295,7 +295,7 @@ void free_expr(expr x, io *e){
     report("UNIMPLEMENTED (TODO)");
     break;
   default:
-    report("unassigned type");
+    report("free: unassigned type");
     exit(-1);
     return;
   }

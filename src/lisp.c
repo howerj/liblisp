@@ -48,6 +48,7 @@ static int getopt(int argc, char *argv[]);
 
 static expr mkobj(sexpr_e type, io *e);
 expr eval(expr x, expr env, lisp l);
+expr apply(expr x, expr env, lisp l);
 lisp initlisp(void);
 bool primcmp(expr x, char *s, io *e);
 
@@ -77,7 +78,7 @@ int main(int argc, char *argv[]){
      * Garbarge collection; everything not marked in the eval
      * gets collected by free_expr
      */
-    free_expr(x, &l->e);
+    /*free_expr(x, &l->e);*/
   }
 
   return 0;
@@ -204,15 +205,16 @@ expr eval(expr x, expr env, lisp l){
         } else if (primcmp(x,"lambda",e)){
         } else {
           /** symbol look up and apply */
+          return apply(x,env,l);
         }
       } else {
         report("cannot apply");
         print_expr(car(x),&l->o,0,e);
       }
 
-      for (i = 0; i < x->len; i++){
-        /*print_expr((expr)(x->data.list[i]), &l->o , 0,e);*/
-      }
+      /*for (i = 0; i < x->len; i++){
+        print_expr((expr)(x->data.list[i]), &l->o , 0,e);
+      }*/
       break; 
     case S_SYMBOL:
       /*if symbol found, return it, else error; unbound symbol*/
@@ -230,5 +232,9 @@ expr eval(expr x, expr env, lisp l){
   }
 
   printf("should never get here\n");
+  return x;
+}
+
+expr apply(expr x, expr env, lisp l){
   return x;
 }
