@@ -204,15 +204,29 @@ expr mksym(char *s,io *e){
 expr mkprimop(expr (*func)(expr x, io *e),io *e){
   expr x;
   x = mkobj(S_PRIMITIVE,e);
-  x->data.func = x; /** TODO: check this*/
+  x->data.func = func; /** TODO: check this*/
   return x;
 }
 
 expr primop_add(expr x, io *e){
-  printf("HERE\n");
-  return nil;
+  unsigned int i;
+  cell_t sum = 0;
+  expr ne;
+  ne = mkobj(S_INTEGER,e);
+  if(i=0)
+    return nil;
+  for(i=1 /*skip add*/; i < x->len; i++){
+    /*ne=eval(x,NULL,e);*/
+    ne = nth(x,i);
+    if(S_INTEGER!=ne->type){
+      report("not an integer type");
+      return nil;
+    }
+    sum+=ne->data.integer;
+  }
+  ne->data.integer = sum;
+  return ne;
 }
-
 
 bool primcmp(expr x, char *s, io *e){
   if(NULL == (car(x)->data.symbol)){
@@ -270,10 +284,15 @@ expr eval(expr x, expr env, lisp l){
         } else if (primcmp(x,"lambda",e)){
         } else {
           /** symbol look up and apply */
+#if 0
           ne = eval(car(x),env,l);
-          if(S_SYMBOL!= ne->type)
-            report("cannot apply");/** ERR HANDLE*/
-          return apply(ne,env,l);
+          if((S_PRIMITIVE != ne->type) && (S_PROC != ne->type)){
+            report("cannot apply, not a primitive or procedure");/** ERR HANDLE*/
+            print_expr(ne,&l->o,0,e);
+            return nil;
+          }
+#endif
+          return apply(x,env,l);
         }
       } else {
         /*ne = eval(x,env,l);
@@ -309,12 +328,13 @@ expr eval(expr x, expr env, lisp l){
 
 expr apply(expr x, expr env, lisp l){
   io *e = &l->e;
-  if(S_PRIMITIVE == x->type){
-    /*return (car(x)->data.func)(x,e);*/
-    printf("PRIM!!!\n");
+  expr ne;
+  ne = eval(car(x),env,l);
+  if(S_PRIMITIVE == ne->type){
+    return (ne->data.func)((struct sexpr_t *)x,e);
     return nil;
   }
-  if(S_PROC == x->type){
+  if(S_PROC == ne->type){
   }
 
   report("Cannot apply expression"); /** ERR HANDLE*/
