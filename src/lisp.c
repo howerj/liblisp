@@ -375,9 +375,11 @@ expr apply(expr x, expr env, lisp l){
   expr ne;
   ne = eval(car(x),env,l);
   e = &l->e;
-  if(S_PRIMITIVE == ne->type){
+  if(S_PRIMITIVE == ne->type){ 
+    /** TODO: Eval list here, then pass simpler proc; curry functions;
+     * primitive that takes two expressions and produces another?
+     * What about car and cdr? How to signal it's done? */
     return (ne->data.func)(x,env,l);
-    return nil;
   }
   if(S_PROC == ne->type){
   }
