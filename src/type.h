@@ -12,6 +12,10 @@ typedef enum{
 } bool; /** be *very* careful with this type*/
 
 typedef uint32_t cell_t; /** standard "machine word" size */
+typedef struct sexpr_t sexpr_t;
+typedef sexpr_t *expr;
+typedef struct lispenv_t lispenv_t;
+typedef lispenv_t *lisp;
 
 typedef enum { 
   S_NIL,      S_LIST,       S_STRING, S_SYMBOL, 
@@ -42,8 +46,6 @@ typedef struct { /** I/O abstraction structure */
   bool ungetc;            /** true if we have ungetc'ed a character */
 } io;
 
-typedef struct sexpr_t sexpr_t;
-typedef sexpr_t *expr;
 
 /*sexpr module*/
 struct sexpr_t { /** base type for our expressions */
@@ -55,8 +57,23 @@ struct sexpr_t { /** base type for our expressions */
     char *symbol;
     struct sexpr_t **list;
     io *io;
-    expr (*func)(expr, io *e);
+    expr (*func)(expr x, expr env, lisp l);
   } data;
-} ; /*sexpr_t, *expr;*/
+} ; 
+
+/*lisp global environment struct*/
+struct lispenv_t{ /** a lisp environment */
+  io i;                   /** input */
+  io o;                   /** output */
+  io e;                   /** stderr */
+  expr current;           /** current s-expr */
+  expr global;            /** global list of key-value pairs
+                            * (key val key val ... )
+                            * Used to store things
+                            * TODO: Store all values in an *ordered* list
+                            */
+};
+
+
 
 #endif

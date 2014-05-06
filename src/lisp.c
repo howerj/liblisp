@@ -61,7 +61,7 @@ static int getopt(int argc, char *argv[]);
 
 expr mkobj(sexpr_e type, io *e);
 expr mksym(char *s,io *e);
-expr mkprimop(expr (*func)(expr x, io *e),io *e);
+expr mkprimop(expr (*func)(expr x,expr env, lisp l),io *e);
 expr eval(expr x, expr env, lisp l);
 expr apply(expr x, expr env, lisp l);
 expr find(expr global, expr x, io *e);
@@ -69,7 +69,7 @@ void extend(expr sym, expr val, lisp l);
 lisp initlisp(void);
 bool primcmp(expr x, char *s, io *e);
 
-expr primop_add(expr x, io *e);
+expr primop_add(expr x, expr env, lisp l);
 
 static expr nil;
 
@@ -201,23 +201,25 @@ expr mksym(char *s,io *e){
   return x;
 }
 
-expr mkprimop(expr (*func)(expr x, io *e),io *e){
+expr mkprimop(expr (*func)(expr x,expr env, lisp l),io *e){
   expr x;
   x = mkobj(S_PRIMITIVE,e);
   x->data.func = func; /** TODO: check this*/
   return x;
 }
 
-expr primop_add(expr x, io *e){
+expr primop_add(expr x, expr env, lisp l){
+  io *e;
+  expr ne;
   unsigned int i;
   cell_t sum = 0;
-  expr ne;
+  e = &l->e;
   ne = mkobj(S_INTEGER,e);
   if(1 >= x->len)
     return nil;
   for(i=1 /*skip add*/; i < x->len; i++){
-    /*ne=eval(x,NULL,e);*/
     ne = nth(x,i);
+    ne=eval(ne,env,l);
     if(S_INTEGER!=ne->type){
       report("not an integer type");
       return nil;
@@ -318,11 +320,12 @@ expr eval(expr x, expr env, lisp l){
 }
 
 expr apply(expr x, expr env, lisp l){
-  io *e = &l->e;
+  io *e;
   expr ne;
   ne = eval(car(x),env,l);
+  e = &l->e;
   if(S_PRIMITIVE == ne->type){
-    return (ne->data.func)((struct sexpr_t *)x,e);
+    return (ne->data.func)(x,env,l);
     return nil;
   }
   if(S_PROC == ne->type){
