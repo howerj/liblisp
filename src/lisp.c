@@ -283,15 +283,6 @@ expr eval(expr x, expr env, lisp l){
         } else if (primcmp(x,"define",e)){
         } else if (primcmp(x,"lambda",e)){
         } else {
-          /** symbol look up and apply */
-#if 0
-          ne = eval(car(x),env,l);
-          if((S_PRIMITIVE != ne->type) && (S_PROC != ne->type)){
-            report("cannot apply, not a primitive or procedure");/** ERR HANDLE*/
-            print_expr(ne,&l->o,0,e);
-            return nil;
-          }
-#endif
           return apply(x,env,l);
         }
       } else {
