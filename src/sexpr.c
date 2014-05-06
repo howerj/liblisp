@@ -252,9 +252,9 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     wprintd(x->data.integer,o,e);
     wputc('\n',o,e);
     return;
-  case S_PRIMITIVE: /** TODO: Change this so it goes through the wrapper */
-    /*indent();*/
-    /*fprintf(stdout, "%p\n",(void*)x->data.func);*/
+  case S_PRIMITIVE: 
+    indent();
+    wprints("#PRIMOP\n",o,e);
     return;
   case S_FILE:      /** fall through */
     report("UNIMPLEMENTED (TODO)");

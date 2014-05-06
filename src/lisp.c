@@ -52,22 +52,24 @@ usage:\n\
 
 static int getopt(int argc, char *argv[]);
 
-#define car(X)  ((expr)((X)->data.list[0]))
-#define cdr(X)  ((expr)((X)->data.list[1]))
-#define cddr(X)  ((expr)((X)->data.list[2]))
-#define cdddr(X)  ((expr)((X)->data.list[3]))
+#define car(X)      ((expr)((X)->data.list[0]))
+#define cdr(X)      ((expr)((X)->data.list[1]))
+#define cddr(X)     ((expr)((X)->data.list[2]))
+#define cdddr(X)    ((expr)((X)->data.list[3]))
+#define nth(X,Y)    ((expr)((X)->data.list[(Y)]))
 #define tstlen(X,Y) ((Y)==(X)->len)
 
 expr mkobj(sexpr_e type, io *e);
 expr mksym(char *s,io *e);
-expr mkprimop(expr (*func)(expr *arg, io *e),io *e);
+expr mkprimop(expr (*func)(expr x, io *e),io *e);
 expr eval(expr x, expr env, lisp l);
 expr apply(expr x, expr env, lisp l);
+expr find(expr global, expr x, io *e);
 void extend(expr sym, expr val, lisp l);
 lisp initlisp(void);
 bool primcmp(expr x, char *s, io *e);
 
-expr primop_add(expr *arg, io *e);
+expr primop_add(expr x, io *e);
 
 static expr nil;
 
@@ -157,8 +159,23 @@ lisp initlisp(void){ /** initializes the environment, nothing special here */
   nil = mkobj(S_NIL,&l->e);
 
   extend(mksym("add",&l->e),mkprimop(primop_add,&l->e),l);
+  extend(mksym("sub",&l->e),mkprimop(primop_add,&l->e),l);
+  extend(mksym("div",&l->e),mkprimop(primop_add,&l->e),l);
+  extend(mksym("mul",&l->e),mkprimop(primop_add,&l->e),l);
 
   return l;
+}
+
+
+expr find(expr global, expr x, io *e){
+  unsigned int i;
+  char *s = x->data.symbol; /** programmers job to make sure this is not null!*/
+  for(i = 0; i < global->len; i+=2){
+    if(!strcmp(nth(global,i)->data.symbol, s)){
+      return nth(global,i+1);
+    }
+  }
+  return nil;
 }
 
 void extend(expr sym, expr val, lisp l){
@@ -184,17 +201,18 @@ expr mksym(char *s,io *e){
   return x;
 }
 
-expr mkprimop(expr (*func)(expr *arg, io *e),io *e){
+expr mkprimop(expr (*func)(expr x, io *e),io *e){
   expr x;
   x = mkobj(S_PRIMITIVE,e);
   x->data.func = x; /** TODO: check this*/
   return x;
 }
 
-expr primop_add(expr *arg, io *e){
-  
+expr primop_add(expr x, io *e){
+  printf("HERE\n");
   return nil;
 }
+
 
 bool primcmp(expr x, char *s, io *e){
   if(NULL == (car(x)->data.symbol)){
@@ -207,6 +225,7 @@ bool primcmp(expr x, char *s, io *e){
 expr eval(expr x, expr env, lisp l){
   unsigned int i;
   io *e = &l->e;
+  expr ne;
 
   if(NULL==x){
     report("passed null!");
@@ -251,21 +270,28 @@ expr eval(expr x, expr env, lisp l){
         } else if (primcmp(x,"lambda",e)){
         } else {
           /** symbol look up and apply */
-          return apply(x,env,l);
+          ne = eval(car(x),env,l);
+          if(S_SYMBOL!= ne->type)
+            report("cannot apply");/** ERR HANDLE*/
+          return apply(ne,env,l);
         }
       } else {
-        report("cannot apply");/** ERR HANDLE*/
+        /*ne = eval(x,env,l);
+        if(S_SYMBOL!=ne->type)*/
+          report("cannot apply");/** ERR HANDLE*/
         print_expr(car(x),&l->o,0,e);
       }
-
-      /*for (i = 0; i < x->len; i++){
-        print_expr((expr)(x->data.list[i]), &l->o , 0,e);
-      }*/
       break; 
-    case S_SYMBOL:
-      /*if symbol found, return it, else error; unbound symbol*/
+    case S_SYMBOL:/*if symbol found, return it, else error; unbound symbol*/
+    { 
+      expr fx = find(l->global,x,&l->e);
+      if(nil == fx)
+        report("unbound symbol");
+      return fx;
+    }
     case S_FILE: /* to implement */
-      break; 
+      report("file type unimplemented");
+      return nil; 
     case S_NIL:
     case S_STRING:
     case S_PROC:
@@ -284,6 +310,9 @@ expr eval(expr x, expr env, lisp l){
 expr apply(expr x, expr env, lisp l){
   io *e = &l->e;
   if(S_PRIMITIVE == x->type){
+    /*return (car(x)->data.func)(x,e);*/
+    printf("PRIM!!!\n");
+    return nil;
   }
   if(S_PROC == x->type){
   }
