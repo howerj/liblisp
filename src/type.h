@@ -32,6 +32,7 @@ typedef union { /** pointers to where we want to write to or read from */
   char *string;
 } ioptr;
 
+
 typedef struct { /** I/O abstraction structure */
   iotype type;            /** what are we abstracting?*/
   ioptr ptr;              /** either FILE* or string */
@@ -41,8 +42,11 @@ typedef struct { /** I/O abstraction structure */
   bool ungetc;            /** true if we have ungetc'ed a character */
 } io;
 
+typedef struct sexpr_t sexpr_t;
+typedef sexpr_t *expr;
+
 /*sexpr module*/
-typedef struct { /** base type for our expressions */
+struct sexpr_t { /** base type for our expressions */
   sexpr_e type;
   size_t len;
   union {
@@ -53,6 +57,6 @@ typedef struct { /** base type for our expressions */
     io *io;
     struct sexpr_t *(*func)(struct sexpr_t *x, io *e);
   } data;
-} sexpr_t, *expr;
+} ; /*sexpr_t, *expr;*/
 
 #endif

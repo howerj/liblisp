@@ -213,7 +213,7 @@ expr primop_add(expr x, io *e){
   cell_t sum = 0;
   expr ne;
   ne = mkobj(S_INTEGER,e);
-  if(i=0)
+  if(1 >= x->len)
     return nil;
   for(i=1 /*skip add*/; i < x->len; i++){
     /*ne=eval(x,NULL,e);*/
