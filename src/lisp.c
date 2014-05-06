@@ -70,6 +70,8 @@ lisp initlisp(void);
 bool primcmp(expr x, char *s, io *e);
 
 expr primop_add(expr x, expr env, lisp l);
+expr primop_sub(expr x, expr env, lisp l);
+expr primop_prod(expr x, expr env, lisp l);
 
 static expr nil;
 
@@ -90,7 +92,6 @@ int main(int argc, char *argv[]){
   }
 
   while((x = parse_term(&l->i, &l->e))){
-    /*printf("#%p\n",(void*)eval(x,env,l));*/
     x = eval(x,env,l);
     print_expr(x,&l->o,0,&l->e);
     /** TODO:
@@ -159,9 +160,9 @@ lisp initlisp(void){ /** initializes the environment, nothing special here */
   nil = mkobj(S_NIL,&l->e);
 
   extend(mksym("add",&l->e),mkprimop(primop_add,&l->e),l);
-  extend(mksym("sub",&l->e),mkprimop(primop_add,&l->e),l);
-  extend(mksym("div",&l->e),mkprimop(primop_add,&l->e),l);
-  extend(mksym("mul",&l->e),mkprimop(primop_add,&l->e),l);
+  extend(mksym("sub",&l->e),mkprimop(primop_sub,&l->e),l);
+  extend(mksym("mul",&l->e),mkprimop(primop_prod,&l->e),l);
+  /*extend(mksym("div",&l->e),mkprimop(primop_add,&l->e),l);*/
 
   return l;
 }
@@ -208,6 +209,7 @@ expr mkprimop(expr (*func)(expr x,expr env, lisp l),io *e){
   return x;
 }
 
+/*****************************************************************************/
 expr primop_add(expr x, expr env, lisp l){
   io *e;
   expr ne;
@@ -230,6 +232,55 @@ expr primop_add(expr x, expr env, lisp l){
   return ne;
 }
 
+expr primop_prod(expr x, expr env, lisp l){
+  io *e;
+  expr ne;
+  unsigned int i;
+  cell_t prod = 0;
+  e = &l->e;
+  ne = mkobj(S_INTEGER,e);
+  if(1 >= x->len)
+    return nil;
+  ne = eval(cdr(x),env,l);
+  prod = ne->data.integer;
+  for(i=2; i < x->len; i++){
+    ne = eval(nth(x,i),env,l);
+    if(S_INTEGER!=ne->type){
+      report("not an integer type");
+      return nil;
+    }
+    prod*=ne->data.integer;
+  }
+  ne->data.integer = prod;
+  return ne;
+}
+
+expr primop_sub(expr x, expr env, lisp l){
+  io *e;
+  expr ne;
+  unsigned int i;
+  cell_t sum = 0;
+  e = &l->e;
+  ne = mkobj(S_INTEGER,e);
+  if(1 >= x->len)
+    return nil;
+  ne = eval(cdr(x),env,l);
+  sum = ne->data.integer;
+  for(i=2; i < x->len; i++){
+    ne = eval(nth(x,i),env,l);
+    if(S_INTEGER!=ne->type){
+      report("not an integer type");
+      return nil;
+    }
+    sum-=ne->data.integer;
+  }
+  ne->data.integer = sum;
+  return ne;
+}
+/*****************************************************************************/
+
+
+
 bool primcmp(expr x, char *s, io *e){
   if(NULL == (car(x)->data.symbol)){
     report("null passed to primcmp!");/** ERR HANDLE*/
@@ -241,10 +292,10 @@ bool primcmp(expr x, char *s, io *e){
 expr eval(expr x, expr env, lisp l){
   unsigned int i;
   io *e = &l->e;
-  expr ne;
 
   if(NULL==x){
     report("passed null!");
+    abort();
   }
 
   switch(x->type){

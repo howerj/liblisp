@@ -13,8 +13,8 @@
 #include "type.h"
 #include "io.h"
 #include "mem.h"
-#include <string.h>
-#include <ctype.h>
+#include <string.h> /* strtol(), strspn(), strlen(), memset() */
+#include <ctype.h> /* isspace() */
 
 static expr parse_string(io *i, io *e);
 static expr parse_symbol(io *i, io *e); /** and integers!*/
@@ -23,7 +23,8 @@ static expr parse_list(io *i, io *e);
 static expr parse_symbol(io *i, io *e){ /** and integers!*/
   expr ex = NULL;
   unsigned int count = 0;
-  char c, *b, buf[BUFLEN];
+  char c, buf[BUFLEN];
+  bool negative;
   ex=wcalloc(sizeof(sexpr_t), 1,e);
 
   memset(buf, '\0', BUFLEN);
@@ -61,23 +62,23 @@ static expr parse_symbol(io *i, io *e){ /** and integers!*/
       buf[count++] = c;
     }
   }
+
  fail:
   wfree(ex,e);
-  return 0;
+  return NULL;
 
  success:
   ex->len = strlen(buf);
-  
-  b=(('-'==buf[0])||('+'==buf[0]))?buf+1:buf;
-
+ 
+  /* TODO: Clean up negative handling */ 
   /** does not handle hex, or decimal points*/
-  if(strspn(b,"0123456789")==ex->len){ 
+  negative=(('-'==buf[0])||('+'==buf[0]))&&(ex->len-1)?true:false;
+  if(strspn(negative?buf+1:buf,"0123456789")==(ex->len-(negative?1:0))){ 
     ex->type = S_INTEGER;
     ex->data.integer = strtol(buf,NULL,0);
   } else{
     ex->type = S_SYMBOL;
-    if (!(ex->data.symbol = wmalloc(ex->len + 1,e)))
-      goto fail;
+    ex->data.symbol = wmalloc(ex->len + 1,e);
     strcpy(ex->data.symbol, buf);
   }
   return ex;
@@ -117,7 +118,7 @@ static expr parse_string(io *i, io *e){
   }
  fail:
   wfree(ex,e);
-  return 0;
+  return NULL;
 
  success:
   ex->type = S_STRING;
@@ -199,7 +200,7 @@ expr parse_term(io *i, io *e){
       return parse_symbol(i,e);
     }
   }
-  return 0;
+  return NULL;
 }
 
 void print_expr(expr x, io *o, unsigned int depth, io *e){
