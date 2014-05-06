@@ -11,7 +11,7 @@
 int wgetc(io *p, io *e);
 int wputc(char c, io *p, io *e);
 int wungetc(char c, io *p, io *e);
-int wprintd(int d, io *o, io *e);
+int wprintd(cell_t d, io *o, io *e);
 void doreport(const char *s, char *cfile, unsigned int linenum, io *e);
 /******************************************************************************/
 #endif

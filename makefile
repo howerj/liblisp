@@ -13,5 +13,9 @@ bin/lisp: $(OBJFILES)
 run: bin/lisp
 	bin/./lisp
 
+report:
+	@splint src/*.c src/*.h
+	@wc src/*.c src/*.h
+
 clean:
 	rm -rf bin/*.o bin/lisp

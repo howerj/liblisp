@@ -60,14 +60,14 @@ static int getopt(int argc, char *argv[]);
 
 expr mkobj(sexpr_e type, io *e);
 expr mksym(char *s,io *e);
-expr mkprimop(struct sexpr_t *(*func)(struct sexpr_t *arg, io *e),io *e);
+expr mkprimop(expr (*func)(expr *arg, io *e),io *e);
 expr eval(expr x, expr env, lisp l);
 expr apply(expr x, expr env, lisp l);
 void extend(expr sym, expr val, lisp l);
 lisp initlisp(void);
 bool primcmp(expr x, char *s, io *e);
 
-expr primop_add(expr arg, io *e);
+expr primop_add(expr *arg, io *e);
 
 static expr nil;
 
@@ -98,6 +98,7 @@ int main(int argc, char *argv[]){
     /*free_expr(x, &l->e);*/
   }
 
+  print_expr(l->global,&l->o,0,&l->e);
   return 0;
 }
 
@@ -183,14 +184,14 @@ expr mksym(char *s,io *e){
   return x;
 }
 
-expr mkprimop(struct sexpr_t *(*func)(struct sexpr_t *arg, io *e),io *e){
+expr mkprimop(expr (*func)(expr *arg, io *e),io *e){
   expr x;
   x = mkobj(S_PRIMITIVE,e);
-  x->data.func = x;
+  x->data.func = x; /** TODO: check this*/
   return x;
 }
 
-expr primop_add(expr arg, io *e){
+expr primop_add(expr *arg, io *e){
   
   return nil;
 }
@@ -282,8 +283,10 @@ expr eval(expr x, expr env, lisp l){
 
 expr apply(expr x, expr env, lisp l){
   io *e = &l->e;
-  if(S_PRIMITIVE == x->type);
-  if(S_PROC == x->type);
+  if(S_PRIMITIVE == x->type){
+  }
+  if(S_PROC == x->type){
+  }
 
   report("Cannot apply expression"); /** ERR HANDLE*/
   return x;

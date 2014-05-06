@@ -47,7 +47,7 @@ int wungetc(char c, io *p, io *e){
   return c;
 }
 
-int wprintd(int d, io *o, io *e){
+int wprintd(cell_t d, io *o, io *e){
   NULLCHK(o);
   NULLCHK(e);
   if(file_out == o->type){

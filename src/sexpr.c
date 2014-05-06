@@ -252,10 +252,13 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     wprintd(x->data.integer,o,e);
     wputc('\n',o,e);
     return;
-  case S_PRIMITIVE: /** fall through */
+  case S_PRIMITIVE: /** TODO: Change this so it goes through the wrapper */
+    /*indent();*/
+    /*fprintf(stdout, "%p\n",(void*)x->data.func);*/
+    return;
   case S_FILE:      /** fall through */
     report("UNIMPLEMENTED (TODO)");
-    break;
+    return;
   default:
     report("print: unassigned type");
     exit(-1);
@@ -289,7 +292,9 @@ void free_expr(expr x, io *e){
   case S_INTEGER:
     wfree(x,e);
     return;
-  case S_PRIMITIVE: /** fall through */
+  case S_PRIMITIVE:
+    wfree(x,e);
+    return;
   case S_FILE:      /** fall through */
     report("UNIMPLEMENTED (TODO)");
     break;
