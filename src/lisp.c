@@ -61,17 +61,18 @@ static int getopt(int argc, char *argv[]);
 
 expr mkobj(sexpr_e type, io *e);
 expr mksym(char *s,io *e);
-expr mkprimop(expr (*func)(expr x,expr env, lisp l),io *e);
+expr mkprimop(expr (*func)(expr args, lisp l),io *e);
+expr evlis(expr x,expr env,lisp l);
 expr eval(expr x, expr env, lisp l);
-expr apply(expr x, expr env, lisp l);
+expr apply(expr proc, expr args, expr env, lisp l);
 expr find(expr global, expr x, io *e);
 void extend(expr sym, expr val, lisp l);
 lisp initlisp(void);
 bool primcmp(expr x, char *s, io *e);
 
-expr primop_add(expr x, expr env, lisp l);
-expr primop_sub(expr x, expr env, lisp l);
-expr primop_prod(expr x, expr env, lisp l);
+expr primop_add(expr args, lisp l);
+expr primop_sub(expr args, lisp l);
+expr primop_prod(expr args, lisp l);
 
 static expr nil;
 
@@ -202,80 +203,37 @@ expr mksym(char *s,io *e){
   return x;
 }
 
-expr mkprimop(expr (*func)(expr x,expr env, lisp l),io *e){
+expr mkprimop(expr (*func)(expr args, lisp l),io *e){
   expr x;
   x = mkobj(S_PRIMITIVE,e);
-  x->data.func = func; /** TODO: check this*/
+  x->data.func = func; 
   return x;
 }
 
 /*****************************************************************************/
-expr primop_add(expr x, expr env, lisp l){
-  io *e;
-  expr ne;
+expr primop_add(expr args, lisp l){
+  io *e = &l->e;
   unsigned int i;
-  cell_t sum = 0;
-  e = &l->e;
+  expr ne;
   ne = mkobj(S_INTEGER,e);
-  if(1 >= x->len)
+  if(0 == args->len)
     return nil;
-  for(i=1 /*skip add*/; i < x->len; i++){
-    ne = nth(x,i);
-    ne=eval(ne,env,l);
-    if(S_INTEGER!=ne->type){
-      report("not an integer type");
+  for(i = 0; i < args->len; i++){
+    if(S_INTEGER!=nth(args,i)->type){
+      report("not an integer type"); /* TODO; print out expr */
       return nil;
     }
-    sum+=ne->data.integer;
+    ne->data.integer+=(nth(args,i)->data.integer);
   }
-  ne->data.integer = sum;
   return ne;
 }
 
-expr primop_prod(expr x, expr env, lisp l){
-  io *e;
-  expr ne;
-  unsigned int i;
-  cell_t prod = 0;
-  e = &l->e;
-  ne = mkobj(S_INTEGER,e);
-  if(1 >= x->len)
-    return nil;
-  ne = eval(cdr(x),env,l);
-  prod = ne->data.integer;
-  for(i=2; i < x->len; i++){
-    ne = eval(nth(x,i),env,l);
-    if(S_INTEGER!=ne->type){
-      report("not an integer type");
-      return nil;
-    }
-    prod*=ne->data.integer;
-  }
-  ne->data.integer = prod;
-  return ne;
+expr primop_prod(expr args, lisp l){
+  return nil;
 }
 
-expr primop_sub(expr x, expr env, lisp l){
-  io *e;
-  expr ne;
-  unsigned int i;
-  cell_t sum = 0;
-  e = &l->e;
-  ne = mkobj(S_INTEGER,e);
-  if(1 >= x->len)
-    return nil;
-  ne = eval(cdr(x),env,l);
-  sum = ne->data.integer;
-  for(i=2; i < x->len; i++){
-    ne = eval(nth(x,i),env,l);
-    if(S_INTEGER!=ne->type){
-      report("not an integer type");
-      return nil;
-    }
-    sum-=ne->data.integer;
-  }
-  ne->data.integer = sum;
-  return ne;
+expr primop_sub(expr args, lisp l){
+  return nil;
 }
 /*****************************************************************************/
 
@@ -288,6 +246,17 @@ bool primcmp(expr x, char *s, io *e){
   }
   return !strcmp(car(x)->data.symbol,s);
 }
+
+expr evlis(expr x,expr env,lisp l){
+  unsigned int i;
+  expr ne;
+  ne = mkobj(S_LIST,&l->e);
+  for(i = 1/*skip 0!*/; i < x->len; i++){
+    append(ne,eval(nth(x,i),env,l),&l->e);
+  }
+  return ne;
+}
+
 
 expr eval(expr x, expr env, lisp l){
   unsigned int i;
@@ -336,7 +305,7 @@ expr eval(expr x, expr env, lisp l){
         } else if (primcmp(x,"define",e)){
         } else if (primcmp(x,"lambda",e)){
         } else {
-          return apply(x,env,l);
+          return apply(eval(car(x),env,l),evlis(x,env,l),env,l); /** replace x with evallist and add func */
         }
       } else {
         /*ne = eval(x,env,l);
@@ -369,21 +338,14 @@ expr eval(expr x, expr env, lisp l){
   report("should never get here");
   return x;
 }
-
-expr apply(expr x, expr env, lisp l){
-  io *e;
-  expr ne;
-  ne = eval(car(x),env,l);
-  e = &l->e;
-  if(S_PRIMITIVE == ne->type){ 
-    /** TODO: Eval list here, then pass simpler proc; curry functions;
-     * primitive that takes two expressions and produces another?
-     * What about car and cdr? How to signal it's done? */
-    return (ne->data.func)(x,env,l);
+expr apply(expr proc, expr args, expr env, lisp l){
+  io *e = &l->e;
+  if(S_PRIMITIVE == proc->type){ 
+    return (proc->data.func)(args,l);
   }
-  if(S_PROC == ne->type){
+  if(S_PROC == proc->type){
   }
 
   report("Cannot apply expression"); /** ERR HANDLE*/
-  return x;
+  return nil;
 }

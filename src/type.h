@@ -57,7 +57,7 @@ struct sexpr_t { /** base type for our expressions */
     char *symbol;
     struct sexpr_t **list;
     io *io;
-    expr (*func)(expr x, expr env, lisp l);
+    expr (*func)(expr args,lisp l);
   } data;
 } ; 
 
