@@ -65,8 +65,8 @@ expr mkprimop(expr (*func)(expr args, lisp l),io *e);
 expr evlis(expr x,expr env,lisp l);
 expr eval(expr x, expr env, lisp l);
 expr apply(expr proc, expr args, expr env, lisp l);
-expr find(expr global, expr x, io *e);
-void extend(expr sym, expr val, lisp l);
+expr find(expr env, expr x, io *e);
+expr extend(expr sym, expr val, lisp l);
 lisp initlisp(void);
 bool primcmp(expr x, char *s, io *e);
 
@@ -189,24 +189,24 @@ lisp initlisp(void){ /** initializes the environment, nothing special here */
   return l;
 }
 
-
-expr find(expr global, expr x, io *e){
+expr find(expr env, expr x, io *e){
   unsigned int i;
-  char *s = x->data.symbol; /* programmers job to make sure this is not null!*/
-  for(i = 0; i < global->len; i+=2){
-    if(!strcmp(nth(global,i)->data.symbol, s)){
-      return nth(global,i+1);
+  char *s = x->data.symbol; 
+  for(i = 0; i < env->len; i++){
+    if(!strcmp(car(nth(env,i))->data.symbol, s)){
+      return nth(env,i);
     }
   }
   report("unbound symbol");
   return nil; 
 }
 
-void extend(expr sym, expr val, lisp l){
-  /** TODO: Error handling, sort on list after appending */
-  append(l->global,sym,&l->e);
-  append(l->global,val,&l->e);
-  /** SORT LIST*/
+expr extend(expr sym, expr val, lisp l){
+  expr ne = mkobj(S_LIST,&l->e);
+  append(ne,sym,&l->e);
+  append(ne,val,&l->e);
+  append(l->global,ne,&l->e);
+  return val;
 }
 
 expr mkobj(sexpr_e type,io *e){
@@ -422,25 +422,31 @@ expr eval(expr x, expr env, lisp l){
           }
           return cdr(x);
         } else if (primcmp(x,"set",e)){
+          expr ne;
           if(!tstlen(x,3)){
-            report("set:  argc != 2");/** ERR HANDLE*/
+            report("set: argc != 2");/** ERR HANDLE*/
             return nil;
           }
-        } else if (primcmp(x,"define",e)){
-
+          ne = find(l->global,cdr(x),&l->e);
+          ne->data.list[1] = eval(cddr(x),env,l);
+          return cdr(ne);
+        } else if (primcmp(x,"define",e)){ /*what to do if already defined?*/
+          if(!tstlen(x,3)){
+            report("define: argc != 2");/** ERR HANDLE*/
+            return nil;
+          }
+          return extend(cdr(x),eval(cddr(x),env,l),l);
         } else if (primcmp(x,"lambda",e)){
         } else {
           return apply(eval(car(x),env,l),evlis(x,env,l),env,l); 
         }
       } else {
-        /*ne = eval(x,env,l);
-        if(S_SYMBOL!=ne->type)*/
-          report("cannot apply");/** ERR HANDLE*/
+        report("cannot apply");
         print_expr(car(x),&l->o,0,e);
       }
       break; 
     case S_SYMBOL:/*if symbol found, return it, else error; unbound symbol*/
-      return find(l->global,x,&l->e);
+      return cdr(find(l->global,x,&l->e));
     case S_FILE: /* to implement */
       report("file type unimplemented");
       return nil; 
