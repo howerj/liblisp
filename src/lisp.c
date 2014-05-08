@@ -223,14 +223,28 @@ expr primop_car(expr args, lisp l){
     report("args != list");
     return nil;
   }
-  if(args->len){
+  if(1!=args->len){
     report("car: argc != 1");
+    return nil;
   }
   return car(ne);
 }
 
 expr primop_cdr(expr args, lisp l){
-  return nil;
+  io *e = &l->e;
+  expr ne = mkobj(S_LIST,e);
+  /*
+  if(S_LIST != ne->type){
+    report("args != list");
+    return nil;
+  }
+  
+  if(1 >= args->len){
+    return nil;
+  }
+  ne->data.list = wmalloc(sizeof(expr) * car(args)->len,e);
+  memcpy(ne->data.list, car(args)->data.list + 1, sizeof(expr) * (car(args)->len - 1));*/
+  return ne;
 }
 
 expr primop_add(expr args, lisp l){
