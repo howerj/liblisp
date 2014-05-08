@@ -1,5 +1,5 @@
 CC=gcc
-CCFLAGS=-Wall -Wextra -ansi -pedantic
+CCFLAGS=-Wall -Wextra -ansi -pedantic -O2
 OBJFILES=bin/lisp.o bin/mem.o bin/io.o bin/sexpr.o
 
 all: bin/lisp

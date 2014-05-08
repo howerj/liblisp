@@ -412,9 +412,9 @@ expr eval(expr x, expr env, lisp l){
             return nil;
           }
           for (i = 1; i < x->len - 1; i++){
-            eval((expr)(x->data.list[i]),env,l);
+            eval(nth(x,i),env,l);
           }
-          return eval((expr)(x->data.list[i]),env,l);
+          return eval(nth(x,i),env,l);
         } else if (primcmp(x,"quote",e)){ /* (quote exp) */
           if(!tstlen(x,2)){
             report("quote: argc != 1");/** ERR HANDLE*/
@@ -428,6 +428,9 @@ expr eval(expr x, expr env, lisp l){
             return nil;
           }
           ne = find(l->global,cdr(x),&l->e);
+          if(nil == ne){
+            return nil;
+          }
           ne->data.list[1] = eval(cddr(x),env,l);
           return cdr(ne);
         } else if (primcmp(x,"define",e)){ /*what to do if already defined?*/
@@ -446,7 +449,13 @@ expr eval(expr x, expr env, lisp l){
       }
       break; 
     case S_SYMBOL:/*if symbol found, return it, else error; unbound symbol*/
-      return cdr(find(l->global,x,&l->e));
+      {
+        expr ne = find(l->global,x,&l->e);
+        if(nil == ne){
+          return nil;
+        }
+        return cdr(find(l->global,x,&l->e));
+      }
     case S_FILE: /* to implement */
       report("file type unimplemented");
       return nil; 
