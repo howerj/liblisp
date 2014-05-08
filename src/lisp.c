@@ -232,18 +232,13 @@ expr primop_car(expr args, lisp l){
 
 expr primop_cdr(expr args, lisp l){
   io *e = &l->e;
-  expr ne = mkobj(S_LIST,e);
-  /*
-  if(S_LIST != ne->type){
-    report("args != list");
+  expr ne = mkobj(S_LIST,e), carg = car(args);
+  if((S_LIST != carg->type) || (1>=carg->len)){
     return nil;
   }
-  
-  if(1 >= args->len){
-    return nil;
-  }
-  ne->data.list = wmalloc(sizeof(expr) * car(args)->len,e);
-  memcpy(ne->data.list, car(args)->data.list + 1, sizeof(expr) * (car(args)->len - 1));*/
+  ne->data.list = wmalloc(sizeof(expr) * carg->len,e);
+  memcpy(ne->data.list, carg->data.list + 1, sizeof(expr) * (carg->len - 1));
+  ne->len = carg->len - 1;
   return ne;
 }
 
@@ -360,6 +355,7 @@ expr eval(expr x, expr env, lisp l){
       if(tstlen(x,0)) /* () */
         return nil;
       if(S_SYMBOL==car(x)->type){
+        /** TODO: begin, quote, etc, need binding!*/
         if(primcmp(x,"if",e)){ /* (if test conseq alt) */
           if(!tstlen(x,4)){
             report("if: argc != 4");
