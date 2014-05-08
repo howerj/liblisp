@@ -210,15 +210,17 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
   if (!x)
     return;
 
+  indent();
   switch (x->type) {
   case S_NIL:
-    indent();
     wputc('(',o,e);
     wputc(')',o,e);
     wputc('\n',o,e);
     return;
+  case S_TEE:
+    wprints("#t",o,e);
+    return;
   case S_LIST:
-    indent();
     emit('(');
     for (i = 0; i < x->len; i++)
       print_expr((expr)(x->data.list[i]), o , depth + 1,e);
@@ -227,7 +229,6 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     return;
   case S_SYMBOL:
   case S_STRING:
-    indent();
     if (x->type == S_STRING)
       wputc('"', o,e);
     for (i = 0; i < x->len; i++) {
@@ -249,12 +250,10 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     wputc('\n',o,e);
     return;
   case S_INTEGER:
-    indent();
     wprintd(x->data.integer,o,e);
     wputc('\n',o,e);
     return;
   case S_PRIMITIVE: 
-    indent();
     wprints("#PRIMOP\n",o,e);
     return;
   case S_FILE:      /** fall through */
@@ -276,6 +275,7 @@ void free_expr(expr x, io *e){
     return;
 
   switch (x->type) {
+  case S_TEE:
   case S_NIL:
       wfree(x,e);
       break;

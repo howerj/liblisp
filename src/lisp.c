@@ -77,7 +77,7 @@ expr primop_div(expr args, lisp l);
 expr primop_cdr(expr args, lisp l);
 expr primop_car(expr args, lisp l);
 
-static expr nil;
+static expr nil, tee;
 
 int main(int argc, char *argv[]){
   lisp l;
@@ -162,6 +162,7 @@ lisp initlisp(void){ /** initializes the environment, nothing special here */
 
   global->type  = S_LIST;
   nil = mkobj(S_NIL,&l->e);
+  tee = mkobj(S_TEE,&l->e);
 
   extend(mksym("add",&l->e),mkprimop(primop_add,&l->e),l);
   extend(mksym("sub",&l->e),mkprimop(primop_sub,&l->e),l);
@@ -216,6 +217,24 @@ expr mkprimop(expr (*func)(expr args, lisp l),io *e){
 }
 
 /*****************************************************************************/
+expr primop_numeq(expr args, lisp l){
+  io *e = &l->e;
+  unsigned int i;
+  expr ne;
+  ne = mkobj(S_INTEGER,e);
+  if(0 == args->len)
+    return nil;
+  for(i = 0; i < args->len; i++){
+    if(S_INTEGER!=nth(args,i)->type){
+      report("not an integer type"); /* TODO; print out expr */
+      return nil;
+    }
+    ne->data.integer=(nth(args,i)->data.integer);
+  }
+  return ne;
+
+}
+
 expr primop_car(expr args, lisp l){
   io *e = &l->e;
   expr ne = car(args);
@@ -408,6 +427,7 @@ expr eval(expr x, expr env, lisp l){
       report("file type unimplemented");
       return nil; 
     case S_NIL:
+    case S_TEE:
     case S_STRING:
     case S_PROC:
     case S_INTEGER:

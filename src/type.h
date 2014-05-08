@@ -18,7 +18,7 @@ typedef struct lispenv_t lispenv_t;
 typedef lispenv_t *lisp;
 
 typedef enum { 
-  S_NIL,      S_LIST,       S_STRING, S_SYMBOL, 
+  S_NIL,      S_TEE, S_LIST, S_STRING, S_SYMBOL, 
   S_INTEGER,  S_PRIMITIVE,  S_FILE, S_PROC
 } sexpr_e;
 
