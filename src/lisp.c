@@ -73,6 +73,9 @@ bool primcmp(expr x, char *s, io *e);
 expr primop_add(expr args, lisp l);
 expr primop_sub(expr args, lisp l);
 expr primop_prod(expr args, lisp l);
+expr primop_div(expr args, lisp l);
+expr primop_cdr(expr args, lisp l);
+expr primop_car(expr args, lisp l);
 
 static expr nil;
 
@@ -163,7 +166,9 @@ lisp initlisp(void){ /** initializes the environment, nothing special here */
   extend(mksym("add",&l->e),mkprimop(primop_add,&l->e),l);
   extend(mksym("sub",&l->e),mkprimop(primop_sub,&l->e),l);
   extend(mksym("mul",&l->e),mkprimop(primop_prod,&l->e),l);
-  /*extend(mksym("div",&l->e),mkprimop(primop_add,&l->e),l);*/
+  extend(mksym("div",&l->e),mkprimop(primop_div,&l->e),l);
+  extend(mksym("car",&l->e),mkprimop(primop_car,&l->e),l);
+  extend(mksym("cdr",&l->e),mkprimop(primop_cdr,&l->e),l);
 
   return l;
 }
@@ -211,6 +216,23 @@ expr mkprimop(expr (*func)(expr args, lisp l),io *e){
 }
 
 /*****************************************************************************/
+expr primop_car(expr args, lisp l){
+  io *e = &l->e;
+  expr ne = car(args);
+  if(S_LIST != ne->type){
+    report("args != list");
+    return nil;
+  }
+  if(args->len){
+    report("car: argc != 1");
+  }
+  return car(ne);
+}
+
+expr primop_cdr(expr args, lisp l){
+  return nil;
+}
+
 expr primop_add(expr args, lisp l){
   io *e = &l->e;
   unsigned int i;
@@ -229,15 +251,66 @@ expr primop_add(expr args, lisp l){
 }
 
 expr primop_prod(expr args, lisp l){
-  return nil;
+  io *e = &l->e;
+  unsigned int i;
+  expr ne;
+  ne = mkobj(S_INTEGER,e);
+  if(0 == args->len)
+    return nil;
+  ne = nth(args,0);
+  for(i = 1; i < args->len; i++){
+    if(S_INTEGER!=nth(args,i)->type){
+      report("not an integer type"); /* TODO; print out expr */
+      return nil;
+    }
+    ne->data.integer*=(nth(args,i)->data.integer);
+  }
+  return ne;
 }
 
 expr primop_sub(expr args, lisp l){
-  return nil;
+  io *e = &l->e;
+  unsigned int i;
+  expr ne;
+  ne = mkobj(S_INTEGER,e);
+  if(0 == args->len)
+    return nil;
+  ne = nth(args,0);
+  for(i = 1; i < args->len; i++){
+    if(S_INTEGER!=nth(args,i)->type){
+      report("not an integer type"); /* TODO; print out expr */
+      return nil;
+    }
+    ne->data.integer-=(nth(args,i)->data.integer);
+  }
+  return ne;
 }
+
+expr primop_div(expr args, lisp l){
+  io *e = &l->e;
+  unsigned int i,tmp;
+  expr ne;
+  ne = mkobj(S_INTEGER,e);
+  if(0 == args->len)
+    return nil;
+  ne = nth(args,0);
+  for(i = 1; i < args->len; i++){
+    if(S_INTEGER!=nth(args,i)->type){
+      report("not an integer type"); /* TODO; print out expr */
+      return nil;
+    }
+    tmp = nth(args,i)->data.integer;
+    if(tmp){
+      ne->data.integer/=tmp;
+    }else{
+      report("attempted /0");
+      return nil;
+    }
+  }
+  return ne;
+}
+
 /*****************************************************************************/
-
-
 
 bool primcmp(expr x, char *s, io *e){
   if(NULL == (car(x)->data.symbol)){
@@ -251,7 +324,7 @@ expr evlis(expr x,expr env,lisp l){
   unsigned int i;
   expr ne;
   ne = mkobj(S_LIST,&l->e);
-  for(i = 1/*skip 0!*/; i < x->len; i++){
+  for(i = 1/*skip 0!*/; i < x->len; i++){/** TODO: change so it does not use append!*/
     append(ne,eval(nth(x,i),env,l),&l->e);
   }
   return ne;
@@ -275,7 +348,7 @@ expr eval(expr x, expr env, lisp l){
       if(S_SYMBOL==car(x)->type){
         if(primcmp(x,"if",e)){ /* (if test conseq alt) */
           if(!tstlen(x,4)){
-            report("special form 'if', expected list of size 4");
+            report("if: argc != 4");
             return nil;
           }
           if(nil == eval(cdr(x),env,l)){
@@ -293,19 +366,19 @@ expr eval(expr x, expr env, lisp l){
           return eval((expr)(x->data.list[i]),env,l);
         } else if (primcmp(x,"quote",e)){ /* (quote exp) */
           if(!tstlen(x,2)){
-            report("special form 'quote', expected list of size 2");/** ERR HANDLE*/
+            report("quote: argc != 1");/** ERR HANDLE*/
             return nil;
           }
           return cdr(x);
         } else if (primcmp(x,"set",e)){
           if(!tstlen(x,3)){
-            report("special form 'set', expected list of size 3");/** ERR HANDLE*/
+            report("set:  argc != 2");/** ERR HANDLE*/
             return nil;
           }
         } else if (primcmp(x,"define",e)){
         } else if (primcmp(x,"lambda",e)){
         } else {
-          return apply(eval(car(x),env,l),evlis(x,env,l),env,l); /** replace x with evallist and add func */
+          return apply(eval(car(x),env,l),evlis(x,env,l),env,l); 
         }
       } else {
         /*ne = eval(x,env,l);
