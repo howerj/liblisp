@@ -107,7 +107,7 @@ int main(int argc, char *argv[]){
     /*free_expr(x, &l->e);*/
   }
 
-  /*print_expr(l->global,&l->o,0,&l->e);*/
+  print_expr(l->global,&l->o,0,&l->e);
   return 0;
 }
 
@@ -198,7 +198,8 @@ expr find(expr global, expr x, io *e){
       return nth(global,i+1);
     }
   }
-  return NULL; /*NOT NIL*/
+  report("unbound symbol");
+  return nil; 
 }
 
 void extend(expr sym, expr val, lisp l){
@@ -234,6 +235,7 @@ expr mkprimop(expr (*func)(expr args, lisp l),io *e){
 expr primop_fake(expr args, lisp l){
   io *e = &l->e;
   report("This is a place holder, you should never get here");
+  print_expr(args,&l->o,0,&l->e);
   return nil;
 }
 
@@ -391,7 +393,6 @@ expr eval(expr x, expr env, lisp l){
 
   switch(x->type){
     case S_LIST: /** most of eval goes here! */
-      /** what should ((quote +) 2 3) do ?*/
       if(tstlen(x,0)) /* () */
         return nil;
       if(S_SYMBOL==car(x)->type){
@@ -426,6 +427,7 @@ expr eval(expr x, expr env, lisp l){
             return nil;
           }
         } else if (primcmp(x,"define",e)){
+
         } else if (primcmp(x,"lambda",e)){
         } else {
           return apply(eval(car(x),env,l),evlis(x,env,l),env,l); 
@@ -438,14 +440,7 @@ expr eval(expr x, expr env, lisp l){
       }
       break; 
     case S_SYMBOL:/*if symbol found, return it, else error; unbound symbol*/
-    { 
-      expr fx = find(l->global,x,&l->e);
-      if(NULL == fx){
-        report("unbound symbol");
-        return nil;
-      }
-      return fx;
-    }
+      return find(l->global,x,&l->e);
     case S_FILE: /* to implement */
       report("file type unimplemented");
       return nil; 
