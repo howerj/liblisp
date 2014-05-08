@@ -218,7 +218,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     wputc('\n',o,e);
     return;
   case S_TEE:
-    wprints("#t",o,e);
+    wprints("#t\n",o,e);
     return;
   case S_LIST:
     emit('(');
@@ -242,7 +242,6 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
         if (x->type == S_SYMBOL)
           wputc('\\',o,e);
       }
-
       wputc((x->data.string)[i], o,e);
     }
     if (x->type == S_STRING)

@@ -70,6 +70,8 @@ void extend(expr sym, expr val, lisp l);
 lisp initlisp(void);
 bool primcmp(expr x, char *s, io *e);
 
+expr primop_fake(expr args, lisp l);
+
 expr primop_add(expr args, lisp l);
 expr primop_sub(expr args, lisp l);
 expr primop_prod(expr args, lisp l);
@@ -105,7 +107,7 @@ int main(int argc, char *argv[]){
     /*free_expr(x, &l->e);*/
   }
 
-  print_expr(l->global,&l->o,0,&l->e);
+  /*print_expr(l->global,&l->o,0,&l->e);*/
   return 0;
 }
 
@@ -164,6 +166,19 @@ lisp initlisp(void){ /** initializes the environment, nothing special here */
   nil = mkobj(S_NIL,&l->e);
   tee = mkobj(S_TEE,&l->e);
 
+  /* internal symbols */
+  extend(mksym("nil", &l->e),nil,l);
+  extend(mksym("t", &l->e),tee,l);
+
+  /* special forms */
+  extend(mksym("begin", &l->e),mkprimop(primop_fake,&l->e),l);
+  extend(mksym("if",    &l->e),mkprimop(primop_fake,&l->e),l);
+  extend(mksym("quote", &l->e),mkprimop(primop_fake,&l->e),l);
+  extend(mksym("set",   &l->e),mkprimop(primop_fake,&l->e),l);
+  extend(mksym("define",&l->e),mkprimop(primop_fake,&l->e),l);
+  extend(mksym("lambda",&l->e),mkprimop(primop_fake,&l->e),l);
+
+  /* normal forms, kind of  */
   extend(mksym("add",&l->e),mkprimop(primop_add,&l->e),l);
   extend(mksym("sub",&l->e),mkprimop(primop_sub,&l->e),l);
   extend(mksym("mul",&l->e),mkprimop(primop_prod,&l->e),l);
@@ -177,13 +192,13 @@ lisp initlisp(void){ /** initializes the environment, nothing special here */
 
 expr find(expr global, expr x, io *e){
   unsigned int i;
-  char *s = x->data.symbol; /** programmers job to make sure this is not null!*/
+  char *s = x->data.symbol; /* programmers job to make sure this is not null!*/
   for(i = 0; i < global->len; i+=2){
     if(!strcmp(nth(global,i)->data.symbol, s)){
       return nth(global,i+1);
     }
   }
-  return nil;
+  return NULL; /*NOT NIL*/
 }
 
 void extend(expr sym, expr val, lisp l){
@@ -214,6 +229,12 @@ expr mkprimop(expr (*func)(expr args, lisp l),io *e){
   x = mkobj(S_PRIMITIVE,e);
   x->data.func = func; 
   return x;
+}
+
+expr primop_fake(expr args, lisp l){
+  io *e = &l->e;
+  report("This is a place holder, you should never get here");
+  return nil;
 }
 
 /*****************************************************************************/
@@ -419,8 +440,10 @@ expr eval(expr x, expr env, lisp l){
     case S_SYMBOL:/*if symbol found, return it, else error; unbound symbol*/
     { 
       expr fx = find(l->global,x,&l->e);
-      if(nil == fx)
+      if(NULL == fx){
         report("unbound symbol");
+        return nil;
+      }
       return fx;
     }
     case S_FILE: /* to implement */
