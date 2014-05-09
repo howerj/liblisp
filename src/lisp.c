@@ -278,8 +278,7 @@ expr primop_cdr(expr args, lisp l){
   if((S_LIST != carg->type) || (1>=carg->len)){
     return nil;
   }
-  ne->data.list = wmalloc(sizeof(expr) * carg->len,e);
-  memcpy(ne->data.list, carg->data.list + 1, sizeof(expr) * (carg->len - 1));
+  ne->data.list = carg->data.list+1;
   ne->len = carg->len - 1;
   return ne;
 }
