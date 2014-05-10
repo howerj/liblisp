@@ -12,10 +12,13 @@
  *  o: output
  *  e: standard err
  *  x: expression
+ *  ne: new expression
  *
  *  TODO:
- *    Better notation for functions being passed in as arguments, must
- *    be some typedef'in that could help
+ *    * Better error reporting
+ *    * Better error handling; a new primitive type should be made
+ *      for it, one that can be caught.
+ *    * Make the special forms less special!
  *
  */
 #include <stdio.h>
@@ -59,25 +62,26 @@ static int getopt(int argc, char *argv[]);
 #define nth(X,Y)    ((expr)((X)->data.list[(Y)]))
 #define tstlen(X,Y) ((Y)==(X)->len)
 
-expr mkobj(sexpr_e type, io *e);
-expr mksym(char *s,io *e);
-expr mkprimop(expr (*func)(expr args, lisp l),io *e);
-expr evlis(expr x,expr env,lisp l);
 expr eval(expr x, expr env, lisp l);
-expr apply(expr proc, expr args, expr env, lisp l);
-expr find(expr env, expr x, io *e);
-expr extend(expr sym, expr val, lisp l);
 lisp initlisp(void);
-bool primcmp(expr x, char *s, io *e);
 
-expr primop_fake(expr args, lisp l);
+static expr mkobj(sexpr_e type, io *e);
+static expr mksym(char *s,io *e);
+static expr mkprimop(expr (*func)(expr args, lisp l),io *e);
+static expr evlis(expr x,expr env,lisp l);
+static expr apply(expr proc, expr args, expr env, lisp l);
+static expr find(expr env, expr x, io *e);
+static expr extend(expr sym, expr val, lisp l);
+static bool primcmp(expr x, char *s, io *e);
 
-expr primop_add(expr args, lisp l);
-expr primop_sub(expr args, lisp l);
-expr primop_prod(expr args, lisp l);
-expr primop_div(expr args, lisp l);
-expr primop_cdr(expr args, lisp l);
-expr primop_car(expr args, lisp l);
+static expr primop_fake(expr args, lisp l);
+
+static expr primop_add(expr args, lisp l);
+static expr primop_sub(expr args, lisp l);
+static expr primop_prod(expr args, lisp l);
+static expr primop_div(expr args, lisp l);
+static expr primop_cdr(expr args, lisp l);
+static expr primop_car(expr args, lisp l);
 
 static expr nil, tee;
 
@@ -140,7 +144,6 @@ static int getopt(int argc, char *argv[]){
         return 1;
     }
   }
-
   return 0;
 }
 
@@ -185,6 +188,7 @@ lisp initlisp(void){ /** initializes the environment, nothing special here */
   extend(mksym("div",&l->e),mkprimop(primop_div,&l->e),l);
   extend(mksym("car",&l->e),mkprimop(primop_car,&l->e),l);
   extend(mksym("cdr",&l->e),mkprimop(primop_cdr,&l->e),l);
+  extend(mksym("cons",&l->e),mkprimop(primop_cons,&l->e),l);
 
   return l;
 }
@@ -240,22 +244,15 @@ expr primop_fake(expr args, lisp l){
 }
 
 /*****************************************************************************/
-expr primop_numeq(expr args, lisp l){
+
+expr primop_cons(expr args, lisp l){
   io *e = &l->e;
-  unsigned int i;
-  expr ne;
-  ne = mkobj(S_INTEGER,e);
-  if(0 == args->len)
+  expr ne = mkobj(S_LIST,e);
+  if(2!=args->len){
+    report("cons: argc != 2");
     return nil;
-  for(i = 0; i < args->len; i++){
-    if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); /* TODO; print out expr */
-      return nil;
-    }
-    ne->data.integer=(nth(args,i)->data.integer);
   }
   return ne;
-
 }
 
 expr primop_car(expr args, lisp l){

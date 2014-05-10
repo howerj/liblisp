@@ -22,10 +22,13 @@ Vim syntax highlighting.
 
 ## TODO
 
-* Improve makefile
 * Getopts
 * Eval
 * dynamic strings
+* Error type needs returning instead of nil!
+  - When an error occurs an error type should be returned to
+  allow for diagnostics. Perhaps some kind of error handling
+  function to catch these should be made as well?
 * Unit tests; tests for each module.
 
 primitives:
