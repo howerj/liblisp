@@ -11,7 +11,7 @@ bin/lisp: $(OBJFILES)
 	$(CC) $(CCFLAGS) $(OBJFILES) -o bin/lisp
 
 run: bin/lisp
-	bin/./lisp
+	cat lsp/tst.lsp - | bin/./lisp
 
 report:
 	@splint src/*.c src/*.h
