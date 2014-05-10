@@ -5,6 +5,28 @@
  *  @copyright      Copyright 2013 Richard James Howe.
  *  @license        GPL v3.0
  *  @email          howe.r.j.89@gmail.com
+ *
+ *  Generic TODO List:
+ *
+ *  @todo   Unit tests for each module
+ *  @todo   Orient the lisp towards processing text à la mode de awk/sed/tr 
+ *
+ *  @mainpage LSP (Lispy Space Princess) Lisp
+ *
+ *  \section intro_sec Introduction
+ *
+ *  A lisp written in ANSI C, mainly for my own education, that I hope
+ *  to make into something (at least semi-) useful.
+ *
+ *  \section install_sec Installation
+ *
+ *  To make the project run:
+ *
+ *    make
+ *
+ *  At the top level. No libraries bar the standard C library is needed
+ *  to compile the project.
+ *
  **/
 
 #include <stdio.h>

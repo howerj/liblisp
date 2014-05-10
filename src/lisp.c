@@ -1,6 +1,6 @@
 /**
  *  @file           lisp.c
- *  @brief          The Lisp Interpreter
+ *  @brief          The Lisp Interpreter; Lispy Space Princess
  *  @author         Richard James Howe.
  *  @copyright      Copyright 2013 Richard James Howe.
  *  @license        GPL v3.0
@@ -22,8 +22,19 @@
  *  @todo Better error handling; a new primitive type should be made
  *        for it, one that can be caught.
  *  @todo Make the special forms less special!
- *
- */
+ *  @todo Make more primitives!
+ *        Primitives:
+ *         - Register internal functions as lisp primitives.
+ *         - random, seed
+ *         - cons,listlen,reverse, more advanced lisp manipulation funcs ...
+ *         - eq = > < <= >=
+ *         - string manipulation and regexes; tr, s, //m, pack, unpack
+ *         - type? <- returns type of expr
+ *         - file manipulation and i/o: read, format, 
+ *           read-char read-line write-string,
+ *         - max, min
+ *         - not, and, or
+ **/
 
 #include <stdio.h>
 #include <stdlib.h>
