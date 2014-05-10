@@ -1,10 +1,10 @@
 /**
- *  @file           type.h                                                   
- *  @brief          Types used by all sub-modules for lisp interpreter       
- *  @author         Richard James Howe.                                      
- *  @copyright      Copyright 2013 Richard James Howe.                       
- *  @license        GPL v3.0                                                 
- *  @email          howe.r.j.89@gmail.com                                    
+ *  @file           type.h
+ *  @brief          Types used by all sub-modules for lisp interpreter
+ *  @author         Richard James Howe.
+ *  @copyright      Copyright 2013 Richard James Howe.
+ *  @license        GPL v3.0
+ *  @email          howe.r.j.89@gmail.com
  **/
 
 #ifndef TYPE_H
@@ -26,8 +26,8 @@ typedef sexpr_t *expr;
 typedef struct lispenv_t lispenv_t;
 typedef lispenv_t *lisp;
 
-typedef enum { 
-  S_NIL,      S_TEE, S_LIST, S_STRING, S_SYMBOL, 
+typedef enum {
+  S_NIL,      S_TEE, S_LIST, S_STRING, S_SYMBOL,
   S_INTEGER,  S_PRIMITIVE,  S_FILE, S_PROC
 } sexpr_e;
 
@@ -68,7 +68,7 @@ struct sexpr_t { /** base type for our expressions */
     io *io;
     expr (*func)(expr args,lisp l);
   } data;
-} ; 
+} ;
 
 /*lisp global environment struct*/
 struct lispenv_t{ /** a lisp environment */

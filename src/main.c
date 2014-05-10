@@ -1,10 +1,10 @@
 /**
- *  @file           main.c                                                   
- *  @brief          Driver for the lisp interpreter. Contains main();        
- *  @author         Richard James Howe.                                      
- *  @copyright      Copyright 2013 Richard James Howe.                       
- *  @license        GPL v3.0                                                 
- *  @email          howe.r.j.89@gmail.com                                    
+ *  @file           main.c
+ *  @brief          Driver for the lisp interpreter. Contains main();
+ *  @author         Richard James Howe.
+ *  @copyright      Copyright 2013 Richard James Howe.
+ *  @license        GPL v3.0
+ *  @email          howe.r.j.89@gmail.com
  **/
 
 #include <stdio.h>
@@ -20,7 +20,7 @@ static bool printGlobals_f = false;
 
 static char *usage = "./lisp -hViG <file>";
 
-/** 
+/**
  * version should include md5sum calculated from
  *  c and h files, excluding the file it gets put
  *  into. This will be included here.

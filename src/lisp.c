@@ -1,14 +1,14 @@
 /**
- *  @file           lisp.c                                                   
- *  @brief          The Lisp Interpreter                                     
- *  @author         Richard James Howe.                                      
- *  @copyright      Copyright 2013 Richard James Howe.                       
- *  @license        GPL v3.0                                                 
- *  @email          howe.r.j.89@gmail.com                                    
+ *  @file           lisp.c
+ *  @brief          The Lisp Interpreter
+ *  @author         Richard James Howe.
+ *  @copyright      Copyright 2013 Richard James Howe.
+ *  @license        GPL v3.0
+ *  @email          howe.r.j.89@gmail.com
  **/
 
-/** 
- *  Experimental, small, lisp interpreter. 
+/**
+ *  Experimental, small, lisp interpreter.
  *
  *  Meaning of symbols:
  *  ERR HANDLE: A restart function should be implemented, this
@@ -69,12 +69,12 @@ static expr primop_cons(expr args, lisp l);
 
 /*** interface functions *****************************************************/
 
-/**                                                           
+/**
  *  @brief          Initialize the lisp interpreter
  *  @param          void
- *  @return         A fully initialized lisp environment              
+ *  @return         A fully initialized lisp environment
  **/
-lisp initlisp(void){ 
+lisp initlisp(void){
   lisp l;
   expr global;
   l      = wcalloc(sizeof (lispenv_t),1,NULL);
@@ -120,11 +120,11 @@ lisp initlisp(void){
   return l;
 }
 
-/**                                                           
- *  @brief          Evaluate an already parsed lisp expression                
- *  @param          x   The s-expression to parse                             
- *  @param          env The environment to evaluate in                        
- *  @param          l   The global lisp environment                           
+/**
+ *  @brief          Evaluate an already parsed lisp expression
+ *  @param          x   The s-expression to parse
+ *  @param          env The environment to evaluate in
+ *  @param          l   The global lisp environment
  *  @return         An evaluate expression, possibly ready for printing.
  **/
 expr eval(expr x, expr env, lisp l){
@@ -137,7 +137,7 @@ expr eval(expr x, expr env, lisp l){
   }
 
   switch(x->type){
-    case S_LIST: 
+    case S_LIST:
       if(tstlen(x,0)) /* () */
         return nil;
       if(S_SYMBOL==car(x)->type){
@@ -185,13 +185,13 @@ expr eval(expr x, expr env, lisp l){
           return extend(cdr(x),eval(cddr(x),env,l),l);
         } else if (primcmp(x,"lambda",e)){
         } else {
-          return apply(eval(car(x),env,l),evlis(x,env,l),env,l); 
+          return apply(eval(car(x),env,l),evlis(x,env,l),env,l);
         }
       } else {
         report("cannot apply");
         print_expr(car(x),&l->o,0,e);
       }
-      break; 
+      break;
     case S_SYMBOL:/*if symbol found, return it, else error; unbound symbol*/
       {
         expr ne = find(l->global,x,&l->e);
@@ -202,14 +202,14 @@ expr eval(expr x, expr env, lisp l){
       }
     case S_FILE: /* to implement */
       report("file type unimplemented");
-      return nil; 
+      return nil;
     case S_NIL:
     case S_TEE:
     case S_STRING:
     case S_PROC:
     case S_INTEGER:
     case S_PRIMITIVE:
-      return x; 
+      return x;
     default:
       report("Serious error, unknown type"); /** ERR HANDLE*/
       abort();
@@ -224,14 +224,14 @@ expr eval(expr x, expr env, lisp l){
 /** find a symbol in a special type of list **/
 static expr find(expr env, expr x, io *e){
   unsigned int i;
-  char *s = x->data.symbol; 
+  char *s = x->data.symbol;
   for(i = 0; i < env->len; i++){
     if(!strcmp(car(nth(env,i))->data.symbol, s)){
       return nth(env,i);
     }
   }
   report("unbound symbol");
-  return nil; 
+  return nil;
 }
 
 /** extend the global lisp environment **/
@@ -265,7 +265,7 @@ static expr mksym(char *s,io *e){
 static expr mkprimop(expr (*func)(expr args, lisp l),io *e){
   expr x;
   x = mkobj(S_PRIMITIVE,e);
-  x->data.func = func; 
+  x->data.func = func;
   return x;
 }
 
@@ -298,7 +298,7 @@ static expr evlis(expr x,expr env,lisp l){
 
 static expr apply(expr proc, expr args, expr env, lisp l){
   io *e = &l->e;
-  if(S_PRIMITIVE == proc->type){ 
+  if(S_PRIMITIVE == proc->type){
     return (proc->data.func)(args,l);
   }
   if(S_PROC == proc->type){

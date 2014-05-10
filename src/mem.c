@@ -1,10 +1,10 @@
 /**
- *  @file           mem.c                                                    
- *  @brief          Memory allocation wrappers and handling                  
- *  @author         Richard James Howe.                                      
- *  @copyright      Copyright 2013 Richard James Howe.                       
- *  @license        GPL v3.0                                                 
- *  @email          howe.r.j.89@gmail.com                                    
+ *  @file           mem.c
+ *  @brief          Memory allocation wrappers and handling
+ *  @author         Richard James Howe.
+ *  @copyright      Copyright 2013 Richard James Howe.
+ *  @license        GPL v3.0
+ *  @email          howe.r.j.89@gmail.com
  **/
 
 /*
@@ -42,7 +42,7 @@ void *wcalloc(size_t num, size_t size, io *e){
   void* v;
   v = calloc(num,size);
   if(NULL == v){
-    if(NULL == e){ 
+    if(NULL == e){
       fprintf(stderr, "calloc failed and *e == NULL\n");
     } else {
     }
@@ -55,7 +55,7 @@ void *wrealloc(void *ptr, size_t size, io *e){
   void* v;
   v = realloc(ptr,size);
   if(NULL == v){
-    if(NULL == e){ 
+    if(NULL == e){
       fprintf(stderr, "realloc failed and *e == NULL\n");
     } else {
     }

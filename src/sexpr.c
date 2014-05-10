@@ -1,10 +1,10 @@
 /**
- *  @file           sexpr.c                                                  
- *  @brief          General S-Expression parser                              
- *  @author         Richard James Howe.                                      
- *  @copyright      Copyright 2013 Richard James Howe.                       
- *  @license        GPL v3.0                                                 
- *  @email          howe.r.j.89@gmail.com                                    
+ *  @file           sexpr.c
+ *  @brief          General S-Expression parser
+ *  @author         Richard James Howe.
+ *  @copyright      Copyright 2013 Richard James Howe.
+ *  @license        GPL v3.0
+ *  @email          howe.r.j.89@gmail.com
  **/
 
 #include "type.h"
@@ -66,11 +66,11 @@ static expr parse_symbol(io *i, io *e){ /** and integers!*/
 
  success:
   ex->len = strlen(buf);
- 
-  /* TODO: Clean up negative handling */ 
+
+  /* TODO: Clean up negative handling */
   /** does not handle hex, or decimal points*/
   negative=(('-'==buf[0])||('+'==buf[0]))&&(ex->len-1)?true:false;
-  if(strspn(negative?buf+1:buf,"0123456789")==(ex->len-(negative?1:0))){ 
+  if(strspn(negative?buf+1:buf,"0123456789")==(ex->len-(negative?1:0))){
     ex->type = S_INTEGER;
     ex->data.integer = strtol(buf,NULL,0);
   } else{
@@ -249,7 +249,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     wprintd(x->data.integer,o,e);
     wputc('\n',o,e);
     return;
-  case S_PRIMITIVE: 
+  case S_PRIMITIVE:
     wprints("#PRIMOP\n",o,e);
     return;
   case S_FILE:      /** fall through */
