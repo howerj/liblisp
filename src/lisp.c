@@ -22,18 +22,25 @@
  *  @todo Better error handling; a new primitive type should be made
  *        for it, one that can be caught.
  *  @todo Make the special forms less special!
- *  @todo Make more primitives!
- *        Primitives:
+ *  @todo Make more primitives and mechanisms for handling things:
  *         - Register internal functions as lisp primitives.
  *         - random, seed
  *         - cons,listlen,reverse, more advanced lisp manipulation funcs ...
  *         - eq = > < <= >=
- *         - string manipulation and regexes; tr, s, //m, pack, unpack
+ *         - string manipulation and regexes; tr, sed, //m, pack, unpack, ...
  *         - type? <- returns type of expr
+ *         - type coercion and casting
  *         - file manipulation and i/o: read, format, 
- *           read-char read-line write-string,
- *         - max, min
- *         - not, and, or
+ *           read-char read-line write-string, ...
+ *         - max, min, abs, ...
+ *         - Error handling and recovery
+ *         - not, and, or, logical functions as well!
+ *         - comment; instead of normal comments, comments and the
+ *         unevaluated sexpression could be stored for later retrieval
+ *         and inspection, keeping the source and the runnning program
+ *         united.
+ *         - modules; keywords for helping in the creation of modules
+ *         and importing them.
  **/
 
 #include <stdio.h>
