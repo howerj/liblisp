@@ -1,3 +1,12 @@
+/*****************************************************************************\
+ *  @file           type.h                                                   *
+ *  @brief          Types used by all sub-modules for lisp interpreter       *
+ *  @author         Richard James Howe.                                      *
+ *  @copyright      Copyright 2013 Richard James Howe.                       *
+ *  @license        GPL v3.0                                                 *
+ *  @email          howe.r.j.89@gmail.com                                    *
+\*****************************************************************************/
+
 #ifndef TYPE_H
 #define TYPE_H
 /** system types */

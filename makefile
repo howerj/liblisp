@@ -1,6 +1,6 @@
 CC=gcc
 CCFLAGS=-Wall -Wextra -ansi -pedantic -O2
-OBJFILES=bin/lisp.o bin/mem.o bin/io.o bin/sexpr.o
+OBJFILES=bin/lisp.o bin/mem.o bin/io.o bin/sexpr.o bin/main.o
 
 all: bin/lisp
 
@@ -19,3 +19,4 @@ report:
 
 clean:
 	rm -rf bin/*.o bin/lisp
+

@@ -1,3 +1,12 @@
+/*****************************************************************************\
+ *  @file           sexpr.h                                                  *
+ *  @brief          General S-Expression parsing interface headers           *
+ *  @author         Richard James Howe.                                      *
+ *  @copyright      Copyright 2013 Richard James Howe.                       *
+ *  @license        GPL v3.0                                                 *
+ *  @email          howe.r.j.89@gmail.com                                    *
+\*****************************************************************************/
+
 #ifndef SEXPR_H
 #define SEXPR_H
 

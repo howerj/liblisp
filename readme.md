@@ -17,13 +17,9 @@ Create lisp interpreter in stages:
 5. Extend interpreter.
 6. Extend interpreter in lisp.
 
-Misc:
-Vim syntax highlighting.
-
 ## TODO
 
 * Getopts
-* Eval
 * dynamic strings
 * Error type needs returning instead of nil!
   - When an error occurs an error type should be returned to
@@ -42,4 +38,3 @@ primitives:
 * file manipulation and i/o: read, format, read-char read-line write-string,
 * max, min
 * not, and, or
-* "recurse" keyword; simple (tail) recursion 

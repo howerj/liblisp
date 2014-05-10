@@ -1,15 +1,12 @@
-/**
- * Richard Howe
- *
- * License: GPL
- *
- * General s-expression parser.
- *
- * TODO:
- *  - Testing, thorough testing needs to be done.
- *  - Add handling of special types.
- *  
- */
+/*****************************************************************************\
+ *  @file           sexpr.c                                                  *
+ *  @brief          General S-Expression parser                              *
+ *  @author         Richard James Howe.                                      *
+ *  @copyright      Copyright 2013 Richard James Howe.                       *
+ *  @license        GPL v3.0                                                 *
+ *  @email          howe.r.j.89@gmail.com                                    *
+\*****************************************************************************/
+
 #include "type.h"
 #include "io.h"
 #include "mem.h"
