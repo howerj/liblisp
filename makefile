@@ -13,10 +13,13 @@ bin/lisp: $(OBJFILES)
 run: bin/lisp
 	cat lsp/tst.lsp - | bin/./lisp
 
+doxygen:
+	-doxygen doc/doxygen.conf
+
 report:
-	@splint src/*.c src/*.h
-	@wc src/*.c src/*.h
+	-splint src/*.c src/*.h
+	-wc src/*.c src/*.h
 
 clean:
-	rm -rf bin/*.o bin/lisp
+	-rm -rf bin/*.o bin/lisp doc/htm/
 

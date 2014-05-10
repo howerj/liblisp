@@ -37,25 +37,25 @@
 #include "lisp.h"
 
 /** macro helpers **/
-#define car(X)      ((expr)((X)->data.list[0]))
-#define cdr(X)      ((expr)((X)->data.list[1]))
-#define cddr(X)     ((expr)((X)->data.list[2]))
-#define cdddr(X)    ((expr)((X)->data.list[3]))
-#define nth(X,Y)    ((expr)((X)->data.list[(Y)]))
-#define tstlen(X,Y) ((Y)==(X)->len)
+#define car(X)      ((X)->data.list[0])
+#define cdr(X)      ((X)->data.list[1])
+#define cddr(X)     ((X)->data.list[2])
+#define cdddr(X)    ((X)->data.list[3])
+#define nth(X,Y)    ((X)->data.list[(Y)])
+#define tstlen(X,Y) ((Y)==((X)->len))
 
 /** global-to-file special objects **/
 static expr nil, tee;
 
 /** functions necessary for the intepreter **/
 static expr mkobj(sexpr_e type, io *e);
-static expr mksym(char *s,io *e);
+static expr mksym(char *s, io *e);
 static expr mkprimop(expr (*func)(expr args, lisp l),io *e);
 static expr evlis(expr x,expr env,lisp l);
 static expr apply(expr proc, expr args, expr env, lisp l);
 static expr find(expr env, expr x, io *e);
 static expr extend(expr sym, expr val, lisp l);
-static bool primcmp(expr x, char *s, io *e);
+static bool primcmp(expr x, const char *s, io *e);
 
 /** built in primitives **/
 static expr primop_fake(expr args, lisp l); /* dummy for certain special forms */
@@ -66,7 +66,6 @@ static expr primop_div(expr args, lisp l);
 static expr primop_cdr(expr args, lisp l);
 static expr primop_car(expr args, lisp l);
 static expr primop_cons(expr args, lisp l);
-
 
 /*** interface functions *****************************************************/
 
@@ -212,6 +211,7 @@ expr eval(expr x, expr env, lisp l){
 
 /*** internal functions ******************************************************/
 
+/** find a symbol in a special type of list **/
 static expr find(expr env, expr x, io *e){
   unsigned int i;
   char *s = x->data.symbol; 
@@ -224,6 +224,7 @@ static expr find(expr env, expr x, io *e){
   return nil; 
 }
 
+/** extend the global lisp environment **/
 static expr extend(expr sym, expr val, lisp l){
   expr ne = mkobj(S_LIST,&l->e);
   append(ne,sym,&l->e);
@@ -232,6 +233,7 @@ static expr extend(expr sym, expr val, lisp l){
   return val;
 }
 
+/** make new object **/
 static expr mkobj(sexpr_e type,io *e){
   expr x;
   x = wcalloc(sizeof(sexpr_t), 1,e);
@@ -240,6 +242,7 @@ static expr mkobj(sexpr_e type,io *e){
   return x;
 }
 
+/** make a new symbol **/
 static expr mksym(char *s,io *e){
   expr x;
   x = mkobj(S_SYMBOL,e);
@@ -248,6 +251,7 @@ static expr mksym(char *s,io *e){
   return x;
 }
 
+/** make a new primitive **/
 static expr mkprimop(expr (*func)(expr args, lisp l),io *e){
   expr x;
   x = mkobj(S_PRIMITIVE,e);
@@ -255,6 +259,7 @@ static expr mkprimop(expr (*func)(expr args, lisp l),io *e){
   return x;
 }
 
+/** a fake placeholder function for special forms **/
 static expr primop_fake(expr args, lisp l){
   io *e = &l->e;
   report("This is a place holder, you should never get here");
@@ -262,7 +267,8 @@ static expr primop_fake(expr args, lisp l){
   return nil;
 }
 
-static bool primcmp(expr x, char *s, io *e){
+/** compare a symbols name to a string **/
+static bool primcmp(expr x, const char *s, io *e){
   if(NULL == (car(x)->data.symbol)){
     report("null passed to primcmp!");/** ERR HANDLE*/
     abort();

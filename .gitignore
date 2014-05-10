@@ -4,7 +4,6 @@
 *.ascii
 *.log
 lisp
-memory.txt
 *.gcov
 *.gcda
 *.gcno
@@ -13,3 +12,5 @@ gcov.vim
 *.htm
 *.i
 *.s
+doc/htm/
+doc/htm/*
