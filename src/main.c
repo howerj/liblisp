@@ -45,7 +45,7 @@ Usage:\n\
   <file>  Iff -i given read from instead of stdin.\n\
 ";
 
-/** TODO:
+/** @todo
  *    - implement input file option
  *    - --""-- output --""--
  *    - execute on string passed in
@@ -55,7 +55,7 @@ static int getopt(int argc, char *argv[]){
   if(argc<=1)
     return 0;
 
-  if('-' != *argv[1]++){ /** TODO: Open arg as file */
+  if('-' != *argv[1]++){ /** @todo open arg as file */
     return 0;
   }
 

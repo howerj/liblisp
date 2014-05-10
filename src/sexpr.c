@@ -14,10 +14,10 @@
 #include <ctype.h> /* isspace() */
 
 static expr parse_string(io *i, io *e);
-static expr parse_symbol(io *i, io *e); /** and integers!*/
+static expr parse_symbol(io *i, io *e); /* and integers!*/
 static expr parse_list(io *i, io *e);
 
-static expr parse_symbol(io *i, io *e){ /** and integers!*/
+static expr parse_symbol(io *i, io *e){ /* and integers!*/
   expr ex = NULL;
   unsigned int count = 0;
   char c, buf[BUFLEN];
@@ -67,8 +67,7 @@ static expr parse_symbol(io *i, io *e){ /** and integers!*/
  success:
   ex->len = strlen(buf);
 
-  /* TODO: Clean up negative handling */
-  /** does not handle hex, or decimal points*/
+  /** @todo Clean up negative handling and handle hex **/
   negative=(('-'==buf[0])||('+'==buf[0]))&&(ex->len-1)?true:false;
   if(strspn(negative?buf+1:buf,"0123456789")==(ex->len-(negative?1:0))){
     ex->type = S_INTEGER;
@@ -126,7 +125,7 @@ static expr parse_string(io *i, io *e){
 }
 
 void append(expr list, expr ele, io *e)
-{ /**TODO: Error recovery, check for list type as well*/
+{ /**@todo Error handling, check for list type as well**/
   NULLCHK(list);
   NULLCHK(ele);
   list->data.list = wrealloc(list->data.list, sizeof(expr) * ++list->len,e);
@@ -252,12 +251,12 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
   case S_PRIMITIVE:
     wprints("#PRIMOP\n",o,e);
     return;
-  case S_FILE:      /** fall through */
+  case S_FILE: /** @todo implement file support **/     
     report("UNIMPLEMENTED (TODO)");
     return;
   default:
     report("print: unassigned type");
-    exit(-1);
+    exit(EXIT_FAILURE);
     return;
   }
 #undef indent
@@ -292,12 +291,12 @@ void free_expr(expr x, io *e){
   case S_PRIMITIVE:
     wfree(x,e);
     return;
-  case S_FILE:      /** fall through */
+  case S_FILE: /** @todo implement file support **/
     report("UNIMPLEMENTED (TODO)");
     break;
   default:
     report("free: unassigned type");
-    exit(-1);
+    exit(EXIT_FAILURE);
     return;
   }
 }

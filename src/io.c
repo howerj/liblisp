@@ -77,7 +77,7 @@ void wprints(const char *s, io *o , io *e){
 }
 
 void doreport(const char *s, char *cfile, unsigned int linenum, io *e)
-{ /** TODO: do report needs rewriting so it does not use fprintf or sprintf!*/
+{ /** @todo Needs rewriting so it does not use fprintf or sprintf! **/
   if((NULL == e) || (NULL == e->ptr.file)){
     fprintf(stderr, "(error\n\t(error\n\t\t\"%s\"\n\t\t\"%s\"\n\t%d\n\t)\n)\n", s, cfile, linenum);
     return;

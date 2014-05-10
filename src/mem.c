@@ -5,17 +5,16 @@
  *  @copyright      Copyright 2013 Richard James Howe.
  *  @license        GPL v3.0
  *  @email          howe.r.j.89@gmail.com
- **/
-
-/*
+ *  @details
+ *
  *  Wrappers for allocation. Garabage collection and error handling on
  *  Out-Of-Memory errors should go here as well to keep things out of
  *  the way.
- *  TODO:
- *  * The actual garbage collection stuff.
- *  * If an allocation fails, garbage should be collected, then an
- *    allocation reattempted, if it fails again it should abort.
- *  * Debug functions; maximum allocations / deallocations for example
+ *
+ *  @todo The actual garbage collection stuff.
+ *  @todo If an allocation fails, garbage should be collected, then an
+ *        allocation reattempted, if it fails again it should abort.
+ *  @todo Debug functions; maximum allocations / deallocations for example
  */
 
 #include "type.h"

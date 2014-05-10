@@ -5,25 +5,23 @@
  *  @copyright      Copyright 2013 Richard James Howe.
  *  @license        GPL v3.0
  *  @email          howe.r.j.89@gmail.com
- **/
-
-/**
+ *  @details
+ *
  *  Experimental, small, lisp interpreter.
  *
  *  Meaning of symbols:
- *  ERR HANDLE: A restart function should be implemented, this
- *    error should cause a restart.
- *  i: input
- *  o: output
- *  e: standard err
- *  x: expression
- *  ne: new expression
+ *  i:      input
+ *  o:      output
+ *  e:      standard error output
+ *  x:      expression
+ *  args:   a list of *evaluated* arguments
+ *  ne:     a newly created expression
  *
- *  TODO:
- *    * Better error reporting
- *    * Better error handling; a new primitive type should be made
- *      for it, one that can be caught.
- *    * Make the special forms less special!
+ *  @todo Better error reporting, report() should be able to
+ *        (optionally) print out expressions
+ *  @todo Better error handling; a new primitive type should be made
+ *        for it, one that can be caught.
+ *  @todo Make the special forms less special!
  *
  */
 
@@ -161,14 +159,14 @@ expr eval(expr x, expr env, lisp l){
           return eval(nth(x,i),env,l);
         } else if (primcmp(x,"quote",e)){ /* (quote exp) */
           if(!tstlen(x,2)){
-            report("quote: argc != 1");/** ERR HANDLE*/
+            report("quote: argc != 1");
             return nil;
           }
           return cdr(x);
         } else if (primcmp(x,"set",e)){
           expr ne;
           if(!tstlen(x,3)){
-            report("set: argc != 2");/** ERR HANDLE*/
+            report("set: argc != 2");
             return nil;
           }
           ne = find(l->global,cdr(x),&l->e);
@@ -179,7 +177,7 @@ expr eval(expr x, expr env, lisp l){
           return cdr(ne);
         } else if (primcmp(x,"define",e)){ /*what to do if already defined?*/
           if(!tstlen(x,3)){
-            report("define: argc != 2");/** ERR HANDLE*/
+            report("define: argc != 2");
             return nil;
           }
           return extend(cdr(x),eval(cddr(x),env,l),l);
@@ -211,7 +209,7 @@ expr eval(expr x, expr env, lisp l){
     case S_PRIMITIVE:
       return x;
     default:
-      report("Serious error, unknown type"); /** ERR HANDLE*/
+      report("Serious error, unknown type"); 
       abort();
   }
 
@@ -280,7 +278,7 @@ static expr primop_fake(expr args, lisp l){
 /** compare a symbols name to a string **/
 static bool primcmp(expr x, const char *s, io *e){
   if(NULL == (car(x)->data.symbol)){
-    report("null passed to primcmp!");/** ERR HANDLE*/
+    report("null passed to primcmp!");
     abort();
   }
   return !strcmp(car(x)->data.symbol,s);
@@ -304,7 +302,7 @@ static expr apply(expr proc, expr args, expr env, lisp l){
   if(S_PROC == proc->type){
   }
 
-  report("Cannot apply expression"); /** ERR HANDLE*/
+  report("Cannot apply expression");
   return nil;
 }
 
@@ -355,7 +353,7 @@ static expr primop_add(expr args, lisp l){
     return nil;
   for(i = 0; i < args->len; i++){
     if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); /* TODO; print out expr */
+      report("not an integer type"); 
       return nil;
     }
     ne->data.integer+=(nth(args,i)->data.integer);
@@ -373,7 +371,7 @@ static expr primop_prod(expr args, lisp l){
   ne = nth(args,0);
   for(i = 1; i < args->len; i++){
     if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); /* TODO; print out expr */
+      report("not an integer type"); 
       return nil;
     }
     ne->data.integer*=(nth(args,i)->data.integer);
@@ -391,7 +389,7 @@ static expr primop_sub(expr args, lisp l){
   ne = nth(args,0);
   for(i = 1; i < args->len; i++){
     if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); /* TODO; print out expr */
+      report("not an integer type"); 
       return nil;
     }
     ne->data.integer-=(nth(args,i)->data.integer);
@@ -409,7 +407,7 @@ static expr primop_div(expr args, lisp l){
   ne = nth(args,0);
   for(i = 1; i < args->len; i++){
     if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); /* TODO; print out expr */
+      report("not an integer type"); 
       return nil;
     }
     tmp = nth(args,i)->data.integer;

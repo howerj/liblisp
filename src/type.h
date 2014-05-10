@@ -1,6 +1,6 @@
 /**
  *  @file           type.h
- *  @brief          Types used by all sub-modules for lisp interpreter
+ *  @brief          Types used by all sub-modules of the lisp interpreter
  *  @author         Richard James Howe.
  *  @copyright      Copyright 2013 Richard James Howe.
  *  @license        GPL v3.0
@@ -20,7 +20,7 @@ typedef enum{
   true
 } bool; /** be *very* careful with this type*/
 
-typedef uint32_t cell_t; /** standard "machine word" size */
+typedef uint32_t cell_t; /* standard "machine word" size */
 typedef struct sexpr_t sexpr_t;
 typedef sexpr_t *expr;
 typedef struct lispenv_t lispenv_t;
@@ -32,7 +32,7 @@ typedef enum {
 } sexpr_e;
 
 /*io module*/
-typedef enum { /** enum describing all the io destinations */
+typedef enum { /* enum describing all the io destinations */
   invalid_io,
   file_in,
   file_out,
@@ -40,25 +40,24 @@ typedef enum { /** enum describing all the io destinations */
   string_out
 } iotype;
 
-typedef union { /** pointers to where we want to write to or read from */
+typedef union { /* pointers to where we want to write to or read from */
   FILE *file;
   char *string;
 } ioptr;
 
 
 typedef struct { /** I/O abstraction structure */
-  iotype type;            /** what are we abstracting?*/
-  ioptr ptr;              /** either FILE* or string */
-  unsigned int position;  /** position in string */
-  unsigned int max;       /** max string length, if known */
-  char c;                 /** character store for wungetc() */
-  bool ungetc;            /** true if we have ungetc'ed a character */
+  iotype type;            /* what are we abstracting?*/
+  ioptr ptr;              /* either FILE* or string */
+  unsigned int position;  /* position in string */
+  unsigned int max;       /* max string length, if known */
+  char c;                 /* character store for wungetc() */
+  bool ungetc;            /* true if we have ungetc'ed a character */
 } io;
 
 
 /*sexpr module*/
 struct sexpr_t { /** base type for our expressions */
-  sexpr_e type;
   size_t len;
   union {
     cell_t integer;
@@ -68,21 +67,20 @@ struct sexpr_t { /** base type for our expressions */
     io *io;
     expr (*func)(expr args,lisp l);
   } data;
+  sexpr_e type;
 } ;
 
 /*lisp global environment struct*/
 struct lispenv_t{ /** a lisp environment */
-  io i;                   /** input */
-  io o;                   /** output */
-  io e;                   /** stderr */
-  expr current;           /** current s-expr */
+  io i;                   /* input */
+  io o;                   /* output */
+  io e;                   /* stderr */
+  expr current;           /* current s-expr */
   expr global;            /** global list of key-value pairs
                             * (key val key val ... )
                             * Used to store things
-                            * TODO: Store all values in an *ordered* list
-                            */
+                            * @todo Store all values in an *ordered* list
+                            **/
 };
-
-
 
 #endif
