@@ -1,11 +1,11 @@
-/*****************************************************************************\
- *  @file           mem.c                                                    *
- *  @brief          Memory allocation wrappers and handling                  *
- *  @author         Richard James Howe.                                      *
- *  @copyright      Copyright 2013 Richard James Howe.                       *
- *  @license        GPL v3.0                                                 *
- *  @email          howe.r.j.89@gmail.com                                    *
-\*****************************************************************************/
+/**
+ *  @file           mem.c                                                    
+ *  @brief          Memory allocation wrappers and handling                  
+ *  @author         Richard James Howe.                                      
+ *  @copyright      Copyright 2013 Richard James Howe.                       
+ *  @license        GPL v3.0                                                 
+ *  @email          howe.r.j.89@gmail.com                                    
+ **/
 
 /*
  *  Wrappers for allocation. Garabage collection and error handling on

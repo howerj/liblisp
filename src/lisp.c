@@ -1,11 +1,11 @@
-/*****************************************************************************\
- *  @file           lisp.c                                                   *
- *  @brief          The Lisp Interpreter                                     *
- *  @author         Richard James Howe.                                      *
- *  @copyright      Copyright 2013 Richard James Howe.                       *
- *  @license        GPL v3.0                                                 *
- *  @email          howe.r.j.89@gmail.com                                    *
-\*****************************************************************************/
+/**
+ *  @file           lisp.c                                                   
+ *  @brief          The Lisp Interpreter                                     
+ *  @author         Richard James Howe.                                      
+ *  @copyright      Copyright 2013 Richard James Howe.                       
+ *  @license        GPL v3.0                                                 
+ *  @email          howe.r.j.89@gmail.com                                    
+ **/
 
 /** 
  *  Experimental, small, lisp interpreter. 
@@ -69,7 +69,11 @@ static expr primop_cons(expr args, lisp l);
 
 /*** interface functions *****************************************************/
 
-/** returns an initialized lisp environment **/
+/**                                                           
+ *  @brief          Initialize the lisp interpreter
+ *  @param          void
+ *  @return         A fully initialized lisp environment              
+ **/
 lisp initlisp(void){ 
   lisp l;
   expr global;
@@ -78,7 +82,7 @@ lisp initlisp(void){
   if(!l||!global)
     exit(-1);
 
-  /** set up file I/O and pointers */
+  /* set up file I/O and pointers */
   l->i.type     = file_in;
   l->i.ptr.file = stdin;
   l->o.type     = file_out;
@@ -116,7 +120,13 @@ lisp initlisp(void){
   return l;
 }
 
-/** evaluate a lisp expression **/
+/**                                                           
+ *  @brief          Evaluate an already parsed lisp expression                
+ *  @param          x   The s-expression to parse                             
+ *  @param          env The environment to evaluate in                        
+ *  @param          l   The global lisp environment                           
+ *  @return         An evaluate expression, possibly ready for printing.
+ **/
 expr eval(expr x, expr env, lisp l){
   unsigned int i;
   io *e = &l->e;

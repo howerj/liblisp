@@ -1,6 +1,6 @@
 CC=gcc
 CCFLAGS=-Wall -Wextra -ansi -pedantic -O2
-OBJFILES=bin/lisp.o bin/mem.o bin/io.o bin/sexpr.o bin/main.o
+OBJFILES=bin/io.o bin/mem.o bin/sexpr.o bin/lisp.o bin/main.o 
 
 all: bin/lisp
 
@@ -11,7 +11,10 @@ bin/lisp: $(OBJFILES)
 	$(CC) $(CCFLAGS) $(OBJFILES) -o bin/lisp
 
 run: bin/lisp
-	cat lsp/tst.lsp - | bin/./lisp
+	bin/./lisp
+
+test: bin/lisp
+	cat lsp/tst.lsp | bin/./lisp
 
 doxygen:
 	-doxygen doc/doxygen.conf
