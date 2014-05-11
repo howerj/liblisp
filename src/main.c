@@ -118,13 +118,13 @@ int main(int argc, char *argv[]){
 
   }
 
-  while(NULL != (x = parse_term(&l->i, &l->e))){
+  while(NULL != (x = parse_term(l->i, l->e))){
     x = eval(x,env,l);
-    print_expr(x,&l->o,0,&l->e);
+    print_expr(x,l->o,0,l->e);
   }
 
   if(true == printGlobals_f){
-    print_expr(l->global,&l->o,0,&l->e);
+    print_expr(l->global,l->o,0,l->e);
   }
   return EXIT_SUCCESS;
 }
