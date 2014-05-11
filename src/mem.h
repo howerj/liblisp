@@ -12,6 +12,8 @@
 
 #include "io.h"
 
+#define MAX_ALLOCS (1024u*1024u)
+
 void *wmalloc(size_t size, io *e);
 void *wcalloc(size_t num, size_t size, io *e);
 void *wrealloc(void *ptr, size_t size, io *e);

@@ -43,10 +43,8 @@
  *         and importing them.
  **/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "type.h"
+#include <string.h> /* strcmp, strlen */
+#include "type.h"   /* includes some std c library headers */
 #include "io.h"
 #include "mem.h"
 #include "sexpr.h"
@@ -54,9 +52,9 @@
 
 /** macro helpers **/
 #define car(X)      ((X)->data.list[0])
-#define cdr(X)      ((X)->data.list[1])
-#define cddr(X)     ((X)->data.list[2])
-#define cdddr(X)    ((X)->data.list[3])
+#define cadr(X)     ((X)->data.list[1]) 
+#define caddr(X)    ((X)->data.list[2])
+#define cadddr(X)   ((X)->data.list[3])
 #define nth(X,Y)    ((X)->data.list[(Y)])
 #define tstlen(X,Y) ((Y)==((X)->len))
 
@@ -67,10 +65,11 @@ static expr nil, tee;
 static expr mkobj(sexpr_e type, io *e);
 static expr mksym(char *s, io *e);
 static expr mkprimop(expr (*func)(expr args, lisp l),io *e);
+static expr mkproc(expr args, expr code, expr env, io *e);
 static expr evlis(expr x,expr env,lisp l);
 static expr apply(expr proc, expr args, expr env, lisp l);
 static expr find(expr env, expr x, io *e);
-static expr extend(expr sym, expr val, lisp l);
+static expr extend(expr sym, expr val, expr env, io *e);
 static bool primcmp(expr x, const char *s, io *e);
 
 /** built in primitives **/
@@ -112,33 +111,35 @@ lisp initlisp(void){
   l->o->ptr.file = stdout;
   l->e->type     = file_out ;
   l->e->ptr.file = stderr;
-  l->current    = NULL;
-  l->global     = global;
+  l->global      = global;
 
   global->type  = S_LIST;
   nil = mkobj(S_NIL,l->e);
   tee = mkobj(S_TEE,l->e);
 
   /* internal symbols */
-  extend(mksym("nil", l->e),nil,l);
-  extend(mksym("t", l->e),tee,l);
+  extend(mksym("nil", l->e),nil,l->global,l->e);
+  extend(mksym("t", l->e),tee,l->global,l->e);
 
   /* special forms */
-  extend(mksym("begin", l->e),mkprimop(primop_fake,l->e),l);
-  extend(mksym("if",    l->e),mkprimop(primop_fake,l->e),l);
-  extend(mksym("quote", l->e),mkprimop(primop_fake,l->e),l);
-  extend(mksym("set",   l->e),mkprimop(primop_fake,l->e),l);
-  extend(mksym("define",l->e),mkprimop(primop_fake,l->e),l);
-  extend(mksym("lambda",l->e),mkprimop(primop_fake,l->e),l);
+  /* 
+  // These are for internal use only at the moment:
+  extend(mksym("begin", l->e),mkprimop(primop_fake,l->e),l->global,l->e);
+  extend(mksym("if",    l->e),mkprimop(primop_fake,l->e),l->global,l->e);
+  extend(mksym("quote", l->e),mkprimop(primop_fake,l->e),l->global,l->e);
+  extend(mksym("set",   l->e),mkprimop(primop_fake,l->e),l->global,l->e);
+  extend(mksym("define",l->e),mkprimop(primop_fake,l->e),l->global,l->e);
+  extend(mksym("lambda",l->e),mkprimop(primop_fake,l->e),l->global,l->e); 
+  */
 
   /* normal forms, kind of  */
-  extend(mksym("add",l->e),mkprimop(primop_add,l->e),l);
-  extend(mksym("sub",l->e),mkprimop(primop_sub,l->e),l);
-  extend(mksym("mul",l->e),mkprimop(primop_prod,l->e),l);
-  extend(mksym("div",l->e),mkprimop(primop_div,l->e),l);
-  extend(mksym("car",l->e),mkprimop(primop_car,l->e),l);
-  extend(mksym("cdr",l->e),mkprimop(primop_cdr,l->e),l);
-  extend(mksym("cons",l->e),mkprimop(primop_cons,l->e),l);
+  extend(mksym("add",l->e),   mkprimop(primop_add,l->e),  l->global,l->e);
+  extend(mksym("sub",l->e),   mkprimop(primop_sub,l->e),  l->global,l->e);
+  extend(mksym("mul",l->e),   mkprimop(primop_prod,l->e), l->global,l->e);
+  extend(mksym("div",l->e),   mkprimop(primop_div,l->e),  l->global,l->e);
+  extend(mksym("car",l->e),   mkprimop(primop_car,l->e),  l->global,l->e);
+  extend(mksym("cdr",l->e),   mkprimop(primop_cdr,l->e),  l->global,l->e);
+  /*extend(mksym("cons",l->e),  mkprimop(primop_cons,l->e), l->global,l->e);*/
 
   return l;
 }
@@ -169,10 +170,10 @@ expr eval(expr x, expr env, lisp l){
             report("if: argc != 4");
             return nil;
           }
-          if(nil == eval(cdr(x),env,l)){
-            return eval(cdddr(x),env,l);
+          if(nil == eval(cadr(x),env,l)){
+            return eval(cadddr(x),env,l);
           } else {
-            return eval(cddr(x),env,l);
+            return eval(caddr(x),env,l);
           }
         } else if (primcmp(x,"begin",e)){ /* (begin exp ... ) */
           if(tstlen(x,1)){
@@ -187,26 +188,32 @@ expr eval(expr x, expr env, lisp l){
             report("quote: argc != 1");
             return nil;
           }
-          return cdr(x);
+          return cadr(x);
         } else if (primcmp(x,"set",e)){
           expr ne;
           if(!tstlen(x,3)){
             report("set: argc != 2");
             return nil;
           }
-          ne = find(l->global,cdr(x),l->e);
+          ne = find(env,cadr(x),l->e);
           if(nil == ne){
             return nil;
           }
-          ne->data.list[1] = eval(cddr(x),env,l);
-          return cdr(ne);
-        } else if (primcmp(x,"define",e)){ /*what to do if already defined?*/
+          ne->data.list[1] = eval(caddr(x),env,l);
+          return cadr(ne);
+        } else if (primcmp(x,"define",e)){ 
+          /*@todo if already defined, or is an internal symbol, report error */
           if(!tstlen(x,3)){
             report("define: argc != 2");
             return nil;
           }
-          return extend(cdr(x),eval(cddr(x),env,l),l);
+          return extend(cadr(x),eval(caddr(x),env,l),l->global,e);
         } else if (primcmp(x,"lambda",e)){
+          if(!tstlen(x,3)){
+            report("lambda: argc != 2");
+            return nil;
+          }
+          return mkproc(cadr(x),caddr(x),env,e);
         } else {
           return apply(eval(car(x),env,l),evlis(x,env,l),env,l);
         }
@@ -217,11 +224,11 @@ expr eval(expr x, expr env, lisp l){
       break;
     case S_SYMBOL:/*if symbol found, return it, else error; unbound symbol*/
       {
-        expr ne = find(l->global,x,l->e);
+        expr ne = find(env,x,l->e);
         if(nil == ne){
           return nil;
         }
-        return cdr(find(l->global,x,l->e));
+        return cadr(find(env,x,l->e));
       }
     case S_FILE: /* to implement */
       report("file type unimplemented");
@@ -246,9 +253,10 @@ expr eval(expr x, expr env, lisp l){
 
 /** find a symbol in a special type of list **/
 static expr find(expr env, expr x, io *e){
+  /** @todo make this function more robust **/
   unsigned int i;
   char *s = x->data.symbol;
-  for(i = 0; i < env->len; i++){
+  for(i = env->len - 1; i != 0 ; i--){ /** reverse search order **/
     if(!strcmp(car(nth(env,i))->data.symbol, s)){
       return nth(env,i);
     }
@@ -257,39 +265,48 @@ static expr find(expr env, expr x, io *e){
   return nil;
 }
 
-/** extend the global lisp environment **/
-static expr extend(expr sym, expr val, lisp l){
-  expr ne = mkobj(S_LIST,l->e);
-  append(ne,sym,l->e);
-  append(ne,val,l->e);
-  append(l->global,ne,l->e);
+/** extend a lisp environment **/
+static expr extend(expr sym, expr val, expr env, io *e){
+  expr ne = mkobj(S_LIST,e);
+  append(ne,sym,e);
+  append(ne,val,e);
+  append(env,ne,e);
   return val;
 }
 
 /** make new object **/
 static expr mkobj(sexpr_e type,io *e){
-  expr x;
-  x = wcalloc(sizeof(sexpr_t), 1,e);
-  x->len = 0;
-  x->type = type;
-  return x;
+  expr ne;
+  ne = wcalloc(sizeof(sexpr_t), 1,e);
+  ne->len = 0;
+  ne->type = type;
+  return ne;
 }
 
 /** make a new symbol **/
 static expr mksym(char *s,io *e){
-  expr x;
-  x = mkobj(S_SYMBOL,e);
-  x->len = strlen(s);
-  x->data.symbol = s;
-  return x;
+  expr ne;
+  ne = mkobj(S_SYMBOL,e);
+  ne->len = strlen(s);
+  ne->data.symbol = s;
+  return ne;
 }
 
 /** make a new primitive **/
 static expr mkprimop(expr (*func)(expr args, lisp l),io *e){
-  expr x;
-  x = mkobj(S_PRIMITIVE,e);
-  x->data.func = func;
-  return x;
+  expr ne;
+  ne = mkobj(S_PRIMITIVE,e);
+  ne->data.func = func;
+  return ne;
+}
+
+static expr mkproc(expr args, expr code, expr env, io *e){
+  expr ne;
+  ne = mkobj(S_PROC,e);
+  append(ne,args,e);
+  append(ne,code,e);
+  append(ne,env,e);
+  return ne;
 }
 
 /** a fake placeholder function for special forms **/
@@ -325,12 +342,13 @@ static expr apply(expr proc, expr args, expr env, lisp l){
     return (proc->data.func)(args,l);
   }
   if(S_PROC == proc->type){
+    report("Proc Unimplemented");
+    return nil;
   }
 
   report("Cannot apply expression");
   return nil;
 }
-
 
 /*** primitive operations ****************************************************/
 
@@ -364,6 +382,10 @@ static expr primop_cdr(expr args, lisp l){
   if((S_LIST != carg->type) || (1>=carg->len)){
     return nil;
   }
+  /** @warning This should be rewritten to make it
+   *  play nice with any future garbage collection
+   *  efforts
+   **/
   ne->data.list = carg->data.list+1;
   ne->len = carg->len - 1;
   return ne;

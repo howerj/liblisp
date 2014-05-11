@@ -10,9 +10,15 @@
 "():" nil
 "#t:" t
 
-(define a (quote (1 2 3)))
-(define b a)
+"(1 2 3):" (define a (quote (1 2 3)))
+"(1 2 3):" (define b a)
 a
 b
 (set b 2)
+"#PRIMOP:" (define + add)
+"5" (+ 2 3)
+"Need to sort this out!" (define test if) 
+
+(define test (lambda (x) (+ x 1)))
+
 

@@ -160,9 +160,12 @@ static expr parse_string(io *i, io *e){
  *  @param          ele  the atom to append to the list
  *  @param          e    error output stream
  *  @return         void
+ *
+ *  @todo           Error handline
+ *  @todo           Check for list type OR proc type
  **/
 void append(expr list, expr ele, io *e)
-{ /**@todo Error handling, check for list type as well**/
+{ 
   NULLCHK(list);
   NULLCHK(ele);
   list->data.list = wrealloc(list->data.list, sizeof(expr) * ++list->len,e);
@@ -276,7 +279,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
   case S_LIST:
     emit('(');
     for (i = 0; i < x->len; i++)
-      print_expr((expr)(x->data.list[i]), o , depth + 1,e);
+      print_expr(x->data.list[i], o , depth + 1,e);
     indent();
     emit(')');
     return;
@@ -307,6 +310,9 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     return;
   case S_PRIMITIVE:
     wprints("#PRIMOP\n",o,e);
+    return;
+  case S_PROC: 
+    wprints("#PROC\n",o,e); /** @todo print out procedure? **/
     return;
   case S_FILE: /** @todo implement file support **/     
     report("UNIMPLEMENTED (TODO)");
@@ -339,7 +345,7 @@ void free_expr(expr x, io *e){
       break;
   case S_LIST:
     for (i = 0; i < x->len; i++)
-      free_expr((expr)((x->data.list)[i]),e);
+      free_expr((x->data.list)[i],e);
     wfree(x->data.list,e);
     wfree(x,e);
     return;
@@ -354,6 +360,7 @@ void free_expr(expr x, io *e){
   case S_PRIMITIVE:
     wfree(x,e);
     return;
+  case S_PROC:
   case S_FILE: /** @todo implement file support **/
     report("UNIMPLEMENTED (TODO)");
     break;

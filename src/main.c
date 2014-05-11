@@ -71,6 +71,8 @@ Usage:\n\
  *    - implement input file option
  *    - --""-- output --""--
  *    - execute on string passed in
+ *    - This should be change so it processes
+ *    the arguments as a stream instead.
  */
 static int getopt(int argc, char *argv[]){
   int c;
@@ -119,7 +121,7 @@ int main(int argc, char *argv[]){
   }
 
   while(NULL != (x = parse_term(l->i, l->e))){
-    x = eval(x,env,l);
+    x = eval(x,l->global,l);
     print_expr(x,l->o,0,l->e);
   }
 

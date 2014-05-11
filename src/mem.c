@@ -23,6 +23,8 @@
 #include "mem.h"
 #include <stdlib.h> /** malloc(), calloc(), realloc(), free(), exit() */
 
+static unsigned int alloccounter = 0;
+
 /**** malloc wrappers ********************************************************/
 
 /**
@@ -34,6 +36,10 @@
  **/
 void *wmalloc(size_t size, io *e){
   void* v;
+  if(MAX_ALLOCS < alloccounter++){
+    fprintf(stderr,"too many mallocs\n");
+    exit(EXIT_FAILURE);
+  }
   v = malloc(size);
   if(NULL == v){
     if(NULL == e){
@@ -55,6 +61,10 @@ void *wmalloc(size_t size, io *e){
  **/
 void *wcalloc(size_t num, size_t size, io *e){
   void* v;
+  if(MAX_ALLOCS < alloccounter++){
+    fprintf(stderr,"too many mallocs\n");
+    exit(EXIT_FAILURE);
+  }
   v = calloc(num,size);
   if(NULL == v){
     if(NULL == e){
@@ -95,6 +105,7 @@ void *wrealloc(void *ptr, size_t size, io *e){
  *  @return         void
  **/
 void wfree(void *ptr, io *e){
+  alloccounter--;
   if(NULL == e){ /* *I* should not be passing null to free */
     fprintf(stderr, "free failed and *e == NULL\n");
     exit(EXIT_FAILURE);
