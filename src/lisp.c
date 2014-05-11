@@ -86,6 +86,8 @@ static expr primop_div(expr args, lisp l);
 static expr primop_cdr(expr args, lisp l);
 static expr primop_car(expr args, lisp l);
 static expr primop_cons(expr args, lisp l);
+static expr primop_numeq(expr args, lisp l);
+static expr primop_printexpr(expr args, lisp l);
 
 /*** interface functions *****************************************************/
 
@@ -126,25 +128,16 @@ lisp initlisp(void){
   extend(mksym("nil", l->e),nil,l->global,l->e);
   extend(mksym("t", l->e),tee,l->global,l->e);
 
-  /* special forms */
-  /* 
-  // These are for internal use only at the moment:
-  extend(mksym("begin", l->e),mkprimop(primop_fake,l->e),l->global,l->e);
-  extend(mksym("if",    l->e),mkprimop(primop_fake,l->e),l->global,l->e);
-  extend(mksym("quote", l->e),mkprimop(primop_fake,l->e),l->global,l->e);
-  extend(mksym("set",   l->e),mkprimop(primop_fake,l->e),l->global,l->e);
-  extend(mksym("define",l->e),mkprimop(primop_fake,l->e),l->global,l->e);
-  extend(mksym("lambda",l->e),mkprimop(primop_fake,l->e),l->global,l->e); 
-  */
-
   /* normal forms, kind of  */
-  extend(mksym("add",l->e),   mkprimop(primop_add,l->e),  l->global,l->e);
-  extend(mksym("sub",l->e),   mkprimop(primop_sub,l->e),  l->global,l->e);
-  extend(mksym("mul",l->e),   mkprimop(primop_prod,l->e), l->global,l->e);
-  extend(mksym("div",l->e),   mkprimop(primop_div,l->e),  l->global,l->e);
-  extend(mksym("car",l->e),   mkprimop(primop_car,l->e),  l->global,l->e);
-  extend(mksym("cdr",l->e),   mkprimop(primop_cdr,l->e),  l->global,l->e);
-  /*extend(mksym("cons",l->e),  mkprimop(primop_cons,l->e), l->global,l->e);*/
+  extend(mksym("+",l->e),   mkprimop(primop_add,l->e),    l->global,l->e);
+  extend(mksym("-",l->e),   mkprimop(primop_sub,l->e),    l->global,l->e);
+  extend(mksym("*",l->e),   mkprimop(primop_prod,l->e),   l->global,l->e);
+  extend(mksym("/",l->e),   mkprimop(primop_div,l->e),    l->global,l->e);
+  extend(mksym("car",l->e), mkprimop(primop_car,l->e),    l->global,l->e);
+  extend(mksym("cdr",l->e), mkprimop(primop_cdr,l->e),    l->global,l->e);
+  extend(mksym("cons",l->e),  mkprimop(primop_cons,l->e), l->global,l->e);
+  extend(mksym("=",l->e),   mkprimop(primop_numeq,l->e),  l->global,l->e);
+  extend(mksym("print",l->e),   mkprimop(primop_printexpr,l->e),  l->global,l->e);
 
   return l;
 }
@@ -207,12 +200,19 @@ expr eval(expr x, expr env, lisp l){
           ne->data.list[1] = eval(caddr(x),env,l);
           return cadr(ne);
         } else if (primcmp(x,"define",e)){ 
-          /*@todo if already defined, or is an internal symbol, report error */
-          if(!tstlen(x,3)){
-            report("define: argc != 2");
-            return nil;
+          { 
+            expr ne;
+            /*@todo if already defined, or is an internal symbol, report error */
+            if(!tstlen(x,3)){
+              report("define: argc != 2");
+              return nil;
+            }/*@warning the proc stuff is a hack*/
+            ne = extend(cadr(x),eval(caddr(x),env,l),l->global,e);
+            if(S_PROC == ne->type){
+              extend(cadr(x),ne,procenv(ne),e);
+            }
+            return ne;
           }
-          return extend(cadr(x),eval(caddr(x),env,l),l->global,e);
         } else if (primcmp(x,"lambda",e)){
           if(!tstlen(x,3)){
             report("lambda: argc != 2");
@@ -265,6 +265,9 @@ static expr find(expr env, expr x, io *e){
     if(!strcmp(car(nth(env,i))->data.symbol, s)){
       return nth(env,i);
     }
+  }
+  if(!strcmp(car(nth(env,0))->data.symbol, s)){
+      return nth(env,0);
   }
   report("unbound symbol");
   return nil;
@@ -372,6 +375,10 @@ static expr apply(expr proc, expr args, expr env, lisp l){
   }
 
   if(S_PROC == proc->type){
+    if(args->len != procargs(proc)->len){
+      report("expected number of args incorrect");
+      return nil;
+    }
     nenv = extensions(procenv(proc),procargs(proc),args,l->e);
     return eval(proccode(proc),nenv,l);
   }
@@ -384,12 +391,33 @@ static expr apply(expr proc, expr args, expr env, lisp l){
 
 static expr primop_cons(expr args, lisp l){
   io *e = l->e;
-  expr ne = mkobj(S_LIST,e);
+  expr ne = mkobj(S_LIST,e),prepend,list;
   if(2!=args->len){
     report("cons: argc != 2");
     return nil;
   }
+  prepend = car(args);
+  list = cadr(args);
+  if(S_NIL == list->type){
+    append(ne,prepend,e);
+  } else if (S_LIST == list->type){
+    /** @todo turn into mklist **/
+    ne->data.list = wmalloc((list->len + 1)*sizeof(expr),e);
+    car(ne) = prepend;
+    memcpy(ne->data.list + 1,list->data.list,(list->len)*sizeof(expr));
+    ne->len = list->len + 1;
+    /****************************/
+  } else {
+    append(ne,prepend,e);
+    append(ne,list,e);
+  }
+
   return ne;
+}
+
+static expr primop_printexpr(expr args, lisp l){
+  print_expr(args,l->o,0,l->e);
+  return args;
 }
 
 static expr primop_car(expr args, lisp l){
@@ -496,6 +524,29 @@ static expr primop_div(expr args, lisp l){
     }
   }
   return ne;
+}
+
+static expr primop_numeq(expr args, lisp l){
+  io *e = l->e;
+  unsigned int i;
+  expr ne;
+  ne = mkobj(S_INTEGER,e);
+  if(0 == args->len)
+    return nil;
+  if(1 == args->len)
+    return tee;
+  ne = nth(args,0);
+  for(i = 1; i < args->len; i++){
+    if(S_INTEGER!=nth(args,i)->type){
+      report("not an integer type"); 
+      return nil;
+    }
+    if(ne->data.integer != (nth(args,i)->data.integer)){
+      return nil;
+    }
+    ne->data.integer = (nth(args,i)->data.integer);
+  }
+  return tee;
 }
 
 /*****************************************************************************/
