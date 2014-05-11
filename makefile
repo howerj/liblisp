@@ -14,7 +14,14 @@ run: bin/lisp
 	bin/./lisp
 
 test: bin/lisp
-	cat lsp/tst.lsp - | valgrind bin/./lisp
+	cat lsp/tst.lsp - | bin/./lisp -G
+
+valgrind: bin/lisp
+	cat lsp/tst.lsp - | valgrind bin/./lisp -G
+
+strace: bin/lisp
+	cat lsp/tst.lsp - | strace bin/./lisp -G
+
 
 doxygen:
 	-doxygen doc/doxygen.conf

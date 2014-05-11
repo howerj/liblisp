@@ -17,7 +17,9 @@ b
 (set b 2)
 "#PRIMOP:" (define + add)
 "5" (+ 2 3)
-"Need to sort this out!" (define test if) 
+"Need to sort this out!" (define myif if) 
 
 "(define test (lambda (x) (+ x 1))):"
 (define test (lambda (x) (+ x 1)))
+(define test2 (lambda (x) (+ (test x) 1)))
+

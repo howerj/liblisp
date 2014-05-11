@@ -74,6 +74,7 @@ static expr evlis(expr x,expr env,lisp l);
 static expr apply(expr proc, expr args, expr env, lisp l);
 static expr find(expr env, expr x, io *e);
 static expr extend(expr sym, expr val, expr env, io *e);
+static expr extensions(expr env, expr syms, expr vals, io *e);
 static bool primcmp(expr x, const char *s, io *e);
 
 /** built in primitives **/
@@ -306,12 +307,22 @@ static expr mkprimop(expr (*func)(expr args, lisp l),io *e){
 
 /** make a new process **/
 static expr mkproc(expr args, expr code, expr env, io *e){
-  /** @todo check all args are symbols **/
-  expr ne;
+  /** 
+   *  @todo check all args are symbols, clean this up! 
+   *  @warning garbage collection is going to have to
+   *  deal with the new environment *somehow*
+   **/
+  expr ne, nenv;
   ne = mkobj(S_PROC,e);
   append(ne,args,e);
   append(ne,code,e);
-  append(ne,env,e);
+  nenv = mkobj(S_LIST,e);
+  /** @todo turn into mklist **/
+  nenv->data.list = wmalloc(env->len*sizeof(expr),e);
+  memcpy(nenv->data.list,env->data.list,(env->len)*sizeof(expr));
+  nenv->len = env->len;
+  /****************************/
+  append(ne,nenv,e);
   return ne;
 }
 
@@ -342,14 +353,27 @@ static expr evlis(expr x,expr env,lisp l){
   return ne;
 }
 
+static expr extensions(expr env, expr syms, expr vals, io *e){
+  unsigned int i;
+  if(0 == vals->len){
+    return nil;
+  }
+  for(i = 0; i < syms->len; i++){
+    extend(nth(syms,i),nth(vals,i),env,e);
+  }
+  return env;
+}
+
 static expr apply(expr proc, expr args, expr env, lisp l){
   io *e = l->e;
+  expr nenv;
   if(S_PRIMITIVE == proc->type){
     return (proc->data.func)(args,l);
   }
+
   if(S_PROC == proc->type){
-    report("Proc Unimplemented");
-    return nil;
+    nenv = extensions(procenv(proc),procargs(proc),args,l->e);
+    return eval(proccode(proc),nenv,l);
   }
 
   report("Cannot apply expression");
