@@ -24,5 +24,5 @@ report:
 	-wc src/*.c src/*.h
 
 clean:
-	-rm -rf bin/*.o bin/lisp doc/htm/
+	-rm -rf bin/*.o bin/lisp doc/htm/ doc/man doc/latex
 

@@ -14,3 +14,7 @@ gcov.vim
 *.s
 doc/htm/
 doc/htm/*
+doc/latex/
+doc/latex/*
+doc/man/
+doc/man/*
