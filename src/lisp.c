@@ -58,6 +58,10 @@
 #define nth(X,Y)    ((X)->data.list[(Y)])
 #define tstlen(X,Y) ((Y)==((X)->len))
 
+#define procargs(X) car(X)
+#define proccode(X) cadr(X)
+#define procenv(X)  caddr(X)
+
 /** global-to-file special objects **/
 static expr nil, tee;
 
@@ -300,7 +304,9 @@ static expr mkprimop(expr (*func)(expr args, lisp l),io *e){
   return ne;
 }
 
+/** make a new process **/
 static expr mkproc(expr args, expr code, expr env, io *e){
+  /** @todo check all args are symbols **/
   expr ne;
   ne = mkobj(S_PROC,e);
   append(ne,args,e);
@@ -330,7 +336,7 @@ static expr evlis(expr x,expr env,lisp l){
   unsigned int i;
   expr ne;
   ne = mkobj(S_LIST,l->e);
-  for(i = 1/*skip 0!*/; i < x->len; i++){/** @todo change so it does not use append!*/
+  for(i = 1/*skip 0!*/; i < x->len; i++){
     append(ne,eval(nth(x,i),env,l),l->e);
   }
   return ne;

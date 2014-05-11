@@ -312,7 +312,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     wprints("#PRIMOP\n",o,e);
     return;
   case S_PROC: 
-    wprints("#PROC\n",o,e); /** @todo print out procedure? **/
+    wprints("#PROC\n",o,e); /** @todo print out procedure? betware recursion!**/
     return;
   case S_FILE: /** @todo implement file support **/     
     report("UNIMPLEMENTED (TODO)");

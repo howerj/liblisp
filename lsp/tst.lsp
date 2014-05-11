@@ -19,6 +19,5 @@ b
 "5" (+ 2 3)
 "Need to sort this out!" (define test if) 
 
+"(define test (lambda (x) (+ x 1))):"
 (define test (lambda (x) (+ x 1)))
-
-
