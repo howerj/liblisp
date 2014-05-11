@@ -14,7 +14,7 @@ run: bin/lisp
 	bin/./lisp
 
 test: bin/lisp
-	cat lsp/tst.lsp | bin/./lisp
+	cat lsp/tst.lsp | valgrind bin/./lisp
 
 doxygen:
 	-doxygen doc/doxygen.conf

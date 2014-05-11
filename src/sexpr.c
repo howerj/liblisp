@@ -166,7 +166,7 @@ void append(expr list, expr ele, io *e)
   NULLCHK(list);
   NULLCHK(ele);
   list->data.list = wrealloc(list->data.list, sizeof(expr) * ++list->len,e);
-  ((expr *) (list->data.list))[list->len - 1] = ele;
+  (list->data.list)[list->len - 1] = ele;
 }
 
 /**

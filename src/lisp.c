@@ -94,7 +94,7 @@ lisp initlisp(void){
   lisp l;
   expr global;
   l      = wcalloc(1,sizeof (lispenv_t),NULL);
-  global = wcalloc(1,sizeof (lispenv_t),NULL);
+  global = wcalloc(1,sizeof (sexpr_t),NULL);
   if(!l||!global)
     exit(-1);
 
