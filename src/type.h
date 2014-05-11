@@ -9,16 +9,16 @@
 
 #ifndef TYPE_H
 #define TYPE_H
-/** system types */
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
+/*system types*/
+#include <stdint.h> /* uint32_t */
+#include <stdlib.h> /* exit(), EXIT_FAILURE */
+#include <stdio.h>  /* ... lots of things ... */
 
 /*basic types*/
 typedef enum{
   false,
   true
-} bool; /** be *very* careful with this type*/
+} bool; /* be *very* careful with this type*/
 
 typedef uint32_t cell_t; /* standard "machine word" size */
 typedef struct sexpr_t sexpr_t;
@@ -46,7 +46,7 @@ typedef union { /* pointers to where we want to write to or read from */
 } ioptr;
 
 
-typedef struct { /** I/O abstraction structure */
+typedef struct { /* I/O abstraction structure */
   iotype type;            /* what are we abstracting?*/
   ioptr ptr;              /* either FILE* or string */
   unsigned int position;  /* position in string */

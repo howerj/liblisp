@@ -118,7 +118,7 @@ int main(int argc, char *argv[]){
 
   }
 
-  while((x = parse_term(&l->i, &l->e))){
+  while(NULL != (x = parse_term(&l->i, &l->e))){
     x = eval(x,env,l);
     print_expr(x,&l->o,0,&l->e);
   }

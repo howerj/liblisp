@@ -5,24 +5,48 @@
  *  @copyright      Copyright 2013 Richard James Howe.
  *  @license        GPL v3.0
  *  @email          howe.r.j.89@gmail.com
+ *  @details
+ *
+ *  This S-expression parser, although made for a lisp interpreter,
+ *  is a small, generic, parser that could be used for other projects.
+ *
+ *  The three main functions 
+ *    - Parse an S-expression (parse_term)
+ *    - Print out an S-expression (print_expr)
+ *    - Free an S-expression (free_expr)
+ *
+ *  There are sub-functions called by the parser that could be useful
+ *  in their own right and might change so they can be accessed externally
+ *  later.
+ *
+ *  There are a number of types that are defined in "types.h" that it
+ *  *could* return but does not.
+ *
  **/
 
-#include "type.h"
-#include "io.h"
-#include "mem.h"
+#include "type.h"   /* Project wide types */
+#include "io.h"     /* I/O wrappers */
+#include "mem.h"    /* free wrappers */
 #include <string.h> /* strtol(), strspn(), strlen(), memset() */
-#include <ctype.h> /* isspace() */
+#include <ctype.h>  /* isspace() */
 
 static expr parse_string(io *i, io *e);
 static expr parse_symbol(io *i, io *e); /* and integers!*/
 static expr parse_list(io *i, io *e);
 
+/**
+ *  @brief          parse a symbol or integer (in decimal or
+ *                  octal format, positive or negative)
+ *  @param          i input stream
+ *  @param          e error output stream
+ *  @return         NULL or parsed symbol / integer
+ **/
 static expr parse_symbol(io *i, io *e){ /* and integers!*/
   expr ex = NULL;
   unsigned int count = 0;
   char c, buf[BUFLEN];
   bool negative;
-  ex=wcalloc(sizeof(sexpr_t), 1,e);
+  ex=wcalloc(1,sizeof(sexpr_t), e);
 
   memset(buf, '\0', BUFLEN);
 
@@ -80,12 +104,18 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
   return ex;
 }
 
+/**
+ *  @brief          parse a string into a s-expr atom
+ *  @param          i input stream
+ *  @param          e error output stream
+ *  @return         NULL or parsed string
+ **/
 static expr parse_string(io *i, io *e){
   expr ex = NULL;
   unsigned int count = 0;
   char c, buf[BUFLEN];
 
-  ex = wcalloc(sizeof(sexpr_t), 1,e);
+  ex = wcalloc(1,sizeof(sexpr_t), e);
   memset(buf, '\0', BUFLEN);
 
   while (EOF!=(c=wgetc(i,e))){
@@ -124,6 +154,13 @@ static expr parse_string(io *i, io *e){
   return ex;
 }
 
+/**
+ *  @brief          Takes an already existing list and appends an atom to it
+ *  @param          list a list to append an atom to
+ *  @param          ele  the atom to append to the list
+ *  @param          e    error output stream
+ *  @return         void
+ **/
 void append(expr list, expr ele, io *e)
 { /**@todo Error handling, check for list type as well**/
   NULLCHK(list);
@@ -132,11 +169,18 @@ void append(expr list, expr ele, io *e)
   ((expr *) (list->data.list))[list->len - 1] = ele;
 }
 
+/**
+ *  @brief          Parses a list, consisting of strings, symbols,
+ *                  integers, or other lists.
+ *  @param          i input stream
+ *  @param          e error output stream
+ *  @return         NULL or parsed list
+ **/
 static expr parse_list(io *i, io *e){
   expr ex = NULL, chld;
   char c;
 
-  ex = wcalloc(sizeof(sexpr_t), 1,e);
+  ex = wcalloc(1,sizeof(sexpr_t), e);
   ex->len = 0;
 
   while (EOF!=(c=wgetc(i,e))){
@@ -180,6 +224,13 @@ static expr parse_list(io *i, io *e){
  return ex;
 }
 
+/**
+ *  @brief          Parses a list or atom, returning the root
+ *                  of the S-expression.
+ *  @param          i input stream
+ *  @param          e error output stream
+ *  @return         NULL or parsed list
+ **/
 expr parse_term(io *i, io *e){
   char c;
   while (EOF!=(c=wgetc(i,e))){
@@ -199,6 +250,14 @@ expr parse_term(io *i, io *e){
   return NULL;
 }
 
+/**
+ *  @brief          Recursively prints out an s-expression
+ *  @param          x     expression to print
+ *  @param          o     output stream
+ *  @param          depth current depth of expression
+ *  @param          e     error output stream
+ *  @return         void
+ **/
 void print_expr(expr x, io *o, unsigned int depth, io *e){
 #define indent() for(i = 0; i < depth; i++) wputc(' ',o,e)
 #define emit(X)  do{ wputc((X),o,e); wputc('\n',o,e); }while(0)
@@ -209,9 +268,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
   indent();
   switch (x->type) {
   case S_NIL:
-    wputc('(',o,e);
-    wputc(')',o,e);
-    wputc('\n',o,e);
+    wprints("()\n",o,e);
     return;
   case S_TEE:
     wprints("#t\n",o,e);
@@ -254,8 +311,8 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
   case S_FILE: /** @todo implement file support **/     
     report("UNIMPLEMENTED (TODO)");
     return;
-  default:
-    report("print: unassigned type");
+  default: /* should never get here */
+    report("print: not a known printable type");
     exit(EXIT_FAILURE);
     return;
   }
@@ -263,6 +320,12 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
 #undef emit
 }
 
+/**
+ *  @brief          Recursively frees an S-expression
+ *  @param          x     expression to print
+ *  @param          e     error output stream
+ *  @return         void
+ **/
 void free_expr(expr x, io *e){
   unsigned int i;
 
@@ -294,9 +357,10 @@ void free_expr(expr x, io *e){
   case S_FILE: /** @todo implement file support **/
     report("UNIMPLEMENTED (TODO)");
     break;
-  default:
-    report("free: unassigned type");
+  default: /* should never get here */
+    report("free: not a known 'free-able' type");
     exit(EXIT_FAILURE);
     return;
   }
 }
+

@@ -93,8 +93,8 @@ static expr primop_cons(expr args, lisp l);
 lisp initlisp(void){
   lisp l;
   expr global;
-  l      = wcalloc(sizeof (lispenv_t),1,NULL);
-  global = wcalloc(sizeof (lispenv_t),1,NULL);
+  l      = wcalloc(1,sizeof (lispenv_t),NULL);
+  global = wcalloc(1,sizeof (lispenv_t),NULL);
   if(!l||!global)
     exit(-1);
 
