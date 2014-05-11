@@ -23,6 +23,16 @@ b
 (define test (lambda (x) (+ x 1)))
 (define test2 (lambda (x) (+ (test x) 1)))
 
+"Sort out? :(define t1 
+ (lambda (x)
+  (begin
+   (define t2 (lambda (y) (+ y x 1)))
+   (t2 8))))"
+
+  
+
+
+
 (define rec (lambda (x) (if (= x 10) x (rec (+ x 1)))))
 (define rec2 
  (lambda (x) 
@@ -37,3 +47,18 @@ b
 (cons 1 ())
 (cons 4 (quote (5)))
 (cons (quote (1 2 3)) (quote (4 5 6)))
+
+(define rec3
+ (lambda (x) 
+  (if 
+   (= x 10) 
+   "done" 
+   (begin
+    (print x)
+    (rec3 (+ x 1))
+    (print x)
+    (rec3 (- x 1))))))
+
+(define sumsqr (lambda (x y) (+ (* x x) (* y y))))
+(define fnil (lambda () (quote (1 2 3))))
+
