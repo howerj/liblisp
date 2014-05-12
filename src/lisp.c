@@ -71,7 +71,7 @@ static expr mksym(char *s, io *e);
 static expr mkprimop(expr (*func)(expr args, lisp l),io *e);
 static expr mkproc(expr args, expr code, expr env, io *e);
 static expr evlis(expr x,expr env,lisp l);
-static expr apply(expr proc, expr args, expr env, lisp l);
+static expr apply(expr proc, expr args, lisp l); /*add env for dynamic scope?*/
 static expr find(expr env, expr x, io *e);
 static expr extend(expr sym, expr val, expr env, io *e);
 static expr extendprimop(char *s, expr (*func)(expr args, lisp l), expr env, io *e);
@@ -79,7 +79,6 @@ static expr extensions(expr env, expr syms, expr vals, io *e);
 static bool primcmp(expr x, const char *s, io *e);
 
 /** built in primitives **/
-static expr primop_fake(expr args, lisp l); /* dummy for certain special forms */
 static expr primop_add(expr args, lisp l);
 static expr primop_sub(expr args, lisp l);
 static expr primop_prod(expr args, lisp l);
@@ -227,7 +226,7 @@ expr eval(expr x, expr env, lisp l){
           }
           return mkproc(cadr(x),caddr(x),env,e);
         } else {
-          return apply(eval(car(x),env,l),evlis(x,env,l),env,l);
+          return apply(eval(car(x),env,l),evlis(x,env,l),l);
         }
       } else {
         report("cannot apply");
@@ -374,7 +373,7 @@ static expr extensions(expr env, expr syms, expr vals, io *e){
 }
 
 /** apply a procedure over arguments given an environment **/
-static expr apply(expr proc, expr args, expr env, lisp l){
+static expr apply(expr proc, expr args, lisp l){
   io *e = l->e;
   expr nenv;
   if(S_PRIMITIVE == proc->type){
@@ -390,14 +389,6 @@ static expr apply(expr proc, expr args, expr env, lisp l){
   }
 
   report("Cannot apply expression");
-  return nil;
-}
-
-/** a fake placeholder function for special forms **/
-static expr primop_fake(expr args, lisp l){
-  io *e = l->e;
-  report("This is a place holder, you should never get here");
-  print_expr(args,l->o,0,l->e);
   return nil;
 }
 

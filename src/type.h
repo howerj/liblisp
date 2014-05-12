@@ -27,7 +27,7 @@ typedef struct lispenv_t lispenv_t;
 typedef lispenv_t *lisp;
 
 typedef enum {
-  S_NIL,      S_TEE, S_LIST, S_STRING, S_SYMBOL,
+  S_NIL,      S_TEE,        S_LIST, S_STRING, S_SYMBOL,
   S_INTEGER,  S_PRIMITIVE,  S_FILE, S_PROC
 } sexpr_e;
 
@@ -45,8 +45,8 @@ typedef union { /* pointers to where we want to write to or read from */
   char *string;
 } ioptr;
 
-
-typedef struct { /* I/O abstraction structure */
+/**I/O abstraction structure**/
+typedef struct { 
   iotype type;            /* what are we abstracting?*/
   ioptr ptr;              /* either FILE* or string */
   unsigned int position;  /* position in string */
@@ -55,8 +55,7 @@ typedef struct { /* I/O abstraction structure */
   bool ungetc;            /* true if we have ungetc'ed a character */
 } io;
 
-
-/*sexpr module*/
+/**sexpr module**/
 struct sexpr_t { /** base type for our expressions */
   size_t len;
   union {
@@ -70,16 +69,15 @@ struct sexpr_t { /** base type for our expressions */
   sexpr_e type;
 } ;
 
-/*lisp global environment struct*/
+/**lisp global environment struct**/
 struct lispenv_t{ /** a lisp environment */
-  io *i;                  /* input */
-  io *o;                  /* output */
-  io *e;                  /* stderr */
-  expr global;            /** global list of key-value pairs
-                            * (key val key val ... )
-                            * Used to store things
-                            * @todo Store all values in an *ordered* list
-                            **/
+  io *i; /* input */
+  io *o; /* output */
+  io *e; /* stderr */
+  expr global; /** 
+                 * global list of key-value pairs
+                 * ((key_0 val_0) (key_1 val_1) ... (key_n val_n))
+                **/
 };
 
 #endif
