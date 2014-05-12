@@ -493,6 +493,7 @@ static expr primop_mod(expr args, lisp l){
 }
 
 static expr primop_car(expr args, lisp l){
+  /**@todo separate out string functions**/
   io *e = l->e;
   expr a1 = car(args);
   if((S_LIST != a1->type) && (S_STRING != a1->type)){
@@ -515,6 +516,7 @@ static expr primop_car(expr args, lisp l){
 }
 
 static expr primop_cdr(expr args, lisp l){
+  /**@todo separate out string functions**/
   io *e = l->e;
   expr ne = mkobj(S_LIST,e), carg = car(args);
   if(((S_STRING != carg->type) && (S_LIST != carg->type)) || (1>=carg->len)){
@@ -536,6 +538,7 @@ static expr primop_cdr(expr args, lisp l){
 }
 
 static expr primop_cons(expr args, lisp l){
+  /**@todo separate out string functions**/
   io *e = l->e;
   expr ne = mkobj(S_LIST,e),prepend,list;
   if(2!=args->len){
