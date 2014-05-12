@@ -83,8 +83,9 @@ static expr primop_add(expr args, lisp l);
 static expr primop_sub(expr args, lisp l);
 static expr primop_prod(expr args, lisp l);
 static expr primop_div(expr args, lisp l);
-static expr primop_cdr(expr args, lisp l);
+static expr primop_mod(expr args, lisp l);
 static expr primop_car(expr args, lisp l);
+static expr primop_cdr(expr args, lisp l);
 static expr primop_cons(expr args, lisp l);
 static expr primop_numeq(expr args, lisp l);
 static expr primop_printexpr(expr args, lisp l);
@@ -133,6 +134,7 @@ lisp initlisp(void){
   extend(mksym("-",l->e),   mkprimop(primop_sub,l->e),    l->global,l->e);
   extend(mksym("*",l->e),   mkprimop(primop_prod,l->e),   l->global,l->e);
   extend(mksym("/",l->e),   mkprimop(primop_div,l->e),    l->global,l->e);
+  extend(mksym("mod",l->e), mkprimop(primop_mod,l->e),    l->global,l->e);
   extend(mksym("car",l->e), mkprimop(primop_car,l->e),    l->global,l->e);
   extend(mksym("cdr",l->e), mkprimop(primop_cdr,l->e),    l->global,l->e);
   extend(mksym("cons",l->e),  mkprimop(primop_cons,l->e), l->global,l->e);
@@ -329,14 +331,6 @@ static expr mkproc(expr args, expr code, expr env, io *e){
   return ne;
 }
 
-/** a fake placeholder function for special forms **/
-static expr primop_fake(expr args, lisp l){
-  io *e = l->e;
-  report("This is a place holder, you should never get here");
-  print_expr(args,l->o,0,l->e);
-  return nil;
-}
-
 /** compare a symbols name to a string **/
 static bool primcmp(expr x, const char *s, io *e){
   if(NULL == (car(x)->data.symbol)){
@@ -346,6 +340,7 @@ static bool primcmp(expr x, const char *s, io *e){
   return !strcmp(car(x)->data.symbol,s);
 }
 
+/** evaluate a list **/
 static expr evlis(expr x,expr env,lisp l){
   unsigned int i;
   expr ne;
@@ -356,6 +351,7 @@ static expr evlis(expr x,expr env,lisp l){
   return ne;
 }
 
+/** extend a enviroment with symbol/value pairs **/
 static expr extensions(expr env, expr syms, expr vals, io *e){
   unsigned int i;
   if(0 == vals->len){
@@ -367,13 +363,13 @@ static expr extensions(expr env, expr syms, expr vals, io *e){
   return env;
 }
 
+/** apply a procedure over arguments given an environment **/
 static expr apply(expr proc, expr args, expr env, lisp l){
   io *e = l->e;
   expr nenv;
   if(S_PRIMITIVE == proc->type){
     return (proc->data.func)(args,l);
   }
-
   if(S_PROC == proc->type){
     if(args->len != procargs(proc)->len){
       report("expected number of args incorrect");
@@ -387,37 +383,112 @@ static expr apply(expr proc, expr args, expr env, lisp l){
   return nil;
 }
 
+/** a fake placeholder function for special forms **/
+static expr primop_fake(expr args, lisp l){
+  io *e = l->e;
+  report("This is a place holder, you should never get here");
+  print_expr(args,l->o,0,l->e);
+  return nil;
+}
+
 /*** primitive operations ****************************************************/
 
-static expr primop_cons(expr args, lisp l){
+static expr primop_add(expr args, lisp l){
   io *e = l->e;
-  expr ne = mkobj(S_LIST,e),prepend,list;
-  if(2!=args->len){
-    report("cons: argc != 2");
+  unsigned int i;
+  expr ne;
+  ne = mkobj(S_INTEGER,e);
+  if(0 == args->len)
     return nil;
+  for(i = 0; i < args->len; i++){
+    if(S_INTEGER!=nth(args,i)->type){
+      report("not an integer type"); 
+      return nil;
+    }
+    ne->data.integer+=(nth(args,i)->data.integer);
   }
-  prepend = car(args);
-  list = cadr(args);
-  if(S_NIL == list->type){
-    append(ne,prepend,e);
-  } else if (S_LIST == list->type){
-    /** @todo turn into mklist **/
-    ne->data.list = wmalloc((list->len + 1)*sizeof(expr),e);
-    car(ne) = prepend;
-    memcpy(ne->data.list + 1,list->data.list,(list->len)*sizeof(expr));
-    ne->len = list->len + 1;
-    /****************************/
-  } else {
-    append(ne,prepend,e);
-    append(ne,list,e);
-  }
-
   return ne;
 }
 
-static expr primop_printexpr(expr args, lisp l){
-  print_expr(args,l->o,0,l->e);
-  return args;
+static expr primop_sub(expr args, lisp l){
+  io *e = l->e;
+  unsigned int i;
+  expr ne;
+  ne = mkobj(S_INTEGER,e);
+  if(0 == args->len)
+    return nil;
+  ne = nth(args,0);
+  for(i = 1; i < args->len; i++){
+    if(S_INTEGER!=nth(args,i)->type){
+      report("not an integer type"); 
+      return nil;
+    }
+    ne->data.integer-=(nth(args,i)->data.integer);
+  }
+  return ne;
+}
+
+static expr primop_prod(expr args, lisp l){
+  io *e = l->e;
+  unsigned int i;
+  expr ne;
+  ne = mkobj(S_INTEGER,e);
+  if(0 == args->len)
+    return nil;
+  ne = nth(args,0);
+  for(i = 1; i < args->len; i++){
+    if(S_INTEGER!=nth(args,i)->type){
+      report("not an integer type"); 
+      return nil;
+    }
+    ne->data.integer*=(nth(args,i)->data.integer);
+  }
+  return ne;
+}
+
+static expr primop_div(expr args, lisp l){
+  io *e = l->e;
+  unsigned int i,tmp;
+  expr ne = mkobj(S_INTEGER,e);
+  if(0 == args->len)
+    return nil;
+  ne = nth(args,0);
+  for(i = 1; i < args->len; i++){
+    if(S_INTEGER!=nth(args,i)->type){
+      report("not an integer type"); 
+      return nil;
+    }
+    tmp = nth(args,i)->data.integer;
+    if(tmp){
+      ne->data.integer/=tmp;
+    }else{
+      report("attempted /0");
+      return nil;
+    }
+  }
+  return ne;
+}
+
+static expr primop_mod(expr args, lisp l){
+  io *e = l->e;
+  unsigned int tmp;
+  expr ne = mkobj(S_INTEGER,e);
+  if(2!=args->len){
+    report("mod: argc != 2");
+    return nil;
+  }
+  if((car(args)->type != S_INTEGER) || (cadr(args)->type != S_INTEGER)){
+    report("not an integer type");
+    return nil;
+  }
+  tmp = cadr(args)->data.integer;
+  if(0 == tmp){
+    report("mod: 0/");
+    return nil;
+  }
+  ne->data.integer = car(args)->data.integer % tmp;
+
+  return ne;
 }
 
 static expr primop_car(expr args, lisp l){
@@ -449,80 +520,29 @@ static expr primop_cdr(expr args, lisp l){
   return ne;
 }
 
-static expr primop_add(expr args, lisp l){
+static expr primop_cons(expr args, lisp l){
   io *e = l->e;
-  unsigned int i;
-  expr ne;
-  ne = mkobj(S_INTEGER,e);
-  if(0 == args->len)
+  expr ne = mkobj(S_LIST,e),prepend,list;
+  if(2!=args->len){
+    report("cons: argc != 2");
     return nil;
-  for(i = 0; i < args->len; i++){
-    if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); 
-      return nil;
-    }
-    ne->data.integer+=(nth(args,i)->data.integer);
   }
-  return ne;
-}
+  prepend = car(args);
+  list = cadr(args);
+  if(S_NIL == list->type){
+    append(ne,prepend,e);
+  } else if (S_LIST == list->type){
+    /** @todo turn into mklist **/
+    ne->data.list = wmalloc((list->len + 1)*sizeof(expr),e);
+    car(ne) = prepend;
+    memcpy(ne->data.list + 1,list->data.list,(list->len)*sizeof(expr));
+    ne->len = list->len + 1;
+    /****************************/
+  } else {
+    append(ne,prepend,e);
+    append(ne,list,e);
+  }
 
-static expr primop_prod(expr args, lisp l){
-  io *e = l->e;
-  unsigned int i;
-  expr ne;
-  ne = mkobj(S_INTEGER,e);
-  if(0 == args->len)
-    return nil;
-  ne = nth(args,0);
-  for(i = 1; i < args->len; i++){
-    if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); 
-      return nil;
-    }
-    ne->data.integer*=(nth(args,i)->data.integer);
-  }
-  return ne;
-}
-
-static expr primop_sub(expr args, lisp l){
-  io *e = l->e;
-  unsigned int i;
-  expr ne;
-  ne = mkobj(S_INTEGER,e);
-  if(0 == args->len)
-    return nil;
-  ne = nth(args,0);
-  for(i = 1; i < args->len; i++){
-    if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); 
-      return nil;
-    }
-    ne->data.integer-=(nth(args,i)->data.integer);
-  }
-  return ne;
-}
-
-static expr primop_div(expr args, lisp l){
-  io *e = l->e;
-  unsigned int i,tmp;
-  expr ne;
-  ne = mkobj(S_INTEGER,e);
-  if(0 == args->len)
-    return nil;
-  ne = nth(args,0);
-  for(i = 1; i < args->len; i++){
-    if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); 
-      return nil;
-    }
-    tmp = nth(args,i)->data.integer;
-    if(tmp){
-      ne->data.integer/=tmp;
-    }else{
-      report("attempted /0");
-      return nil;
-    }
-  }
   return ne;
 }
 
@@ -547,6 +567,12 @@ static expr primop_numeq(expr args, lisp l){
     ne->data.integer = (nth(args,i)->data.integer);
   }
   return tee;
+}
+
+static expr primop_printexpr(expr args, lisp l){
+  /* @todo if arg = 1, treat as I/O, else normal out */
+  print_expr(args,l->o,0,l->e);
+  return args;
 }
 
 /*****************************************************************************/

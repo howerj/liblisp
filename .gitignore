@@ -18,3 +18,4 @@ doc/latex/
 doc/latex/*
 doc/man/
 doc/man/*
+*.out
