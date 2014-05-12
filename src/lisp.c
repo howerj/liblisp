@@ -43,7 +43,7 @@
  *         and importing them.
  **/
 
-#include <string.h> /* strcmp, strlen */
+#include <string.h> /* strcmp, strlen, strcat */
 #include "type.h"   /* includes some std c library headers */
 #include "io.h"
 #include "mem.h"
@@ -553,11 +553,16 @@ static expr primop_cons(expr args, lisp l){
     memcpy(ne->data.list + 1,list->data.list,(list->len)*sizeof(expr));
     ne->len = list->len + 1;
     /****************************/
+  } if((S_STRING == list->type) && (S_STRING == prepend->type)){
+    ne->type = S_STRING;
+    ne->data.string = wcalloc(sizeof(char),(list->len)+(prepend->len)+1,e);
+    ne->len = list->len + prepend->len;
+    strcpy(ne->data.string,prepend->data.string);
+    strcat(ne->data.string,list->data.string);
   } else {
     append(ne,prepend,e);
     append(ne,list,e);
   }
-
   return ne;
 }
 
