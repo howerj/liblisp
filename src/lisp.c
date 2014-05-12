@@ -494,16 +494,24 @@ static expr primop_mod(expr args, lisp l){
 
 static expr primop_car(expr args, lisp l){
   io *e = l->e;
-  expr ne = car(args);
-  if(S_LIST != ne->type){
-    report("args != list");
+  expr a1 = car(args);
+  if((S_LIST != a1->type) && (S_STRING != a1->type)){
+    report("args != list || string");
     return nil;
   }
   if(1!=args->len){
     report("car: argc != 1");
     return nil;
   }
-  return car(ne);
+  if(S_LIST == a1->type){
+    return car(a1);
+  } else { /*must be string*/
+      expr ne = mkobj(S_STRING,e);
+      ne->data.string = wcalloc(sizeof(char),a1->len?2:0,e);
+      ne->data.string[0] = a1->data.string[0];
+      ne->len = 1;
+      return ne;
+  }
 }
 
 static expr primop_cdr(expr args, lisp l){
@@ -516,6 +524,7 @@ static expr primop_cdr(expr args, lisp l){
    *  play nice with any future garbage collection
    *  efforts
    **/
+  if(S_LIST == carg->type){
   ne->data.list = carg->data.list+1;
   ne->len = carg->len - 1;
   return ne;
