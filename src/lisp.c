@@ -517,7 +517,7 @@ static expr primop_car(expr args, lisp l){
 static expr primop_cdr(expr args, lisp l){
   io *e = l->e;
   expr ne = mkobj(S_LIST,e), carg = car(args);
-  if((S_LIST != carg->type) || (1>=carg->len)){
+  if(((S_STRING != carg->type) && (S_LIST != carg->type)) || (1>=carg->len)){
     return nil;
   }
   /** @warning This should be rewritten to make it
@@ -525,7 +525,12 @@ static expr primop_cdr(expr args, lisp l){
    *  efforts
    **/
   if(S_LIST == carg->type){
-  ne->data.list = carg->data.list+1;
+    ne->data.list = carg->data.list + 1;
+  } else { /*must be a string*/
+    ne->type = S_STRING;
+    ne->data.string = wcalloc(sizeof(char),carg->len,e);/*not len + 1*/
+    strcpy(ne->data.string,carg->data.string + 1);
+  }
   ne->len = carg->len - 1;
   return ne;
 }
