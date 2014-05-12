@@ -20,7 +20,7 @@ typedef enum{
   true
 } bool; /* be *very* careful with this type*/
 
-typedef uint32_t cell_t; /* standard "machine word" size */
+typedef int32_t cell_t; /* standard "machine word" size */
 typedef struct sexpr_t sexpr_t;
 typedef sexpr_t *expr;
 typedef struct lispenv_t lispenv_t;

@@ -88,6 +88,8 @@ static expr primop_mod(expr args, lisp l);
 static expr primop_car(expr args, lisp l);
 static expr primop_cdr(expr args, lisp l);
 static expr primop_cons(expr args, lisp l);
+static expr primop_nth(expr args, lisp l);
+static expr primop_len(expr args, lisp l);
 static expr primop_numeq(expr args, lisp l);
 static expr primop_printexpr(expr args, lisp l);
 
@@ -131,16 +133,18 @@ lisp initlisp(void){
   extend(mksym("t", l->e),tee,l->global,l->e);
 
   /* normal forms, kind of  */
-  extendprimop("+",     primop_add,       l->global, l->e);
-  extendprimop("-",     primop_sub,       l->global, l->e);
-  extendprimop("*",     primop_prod,      l->global, l->e);
-  extendprimop("/",     primop_div,       l->global, l->e);
-  extendprimop("mod",   primop_mod,       l->global, l->e);
-  extendprimop("car",   primop_car,       l->global, l->e);
-  extendprimop("cdr",   primop_cdr,       l->global, l->e);
-  extendprimop("cons",  primop_cons,      l->global, l->e);
-  extendprimop("=",     primop_numeq,     l->global, l->e);
-  extendprimop("print", primop_printexpr, l->global, l->e);
+  extendprimop("+",       primop_add,       l->global, l->e);
+  extendprimop("-",       primop_sub,       l->global, l->e);
+  extendprimop("*",       primop_prod,      l->global, l->e);
+  extendprimop("/",       primop_div,       l->global, l->e);
+  extendprimop("mod",     primop_mod,       l->global, l->e);
+  extendprimop("car",     primop_car,       l->global, l->e);
+  extendprimop("cdr",     primop_cdr,       l->global, l->e);
+  extendprimop("cons",    primop_cons,      l->global, l->e);
+  extendprimop("nth",     primop_nth,       l->global, l->e);
+  extendprimop("length",  primop_len,       l->global, l->e);
+  extendprimop("=",       primop_numeq,     l->global, l->e);
+  extendprimop("print",   primop_printexpr, l->global, l->e);
 
   return l;
 }
@@ -552,11 +556,69 @@ static expr primop_cons(expr args, lisp l){
   return ne;
 }
 
+static expr primop_nth(expr args, lisp l){
+  /** @todo implement version for string types **/
+  io *e = l->e;
+  cell_t i;
+  expr a1,a2;
+  if(2 != args->len){
+    report("nth: argc != 2");
+    return nil;
+  }
+  a1 = car(args);
+  a2 = cadr(args);
+  if(S_INTEGER != a1->type){
+    report("nth: arg 1 != integer");
+    return nil;
+  }
+  if((S_LIST != a2->type) && (S_STRING != a2->type)){
+    report("nth: arg 2 != list || string");
+    return nil;
+  }
+
+  i = car(args)->data.integer;
+  if(0 > i){
+    i = a2->len + i; 
+  }
+
+  if((unsigned)i > a2->len){
+    return nil;
+  }
+
+  if(S_LIST == a2->type){
+    return nth(a2,i);
+  } else { /*must be string*/
+    {
+      expr ne = mkobj(S_STRING,e);
+      ne->data.string = wcalloc(sizeof(char),2,e);
+      ne->data.string[0] = a2->data.string[i];
+      ne->len = 1;
+      return ne;
+    }
+  }
+  return nil;
+}
+
+static expr primop_len(expr args, lisp l){
+  io *e = l->e;
+  expr a1, ne = mkobj(S_INTEGER,e);
+  if(1 != args->len){
+    report("len: argc != 1");
+    return nil;
+  }
+  a1 = car(args);
+  if((S_LIST != a1->type) && (S_STRING != a1->type)){
+    report("len: arg 2 != list || string");
+    return nil;
+  }
+  ne->data.integer = a1->len;
+  return ne;
+}
+
 static expr primop_numeq(expr args, lisp l){
   io *e = l->e;
   unsigned int i;
-  expr ne;
-  ne = mkobj(S_INTEGER,e);
+  expr ne = mkobj(S_INTEGER,e);
   if(0 == args->len)
     return nil;
   if(1 == args->len)
