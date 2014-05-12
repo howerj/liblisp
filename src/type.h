@@ -78,6 +78,7 @@ struct lispenv_t{ /** a lisp environment */
                  * global list of key-value pairs
                  * ((key_0 val_0) (key_1 val_1) ... (key_n val_n))
                 **/
+  expr env;
 };
 
 #endif

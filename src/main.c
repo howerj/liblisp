@@ -106,7 +106,7 @@ static int getopt(int argc, char *argv[]){
 
 int main(int argc, char *argv[]){
   lisp l;
-  expr x,env=NULL;
+  expr x;
 
   /** setup environment */
   l = initlisp();
@@ -121,7 +121,7 @@ int main(int argc, char *argv[]){
   }
 
   while(NULL != (x = parse_term(l->i, l->e))){
-    x = eval(x,l->global,l);
+    x = eval(x,l->env,l);
     print_expr(x,l->o,0,l->e);
   }
 

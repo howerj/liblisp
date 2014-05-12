@@ -101,18 +101,13 @@ static expr primop_printexpr(expr args, lisp l);
  **/
 lisp initlisp(void){
   lisp l;
-  expr global;
-  l      = wcalloc(1,sizeof (lispenv_t),NULL);
-  global = wcalloc(1,sizeof (sexpr_t),NULL);
-  if((NULL==l)||(NULL==global))
-    exit(EXIT_FAILURE);
+  l         = wcalloc(1,sizeof (lispenv_t),NULL);
+  l->global = wcalloc(1,sizeof (sexpr_t),NULL);
+  l->env    = wcalloc(1,sizeof (sexpr_t),NULL);
 
   l->i = wcalloc(1,sizeof (io),NULL);
   l->o = wcalloc(1,sizeof (io),NULL);
   l->e = wcalloc(1,sizeof (io),NULL);
-
-  if((NULL==l->i)||(NULL==l->o)||(NULL==l->e))
-    exit(EXIT_FAILURE);
 
   /* set up file I/O and pointers */
   l->i->type     = file_in;
@@ -121,9 +116,9 @@ lisp initlisp(void){
   l->o->ptr.file = stdout;
   l->e->type     = file_out ;
   l->e->ptr.file = stderr;
-  l->global      = global;
+  l->global->type= S_LIST;
+  l->env->type   = S_LIST;
 
-  global->type  = S_LIST;
   nil = mkobj(S_NIL,l->e);
   tee = mkobj(S_TEE,l->e);
 
@@ -201,7 +196,11 @@ expr eval(expr x, expr env, lisp l){
           }
           ne = find(env,cadr(x),l->e);
           if(nil == ne){
-            return nil;
+            ne = find(l->global,cadr(x),l->e);
+            if(nil == ne){
+              report("unbound symbol");
+              return nil;
+            }
           }
           ne->data.list[1] = eval(caddr(x),env,l);
           return cadr(ne);
@@ -212,11 +211,8 @@ expr eval(expr x, expr env, lisp l){
             if(!tstlen(x,3)){
               report("define: argc != 2");
               return nil;
-            }/*@warning the proc stuff is a hack*/
-            ne = extend(cadr(x),eval(caddr(x),env,l),l->global,e);
-            if(S_PROC == ne->type){
-              extend(cadr(x),ne,procenv(ne),e);
             }
+            ne = extend(cadr(x),eval(caddr(x),env,l),l->global,e);
             return ne;
           }
         } else if (primcmp(x,"lambda",e)){
@@ -237,9 +233,13 @@ expr eval(expr x, expr env, lisp l){
       {
         expr ne = find(env,x,l->e);
         if(nil == ne){
-          return nil;
+          ne = find(l->global,x,l->e);
+          if(nil == ne){
+            report("unbound symbol");
+            return nil;
+          }
         }
-        return cadr(find(env,x,l->e));
+        return cadr(ne);
       }
     case S_FILE: /* to implement */
       report("file type unimplemented");
@@ -267,6 +267,9 @@ static expr find(expr env, expr x, io *e){
   /** @todo make this function more robust **/
   unsigned int i;
   char *s = x->data.symbol;
+  if(1 > env->len){
+    return nil;
+  }
   for(i = env->len - 1; i != 0 ; i--){ /** reverse search order **/
     if(!strcmp(car(nth(env,i))->data.symbol, s)){
       return nth(env,i);
@@ -275,7 +278,6 @@ static expr find(expr env, expr x, io *e){
   if(!strcmp(car(nth(env,0))->data.symbol, s)){
       return nth(env,0);
   }
-  report("unbound symbol");
   return nil;
 }
 
