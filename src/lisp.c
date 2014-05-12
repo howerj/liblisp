@@ -74,6 +74,7 @@ static expr evlis(expr x,expr env,lisp l);
 static expr apply(expr proc, expr args, expr env, lisp l);
 static expr find(expr env, expr x, io *e);
 static expr extend(expr sym, expr val, expr env, io *e);
+static expr extendprimop(char *s, expr (*func)(expr args, lisp l), expr env, io *e);
 static expr extensions(expr env, expr syms, expr vals, io *e);
 static bool primcmp(expr x, const char *s, io *e);
 
@@ -130,16 +131,16 @@ lisp initlisp(void){
   extend(mksym("t", l->e),tee,l->global,l->e);
 
   /* normal forms, kind of  */
-  extend(mksym("+",l->e),   mkprimop(primop_add,l->e),    l->global,l->e);
-  extend(mksym("-",l->e),   mkprimop(primop_sub,l->e),    l->global,l->e);
-  extend(mksym("*",l->e),   mkprimop(primop_prod,l->e),   l->global,l->e);
-  extend(mksym("/",l->e),   mkprimop(primop_div,l->e),    l->global,l->e);
-  extend(mksym("mod",l->e), mkprimop(primop_mod,l->e),    l->global,l->e);
-  extend(mksym("car",l->e), mkprimop(primop_car,l->e),    l->global,l->e);
-  extend(mksym("cdr",l->e), mkprimop(primop_cdr,l->e),    l->global,l->e);
-  extend(mksym("cons",l->e),  mkprimop(primop_cons,l->e), l->global,l->e);
-  extend(mksym("=",l->e),   mkprimop(primop_numeq,l->e),  l->global,l->e);
-  extend(mksym("print",l->e),   mkprimop(primop_printexpr,l->e),  l->global,l->e);
+  extendprimop("+",     primop_add,       l->global, l->e);
+  extendprimop("-",     primop_sub,       l->global, l->e);
+  extendprimop("*",     primop_prod,      l->global, l->e);
+  extendprimop("/",     primop_div,       l->global, l->e);
+  extendprimop("mod",   primop_mod,       l->global, l->e);
+  extendprimop("car",   primop_car,       l->global, l->e);
+  extendprimop("cdr",   primop_cdr,       l->global, l->e);
+  extendprimop("cons",  primop_cons,      l->global, l->e);
+  extendprimop("=",     primop_numeq,     l->global, l->e);
+  extendprimop("print", primop_printexpr, l->global, l->e);
 
   return l;
 }
@@ -283,6 +284,11 @@ static expr extend(expr sym, expr val, expr env, io *e){
   append(env,ne,e);
   return val;
 }
+
+static expr extendprimop(char *s, expr (*func)(expr args, lisp l), expr env, io *e){
+  return extend(mksym(s,e), mkprimop(func,e), env,e);
+}
+
 
 /** make new object **/
 static expr mkobj(sexpr_e type,io *e){
