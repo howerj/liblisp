@@ -36,6 +36,7 @@
 #include "lisp.h"
 
 static int getopt(char *arg);
+static int repl(lisp l);
 
 static bool printGlobals_f = false;
 static char *usage = "./lisp -hVG <file>";
@@ -97,10 +98,18 @@ static int getopt(char *arg){
   return 0;
 }
 
+static int repl(lisp l){
+  expr x;
+  while(NULL != (x = parse_term(l->i, l->e))){
+    x = eval(x,l->env,l);
+    print_expr(x,l->o,0,l->e);
+  }
+  return 0;
+}
+
 int main(int argc, char *argv[]){
   int i;
   lisp l;
-  expr x;
   FILE *input;
 
   /** setup environment */
@@ -115,21 +124,13 @@ int main(int argc, char *argv[]){
       }
 
       l->i->ptr.file = input;
-
-      while(NULL != (x = parse_term(l->i, l->e))){
-        x = eval(x,l->env,l);
-        print_expr(x,l->o,0,l->e);
-      }
-
+      repl(l);
       fclose(input);
     }
   }
 
   l->i->ptr.file = stdin;
-  while(NULL != (x = parse_term(l->i, l->e))){
-    x = eval(x,l->env,l);
-    print_expr(x,l->o,0,l->e);
-  }
+  repl(l);
 
   if(true == printGlobals_f){
     print_expr(l->global,l->o,0,l->e);
