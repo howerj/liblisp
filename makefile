@@ -21,18 +21,18 @@ bin/lisp: $(OBJFILES)
 	$(CC) $(CCFLAGS) $(OBJFILES) -o bin/lisp
 
 run: bin/lisp
-	bin/./lisp
+	bin/./lisp lsp/lib.lsp
 
 ## testing ####################################################################
 
 test: bin/lisp
-	cat lsp/tst.lsp - | bin/./lisp -G
+	bin/./lisp -G lsp/lib.lsp
 
 valgrind: bin/lisp
-	cat lsp/tst.lsp - | valgrind bin/./lisp -G
+	valgrind bin/./lisp -G lsp/lib.lsp
 
 strace: bin/lisp
-	cat lsp/tst.lsp - | strace bin/./lisp -G
+	strace bin/./lisp -G lsp/lib.lsp
 
 # Most current version of git.
 # git log | head -n 1 | awk '{print $2}'
