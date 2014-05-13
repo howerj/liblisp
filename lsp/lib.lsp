@@ -2,6 +2,8 @@
 (define caddr (lambda (x) (car (cdr (cdr x)))))
 (define cadddr (lambda (x) (car (cdr (cdr (cdr x))))))
 
+(define sumofsqrs (lambda (x y) (+ (* x x) (* y y))))
+
 (define gcd 
  (lambda (x y) 
   (if 
@@ -10,12 +12,13 @@
    (gcd y 
     (mod x y)))))
 
-(define sumofsqrs (lambda (x y) (+ (* x x) (* y y))))
 
+"being passed the wrong environment? Or evaluating at the wrong time?"
 (define !
   (lambda (N)
     (if (= N 1)
         1
         (* N (! (- N 1))))))
 
-
+"doesn't work; example of the above"
+(define tst (lambda (X) (if X (* X X) X)))
