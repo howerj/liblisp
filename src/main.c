@@ -29,18 +29,16 @@
  *
  **/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdio.h>  /* printf(), fopen(), fclose() */
+#include <stdlib.h> /* exit() */
 #include "type.h"
 #include "sexpr.h"
 #include "lisp.h"
 
-static int getopt(int argc, char *argv[]);
+static int getopt(char *arg);
 
 static bool printGlobals_f = false;
-
-static char *usage = "./lisp -hViG <file>";
+static char *usage = "./lisp -hVG <file>";
 
 /**
  * version should include md5sum calculated from
@@ -58,68 +56,76 @@ Program:\n\
 Author:\n\
   Richard James Howe\n\
 Usage:\n\
-  ./lisp -hViG <file>\n\
+  ./lisp -hVG <file>\n\
 \n\
   -h      Print this help message.\n\
   -V      Print version number.\n\
-  -i      Input file.\n\
   -G      Print a list of all globals on normal program exit.\n\
-  <file>  Iff -i given read from instead of stdin.\n\
+  <file>  Read from <file> instead of stdin.\n\
 ";
 
-/** @todo
- *    - implement input file option
- *    - --""-- output --""--
- *    - execute on string passed in
- *    - This should be change so it processes
- *    the arguments as a stream instead.
+/** 
+ *  @brief          Process options; caution - may use exit()!
+ *  @param          arg   current command line argument
+ *  @return         0 = arg was a switch, 1 arg could be a file
+ *                  exit() if arg was a switch but is an invalid
+ *                  switch.
  */
-static int getopt(int argc, char *argv[]){
+static int getopt(char *arg){
   int c;
-  if(argc<=1)
-    return 0;
 
-  if('-' != *argv[1]++){ /** @todo open arg as file */
-    return 0;
+  if('-' != *arg++){ /** @todo open arg as file */
+    return 1;
   }
 
-  while((c = *argv[1]++)){
+  while((c = *arg++)){
     switch(c){
       case 'h':
         printf("%s",help);
-        return 0;
+        break;
       case 'V':
         printf("%s",version);
-        return 0;
-      case 'i':
         break;
       case 'G':
         printGlobals_f = true;
         break;
       default:
-        fprintf(stderr,"unknown option: '%c'\n", c);
-        return 1;
+        fprintf(stderr,"unknown option: '%c'\n%s\n", c, usage);
+        exit(EXIT_FAILURE);
     }
   }
   return 0;
 }
 
 int main(int argc, char *argv[]){
+  int i;
   lisp l;
   expr x;
+  FILE *input;
 
   /** setup environment */
   l = initlisp();
 
-  if(1<argc){
-    if(getopt(argc,argv)){
-        fprintf(stderr,"%s\n",usage);
-        return EXIT_FAILURE;
-    }
-  } else {
+  for(i = 1; i < argc; i++){
+    if(1 == getopt(argv[i])){
+      printf("(file input \"%s\")\n",argv[i]);
+      if(NULL == (input = fopen(argv[i],"r"))){
+        fprintf(stderr,"(error \"unable to read '%s'\")\n",argv[i]);
+        exit(EXIT_FAILURE);
+      }
 
+      l->i->ptr.file = input;
+
+      while(NULL != (x = parse_term(l->i, l->e))){
+        x = eval(x,l->env,l);
+        print_expr(x,l->o,0,l->e);
+      }
+
+      fclose(input);
+    }
   }
 
+  l->i->ptr.file = stdin;
   while(NULL != (x = parse_term(l->i, l->e))){
     x = eval(x,l->env,l);
     print_expr(x,l->o,0,l->e);

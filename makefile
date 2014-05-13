@@ -34,6 +34,8 @@ valgrind: bin/lisp
 strace: bin/lisp
 	cat lsp/tst.lsp - | strace bin/./lisp -G
 
+# Most current version of git.
+# git log | head -n 1 | awk '{print $2}'
 
 ## documentation ##############################################################
 

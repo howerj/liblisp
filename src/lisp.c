@@ -148,7 +148,7 @@ lisp initlisp(void){
  *  @param          x   The s-expression to parse
  *  @param          env The environment to evaluate in
  *  @param          l   The global lisp environment
- *  @return         An evaluate expression, possibly ready for printing.
+ *  @return         An evaluated expression, possibly ready for printing.
  **/
 expr eval(expr x, expr env, lisp l){
   unsigned int i;
