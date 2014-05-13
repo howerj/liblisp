@@ -35,11 +35,19 @@
 #include "sexpr.h"
 #include "lisp.h"
 
+typedef enum{
+  getopt_switch,
+  getopt_input_file,
+  getopt_output_file,
+  getopt_string_input,
+  getopt_error
+} getopt_e;
+
 static int getopt(char *arg);
 static int repl(lisp l);
 
 static bool printGlobals_f = false;
-static char *usage = "./lisp -hVG <file>";
+static char *usage = "./lisp -hVG <file>\n";
 
 /**
  * version should include md5sum calculated from
@@ -56,8 +64,6 @@ Program:\n\
   LSP: Lisp Interpreter\n\
 Author:\n\
   Richard James Howe\n\
-Usage:\n\
-  ./lisp -hVG <file>\n\
 \n\
   -h      Print this help message.\n\
   -V      Print version number.\n\
@@ -66,22 +72,21 @@ Usage:\n\
 ";
 
 /** 
- *  @brief          Process options; caution - may use exit()!
- *  @param          arg   current command line argument
- *  @return         0 = arg was a switch, 1 arg could be a file
- *                  exit() if arg was a switch but is an invalid
- *                  switch.
+ *  @brief    Process options; caution - may use exit()!
+ *  @param    arg   current command line argument
+ *  @return   getopt_e, a self describing enum.        
  */
 static int getopt(char *arg){
   int c;
 
   if('-' != *arg++){ /** @todo open arg as file */
-    return 1;
+    return getopt_input_file;
   }
 
   while((c = *arg++)){
     switch(c){
       case 'h':
+        printf("%s",usage);
         printf("%s",help);
         break;
       case 'V':
@@ -91,11 +96,11 @@ static int getopt(char *arg){
         printGlobals_f = true;
         break;
       default:
-        fprintf(stderr,"unknown option: '%c'\n%s\n", c, usage);
-        exit(EXIT_FAILURE);
+        fprintf(stderr,"unknown option: '%c'\n%s", c, usage);
+        return getopt_error;
     }
   }
-  return 0;
+  return getopt_switch;
 }
 
 static int repl(lisp l){
@@ -116,16 +121,29 @@ int main(int argc, char *argv[]){
   l = initlisp();
 
   for(i = 1; i < argc; i++){
-    if(1 == getopt(argv[i])){
-      printf("(file input \"%s\")\n",argv[i]);
-      if(NULL == (input = fopen(argv[i],"r"))){
-        fprintf(stderr,"(error \"unable to read '%s'\")\n",argv[i]);
-        exit(EXIT_FAILURE);
-      }
 
-      l->i->ptr.file = input;
-      repl(l);
-      fclose(input);
+    switch(getopt(argv[i])){
+      case getopt_switch:
+        /*getopt_switch means getopt set some flags or printed something*/
+        break;
+      case getopt_input_file:
+      { /*try to treat it as an output file*/
+        printf("(file input \"%s\")\n",argv[i]);
+        if(NULL == (input = fopen(argv[i],"r"))){
+          fprintf(stderr,"(error \"unable to read '%s'\")\n",argv[i]);
+          exit(EXIT_FAILURE);
+        }
+
+        l->i->ptr.file = input;
+        repl(l);
+        fclose(input);
+      }
+      break;
+      case getopt_output_file:
+      case getopt_string_input:
+      case getopt_error:
+      default:
+        exit(EXIT_FAILURE);
     }
   }
 

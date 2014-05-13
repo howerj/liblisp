@@ -12,3 +12,10 @@
 
 (define sumofsqrs (lambda (x y) (+ (* x x) (* y y))))
 
+(define !
+  (lambda (N)
+    (if (= N 1)
+        1
+        (* N (! (- N 1))))))
+
+
