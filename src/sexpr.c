@@ -50,6 +50,9 @@ expr parse_term(io *i, io *e){
       continue;
     }
     switch (c) {
+    case ')':
+      report("unmatched ')'");
+      return NULL;
     case '(':
       return parse_list(i,e);
     case '"':
@@ -178,7 +181,7 @@ void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
 void free_expr(expr x, io *e){
   unsigned int i;
 
-  if (!x)
+  if (NULL==x)
     return;
 
   switch (x->type) {
