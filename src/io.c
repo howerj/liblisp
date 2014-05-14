@@ -136,14 +136,17 @@ int wprints(const char *s, io *o , io *e){
 void doreport(const char *s, char *cfile, unsigned int linenum, io *e)
 { /** @todo Needs rewriting so it does not use fprintf or sprintf! **/
   if((NULL == e) || (NULL == e->ptr.file)){
-    fprintf(stderr, "(error\n\t(error\n\t\t\"%s\"\n\t\t\"%s\"\n\t%d\n\t)\n)\n", s, cfile, linenum);
+    fprintf(stderr, "(error\n\t(error\n\t\t\"%s\"\n\t\t\"%s\"\n\t%d\n\t)\n)\n", 
+        s, cfile, linenum);
     return;
   }
 
   if(file_out == e->type){
-    fprintf(e->ptr.file, "(\n\terror\n\t\"%s\"\n\t\"%s\"\n\t%d\n)\n", s, cfile, linenum);
+    fprintf(e->ptr.file, "(\n\terror\n\t\"%s\"\n\t\"%s\"\n\t%d\n)\n", 
+        s, cfile, linenum);
   } else if (string_out == e->type){
-    sprintf(e->ptr.string,"(\n\terror\n\t\"%s\"\n\t\"%s\"\n\t%d\n)\n",s,cfile,linenum);
+    sprintf(e->ptr.string,"(\n\terror\n\t\"%s\"\n\t\"%s\"\n\t%d\n)\n",
+        s,cfile,linenum);
   } else {
     fprintf(stderr,"unknown error output stream.\n");
     exit(EXIT_FAILURE);

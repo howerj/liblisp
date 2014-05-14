@@ -10,9 +10,16 @@
 #ifndef SEXPR_H
 #define SEXPR_H
 
+/**** macros ******************************************************************/
+#define print_error(EXP,MSG,E)  doprint_error((EXP),(MSG),__FILE__,__LINE__,(E))
+/******************************************************************************/
+
+/**** function prototypes *****************************************************/
 expr parse_term(io *i, io *e);
 void print_expr(expr x, io *o, unsigned int depth, io *e);
+void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e);
 void free_expr(expr x, io *e);
 void append(expr list, expr ele, io *e);
+/******************************************************************************/
 
 #endif

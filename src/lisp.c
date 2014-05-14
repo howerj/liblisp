@@ -72,7 +72,8 @@ static expr mkprimop(expr (*func)(expr args, lisp l),io *e);
 static expr mkproc(expr args, expr code, expr env, io *e);
 static expr evlis(expr x,expr env,lisp l);
 static expr apply(expr proc, expr args, lisp l); /*add env for dynamic scope?*/
-static expr find(expr env, expr x, io *e);
+static expr dofind(expr env, expr x, io *e);
+static expr find(expr env, expr x, lisp l);
 static expr extend(expr sym, expr val, expr env, io *e);
 static expr extendprimop(char *s, expr (*func)(expr args, lisp l), expr env, io *e);
 static expr extensions(expr env, expr syms, expr vals, io *e);
@@ -194,13 +195,10 @@ expr eval(expr x, expr env, lisp l){
             report("set: argc != 2");
             return nil;
           }
-          ne = find(env,cadr(x),l->e);
+          ne = find(env,cadr(x),l);
           if(nil == ne){
-            ne = find(l->global,cadr(x),l->e);
-            if(nil == ne){
-              report("unbound symbol");
-              return nil;
-            }
+            report("unbound symbol");
+            return nil;
           }
           ne->data.list[1] = eval(caddr(x),env,l);
           return cadr(ne);
@@ -231,13 +229,10 @@ expr eval(expr x, expr env, lisp l){
       break;
     case S_SYMBOL:/*if symbol found, return it, else error; unbound symbol*/
       {
-        expr ne = find(env,x,l->e);
+        expr ne = find(env,x,l);
         if(nil == ne){
-          ne = find(l->global,x,l->e);
-          if(nil == ne){
-            report("unbound symbol");
-            return nil;
-          }
+          report("unbound symbol");
+          return nil;
         }
         return cadr(ne);
       }
@@ -262,8 +257,20 @@ expr eval(expr x, expr env, lisp l){
 
 /*** internal functions ******************************************************/
 
+/**find a symbol in an environment and the global list**/
+static expr find(expr env, expr x, lisp l){
+  expr ne = dofind(env,x,l->e);
+  if(nil == ne){
+    ne = dofind(l->global,x,l->e);
+    if(nil == ne){
+      return nil;
+    }
+  }
+  return ne;
+}
+
 /** find a symbol in a special type of list **/
-static expr find(expr env, expr x, io *e){
+static expr dofind(expr env, expr x, io *e){
   /** @todo make this function more robust **/
   unsigned int i;
   char *s = x->data.symbol;

@@ -34,6 +34,189 @@ static expr parse_string(io *i, io *e);
 static expr parse_symbol(io *i, io *e); /* and integers!*/
 static expr parse_list(io *i, io *e);
 
+/*** interface functions *****************************************************/
+
+/**
+ *  @brief          Parses a list or atom, returning the root
+ *                  of the S-expression.
+ *  @param          i input stream
+ *  @param          e error output stream
+ *  @return         NULL or parsed list
+ **/
+expr parse_term(io *i, io *e){
+  char c;
+  while (EOF!=(c=wgetc(i,e))){
+    if (isspace(c)) {
+      continue;
+    }
+    switch (c) {
+    case '(':
+      return parse_list(i,e);
+    case '"':
+      return parse_string(i,e);
+    default:
+      wungetc(c,i,e);
+      return parse_symbol(i,e);
+    }
+  }
+  return NULL;
+}
+
+/**
+ *  @brief          Recursively prints out an s-expression
+ *  @param          x     expression to print
+ *  @param          o     output stream
+ *  @param          depth current depth of expression
+ *  @param          e     error output stream
+ *  @return         void
+ **/
+void print_expr(expr x, io *o, unsigned int depth, io *e){
+#define indent() for(i = 0; i < depth; i++) wputc(' ',o,e)
+#define emit(X)  do{ wputc((X),o,e); wputc('\n',o,e); }while(0)
+  unsigned int i;
+  if (!x)
+    return;
+
+  indent();
+  switch (x->type) {
+  case S_NIL:
+    wprints("()\n",o,e);
+    return;
+  case S_TEE:
+    wprints("#t\n",o,e);
+    return;
+  case S_LIST:
+    emit('(');
+    for (i = 0; i < x->len; i++)
+      print_expr(x->data.list[i], o , depth + 1,e);
+    indent();
+    emit(')');
+    return;
+  case S_SYMBOL:
+  case S_STRING:
+    if (x->type == S_STRING)
+      wputc('"', o,e);
+    for (i = 0; i < x->len; i++) {
+      switch ((x->data.string)[i]) {
+      case '"':
+      case '\\':
+        wputc('\\', o,e);
+        break;
+      case ')':
+      case '(':
+        if (x->type == S_SYMBOL)
+          wputc('\\',o,e);
+      }
+      wputc((x->data.string)[i], o,e);
+    }
+    if (x->type == S_STRING)
+      wputc('"',o,e);
+    wputc('\n',o,e);
+    return;
+  case S_INTEGER:
+    wprintd(x->data.integer,o,e);
+    wputc('\n',o,e);
+    return;
+  case S_PRIMITIVE:
+    wprints("#PRIMOP\n",o,e);
+    return;
+  case S_PROC: 
+    wprints("#PROC\n",o,e); /** @todo print out procedure?**/
+    return;
+  case S_FILE: /** @todo implement file support, then printing**/     
+    report("UNIMPLEMENTED (TODO)");
+    return;
+  default: /* should never get here */
+    report("print: not a known printable type");
+    exit(EXIT_FAILURE);
+    return;
+  }
+#undef indent
+#undef emit
+}
+
+/**
+ *  @brief          Print out an error message while trying to handle
+ *                  invalid arguments gracefully. A macro called
+ *                  print_error should be defined in the header so you
+ *                  do not have to pass cfile and linenum constantly to it.
+ *  @param          x       NULL or expression to print
+ *  @param          msg     Error message to print
+ *  @param          cfile   File error occurred in 
+ *  @param          linenum Line number error occurred on
+ *  @param          e       Output wrapper stream, if NULL, default to stderr
+ *  @return         void
+ **/
+void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
+  static io fallback = { file_out, { NULL }, 0, 0, 0, false };
+  fallback.ptr.file = stderr;
+
+  if((NULL == e) || (NULL == e->ptr.file))
+    e = &fallback;
+
+  wprints("(error \"",e,e); 
+  wprints(msg,e,e); 
+  wprints("\" \"",e,e); 
+  wprints(cfile,e,e); 
+  wprints("\" ",e,e); 
+  wprintd(linenum,e,e);
+  if(NULL == x){
+  } else {
+    wputc('\n',e,e);
+    print_expr(x,e,1,e);
+  }
+  wprints(")\n",e,e); 
+  return;
+}
+
+
+/**
+ *  @brief          Recursively frees an S-expression
+ *  @param          x     expression to print
+ *  @param          e     error output stream
+ *  @return         void
+ **/
+void free_expr(expr x, io *e){
+  unsigned int i;
+
+  if (!x)
+    return;
+
+  switch (x->type) {
+  case S_TEE:
+  case S_NIL:
+      wfree(x,e);
+      break;
+  case S_LIST:
+    for (i = 0; i < x->len; i++)
+      free_expr((x->data.list)[i],e);
+    wfree(x->data.list,e);
+    wfree(x,e);
+    return;
+  case S_SYMBOL:
+  case S_STRING:
+    wfree(x->data.string,e);
+    wfree(x,e);
+    return;
+  case S_INTEGER:
+    wfree(x,e);
+    return;
+  case S_PRIMITIVE:
+    wfree(x,e);
+    return;
+  case S_PROC:
+  case S_FILE: /** @todo implement file support **/
+    report("UNIMPLEMENTED (TODO)");
+    break;
+  default: /* should never get here */
+    report("free: not a known 'free-able' type");
+    exit(EXIT_FAILURE);
+    return;
+  }
+}
+
+/*****************************************************************************/
+
 /**
  *  @brief          parse a symbol or integer (in decimal or
  *                  octal format, positive or negative)
@@ -227,147 +410,4 @@ static expr parse_list(io *i, io *e){
  return ex;
 }
 
-/**
- *  @brief          Parses a list or atom, returning the root
- *                  of the S-expression.
- *  @param          i input stream
- *  @param          e error output stream
- *  @return         NULL or parsed list
- **/
-expr parse_term(io *i, io *e){
-  char c;
-  while (EOF!=(c=wgetc(i,e))){
-    if (isspace(c)) {
-      continue;
-    }
-    switch (c) {
-    case '(':
-      return parse_list(i,e);
-    case '"':
-      return parse_string(i,e);
-    default:
-      wungetc(c,i,e);
-      return parse_symbol(i,e);
-    }
-  }
-  return NULL;
-}
-
-/**
- *  @brief          Recursively prints out an s-expression
- *  @param          x     expression to print
- *  @param          o     output stream
- *  @param          depth current depth of expression
- *  @param          e     error output stream
- *  @return         void
- **/
-void print_expr(expr x, io *o, unsigned int depth, io *e){
-#define indent() for(i = 0; i < depth; i++) wputc(' ',o,e)
-#define emit(X)  do{ wputc((X),o,e); wputc('\n',o,e); }while(0)
-  unsigned int i;
-  if (!x)
-    return;
-
-  indent();
-  switch (x->type) {
-  case S_NIL:
-    wprints("()\n",o,e);
-    return;
-  case S_TEE:
-    wprints("#t\n",o,e);
-    return;
-  case S_LIST:
-    emit('(');
-    for (i = 0; i < x->len; i++)
-      print_expr(x->data.list[i], o , depth + 1,e);
-    indent();
-    emit(')');
-    return;
-  case S_SYMBOL:
-  case S_STRING:
-    if (x->type == S_STRING)
-      wputc('"', o,e);
-    for (i = 0; i < x->len; i++) {
-      switch ((x->data.string)[i]) {
-      case '"':
-      case '\\':
-        wputc('\\', o,e);
-        break;
-      case ')':
-      case '(':
-        if (x->type == S_SYMBOL)
-          wputc('\\',o,e);
-      }
-      wputc((x->data.string)[i], o,e);
-    }
-    if (x->type == S_STRING)
-      wputc('"',o,e);
-    wputc('\n',o,e);
-    return;
-  case S_INTEGER:
-    wprintd(x->data.integer,o,e);
-    wputc('\n',o,e);
-    return;
-  case S_PRIMITIVE:
-    wprints("#PRIMOP\n",o,e);
-    return;
-  case S_PROC: 
-    wprints("#PROC\n",o,e); /** @todo print out procedure? betware recursion!**/
-    return;
-  case S_FILE: /** @todo implement file support **/     
-    report("UNIMPLEMENTED (TODO)");
-    return;
-  default: /* should never get here */
-    report("print: not a known printable type");
-    exit(EXIT_FAILURE);
-    return;
-  }
-#undef indent
-#undef emit
-}
-
-/**
- *  @brief          Recursively frees an S-expression
- *  @param          x     expression to print
- *  @param          e     error output stream
- *  @return         void
- **/
-void free_expr(expr x, io *e){
-  unsigned int i;
-
-  if (!x)
-    return;
-
-  switch (x->type) {
-  case S_TEE:
-  case S_NIL:
-      wfree(x,e);
-      break;
-  case S_LIST:
-    for (i = 0; i < x->len; i++)
-      free_expr((x->data.list)[i],e);
-    wfree(x->data.list,e);
-    wfree(x,e);
-    return;
-  case S_SYMBOL:
-  case S_STRING:
-    wfree(x->data.string,e);
-    wfree(x,e);
-    return;
-  case S_INTEGER:
-    wfree(x,e);
-    return;
-  case S_PRIMITIVE:
-    wfree(x,e);
-    return;
-  case S_PROC:
-  case S_FILE: /** @todo implement file support **/
-    report("UNIMPLEMENTED (TODO)");
-    break;
-  default: /* should never get here */
-    report("free: not a known 'free-able' type");
-    exit(EXIT_FAILURE);
-    return;
-  }
-}
 
