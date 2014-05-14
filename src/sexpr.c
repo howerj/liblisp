@@ -169,7 +169,6 @@ void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
   return;
 }
 
-
 /**
  *  @brief          Recursively frees an S-expression
  *  @param          x     expression to print

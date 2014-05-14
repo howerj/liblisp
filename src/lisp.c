@@ -352,7 +352,7 @@ static expr mkproc(expr args, expr code, expr env, io *e){
 /** compare a symbols name to a string **/
 static bool primcmp(expr x, const char *s, io *e){
   if(NULL == (car(x)->data.symbol)){
-    report("null passed to primcmp!");
+    print_error(NULL,"null passed to primcmp!",e);
     abort();
   }
   return !strcmp(car(x)->data.symbol,s);
@@ -383,38 +383,40 @@ static expr extensions(expr env, expr syms, expr vals, io *e){
 
 /** apply a procedure over arguments given an environment **/
 static expr apply(expr proc, expr args, lisp l){
-  io *e = l->e;
   expr nenv;
   if(S_PRIMITIVE == proc->type){
     return (proc->data.func)(args,l);
   }
   if(S_PROC == proc->type){
     if(args->len != procargs(proc)->len){
-      report("expected number of args incorrect");
+      print_error(args,"expected number of args incorrect",l->e);
       return nil;
     }
     nenv = extensions(procenv(proc),procargs(proc),args,l->e);
     return eval(proccode(proc),nenv,l);
   }
 
-  report("Cannot apply expression");
+  print_error(proc,"apply failed",l->e);
   return nil;
 }
 
 /*** primitive operations ****************************************************/
 
+/**macro helpers for primops**/
+#define intchk(EXP,ERR)\
+  if(S_INTEGER!=((EXP)->type)){\
+    print_error((EXP),"arg != integer",(ERR));\
+    return nil;\
+  }
+
 static expr primop_add(expr args, lisp l){
-  io *e = l->e;
   unsigned int i;
   expr ne;
-  ne = mkobj(S_INTEGER,e);
+  ne = mkobj(S_INTEGER,l->e);
   if(0 == args->len)
     return nil;
   for(i = 0; i < args->len; i++){
-    if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); 
-      return nil;
-    }
+    intchk(nth(args,i),l->e);
     ne->data.integer+=(nth(args,i)->data.integer);
   }
   return ne;
@@ -428,11 +430,9 @@ static expr primop_sub(expr args, lisp l){
   if(0 == args->len)
     return nil;
   ne = nth(args,0);
+  intchk(ne,l->e);
   for(i = 1; i < args->len; i++){
-    if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); 
-      return nil;
-    }
+    intchk(nth(args,i),l->e);
     ne->data.integer-=(nth(args,i)->data.integer);
   }
   return ne;
@@ -446,11 +446,9 @@ static expr primop_prod(expr args, lisp l){
   if(0 == args->len)
     return nil;
   ne = nth(args,0);
+  intchk(ne,l->e);
   for(i = 1; i < args->len; i++){
-    if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); 
-      return nil;
-    }
+    intchk(nth(args,i),l->e);
     ne->data.integer*=(nth(args,i)->data.integer);
   }
   return ne;
@@ -463,11 +461,9 @@ static expr primop_div(expr args, lisp l){
   if(0 == args->len)
     return nil;
   ne = nth(args,0);
+  intchk(ne,l->e);
   for(i = 1; i < args->len; i++){
-    if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); 
-      return nil;
-    }
+    intchk(nth(args,i),l->e);
     tmp = nth(args,i)->data.integer;
     if(tmp){
       ne->data.integer/=tmp;
@@ -487,10 +483,9 @@ static expr primop_mod(expr args, lisp l){
     report("mod: argc != 2");
     return nil;
   }
-  if((car(args)->type != S_INTEGER) || (cadr(args)->type != S_INTEGER)){
-    report("not an integer type");
-    return nil;
-  }
+  intchk(car(args),l->e);
+  intchk(cadr(args),l->e);
+
   tmp = cadr(args)->data.integer;
   if(0 == tmp){
     report("mod: 0/");
@@ -643,14 +638,10 @@ static expr primop_numeq(expr args, lisp l){
   expr ne = mkobj(S_INTEGER,e);
   if(0 == args->len)
     return nil;
-  if(1 == args->len)
-    return tee;
   ne = nth(args,0);
+  intchk(ne,l->e);
   for(i = 1; i < args->len; i++){
-    if(S_INTEGER!=nth(args,i)->type){
-      report("not an integer type"); 
-      return nil;
-    }
+    intchk(nth(args,i),l->e);
     if(ne->data.integer != (nth(args,i)->data.integer)){
       return nil;
     }
@@ -664,5 +655,7 @@ static expr primop_printexpr(expr args, lisp l){
   print_expr(args,l->o,0,l->e);
   return args;
 }
+
+#undef intchk
 
 /*****************************************************************************/
