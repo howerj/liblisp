@@ -118,10 +118,9 @@ lisp initlisp(void){
   l->global->type= S_LIST;
   l->env->type   = S_LIST;
 
+  /* internal symbols */
   nil = mkobj(S_NIL,l->e);
   tee = mkobj(S_TEE,l->e);
-
-  /* internal symbols */
   extend(mksym("nil", l->e),nil,l->global,l->e);
   extend(mksym("t", l->e),tee,l->global,l->e);
 
@@ -271,7 +270,12 @@ static expr find(expr env, expr x, lisp l){
 static expr dofind(expr env, expr x, io *e){
   /** @todo make this function more robust **/
   unsigned int i;
-  char *s = x->data.symbol;
+  char *s;
+  if(S_LIST != env->type || S_SYMBOL != x->type){
+    print_error(NULL,"invalid search",e);
+    return nil;
+  }
+  s = x->data.symbol;
   if(1 > env->len){
     return nil;
   }
@@ -303,7 +307,7 @@ static expr extendprimop(char *s, expr (*func)(expr args, lisp l), expr env, io 
 /** make new object **/
 static expr mkobj(sexpr_e type,io *e){
   expr ne;
-  ne = wcalloc(sizeof(sexpr_t), 1,e);
+  ne = gccalloc(sizeof(sexpr_t), 1,e);
   ne->len = 0;
   ne->type = type;
   return ne;
@@ -339,7 +343,7 @@ static expr mkproc(expr args, expr code, expr env, io *e){
   append(ne,code,e);
   nenv = mkobj(S_LIST,e);
   /** @todo turn into mklist **/
-  nenv->data.list = wmalloc(env->len*sizeof(expr),e);
+  nenv->data.list = gcmalloc(env->len*sizeof(expr),e);
   memcpy(nenv->data.list,env->data.list,(env->len)*sizeof(expr));
   nenv->len = env->len;
   /****************************/
@@ -554,7 +558,7 @@ static expr primop_cons(expr args, lisp l){
     append(ne,prepend,l->e);
   } else if (S_LIST == list->type){
     /** @todo turn into mklist **/
-    ne->data.list = wmalloc((list->len + 1)*sizeof(expr),l->e);
+    ne->data.list = gcmalloc((list->len + 1)*sizeof(expr),l->e);
     car(ne) = prepend;
     memcpy(ne->data.list + 1,list->data.list,(list->len)*sizeof(expr));
     ne->len = list->len + 1;

@@ -7,7 +7,7 @@
 
 CC=gcc
 # add -g and -pg for profiling
-CCFLAGS=-Wall -Wextra -ansi -pedantic -O2 
+CCFLAGS=-Wall -Wextra -ansi -pedantic -O2
 OBJFILES=bin/io.o bin/mem.o bin/sexpr.o bin/lisp.o bin/main.o 
 
 ## building ###################################################################
@@ -45,6 +45,7 @@ doxygen:
 report:
 	-splint src/*.c src/*.h
 	-wc src/*.c src/*.h
+	-readelf -sW bin/*.o
 
 ## cleanup ####################################################################
 

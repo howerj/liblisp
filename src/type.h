@@ -59,14 +59,15 @@ typedef struct {
 struct sexpr_t { /** base type for our expressions */
   size_t len;
   union {
-    cell_t integer;
+    cell_t integer; 
     char *string;
     char *symbol;
     struct sexpr_t **list;
     io *io;
-    expr (*func)(expr args,lisp l);
+    expr (*func)(expr args,lisp l); /*primitive operations*/
   } data;
   sexpr_e type;
+  unsigned int gcmark : 1; /**he mark of the garbage collector*/
 } ;
 
 /**lisp global environment struct**/

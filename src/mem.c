@@ -23,12 +23,14 @@
 #include "mem.h"
 #include <stdlib.h> /** malloc(), calloc(), realloc(), free(), exit() */
 
-static unsigned int alloccounter = 0;
 
+
+static unsigned int alloccounter = 0;
+static expr alloclist = NULL;
 /**** malloc wrappers ********************************************************/
 
 /**
- *  @brief          wrapper around malloc
+ *  @brief          wrapper around malloc 
  *  @param          size size of desired memory block in bytes
  *  @param          e    error output stream
  *  @return         pointer to newly allocated storage on sucess, exits
@@ -77,7 +79,7 @@ void *wcalloc(size_t num, size_t size, io *e){
 }
 
 /**
- *  @brief          wrapper around realloc
+ *  @brief          wrapper around realloc, no gc necessary
  *  @param          size size of desired memory block in bytes
  *  @param          ptr  existing memory block to resize
  *  @param          size size of desired memory block in bytes
@@ -99,6 +101,33 @@ void *wrealloc(void *ptr, size_t size, io *e){
 }
 
 /**
+ *  @brief          wrapper around malloc for garbage collection
+ *  @param          size size of desired memory block in bytes
+ *  @param          e    error output stream
+ *  @return         pointer to newly allocated storage on sucess, exits
+ *                  program on failure!
+ **/
+void *gcmalloc(size_t size, io *e){
+  void* v;
+  v = wmalloc(size,e);
+  return v;
+}
+
+/**
+ *  @brief          wrapper around calloc for garbage collection
+ *  @param          num  number of elements to allocate
+ *  @param          size size of elements to allocate
+ *  @param          e    error output stream
+ *  @return         pointer to newly allocated storage on sucess, which
+ *                  is zeroed, exits program on failure!
+ **/
+void *gccalloc(size_t num, size_t size, io *e){
+  void* v;
+  v = wcalloc(num, size, e);
+  return v;
+}
+
+/**
  *  @brief          wrapper around free
  *  @param          ptr  pointer to free; make sure its not NULL!
  *  @param          e    error output stream
@@ -112,5 +141,62 @@ void wfree(void *ptr, io *e){
   }
   free(ptr);
 }
+
+/**
+ *  @brief          Given a root structure, mark all accessible
+ *                  objects in the tree so they do not get garbage
+ *                  collected
+ *  @param          root root tree to mark
+ *  @param          e    error output stream
+ *  @return         false == root was not marked, and now is, 
+ *                  true == root was already marked
+ **/
+int gcmark(expr root, io *e){
+  if(NULL == root)
+    return;
+
+  if(true == root->gcmark)
+    return true;
+
+  root->gcmark = true;
+
+  switch(root->type){
+    case S_LIST:
+      {
+        unsigned int i;
+        for(i = 0; i < root->len; i++)
+          gcmark(root->data.list[i],e);
+      }
+      break;
+    case S_PRIMITIVE:
+      break;
+    case S_PROC:
+      /*@todo Put the S_PROC structure into type.h**/
+      gcmark(root->data.list[0],e);
+      gcmark(root->data.list[1],e);
+      gcmark(root->data.list[2],e);
+    case S_NIL:
+    case S_TEE:
+    case S_STRING:
+    case S_SYMBOL:
+    case S_INTEGER:
+    case S_FILE:
+      break;
+    default:
+      fprintf(stderr,"unmarkable type\n");
+      exit(EXIT_FAILURE);
+  }
+  return false;
+}
+
+/**
+ *  @brief          Sweep all unmarked objects.
+ *  @param          e    error output stream
+ *  @return         void
+ **/
+void gcsweep(io *e){
+
+}
+
 
 /*****************************************************************************/

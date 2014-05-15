@@ -108,6 +108,7 @@ static int repl(lisp l){
   while(NULL != (x = parse_term(l->i, l->e))){
     x = eval(x,l->env,l);
     print_expr(x,l->o,0,l->e);
+    gcmark(l->global,l->e);
   }
   return 0;
 }

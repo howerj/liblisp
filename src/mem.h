@@ -19,4 +19,9 @@ void *wcalloc(size_t num, size_t size, io *e);
 void *wrealloc(void *ptr, size_t size, io *e);
 void wfree(void * ptr, io *e);
 
+void *gcmalloc(size_t size, io *e);
+void *gccalloc(size_t num, size_t size, io *e);
+int  mark(expr root, io *e);
+void sweep(io *e);
+
 #endif
