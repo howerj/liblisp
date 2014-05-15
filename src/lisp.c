@@ -307,7 +307,7 @@ static expr extendprimop(char *s, expr (*func)(expr args, lisp l), expr env, io 
 /** make new object **/
 static expr mkobj(sexpr_e type,io *e){
   expr ne;
-  ne = gccalloc(sizeof(sexpr_t), 1,e);
+  ne = gccalloc(e);
   ne->len = 0;
   ne->type = type;
   return ne;
@@ -343,7 +343,7 @@ static expr mkproc(expr args, expr code, expr env, io *e){
   append(ne,code,e);
   nenv = mkobj(S_LIST,e);
   /** @todo turn into mklist **/
-  nenv->data.list = gcmalloc(env->len*sizeof(expr),e);
+  nenv->data.list = wmalloc(env->len*sizeof(expr),e);
   memcpy(nenv->data.list,env->data.list,(env->len)*sizeof(expr));
   nenv->len = env->len;
   /****************************/
@@ -558,7 +558,7 @@ static expr primop_cons(expr args, lisp l){
     append(ne,prepend,l->e);
   } else if (S_LIST == list->type){
     /** @todo turn into mklist **/
-    ne->data.list = gcmalloc((list->len + 1)*sizeof(expr),l->e);
+    ne->data.list = wmalloc((list->len + 1)*sizeof(expr),l->e);
     car(ne) = prepend;
     memcpy(ne->data.list + 1,list->data.list,(list->len)*sizeof(expr));
     ne->len = list->len + 1;

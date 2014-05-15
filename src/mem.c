@@ -11,11 +11,14 @@
  *  Out-Of-Memory errors should go here as well to keep things out of
  *  the way.
  *
+ *
  *  @todo The actual garbage collection stuff.
  *  @todo If an allocation fails, garbage should be collected, then an
  *        allocation reattempted, if it fails again it should abort.
  *  @todo Debug functions; maximum allocations / deallocations for example
  *  @todo Remove instances of fprintf
+ *  @todo Make the interfaces better so it is clear that expressions or
+ *        pointers of expressions are being allocated.
  */
 
 #include "type.h"
@@ -23,10 +26,15 @@
 #include "mem.h"
 #include <stdlib.h> /** malloc(), calloc(), realloc(), free(), exit() */
 
-
+struct heap{
+  expr x;
+  struct heap *next;
+};
 
 static unsigned int alloccounter = 0;
-static expr alloclist = NULL;
+static struct heap heaplist = {NULL,NULL};
+static struct heap *heaphead = &heaplist;
+
 /**** malloc wrappers ********************************************************/
 
 /**
@@ -107,9 +115,9 @@ void *wrealloc(void *ptr, size_t size, io *e){
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
  **/
-void *gcmalloc(size_t size, io *e){
+expr gcmalloc(io *e){
   void* v;
-  v = wmalloc(size,e);
+  v = wmalloc(sizeof(struct sexpr_t),e);
   return v;
 }
 
@@ -121,9 +129,14 @@ void *gcmalloc(size_t size, io *e){
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-void *gccalloc(size_t num, size_t size, io *e){
-  void* v;
-  v = wcalloc(num, size, e);
+expr gccalloc(io *e){
+  expr v;
+  struct heap *nextheap;
+  v = wcalloc(1,sizeof(struct sexpr_t), e);
+  nextheap = wcalloc(1,sizeof(struct heap), e);
+  nextheap->x = v;
+  heaphead->next = nextheap;
+  heaphead = nextheap;
   return v;
 }
 
@@ -153,7 +166,7 @@ void wfree(void *ptr, io *e){
  **/
 int gcmark(expr root, io *e){
   if(NULL == root)
-    return;
+    return false;
 
   if(true == root->gcmark)
     return true;
@@ -195,7 +208,15 @@ int gcmark(expr root, io *e){
  *  @return         void
  **/
 void gcsweep(io *e){
-
+  struct heap *ll;
+  for(ll = &heaplist; ll != heaphead; ll = ll->next){
+    if(NULL == ll->x)
+      continue;
+    else if(true == ll->x->gcmark)
+      ll->x->gcmark = false;
+    else
+      printf("freed %p\n",ll->x);
+  }
 }
 
 

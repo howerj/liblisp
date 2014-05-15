@@ -32,6 +32,7 @@
 #include <stdio.h>  /* printf(), fopen(), fclose() */
 #include <stdlib.h> /* exit() */
 #include "type.h"
+#include "mem.h"
 #include "sexpr.h"
 #include "lisp.h"
 
@@ -109,6 +110,7 @@ static int repl(lisp l){
     x = eval(x,l->env,l);
     print_expr(x,l->o,0,l->e);
     gcmark(l->global,l->e);
+    gcsweep(l->e);
   }
   return 0;
 }

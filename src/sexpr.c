@@ -231,7 +231,7 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
   unsigned int count = 0;
   char c, buf[BUFLEN];
   bool negative;
-  ex=wcalloc(1,sizeof(sexpr_t), e);
+  ex = gccalloc(e);
 
   memset(buf, '\0', BUFLEN);
 
@@ -270,7 +270,7 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
   }
 
  fail:
-  wfree(ex,e);
+  /*wfree(ex,e);*/
   return NULL;
 
  success:
@@ -300,7 +300,7 @@ static expr parse_string(io *i, io *e){
   unsigned int count = 0;
   char c, buf[BUFLEN];
 
-  ex = wcalloc(1,sizeof(sexpr_t), e);
+  ex = gccalloc(e);
   memset(buf, '\0', BUFLEN);
 
   while (EOF!=(c=wgetc(i,e))){
@@ -328,7 +328,7 @@ static expr parse_string(io *i, io *e){
     }
   }
  fail:
-  wfree(ex,e);
+  /*wfree(ex,e);*/
   return NULL;
 
  success:
@@ -368,7 +368,7 @@ static expr parse_list(io *i, io *e){
   expr ex = NULL, chld;
   char c;
 
-  ex = wcalloc(1,sizeof(sexpr_t), e);
+  ex = gccalloc(e);
   ex->len = 0;
 
   while (EOF!=(c=wgetc(i,e))){
@@ -404,7 +404,7 @@ static expr parse_list(io *i, io *e){
 
  fail:
  report("list err");
- wfree(ex,e);
+ /*wfree(ex,e);*/
  return NULL;
 
  success:
