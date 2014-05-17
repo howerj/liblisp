@@ -73,7 +73,8 @@ static expr apply(expr proc, expr args, lisp l); /*add env for dynamic scope?*/
 static expr dofind(expr env, expr x, io *e);
 static expr find(expr env, expr x, lisp l);
 static expr extend(expr sym, expr val, expr env, io *e);
-static expr extendprimop(char *s, expr (*func)(expr args, lisp l), expr env, io *e);
+static char *sdup(const char *s, io *e); 
+static expr extendprimop(const char *s, expr (*func)(expr args, lisp l), expr env, io *e);
 static expr extensions(expr env, expr syms, expr vals, io *e);
 static bool primcmp(expr x, const char *s, io *e);
 
@@ -122,8 +123,8 @@ lisp initlisp(void){
   nil = mkobj(S_NIL,l->e);
   tee = mkobj(S_TEE,l->e);
 
-  extend(mksym("nil", l->e),nil,l->global,l->e);
-  extend(mksym("t", l->e),tee,l->global,l->e);
+  extend(mksym(sdup("nil",l->e), l->e),nil,l->global,l->e);
+  extend(mksym(sdup("t",  l->e), l->e),tee,l->global,l->e);
 
   /* normal forms, kind of  */
   extendprimop("+",       primop_add,       l->global, l->e);
@@ -325,9 +326,20 @@ static expr extend(expr sym, expr val, expr env, io *e){
   return val;
 }
 
+/** duplicate a string **/
+static char *sdup(const char *s, io *e){
+  char *ns;
+  if(NULL == s){
+    print_error(NULL,"passed NULL",e);
+  }
+  ns = wmalloc(sizeof(char)*(strlen(s)+1),e);
+  strcpy(ns,s);
+  return ns;
+}
+
 /** extend the lisp environment with a primitive operator **/
-static expr extendprimop(char *s, expr (*func)(expr args, lisp l), expr env, io *e){
-  return extend(mksym(s,e), mkprimop(func,e), env,e);
+static expr extendprimop(const char *s, expr (*func)(expr args, lisp l), expr env, io *e){
+  return extend(mksym(sdup(s,e),e), mkprimop(func,e), env,e);
 }
 
 /** make new object **/

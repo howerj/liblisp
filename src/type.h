@@ -75,7 +75,6 @@ struct sexpr_t { /** base type for our expressions */
   } data;
   sexpr_e type;
   unsigned int gcmark : 1; /**the mark of the garbage collector*/
-  unsigned int gcneverfree : 1; /**never free**/
 } ;
 
 /**lisp global environment struct**/

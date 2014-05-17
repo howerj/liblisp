@@ -80,7 +80,7 @@ Author:\n\
 static int getopt(char *arg){
   int c;
 
-  if('-' != *arg++){ /** @todo open arg as file */
+  if('-' != *arg++){ 
     return getopt_input_file;
   }
 
@@ -124,7 +124,6 @@ int main(int argc, char *argv[]){
   l = initlisp();
 
   for(i = 1; i < argc; i++){
-
     switch(getopt(argv[i])){
       case getopt_switch:
         /*getopt_switch means getopt set some flags or printed something*/
@@ -157,8 +156,8 @@ int main(int argc, char *argv[]){
     print_expr(l->global,l->o,0,l->e);
   }
 
-  /*gcsweep(l->e);*/
-  /*endlisp(l);*/
+  gcsweep(l->e);
+  endlisp(l);
 
   return EXIT_SUCCESS;
 }
