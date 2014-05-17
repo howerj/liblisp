@@ -121,6 +121,7 @@ lisp initlisp(void){
   /* internal symbols */
   nil = mkobj(S_NIL,l->e);
   tee = mkobj(S_TEE,l->e);
+
   extend(mksym("nil", l->e),nil,l->global,l->e);
   extend(mksym("t", l->e),tee,l->global,l->e);
 
@@ -324,10 +325,10 @@ static expr extend(expr sym, expr val, expr env, io *e){
   return val;
 }
 
+/** extend the lisp environment with a primitive operator **/
 static expr extendprimop(char *s, expr (*func)(expr args, lisp l), expr env, io *e){
   return extend(mksym(s,e), mkprimop(func,e), env,e);
 }
-
 
 /** make new object **/
 static expr mkobj(sexpr_e type,io *e){
@@ -438,8 +439,7 @@ static expr apply(expr proc, expr args, lisp l){
 
 static expr primop_add(expr args, lisp l){
   unsigned int i;
-  expr ne;
-  ne = mkobj(S_INTEGER,l->e);
+  expr ne = mkobj(S_INTEGER,l->e);
   if(0 == args->len)
     return nil;
   for(i = 0; i < args->len; i++){
@@ -450,10 +450,8 @@ static expr primop_add(expr args, lisp l){
 }
 
 static expr primop_sub(expr args, lisp l){
-  io *e = l->e;
   unsigned int i;
-  expr ne;
-  ne = mkobj(S_INTEGER,e);
+  expr ne = mkobj(S_INTEGER,l->e);
   if(0 == args->len)
     return nil;
   ne = nth(args,0);
@@ -467,8 +465,7 @@ static expr primop_sub(expr args, lisp l){
 
 static expr primop_prod(expr args, lisp l){
   unsigned int i;
-  expr ne;
-  ne = mkobj(S_INTEGER,l->e);
+  expr ne = mkobj(S_INTEGER,l->e);
   if(0 == args->len)
     return nil;
   ne = nth(args,0);
@@ -673,7 +670,7 @@ static expr primop_numeq(expr args, lisp l){
 }
 
 static expr primop_printexpr(expr args, lisp l){
-  /* @todo if arg = 1, treat as I/O, else normal out */
+  /* @todo if arg = 1, treat as Output redirection, else normal out */
   print_expr(args,l->o,0,l->e);
   return args;
 }

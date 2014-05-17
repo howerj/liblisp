@@ -27,15 +27,15 @@ typedef struct lispenv_t lispenv_t;
 typedef lispenv_t *lisp;
 
 typedef enum {
-  S_NIL,      /* () */
-  S_TEE,      /* #t */
-  S_LIST,     /* list */
-  S_STRING,   /* string */
-  S_SYMBOL,   /* symbol, positive or negative, input in decimal or octal */
-  S_INTEGER,  /* integer */
-  S_PRIMITIVE,/* a primitive function */
-  S_FILE,     /* for file I/O */
-  S_PROC      /* lambda procedure */
+  S_NIL,      /* 0: () */
+  S_TEE,      /* 1: #t */
+  S_LIST,     /* 2: list */
+  S_STRING,   /* 3: string */
+  S_SYMBOL,   /* 4: symbol, positive or negative, input in decimal or octal */
+  S_INTEGER,  /* 5: integer */
+  S_PRIMITIVE,/* 6: a primitive function */
+  S_FILE,     /* 7: for file I/O */
+  S_PROC      /* 8: lambda procedure */
 } sexpr_e;
 
 /*io module*/
@@ -74,7 +74,8 @@ struct sexpr_t { /** base type for our expressions */
     expr (*func)(expr args,lisp l); /*primitive operations*/
   } data;
   sexpr_e type;
-  unsigned int gcmark : 1; /**he mark of the garbage collector*/
+  unsigned int gcmark : 1; /**the mark of the garbage collector*/
+  unsigned int gcneverfree : 1; /**never free**/
 } ;
 
 /**lisp global environment struct**/

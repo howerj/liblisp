@@ -158,7 +158,7 @@ int main(int argc, char *argv[]){
   }
 
   /*gcsweep(l->e);*/
-  endlisp(l);
+  /*endlisp(l);*/
 
   return EXIT_SUCCESS;
 }

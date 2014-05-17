@@ -31,6 +31,11 @@ struct heap{
   struct heap *next;
 };
 
+/* 
+ * alloccounter is used to implement a crude way of making sure the program
+ * fails instead of trying allocating everything when we do something wrong,
+ * instead of just exiting, perhaps we should restart gracefully?
+ */
 static unsigned int alloccounter = 0;
 static struct heap heaplist = {NULL,NULL};
 static struct heap *heaphead = &heaplist;
@@ -172,7 +177,7 @@ int gcmark(expr root, io *e){
 
   /*if(true == root->gcmark)
     return true;*/
-
+  
   root->gcmark = true;
 
   switch(root->type){
@@ -210,15 +215,22 @@ int gcmark(expr root, io *e){
  *  @return         void
  **/
 void gcsweep(io *e){
-  struct heap *ll;
+  /**@todo this really needs cleaning up**/
+  struct heap *ll, *pll;
   if(NULL == heaplist.next) /*pass first element, do not collect element*/
     return;
-  for(ll = heaplist.next; ll != heaphead; ll = ll->next){
-    if((NULL != ll->x) && (true == ll->x->gcmark)){
+  for(ll = heaplist.next, pll = &heaplist; ll != heaphead; ){
+    if(true == ll->x->gcmark){
       ll->x->gcmark = false;
+      pll = ll; 
+      ll = ll->next;
     } else {
+      /*printf("freeing %d\n", ll->x?ll->x->type:-1);*/
       gcinner(ll->x,e);
       ll->x = NULL;
+      pll->next = ll->next;
+      wfree(ll,e);
+      ll = pll->next;
     }
   }
 }
