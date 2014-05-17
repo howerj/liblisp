@@ -164,6 +164,7 @@ void endlisp(lisp l){
   wfree(l->i, &e);
 
   wfree(l->env, &e);
+  wfree(l->global->data.list, &e);
   wfree(l->global, &e);
   wfree(l,&e);
 
@@ -382,8 +383,8 @@ static expr mkproc(expr args, expr code, expr env, io *e){
   ne = mkobj(S_PROC,e);
   append(ne,args,e);
   append(ne,code,e);
-  nenv = mkobj(S_LIST,e);
   /** @todo turn into mklist **/
+  nenv = mkobj(S_LIST,e);
   nenv->data.list = wmalloc(env->len*sizeof(expr),e);
   memcpy(nenv->data.list,env->data.list,(env->len)*sizeof(expr));
   nenv->len = env->len;

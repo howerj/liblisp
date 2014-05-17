@@ -262,7 +262,10 @@ static void gcinner(expr x, io *e){
   case S_NIL:
   case S_INTEGER:
   case S_PRIMITIVE:
+    wfree(x,e);
+    break;
   case S_PROC: 
+    wfree(x->data.list,e);
     wfree(x,e);
     break;
   case S_LIST:

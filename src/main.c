@@ -157,7 +157,6 @@ int main(int argc, char *argv[]){
   }
 
   endlisp(l);
-  printf("sizeof(sexpr_t) == %d\n", sizeof(sexpr_t));
 
   return EXIT_SUCCESS;
 }
