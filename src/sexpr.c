@@ -10,10 +10,9 @@
  *  This S-expression parser, although made for a lisp interpreter,
  *  is a small, generic, parser that could be used for other projects.
  *
- *  The three main functions 
+ *  The two main functions 
  *    - Parse an S-expression (parse_term)
  *    - Print out an S-expression (print_expr)
- *    - Free an S-expression (free_expr)
  *
  *  There are sub-functions called by the parser that could be useful
  *  in their own right and might change so they can be accessed externally
@@ -225,7 +224,6 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
   }
 
  fail:
-  /*wfree(ex,e);*/
   return NULL;
 
  success:
@@ -283,7 +281,6 @@ static expr parse_string(io *i, io *e){
     }
   }
  fail:
-  /*wfree(ex,e);*/
   return NULL;
 
  success:
@@ -359,7 +356,6 @@ static expr parse_list(io *i, io *e){
 
  fail:
  report("list err");
- /*wfree(ex,e);*/
  return NULL;
 
  success:

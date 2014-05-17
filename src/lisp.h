@@ -12,5 +12,6 @@
 
 expr eval(expr x, expr env, lisp l);
 lisp initlisp(void);
+void endlisp(lisp l);
 
 #endif

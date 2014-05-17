@@ -42,7 +42,7 @@
  **/
 
 #include <string.h> /* strcmp, strlen, strcat */
-#include "type.h"   /* includes some std c library headers */
+#include "type.h"   /* includes some std c library headers, as well as types */
 #include "io.h"
 #include "mem.h"
 #include "sexpr.h"
@@ -140,6 +140,31 @@ lisp initlisp(void){
 
   return l;
 }
+
+/**
+ *  @brief          Destroy and clean up a lisp environment
+ *  @param          A initialized lisp environment
+ *  @return         void
+ **/
+void endlisp(lisp l){
+  /**@todo free all garbage-collection handled files**/
+
+  io e = {file_out, {NULL}, 0, 0, '\0', false};
+  e.ptr.file = stderr;
+
+  fflush(NULL);
+
+  wfree(l->e, &e);
+  wfree(l->o, &e);
+  wfree(l->i, &e);
+
+  wfree(l->env, &e);
+  wfree(l->global, &e);
+  wfree(l,&e);
+
+  return;
+}
+
 
 /**
  *  @brief          Evaluate an already parsed lisp expression
@@ -530,12 +555,9 @@ static expr primop_cdr(expr args, lisp l){
   if(((S_STRING != carg->type) && (S_LIST != carg->type)) || (1>=carg->len)){
     return nil;
   }
-  /** @warning This should be rewritten to make it
-   *  play nice with any future garbage collection
-   *  efforts
-   **/
   if(S_LIST == carg->type){
-    ne->data.list = carg->data.list + 1;
+    ne->data.list = wmalloc((carg->len - 1)*sizeof(expr),l->e);
+    memcpy(ne->data.list,carg->data.list,(carg->len - 1)*sizeof(expr));
   } else { /*must be a string*/
     ne->type = S_STRING;
     ne->data.string = wcalloc(sizeof(char),carg->len,l->e);/*not len + 1*/

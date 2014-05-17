@@ -27,17 +27,24 @@ typedef struct lispenv_t lispenv_t;
 typedef lispenv_t *lisp;
 
 typedef enum {
-  S_NIL,      S_TEE,        S_LIST, S_STRING, S_SYMBOL,
-  S_INTEGER,  S_PRIMITIVE,  S_FILE, S_PROC
+  S_NIL,      /* () */
+  S_TEE,      /* #t */
+  S_LIST,     /* list */
+  S_STRING,   /* string */
+  S_SYMBOL,   /* symbol, positive or negative, input in decimal or octal */
+  S_INTEGER,  /* integer */
+  S_PRIMITIVE,/* a primitive function */
+  S_FILE,     /* for file I/O */
+  S_PROC      /* lambda procedure */
 } sexpr_e;
 
 /*io module*/
-typedef enum { /* enum describing all the io destinations */
-  invalid_io,
-  file_in,
+typedef enum { /* enum describing all the I/O destinations */
+  invalid_io,  /* error on incorrectly set up I/O*/
+  file_in,     
   file_out,
-  string_in,
-  string_out
+  string_in,   /* read from a string, for things like eval("(+ 2 2)") */
+  string_out   /* write to a string, if you want */
 } iotype;
 
 typedef union { /* pointers to where we want to write to or read from */

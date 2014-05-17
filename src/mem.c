@@ -170,8 +170,8 @@ int gcmark(expr root, io *e){
   if(NULL == root)
     return false;
 
-  if(true == root->gcmark)
-    return true;
+  /*if(true == root->gcmark)
+    return true;*/
 
   root->gcmark = true;
 
@@ -182,14 +182,14 @@ int gcmark(expr root, io *e){
         for(i = 0; i < root->len; i++)
           gcmark(root->data.list[i],e);
       }
-      break;
-    case S_PRIMITIVE:
-      break;
+      return false;
     case S_PROC:
       /*@todo Put the S_PROC structure into type.h**/
       gcmark(root->data.list[0],e);
       gcmark(root->data.list[1],e);
       gcmark(root->data.list[2],e);
+      return false;
+    case S_PRIMITIVE:
     case S_NIL:
     case S_TEE:
     case S_STRING:
@@ -214,10 +214,12 @@ void gcsweep(io *e){
   if(NULL == heaplist.next) /*pass first element, do not collect element*/
     return;
   for(ll = heaplist.next; ll != heaphead; ll = ll->next){
-    if(true == ll->x->gcmark)
+    if((NULL != ll->x) && (true == ll->x->gcmark)){
       ll->x->gcmark = false;
-    else
-      printf("freed %p\n",ll->x);
+    } else {
+      gcinner(ll->x,e);
+      ll->x = NULL;
+    }
   }
 }
 
@@ -238,18 +240,21 @@ static void gcinner(expr x, io *e){
   case S_INTEGER:
   case S_TEE:
   case S_NIL:
-      wfree(x,e);
-      break;
+    wfree(x,e);
+    break;
   case S_LIST:
     wfree(x->data.list,e);
     wfree(x,e);
     return;
-  case S_SYMBOL:
+  case S_SYMBOL: 
+    wfree(x->data.symbol,e);
+    wfree(x,e);
+    return;
   case S_STRING:
     wfree(x->data.string,e);
     wfree(x,e);
     return;
-  case S_PROC:
+  case S_PROC: /** @todo implement freeing for procedures**/
   case S_FILE: /** @todo implement file support **/
     report("UNIMPLEMENTED (TODO)");
     break;

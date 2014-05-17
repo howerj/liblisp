@@ -156,6 +156,10 @@ int main(int argc, char *argv[]){
   if(true == printGlobals_f){
     print_expr(l->global,l->o,0,l->e);
   }
+
+  /*gcsweep(l->e);*/
+  endlisp(l);
+
   return EXIT_SUCCESS;
 }
 
