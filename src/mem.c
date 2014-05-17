@@ -233,6 +233,16 @@ void gcsweep(io *e){
       ll = pll->next;
     }
   }
+  if((heaphead != &heaplist) && (NULL != heaphead->x)){
+    if(true == heaphead->x->gcmark){
+      ll->x->gcmark = false;
+    } else {
+      gcinner(heaphead->x,e);
+      heaphead->x = NULL;
+      free(heaphead);
+      heaphead = pll;
+    }
+  }
 }
 
 /*****************************************************************************/
@@ -248,10 +258,11 @@ static void gcinner(expr x, io *e){
     return;
 
   switch (x->type) {
-  case S_PRIMITIVE:
-  case S_INTEGER:
   case S_TEE:
   case S_NIL:
+  case S_INTEGER:
+  case S_PRIMITIVE:
+  case S_PROC: 
     wfree(x,e);
     break;
   case S_LIST:
@@ -266,7 +277,6 @@ static void gcinner(expr x, io *e){
     wfree(x->data.string,e);
     wfree(x,e);
     return;
-  case S_PROC: /** @todo implement freeing for procedures**/
   case S_FILE: /** @todo implement file support **/
     report("UNIMPLEMENTED (TODO)");
     break;

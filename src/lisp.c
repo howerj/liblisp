@@ -156,6 +156,9 @@ void endlisp(lisp l){
 
   fflush(NULL);
 
+  /*do not call mark before this sweep*/
+  gcsweep(&e);
+
   wfree(l->e, &e);
   wfree(l->o, &e);
   wfree(l->i, &e);
@@ -566,7 +569,7 @@ static expr primop_cdr(expr args, lisp l){
   }
   if(S_LIST == carg->type){
     ne->data.list = wmalloc((carg->len - 1)*sizeof(expr),l->e);
-    memcpy(ne->data.list,carg->data.list,(carg->len - 1)*sizeof(expr));
+    memcpy(ne->data.list,carg->data.list + 1,(carg->len - 1)*sizeof(expr));
   } else { /*must be a string*/
     ne->type = S_STRING;
     ne->data.string = wcalloc(sizeof(char),carg->len,l->e);/*not len + 1*/

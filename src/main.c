@@ -156,8 +156,8 @@ int main(int argc, char *argv[]){
     print_expr(l->global,l->o,0,l->e);
   }
 
-  gcsweep(l->e);
   endlisp(l);
+  printf("sizeof(sexpr_t) == %d\n", sizeof(sexpr_t));
 
   return EXIT_SUCCESS;
 }
