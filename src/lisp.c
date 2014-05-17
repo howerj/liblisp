@@ -468,7 +468,7 @@ static expr primop_div(expr args, lisp l){
     if(tmp){
       ne->data.integer/=tmp;
     }else{
-      print_error(args,"mod: 0/",l->e);
+      print_error(args,"div: 0/",l->e);
       return nil;
     }
   }

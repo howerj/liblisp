@@ -35,7 +35,9 @@ static unsigned int alloccounter = 0;
 static struct heap heaplist = {NULL,NULL};
 static struct heap *heaphead = &heaplist;
 
-/**** malloc wrappers ********************************************************/
+static void gcinner(expr x, io *e);
+
+/*** interface functions *****************************************************/
 
 /**
  *  @brief          wrapper around malloc 
@@ -209,15 +211,53 @@ int gcmark(expr root, io *e){
  **/
 void gcsweep(io *e){
   struct heap *ll;
-  for(ll = &heaplist; ll != heaphead; ll = ll->next){
-    if(NULL == ll->x)
-      continue;
-    else if(true == ll->x->gcmark)
+  if(NULL == heaplist.next) /*pass first element, do not collect element*/
+    return;
+  for(ll = heaplist.next; ll != heaphead; ll = ll->next){
+    if(true == ll->x->gcmark)
       ll->x->gcmark = false;
     else
       printf("freed %p\n",ll->x);
   }
 }
 
+/*****************************************************************************/
+
+/**
+ *  @brief          Frees expressions
+ *  @param          x     expression to print
+ *  @param          e     error output stream
+ *  @return         void
+ **/
+static void gcinner(expr x, io *e){
+  if (NULL==x)
+    return;
+
+  switch (x->type) {
+  case S_PRIMITIVE:
+  case S_INTEGER:
+  case S_TEE:
+  case S_NIL:
+      wfree(x,e);
+      break;
+  case S_LIST:
+    wfree(x->data.list,e);
+    wfree(x,e);
+    return;
+  case S_SYMBOL:
+  case S_STRING:
+    wfree(x->data.string,e);
+    wfree(x,e);
+    return;
+  case S_PROC:
+  case S_FILE: /** @todo implement file support **/
+    report("UNIMPLEMENTED (TODO)");
+    break;
+  default: /* should never get here */
+    report("free: not a known 'free-able' type");
+    exit(EXIT_FAILURE);
+    return;
+  }
+}
 
 /*****************************************************************************/

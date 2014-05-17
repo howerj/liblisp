@@ -172,51 +172,6 @@ void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
   return;
 }
 
-/**
- *  @brief          Recursively frees an S-expression
- *  @param          x     expression to print
- *  @param          e     error output stream
- *  @return         void
- **/
-void free_expr(expr x, io *e){
-  unsigned int i;
-
-  if (NULL==x)
-    return;
-
-  switch (x->type) {
-  case S_TEE:
-  case S_NIL:
-      wfree(x,e);
-      break;
-  case S_LIST:
-    for (i = 0; i < x->len; i++)
-      free_expr((x->data.list)[i],e);
-    wfree(x->data.list,e);
-    wfree(x,e);
-    return;
-  case S_SYMBOL:
-  case S_STRING:
-    wfree(x->data.string,e);
-    wfree(x,e);
-    return;
-  case S_INTEGER:
-    wfree(x,e);
-    return;
-  case S_PRIMITIVE:
-    wfree(x,e);
-    return;
-  case S_PROC:
-  case S_FILE: /** @todo implement file support **/
-    report("UNIMPLEMENTED (TODO)");
-    break;
-  default: /* should never get here */
-    report("free: not a known 'free-able' type");
-    exit(EXIT_FAILURE);
-    return;
-  }
-}
-
 /*****************************************************************************/
 
 /**

@@ -5,12 +5,15 @@
 # License:	GPLv3.0                                                           #
 ###############################################################################
 
+## Variables ##################################################################
 CC=gcc
 # add -g and -pg for profiling
 CCFLAGS=-Wall -Wextra -ansi -pedantic -O2
 OBJFILES=bin/io.o bin/mem.o bin/sexpr.o bin/lisp.o bin/main.o 
 
 ## building ###################################################################
+# Only a C tool chain is necessary to built the project. Anything else is
+# simply extra fluff.
 
 all: bin/lisp
 
@@ -34,7 +37,8 @@ valgrind: bin/lisp
 strace: bin/lisp
 	strace bin/./lisp -G lsp/lib.lsp
 
-# Most current version of git.
+# Most current version of git; The idea would be to use this to generate
+# a header file as a version number for the program.
 # git log | head -n 1 | awk '{print $2}'
 
 ## documentation ##############################################################
