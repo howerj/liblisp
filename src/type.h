@@ -35,7 +35,8 @@ typedef enum {
   S_INTEGER,  /* 5: integer */
   S_PRIMITIVE,/* 6: a primitive function */
   S_FILE,     /* 7: for file I/O */
-  S_PROC      /* 8: lambda procedure */
+  S_PROC,     /* 8: lambda procedure */
+  S_ERROR     /* 9: error return and handling */ 
 } sexpr_e;
 
 /*io module*/

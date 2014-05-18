@@ -21,6 +21,18 @@
  *  There are a number of types that are defined in "types.h" that it
  *  *could* return but does not.
  *
+ *  @todo Add in syntax for quotes:
+ *        '(list ...) become (quote (list ...))
+ *        But make it optional
+ *  @todo Add in syntax for regexes
+ *        (/regex/ list ...)
+ *        (/find/substitute/ list ...)
+ *        But make it optional
+ *  @todo Add in syntax to get a line from a file
+ *        <file>
+ *  @todo Add in line numbers
+ *  @todo Add in comments
+ *
  **/
 
 #include "type.h"   /* Project wide types */
@@ -125,6 +137,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
   case S_PROC: 
     wprints("#PROC\n",o,e); /** @todo print out procedure?**/
     return;
+  case S_ERROR: /** @todo implement error support **/     
   case S_FILE: /** @todo implement file support, then printing**/     
     report("UNIMPLEMENTED (TODO)",e);
     return;

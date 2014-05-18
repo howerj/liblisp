@@ -61,7 +61,7 @@
 #define procenv(X)  caddr(X)
 
 /** global-to-file special objects **/
-static expr nil, tee;
+static expr nil, tee, error;
 
 /** functions necessary for the intepreter **/
 static expr mkobj(sexpr_e type, io *e);
@@ -123,11 +123,13 @@ lisp initlisp(void){
   l->env->type   = S_LIST;
 
   /* internal symbols */
-  nil = mkobj(S_NIL,l->e);
-  tee = mkobj(S_TEE,l->e);
+  nil   = mkobj(S_NIL,l->e);
+  tee   = mkobj(S_TEE,l->e);
+  error = mkobj(S_ERROR,l->e);
 
-  extend(mksym(sdup("nil",l->e), l->e),nil,l->global,l->e);
-  extend(mksym(sdup("t",  l->e), l->e),tee,l->global,l->e);
+  extend(mksym(sdup("nil",    l->e), l->e),nil,   l->global,l->e);
+  extend(mksym(sdup("t",      l->e), l->e),tee,   l->global,l->e);
+  extend(mksym(sdup("error",  l->e), l->e),error, l->global,l->e);
 
   /* normal forms, kind of  */
   extendprimop("+",       primop_add,       l->global, l->e);
@@ -382,8 +384,6 @@ static expr mkprimop(expr (*func)(expr args, lisp l),io *e){
 static expr mkproc(expr args, expr code, expr env, io *e){
   /** 
    *  @todo check all args are symbols, clean this up! 
-   *  @warning garbage collection is going to have to
-   *  deal with the new environment *somehow*
    **/
   expr ne, nenv;
   ne = mkobj(S_PROC,e);
@@ -708,6 +708,7 @@ static expr primop_scdr(expr args, lisp l){
   ne->len = carg->len - 1;
   return ne;
 }
+
 static expr primop_scons(expr args, lisp l){
   expr ne = mkobj(S_LIST,l->e),prepend,list;
   if(2!=args->len){

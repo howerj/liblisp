@@ -135,15 +135,13 @@ expr gccalloc(io *e){
 
 /**
  *  @brief          wrapper around free
- *  @param          ptr  pointer to free; make sure its not NULL!
+ *  @param          ptr  pointer to free
  *  @param          e    error output stream
  *  @return         void
  **/
 void wfree(void *ptr, io *e){
-  alloccounter--;
-  if(NULL == ptr){ /* *I* should not be passing null to free */
-    report("ptr == NULL\n",e);
-    exit(EXIT_FAILURE);
+  if(NULL != ptr){ 
+    alloccounter--;
   }
   free(ptr);
 }
@@ -154,16 +152,12 @@ void wfree(void *ptr, io *e){
  *                  collected
  *  @param          root root tree to mark
  *  @param          e    error output stream
- *  @return         false == root was not marked, and now is, 
- *                  true == root was already marked
+ *  @return         false == root was not marked, and now is
  **/
 int gcmark(expr root, io *e){
   if(NULL == root)
     return false;
 
-  /*if(true == root->gcmark)
-    return true;*/
-  
   root->gcmark = true;
 
   switch(root->type){
@@ -186,6 +180,7 @@ int gcmark(expr root, io *e){
     case S_STRING:
     case S_SYMBOL:
     case S_INTEGER:
+    case S_ERROR:
     case S_FILE:
       break;
     default:
@@ -224,7 +219,7 @@ void gcsweep(io *e){
     } else {
       gcinner(heaphead->x,e);
       heaphead->x = NULL;
-      free(heaphead);
+      wfree(heaphead,e);
       heaphead = pll;
     }
   }
@@ -263,6 +258,9 @@ static void gcinner(expr x, io *e){
     return;
   case S_STRING:
     wfree(x->data.string,e);
+    wfree(x,e);
+    return;
+  case S_ERROR: /** @todo implement error support **/
     wfree(x,e);
     return;
   case S_FILE: /** @todo implement file support **/
