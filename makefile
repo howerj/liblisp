@@ -28,9 +28,6 @@ run: bin/lisp
 
 ## testing ####################################################################
 
-test: bin/lisp
-	bin/./lisp -G lsp/lib.lsp
-
 valgrind: bin/lisp
 	valgrind bin/./lisp -G lsp/lib.lsp
 

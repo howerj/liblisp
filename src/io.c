@@ -134,18 +134,23 @@ int wprints(const char *s, io *o , io *e){
  *                  
  **/
 void doreport(const char *s, char *cfile, unsigned int linenum, io *e)
-{ /** @todo Needs rewriting so it does not use fprintf or sprintf! **/
+{ 
+  io n_e = {file_out, {NULL}, 0, 0, '\0', false};
+  n_e.ptr.file = stderr;
+
   if((NULL == e) || (NULL == e->ptr.file)){
-    fprintf(stderr, "(error \"NULL == e\" (error \"%s\" \"%s\" %d))\n", s, cfile, linenum);
-    exit(EXIT_FAILURE);
+    e = &n_e;
   }
 
-  if(file_out == e->type){
-    fprintf(e->ptr.file, "(error \"%s\" \"%s\" %d)\n", s, cfile, linenum);
-  } else if (string_out == e->type){
-    sprintf(e->ptr.string,"(error \"%s\" \"%s\" %d)\n", s, cfile, linenum);
+  if((file_out == e->type) || (string_out == e->type)){
+    wprints("(error \"",e,e);
+    wprints(s,e,e);
+    wprints("\" \"",e,e);
+    wprints(cfile,e,e);
+    wprints("\" ",e,e);
+    wprintd(linenum,e,e);
+    wprints(")\n",e,e);
   } else {
-    fprintf(e->ptr.file, "(error \"unknown e->type\" \"%s\" %d)\n", cfile, linenum);
     exit(EXIT_FAILURE);
   }
 }
