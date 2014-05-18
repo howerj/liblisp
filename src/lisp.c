@@ -596,7 +596,6 @@ static expr primop_cons(expr args, lisp l){
 }
 
 static expr primop_nth(expr args, lisp l){
-  /** @todo implement version for string types **/
   cell_t i;
   expr a1,a2;
   if(2 != args->len){

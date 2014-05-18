@@ -17,7 +17,7 @@ OBJFILES=bin/io.o bin/mem.o bin/sexpr.o bin/lisp.o bin/main.o
 
 all: bin/lisp
 
-bin/%.o: src/%.c src/*.h 
+bin/%.o: src/%.c src/*.h makefile
 	$(CC) -c $(CCFLAGS) -o $@ $<
 
 bin/lisp: $(OBJFILES)
