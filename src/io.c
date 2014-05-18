@@ -136,22 +136,31 @@ int wprints(const char *s, io *o , io *e){
 void doreport(const char *s, char *cfile, unsigned int linenum, io *e)
 { 
   io n_e = {file_out, {NULL}, 0, 0, '\0', false};
+  bool critical_failure_f = false;
   n_e.ptr.file = stderr;
-
+  
   if((NULL == e) || (NULL == e->ptr.file)){
     e = &n_e;
+    critical_failure_f = true;
   }
 
-  if((file_out == e->type) || (string_out == e->type)){
-    wprints("(error \"",e,e);
-    wprints(s,e,e);
-    wprints("\" \"",e,e);
-    wprints(cfile,e,e);
-    wprints("\" ",e,e);
-    wprintd(linenum,e,e);
-    wprints(")\n",e,e);
-  } else {
+  if((file_out != e->type) && (string_out != e->type)){
+    e = &n_e;
+    critical_failure_f = true;
+  }
+
+  wprints("(error \"",e,e);
+  wprints(s,e,e);
+  wprints("\" \"",e,e);
+  wprints(cfile,e,e);
+  wprints("\" ",e,e);
+  wprintd(linenum,e,e);
+  wprints(")\n",e,e);
+
+  if(true == critical_failure_f){
+    wprints("(error \"critical failure\")\n",e,e);
     exit(EXIT_FAILURE);
   }
+  return;
 }
 
