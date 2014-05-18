@@ -20,8 +20,8 @@
  *  @return         EOF on failure, character to output on success
  **/
 int wputc(char c, io *o, io *e){
-  NULLCHK(o);
-  NULLCHK(o->ptr.file);
+  NULLCHK(o,e);
+  NULLCHK(o->ptr.file,e);
 
   if(file_out == o->type){
     return fputc(c, o->ptr.file);
@@ -45,8 +45,8 @@ int wputc(char c, io *o, io *e){
  *  @return         EOF on failure, character input on success
  **/
 int wgetc(io *i, io *e){
-  NULLCHK(i);
-  NULLCHK(i->ptr.file);
+  NULLCHK(i,e);
+  NULLCHK(i->ptr.file,e);
 
   if(true == i->ungetc){
     i->ungetc = false;
@@ -71,8 +71,8 @@ int wgetc(io *i, io *e){
  *  @return         EOF if failed, character we put back if succeeded.
  **/
 int wungetc(char c, io *i, io *e){
-  NULLCHK(i);
-  NULLCHK(i->ptr.file);
+  NULLCHK(i,e);
+  NULLCHK(i->ptr.file,e);
   if(true == i->ungetc){
     return EOF;
   }
@@ -91,8 +91,7 @@ int wungetc(char c, io *i, io *e){
  *                  total number of characters written
  **/
 int wprintd(cell_t d, io *o, io *e){
-  NULLCHK(o);
-  NULLCHK(e);
+  NULLCHK(o,e);
   if(file_out == o->type){
     return fprintf(o->ptr.file,"%d",d);
   } else if(string_out == o->type){
@@ -114,8 +113,7 @@ int wprintd(cell_t d, io *o, io *e){
 int wprints(const char *s, io *o , io *e){
   unsigned int count = 0;
   int c;
-  NULLCHK(o);
-  NULLCHK(e);
+  NULLCHK(o,e);
   while((c=*(s+(count++))))
     if (EOF == wputc((char)c,o,e))
       return EOF;
@@ -139,12 +137,11 @@ void doreport(const char *s, char *cfile, unsigned int linenum, io *e)
   bool critical_failure_f = false;
   n_e.ptr.file = stderr;
   
-  if((NULL == e) || (NULL == e->ptr.file)){
-    e = &n_e;
-    critical_failure_f = true;
-  }
-
-  if((file_out != e->type) && (string_out != e->type)){
+  if(
+      (NULL == e) || (NULL == e->ptr.file)
+      ||
+      ((file_out != e->type) && (string_out != e->type))
+    ){
     e = &n_e;
     critical_failure_f = true;
   }

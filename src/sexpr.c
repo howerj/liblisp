@@ -50,7 +50,7 @@ expr parse_term(io *i, io *e){
     }
     switch (c) {
     case ')':
-      report("unmatched ')'");
+      report("unmatched ')'",e);
       return NULL;
     case '(':
       return parse_list(i,e);
@@ -126,10 +126,10 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     wprints("#PROC\n",o,e); /** @todo print out procedure?**/
     return;
   case S_FILE: /** @todo implement file support, then printing**/     
-    report("UNIMPLEMENTED (TODO)");
+    report("UNIMPLEMENTED (TODO)",e);
     return;
   default: /* should never get here */
-    report("print: not a known printable type");
+    report("print: not a known printable type",e);
     exit(EXIT_FAILURE);
     return;
   }
@@ -191,8 +191,8 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
 
   while (EOF!=(c=wgetc(i,e))){
     if (BUFLEN <= count) {
-      report("symbol too long");
-      report(buf);
+      report("symbol too long",e);
+      report(buf,e);
       goto fail;
     }
     if (isspace(c))
@@ -212,11 +212,11 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
         buf[count++] = c;
         continue;
       default:
-        report(buf);
+        report(buf,e);
         goto fail;
       }
     case '"':
-      report(buf);
+      report(buf,e);
       goto success;
     default:
       buf[count++] = c;
@@ -258,8 +258,8 @@ static expr parse_string(io *i, io *e){
 
   while (EOF!=(c=wgetc(i,e))){
     if (BUFLEN <= count) {
-      report("string too long");
-      report(buf); /* check if correct */
+      report("string too long",e);
+      report(buf,e); /* check if correct */
       goto fail;
     }
     switch (c) {
@@ -270,8 +270,8 @@ static expr parse_string(io *i, io *e){
         buf[count++] = c;
         continue;
       default:
-        report("invalid escape char");
-        report(buf);
+        report("invalid escape char",e);
+        report(buf,e);
         goto fail;
       }
     case '"':
@@ -303,8 +303,8 @@ static expr parse_string(io *i, io *e){
  **/
 void append(expr list, expr ele, io *e)
 { 
-  NULLCHK(list);
-  NULLCHK(ele);
+  NULLCHK(list,e);
+  NULLCHK(ele,e);
   list->data.list = wrealloc(list->data.list, sizeof(expr) * ++list->len,e);
   (list->data.list)[list->len - 1] = ele;
 }
@@ -355,7 +355,7 @@ static expr parse_list(io *i, io *e){
   }
 
  fail:
- report("list err");
+ report("list err",e);
  return NULL;
 
  success:

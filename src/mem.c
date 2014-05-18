@@ -11,11 +11,9 @@
  *  Out-Of-Memory errors should go here as well to keep things out of
  *  the way.
  *
- *
- *  @todo The actual garbage collection stuff.
  *  @todo If an allocation fails, garbage should be collected, then an
  *        allocation reattempted, if it fails again it should abort.
- *  @todo Debug functions; maximum allocations / deallocations for example
+ *  @todo Debug functions; 
  *  @todo Remove instances of fprintf
  *  @todo Make the interfaces better so it is clear that expressions or
  *        pointers of expressions are being allocated.
@@ -54,15 +52,12 @@ static void gcinner(expr x, io *e);
 void *wmalloc(size_t size, io *e){
   void* v;
   if(MAX_ALLOCS < alloccounter++){
-    fprintf(stderr,"too many mallocs\n");
+    report("too many mallocs",e);
     exit(EXIT_FAILURE);
   }
   v = malloc(size);
   if(NULL == v){
-    if(NULL == e){
-      fprintf(stderr, "malloc failed and *e == NULL\n");
-    } else {
-    }
+    report("malloc failed",e);
     exit(EXIT_FAILURE);
   }
   return v;
@@ -79,15 +74,12 @@ void *wmalloc(size_t size, io *e){
 void *wcalloc(size_t num, size_t size, io *e){
   void* v;
   if(MAX_ALLOCS < alloccounter++){
-    fprintf(stderr,"too many mallocs\n");
+    report("too many mallocs",e);
     exit(EXIT_FAILURE);
   }
   v = calloc(num,size);
   if(NULL == v){
-    if(NULL == e){
-      fprintf(stderr, "calloc failed and *e == NULL\n");
-    } else {
-    }
+    report("calloc failed",e);
     exit(EXIT_FAILURE);
   }
   return v;
@@ -106,10 +98,7 @@ void *wrealloc(void *ptr, size_t size, io *e){
   void* v;
   v = realloc(ptr,size);
   if(NULL == v){
-    if(NULL == e){
-      fprintf(stderr, "realloc failed and *e == NULL\n");
-    } else {
-    }
+    report("realloc failed",e);
     exit(EXIT_FAILURE);
   }
   return v;
@@ -155,8 +144,8 @@ expr gccalloc(io *e){
  **/
 void wfree(void *ptr, io *e){
   alloccounter--;
-  if(NULL == e){ /* *I* should not be passing null to free */
-    fprintf(stderr, "free failed and *e == NULL\n");
+  if(NULL == ptr){ /* *I* should not be passing null to free */
+    report("ptr == NULL\n",e);
     exit(EXIT_FAILURE);
   }
   free(ptr);
@@ -281,10 +270,10 @@ static void gcinner(expr x, io *e){
     wfree(x,e);
     return;
   case S_FILE: /** @todo implement file support **/
-    report("UNIMPLEMENTED (TODO)");
+    report("UNIMPLEMENTED (TODO)",e);
     break;
   default: /* should never get here */
-    report("free: not a known 'free-able' type");
+    report("free: not a known 'free-able' type",e);
     exit(EXIT_FAILURE);
     return;
   }

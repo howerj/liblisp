@@ -11,10 +11,10 @@
 #define IO_H
 
 /**** macros ******************************************************************/
-#define BUFLEN      (256u)
-#define report(X)   doreport(X,__FILE__,__LINE__,e)
-#define NULLCHK(X)  if(NULL == (X))\
-                      { report("null dereference"); exit(EXIT_FAILURE);}
+#define BUFLEN        (256u)
+#define report(X,E)   doreport((X),__FILE__,__LINE__,(E))
+#define NULLCHK(X,E)  if(NULL == (X))\
+                      { report("null dereference",(E)); exit(EXIT_FAILURE);}
 /******************************************************************************/
 
 /**** function prototypes *****************************************************/
