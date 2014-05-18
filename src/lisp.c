@@ -61,7 +61,7 @@
 #define procenv(X)  caddr(X)
 
 /** global-to-file special objects **/
-static expr nil, tee;
+static expr nil, tee, s_if, s_lambda, s_define, s_begin, s_set, s_quote;
 
 /** functions necessary for the intepreter **/
 static expr mkobj(sexpr_e type, io *e);
@@ -69,14 +69,13 @@ static expr mksym(char *s, io *e);
 static expr mkprimop(expr (*func)(expr args, lisp l),io *e);
 static expr mkproc(expr args, expr code, expr env, io *e);
 static expr evlis(expr x,expr env,lisp l);
-static expr apply(expr proc, expr args, lisp l); /*add env for dynamic scope?*/
+static expr apply(expr proc, expr args,expr env, lisp l); /*add env for dynamic scope?*/
 static expr dofind(expr env, expr x, io *e);
 static expr find(expr env, expr x, lisp l);
 static expr extend(expr sym, expr val, expr env, io *e);
 static char *sdup(const char *s, io *e); 
 static expr extendprimop(const char *s, expr (*func)(expr args, lisp l), expr env, io *e);
 static expr extensions(expr env, expr syms, expr vals, io *e);
-static bool primcmp(expr x, const char *s, io *e);
 
 /** built in primitives **/
 static expr primop_add(expr args, lisp l);
@@ -126,8 +125,22 @@ lisp initlisp(void){
   nil   = mkobj(S_NIL,l->e);
   tee   = mkobj(S_TEE,l->e);
 
+  s_if      = mksym(sdup("if",      l->e), l->e);
+  s_lambda  = mksym(sdup("lambda",  l->e), l->e);
+  s_begin   = mksym(sdup("begin",   l->e), l->e);
+  s_define  = mksym(sdup("define",  l->e), l->e);
+  s_set     = mksym(sdup("set",     l->e), l->e);
+  s_quote   = mksym(sdup("quote",   l->e), l->e);
+
   extend(mksym(sdup("nil",    l->e), l->e), nil,   l->global,l->e);
   extend(mksym(sdup("t",      l->e), l->e), tee,   l->global,l->e);
+
+  extend(s_if,     s_if,      l->global,l->e);
+  extend(s_lambda, s_lambda,  l->global,l->e);
+  extend(s_begin,  s_begin,   l->global,l->e);
+  extend(s_define, s_define,  l->global,l->e);
+  extend(s_set,    s_set,     l->global,l->e);
+  extend(s_quote,  s_quote,   l->global,l->e);
 
   /* normal forms, kind of  */
   extendprimop("+",       primop_add,       l->global, l->e);
@@ -177,7 +190,6 @@ void endlisp(lisp l){
   return;
 }
 
-
 /**
  *  @brief          Evaluate an already parsed lisp expression
  *  @param          x   The s-expression to parse
@@ -187,7 +199,6 @@ void endlisp(lisp l){
  **/
 expr eval(expr x, expr env, lisp l){
   unsigned int i;
-  io *e = l->e;
 
   if(NULL==x){
     print_error(NULL,"passed nul",l->e);
@@ -199,7 +210,8 @@ expr eval(expr x, expr env, lisp l){
       if(tstlen(x,0)) /* () */
         return nil;
       if(S_SYMBOL==car(x)->type){
-        if(primcmp(x,"if",e)){ /* (if test conseq alt) */
+        const expr foundx = eval(car(x),env,l);
+        if(foundx == s_if){ /* (if test conseq alt) */
           if(!tstlen(x,4)){
             print_error(x,"if: argc != 4",l->e);
             return nil;
@@ -209,7 +221,7 @@ expr eval(expr x, expr env, lisp l){
           } else {
             return eval(caddr(x),env,l);
           }
-        } else if (primcmp(x,"begin",e)){ /* (begin exp ... ) */
+        } else if (foundx == s_begin){ /* (begin exp ... ) */
           if(tstlen(x,1)){
             return nil;
           }
@@ -217,13 +229,13 @@ expr eval(expr x, expr env, lisp l){
             eval(nth(x,i),env,l);
           }
           return eval(nth(x,i),env,l);
-        } else if (primcmp(x,"quote",e)){ /* (quote exp) */
+        } else if (foundx == s_quote){ /* (quote exp) */
           if(!tstlen(x,2)){
             print_error(x,"quote: argc != 1",l->e);
             return nil;
           }
           return cadr(x);
-        } else if (primcmp(x,"set",e)){
+        } else if (foundx == s_set){
           expr ne;
           if(!tstlen(x,3)){
             print_error(x,"set: argc != 2",l->e);
@@ -236,7 +248,7 @@ expr eval(expr x, expr env, lisp l){
           }
           ne->data.list[1] = eval(caddr(x),env,l);
           return cadr(ne);
-        } else if (primcmp(x,"define",e)){ 
+        } else if (foundx == s_define){ 
           { 
             expr ne;
             /*@todo if already defined, or is an internal symbol, report error */
@@ -247,14 +259,14 @@ expr eval(expr x, expr env, lisp l){
             ne = extend(cadr(x),eval(caddr(x),env,l),l->global,l->e);
             return ne;
           }
-        } else if (primcmp(x,"lambda",l->e)){
+        } else if (foundx == s_lambda){
           if(!tstlen(x,3)){
             print_error(x,"lambda: argc != 2",l->e);
             return nil;
           }
           return mkproc(cadr(x),caddr(x),env,l->e);
         } else {
-          return apply(eval(car(x),env,l),evlis(x,env,l),l);
+          return apply(foundx,evlis(x,env,l),env,l);
         }
       } else {
         print_error(car(x),"cannot apply",l->e);
@@ -309,7 +321,6 @@ static expr dofind(expr env, expr x, io *e){
   unsigned int i;
   char *s;
   if(S_LIST != env->type || S_SYMBOL != x->type){
-    print_error(NULL,"invalid search",e);
     return nil;
   }
   s = x->data.symbol;
@@ -397,15 +408,6 @@ static expr mkproc(expr args, expr code, expr env, io *e){
   return ne;
 }
 
-/** compare a symbols name to a string **/
-static bool primcmp(expr x, const char *s, io *e){
-  if(NULL == (car(x)->data.symbol)){
-    print_error(NULL,"null passed to primcmp!",e);
-    abort();
-  }
-  return !strcmp(car(x)->data.symbol,s);
-}
-
 /** evaluate a list **/
 static expr evlis(expr x,expr env,lisp l){
   unsigned int i;
@@ -420,9 +422,9 @@ static expr evlis(expr x,expr env,lisp l){
 /** extend a enviroment with symbol/value pairs **/
 static expr extensions(expr env, expr syms, expr vals, io *e){
   unsigned int i;
-  if(0 == vals->len){
+  if(0 == vals->len)
     return nil;
-  }
+
   for(i = 0; i < syms->len; i++){
     extend(nth(syms,i),nth(vals,i),env,e);
   }
@@ -430,7 +432,7 @@ static expr extensions(expr env, expr syms, expr vals, io *e){
 }
 
 /** apply a procedure over arguments given an environment **/
-static expr apply(expr proc, expr args, lisp l){
+static expr apply(expr proc, expr args, expr env, lisp l){
   expr nenv;
   if(S_PRIMITIVE == proc->type){
     return (proc->data.func)(args,l);
@@ -441,6 +443,7 @@ static expr apply(expr proc, expr args, lisp l){
       return nil;
     }
     nenv = extensions(procenv(proc),procargs(proc),args,l->e);
+    print_expr(nenv,l->o,0,l->e);
     return eval(proccode(proc),nenv,l);
   }
 
