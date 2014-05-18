@@ -49,7 +49,7 @@ Or change directories to build folder [bin/](bin/) and run
 * [doc/](doc/)
   * Contains the doxygen configuration, the [manual](doc/manual.md) and
   any generated documentation files. Doxygen will generate its files
-  under [doc/htm](doc/html)
+  under [doc/htm](doc/html). Logs are also written to [doc/log](doc/log/).
 
 * [lsp/](lsp/)
   * Contains any lisp programs.

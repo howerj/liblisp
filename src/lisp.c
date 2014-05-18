@@ -91,6 +91,9 @@ static expr primop_nth(expr args, lisp l);
 static expr primop_len(expr args, lisp l);
 static expr primop_numeq(expr args, lisp l);
 static expr primop_printexpr(expr args, lisp l);
+static expr primop_scar(expr args, lisp l);
+static expr primop_scdr(expr args, lisp l);
+static expr primop_scons(expr args, lisp l);
 
 /*** interface functions *****************************************************/
 
@@ -139,6 +142,9 @@ lisp initlisp(void){
   extendprimop("length",  primop_len,       l->global, l->e);
   extendprimop("=",       primop_numeq,     l->global, l->e);
   extendprimop("print",   primop_printexpr, l->global, l->e);
+  extendprimop("scar",    primop_scar,      l->global, l->e);
+  extendprimop("scdr",    primop_scdr,      l->global, l->e);
+  extendprimop("scons",   primop_scons,     l->global, l->e);
 
   return l;
 }
@@ -535,53 +541,37 @@ static expr primop_mod(expr args, lisp l){
 
 static expr primop_car(expr args, lisp l){
   expr a1;
-  /**@todo separate out string functions**/
   if(1!=args->len){
     print_error(args,"car: argc != 1",l->e);
     return nil;
   }
 
   a1 = car(args);
-  if((S_LIST != a1->type) && (S_STRING != a1->type)){
-    print_error(args,"args != list || string",l->e);
+  if(S_LIST != a1->type){
+    print_error(args,"args != list",l->e);
     return nil;
   }
-  if(S_LIST == a1->type){
-    return car(a1);
-  } else { /*must be string*/
-      expr ne = mkobj(S_STRING,l->e);
-      ne->data.string = wcalloc(sizeof(char),a1->len?2:0,l->e);
-      ne->data.string[0] = a1->data.string[0];
-      ne->len = 1;
-      return ne;
-  }
+  return car(a1);
 }
 
 static expr primop_cdr(expr args, lisp l){
   expr ne, carg;
-  /**@todo separate out string functions**/
   if(0 == args->len){
     return nil;
   }
   ne = mkobj(S_LIST,l->e);
   carg = car(args);
-  if(((S_STRING != carg->type) && (S_LIST != carg->type)) || (1>=carg->len)){
+  if((S_LIST != carg->type) || (1>=carg->len)){
     return nil;
   }
-  if(S_LIST == carg->type){
-    ne->data.list = wmalloc((carg->len - 1)*sizeof(expr),l->e);
-    memcpy(ne->data.list,carg->data.list + 1,(carg->len - 1)*sizeof(expr));
-  } else { /*must be a string*/
-    ne->type = S_STRING;
-    ne->data.string = wcalloc(sizeof(char),carg->len,l->e);/*not len + 1*/
-    strcpy(ne->data.string,carg->data.string + 1);
-  }
+
+  ne->data.list = wmalloc((carg->len - 1)*sizeof(expr),l->e);
+  memcpy(ne->data.list,carg->data.list + 1,(carg->len - 1)*sizeof(expr));
   ne->len = carg->len - 1;
   return ne;
 }
 
 static expr primop_cons(expr args, lisp l){
-  /**@todo separate out string functions**/
   expr ne = mkobj(S_LIST,l->e),prepend,list;
   if(2!=args->len){
     print_error(args,"cons: argc != 2",l->e);
@@ -598,12 +588,6 @@ static expr primop_cons(expr args, lisp l){
     memcpy(ne->data.list + 1,list->data.list,(list->len)*sizeof(expr));
     ne->len = list->len + 1;
     /****************************/
-  } if((S_STRING == list->type) && (S_STRING == prepend->type)){
-    ne->type = S_STRING;
-    ne->data.string = wcalloc(sizeof(char),(list->len)+(prepend->len)+1,l->e);
-    ne->len = list->len + prepend->len;
-    strcpy(ne->data.string,prepend->data.string);
-    strcat(ne->data.string,list->data.string);
   } else {
     append(ne,prepend,l->e);
     append(ne,list,l->e);
@@ -690,6 +674,62 @@ static expr primop_printexpr(expr args, lisp l){
   print_expr(args,l->o,0,l->e);
   return args;
 }
+
+static expr primop_scar(expr args, lisp l){
+  expr a1,ne;
+  if(1!=args->len){
+    print_error(args,"car: argc != 1",l->e);
+    return nil;
+  }
+  a1 = car(args);
+  if(S_STRING != a1->type){
+    print_error(args,"args != string",l->e);
+    return nil;
+  }
+  ne = mkobj(S_STRING,l->e);
+  ne->data.string = wcalloc(sizeof(char),a1->len?2:0,l->e);
+  ne->data.string[0] = a1->data.string[0];
+  ne->len = 1;
+  return ne;
+}
+
+static expr primop_scdr(expr args, lisp l){
+  expr ne, carg;
+  if(0 == args->len){
+    return nil;
+  }
+  ne = mkobj(S_STRING,l->e);
+  carg = car(args);
+  if((S_STRING != carg->type)  || (1>=carg->len)){
+    return nil;
+  }
+
+  ne->data.string = wcalloc(sizeof(char),carg->len,l->e);/*not len + 1*/
+  strcpy(ne->data.string,carg->data.string + 1);
+  ne->len = carg->len - 1;
+  return ne;
+}
+static expr primop_scons(expr args, lisp l){
+  expr ne = mkobj(S_LIST,l->e),prepend,list;
+  if(2!=args->len){
+    print_error(args,"cons: argc != 2",l->e);
+    return nil;
+  }
+  prepend = car(args);
+  list = cadr(args);
+  if((S_STRING == list->type) && (S_STRING == prepend->type)){
+    ne->type = S_STRING;
+    ne->data.string = wcalloc(sizeof(char),(list->len)+(prepend->len)+1,l->e);
+    ne->len = list->len + prepend->len;
+    strcpy(ne->data.string,prepend->data.string);
+    strcat(ne->data.string,list->data.string);
+  } else {
+    print_error(args,"cons: arg != string",l->e);
+    return nil;
+  }
+  return ne;
+}
+
 
 #undef intchk
 
