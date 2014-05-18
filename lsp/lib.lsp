@@ -13,12 +13,10 @@
     (mod x y)))))
 
 
-"being passed the wrong environment? Or evaluating at the wrong time?
-
+"Being passed the wrong environment? Or evaluating at the wrong time?
 Reason for internal symbols for \"if\". Need progn? Eval all if into
-symbols, return and execute. Big changes to system needed.
+symbols, return and execute. Big changes to system needed."
 
-"
 (define !
   (lambda (N)
     (if (= N 1)

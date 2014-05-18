@@ -32,6 +32,8 @@
  *        <file>
  *  @todo Add in line numbers
  *  @todo Add in comments
+ *  @todo Add syntax for executing shell commands directly
+ *        (`command $arg_1 $arg_2 ...`)
  *
  **/
 
@@ -44,6 +46,8 @@
 static expr parse_string(io *i, io *e);
 static expr parse_symbol(io *i, io *e); /* and integers!*/
 static expr parse_list(io *i, io *e);
+
+static bool print_proc_f = false; /*print actual code after #proc*/
 
 /*** interface functions *****************************************************/
 
@@ -135,7 +139,9 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     wprints("#PRIMOP\n",o,e);
     return;
   case S_PROC: 
-    wprints("#PROC\n",o,e); /** @todo print out procedure?**/
+    wprints("#PROC\n",o,e); 
+    if(true == print_proc_f)
+      print_expr(x->data.list[1],o,0,e);
     return;
   case S_ERROR: /** @todo implement error support **/     
   case S_FILE: /** @todo implement file support, then printing**/     

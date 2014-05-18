@@ -112,7 +112,8 @@ int wprintd(cell_t d, io *o, io *e){
  *                  
  **/
 int wprints(const char *s, io *o , io *e){
-  unsigned int count = 0;
+  /**@warning count can go negative when is should not!**/
+  int count = 0;
   int c;
   NULLCHK(o,e);
   while((c=*(s+(count++))))

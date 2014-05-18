@@ -9,7 +9,7 @@
 REPORT_DIR=doc/log
 CC=gcc # clang should work as well.
 # add -g and -pg for profiling
-CCFLAGS=-Wall -Wextra -ansi -pedantic -O2 -g -save-temps
+CCFLAGS=-Wall -Wextra -ansi -pedantic -O2 -g -save-temps -fverbose-asm
 OBJFILES=bin/io.o bin/mem.o bin/sexpr.o bin/lisp.o bin/main.o 
 
 ## building ###################################################################

@@ -61,7 +61,7 @@
 #define procenv(X)  caddr(X)
 
 /** global-to-file special objects **/
-static expr nil, tee, error;
+static expr nil, tee;
 
 /** functions necessary for the intepreter **/
 static expr mkobj(sexpr_e type, io *e);
@@ -125,11 +125,9 @@ lisp initlisp(void){
   /* internal symbols */
   nil   = mkobj(S_NIL,l->e);
   tee   = mkobj(S_TEE,l->e);
-  error = mkobj(S_ERROR,l->e);
 
-  extend(mksym(sdup("nil",    l->e), l->e),nil,   l->global,l->e);
-  extend(mksym(sdup("t",      l->e), l->e),tee,   l->global,l->e);
-  extend(mksym(sdup("error",  l->e), l->e),error, l->global,l->e);
+  extend(mksym(sdup("nil",    l->e), l->e), nil,   l->global,l->e);
+  extend(mksym(sdup("t",      l->e), l->e), tee,   l->global,l->e);
 
   /* normal forms, kind of  */
   extendprimop("+",       primop_add,       l->global, l->e);
