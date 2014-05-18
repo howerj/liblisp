@@ -6,9 +6,10 @@
 ###############################################################################
 
 ## Variables ##################################################################
-CC=gcc
+REPORT_DIR=doc/log
+CC=gcc # clang should work as well.
 # add -g and -pg for profiling
-CCFLAGS=-Wall -Wextra -ansi -pedantic -O2 -g
+CCFLAGS=-Wall -Wextra -ansi -pedantic -O2 -g -save-temps
 OBJFILES=bin/io.o bin/mem.o bin/sexpr.o bin/lisp.o bin/main.o 
 
 ## building ###################################################################
@@ -22,6 +23,7 @@ bin/%.o: src/%.c src/*.h makefile
 
 bin/lisp: $(OBJFILES)
 	$(CC) $(CCFLAGS) $(OBJFILES) -o bin/lisp
+	-mv *.i *.s $(REPORT_DIR)
 
 run: bin/lisp
 	bin/./lisp lsp/lib.lsp
@@ -36,21 +38,24 @@ strace: bin/lisp
 
 # Most current version of git; The idea would be to use this to generate
 # a header file as a version number for the program.
-# git log | head -n 1 | awk '{print $2}'
+# git log | grep "^commit" | head -n 1 | awk '{print $2}'
 
 ## documentation ##############################################################
 
 doxygen:
 	-doxygen doc/doxygen.conf
 
+
 report:
-	-splint src/*.c src/*.h
-	-wc src/*.c src/*.h
-	-readelf -sW bin/*.o
+	-echo "Reports generated in $(REPORT_DIR)"
+	-splint -weak src/*.c src/*.h &> $(REPORT_DIR)/splint.log
+	-wc src/*.c src/*.h &> $(REPORT_DIR)/wc.log
+	-readelf -sW bin/*.o &> $(REPORT_DIR)/elf.log
 
 ## cleanup ####################################################################
 
 clean:
 	-rm -rf bin/*.o bin/lisp doc/htm/ doc/man doc/latex
+	-rm -rf $(REPORT_DIR)/*.i $(REPORT_DIR)/*.s $(REPORT_DIR)/*.log
 
 ## EOF ########################################################################

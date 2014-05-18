@@ -1,6 +1,6 @@
 /**
  *  @file           type.h
- *  @brief          Types used by all sub-modules of the lisp interpreter
+ *  @brief          Types used by all sub-modules and some c lib includes.
  *  @author         Richard James Howe.
  *  @copyright      Copyright 2013 Richard James Howe.
  *  @license        GPL v3.0

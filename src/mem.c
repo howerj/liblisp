@@ -13,10 +13,7 @@
  *
  *  @todo If an allocation fails, garbage should be collected, then an
  *        allocation reattempted, if it fails again it should abort.
- *  @todo Debug functions; 
- *  @todo Remove instances of fprintf
- *  @todo Make the interfaces better so it is clear that expressions or
- *        pointers of expressions are being allocated.
+ *  @todo Debug functions; a poor-mans version of valgrind.
  */
 
 #include "type.h"
@@ -214,7 +211,6 @@ void gcsweep(io *e){
       pll = ll; 
       ll = ll->next;
     } else {
-      /*printf("freeing %d\n", ll->x?ll->x->type:-1);*/
       gcinner(ll->x,e);
       ll->x = NULL;
       pll->next = ll->next;

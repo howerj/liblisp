@@ -91,6 +91,7 @@ int wungetc(char c, io *i, io *e){
  *                  total number of characters written
  **/
 int wprintd(cell_t d, io *o, io *e){
+  /**@todo rewrite so it does not use sprintf/fprintf**/
   NULLCHK(o,e);
   if(file_out == o->type){
     return fprintf(o->ptr.file,"%d",d);
