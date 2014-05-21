@@ -1,10 +1,30 @@
-## plan.md
+# plan.md
 
 The first attempt at the lisp interpreter will be to just get one up and no
 matter how inefficient. It will also help me to build up libraries that I can
 reuse in a next attempt, explore ideas (proper tail recursion, garbage
 collection, lisp, text processing) that will allow me to make better choices in
 the next iteration.
+
+## Possibly relevant links
+
+Regex matching:
+
+<http://www.cs.princeton.edu/courses/archive/spr09/cos333/beautiful.html>
+
+Pretty Printing Trees:
+
+<http://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf>
+
+Bignums:
+
+<http://www.cs.sunysb.edu/~skiena/392/programs/bignum.c> 
+
+(from the book *Programming Challenges: The Programming Contest Training
+ Manual*)
+
+
+## Steps
 
 The steps and sections I need to work on are:
 
@@ -13,6 +33,11 @@ The steps and sections I need to work on are:
 I would like to make file I/O and text processing easy like they are in perl,
 awk and sed.
 
+### Colorize output and pretty print it
+
+Pretty printing S-expressions should be relatively easy, colorizing the output
+on demand as well could make any output easier to read. 
+
 ### Relatively Efficient
 
 By better choice of data structures and algorithms, as well as architectural
@@ -20,9 +45,16 @@ decisions, I can implement a more efficient interpreter. I should move from an
 array based approached to linked lists to help with insertion / deletion and
 processing of environments.
 
-### Garbage collection
+### Bignum support
 
-This needs implementing, even if it is leaky at first. 
+Support for bignums! The only type of number lisps need! Currently only signed
+integers are supported and this is rather limiting.
+
+### Easy system command execution, text parsing, text manipulation and file I/O
+
+Much like Perl, ease of text manipulation with built-in "sed", "tr", etc.,
+Simple file I/O and system command execution with things like back ticks make
+the language instantly more usable.
 
 ### Proper tail end recursion
 

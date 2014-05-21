@@ -15,7 +15,7 @@
  *  e:      standard error output
  *  x:      expression
  *  args:   a list of *evaluated* arguments
- *  ne:     a newly created expression
+ *  nx:     a newly created expression
  *
  *  @todo Better error handling; a new primitive type should be made
  *        for it, one that can be caught.
@@ -236,28 +236,28 @@ expr eval(expr x, expr env, lisp l){
           }
           return cadr(x);
         } else if (foundx == s_set){
-          expr ne;
+          expr nx;
           if(!tstlen(x,3)){
             print_error(x,"set: argc != 2",l->e);
             return nil;
           }
-          ne = find(env,cadr(x),l);
-          if(nil == ne){
+          nx = find(env,cadr(x),l);
+          if(nil == nx){
             print_error(cadr(x),"unbound symbol",l->e);
             return nil;
           }
-          ne->data.list[1] = eval(caddr(x),env,l);
-          return cadr(ne);
+          nx->data.list[1] = eval(caddr(x),env,l);
+          return cadr(nx);
         } else if (foundx == s_define){ 
           { 
-            expr ne;
+            expr nx;
             /*@todo if already defined, or is an internal symbol, report error */
             if(!tstlen(x,3)){
               print_error(x,"define: argc != 2",l->e);
               return nil;
             }
-            ne = extend(cadr(x),eval(caddr(x),env,l),l->global,l->e);
-            return ne;
+            nx = extend(cadr(x),eval(caddr(x),env,l),l->global,l->e);
+            return nx;
           }
         } else if (foundx == s_lambda){
           if(!tstlen(x,3)){
@@ -275,12 +275,12 @@ expr eval(expr x, expr env, lisp l){
       break;
     case S_SYMBOL:/*if symbol found, return it, else error; unbound symbol*/
       {
-        expr ne = find(env,x,l);
-        if(nil == ne){
+        expr nx = find(env,x,l);
+        if(nil == nx){
           print_error(x,"unbound symbol",l->e);
           return nil;
         }
-        return cadr(ne);
+        return cadr(nx);
       }
     case S_FILE: /* to implement */
       print_error(NULL,"file type unimplemented",l->e);
@@ -305,14 +305,14 @@ expr eval(expr x, expr env, lisp l){
 
 /**find a symbol in an environment and the global list**/
 static expr find(expr env, expr x, lisp l){
-  expr ne = dofind(env,x,l->e);
-  if(nil == ne){
-    ne = dofind(l->global,x,l->e);
-    if(nil == ne){
+  expr nx = dofind(env,x,l->e);
+  if(nil == nx){
+    nx = dofind(l->global,x,l->e);
+    if(nil == nx){
       return nil;
     }
   }
-  return ne;
+  return nx;
 }
 
 /** find a symbol in a special type of list **/
@@ -340,10 +340,10 @@ static expr dofind(expr env, expr x, io *e){
 
 /** extend a lisp environment **/
 static expr extend(expr sym, expr val, expr env, io *e){
-  expr ne = mkobj(S_LIST,e);
-  append(ne,sym,e);
-  append(ne,val,e);
-  append(env,ne,e);
+  expr nx = mkobj(S_LIST,e);
+  append(nx,sym,e);
+  append(nx,val,e);
+  append(env,nx,e);
   return val;
 }
 
@@ -365,28 +365,28 @@ static expr extendprimop(const char *s, expr (*func)(expr args, lisp l), expr en
 
 /** make new object **/
 static expr mkobj(sexpr_e type,io *e){
-  expr ne;
-  ne = gccalloc(e);
-  ne->len = 0;
-  ne->type = type;
-  return ne;
+  expr nx;
+  nx = gccalloc(e);
+  nx->len = 0;
+  nx->type = type;
+  return nx;
 }
 
 /** make a new symbol **/
 static expr mksym(char *s,io *e){
-  expr ne;
-  ne = mkobj(S_SYMBOL,e);
-  ne->len = strlen(s);
-  ne->data.symbol = s;
-  return ne;
+  expr nx;
+  nx = mkobj(S_SYMBOL,e);
+  nx->len = strlen(s);
+  nx->data.symbol = s;
+  return nx;
 }
 
 /** make a new primitive **/
 static expr mkprimop(expr (*func)(expr args, lisp l),io *e){
-  expr ne;
-  ne = mkobj(S_PRIMITIVE,e);
-  ne->data.func = func;
-  return ne;
+  expr nx;
+  nx = mkobj(S_PRIMITIVE,e);
+  nx->data.func = func;
+  return nx;
 }
 
 /** make a new process **/
@@ -394,29 +394,29 @@ static expr mkproc(expr args, expr code, expr env, io *e){
   /** 
    *  @todo check all args are symbols, clean this up! 
    **/
-  expr ne, nenv;
-  ne = mkobj(S_PROC,e);
-  append(ne,args,e);
-  append(ne,code,e);
+  expr nx, nenv;
+  nx = mkobj(S_PROC,e);
+  append(nx,args,e);
+  append(nx,code,e);
   /** @todo turn into mklist **/
   nenv = mkobj(S_LIST,e);
   nenv->data.list = wmalloc(env->len*sizeof(expr),e);
   memcpy(nenv->data.list,env->data.list,(env->len)*sizeof(expr));
   nenv->len = env->len;
   /****************************/
-  append(ne,nenv,e);
-  return ne;
+  append(nx,nenv,e);
+  return nx;
 }
 
 /** evaluate a list **/
 static expr evlis(expr x,expr env,lisp l){
   unsigned int i;
-  expr ne;
-  ne = mkobj(S_LIST,l->e);
+  expr nx;
+  nx = mkobj(S_LIST,l->e);
   for(i = 1/*skip 0!*/; i < x->len; i++){
-    append(ne,eval(nth(x,i),env,l),l->e);
+    append(nx,eval(nth(x,i),env,l),l->e);
   }
-  return ne;
+  return nx;
 }
 
 /** extend a enviroment with symbol/value pairs **/
@@ -462,67 +462,67 @@ static expr apply(expr proc, expr args, expr env, lisp l){
 
 static expr primop_add(expr args, lisp l){
   unsigned int i;
-  expr ne = mkobj(S_INTEGER,l->e);
+  expr nx = mkobj(S_INTEGER,l->e);
   if(0 == args->len)
     return nil;
   for(i = 0; i < args->len; i++){
     intchk(nth(args,i),l->e);
-    ne->data.integer+=(nth(args,i)->data.integer);
+    nx->data.integer+=(nth(args,i)->data.integer);
   }
-  return ne;
+  return nx;
 }
 
 static expr primop_sub(expr args, lisp l){
   unsigned int i;
-  expr ne = mkobj(S_INTEGER,l->e);
+  expr nx = mkobj(S_INTEGER,l->e);
   if(0 == args->len)
     return nil;
-  ne = nth(args,0);
-  intchk(ne,l->e);
+  nx = nth(args,0);
+  intchk(nx,l->e);
   for(i = 1; i < args->len; i++){
     intchk(nth(args,i),l->e);
-    ne->data.integer-=(nth(args,i)->data.integer);
+    nx->data.integer-=(nth(args,i)->data.integer);
   }
-  return ne;
+  return nx;
 }
 
 static expr primop_prod(expr args, lisp l){
   unsigned int i;
-  expr ne = mkobj(S_INTEGER,l->e);
+  expr nx = mkobj(S_INTEGER,l->e);
   if(0 == args->len)
     return nil;
-  ne = nth(args,0);
-  intchk(ne,l->e);
+  nx = nth(args,0);
+  intchk(nx,l->e);
   for(i = 1; i < args->len; i++){
     intchk(nth(args,i),l->e);
-    ne->data.integer*=(nth(args,i)->data.integer);
+    nx->data.integer*=(nth(args,i)->data.integer);
   }
-  return ne;
+  return nx;
 }
 
 static expr primop_div(expr args, lisp l){
   unsigned int i,tmp;
-  expr ne = mkobj(S_INTEGER,l->e);
+  expr nx = mkobj(S_INTEGER,l->e);
   if(0 == args->len)
     return nil;
-  ne = nth(args,0);
-  intchk(ne,l->e);
+  nx = nth(args,0);
+  intchk(nx,l->e);
   for(i = 1; i < args->len; i++){
     intchk(nth(args,i),l->e);
     tmp = nth(args,i)->data.integer;
     if(tmp){
-      ne->data.integer/=tmp;
+      nx->data.integer/=tmp;
     }else{
       print_error(args,"div: 0/",l->e);
       return nil;
     }
   }
-  return ne;
+  return nx;
 }
 
 static expr primop_mod(expr args, lisp l){
   unsigned int tmp;
-  expr ne = mkobj(S_INTEGER,l->e);
+  expr nx = mkobj(S_INTEGER,l->e);
   if(2!=args->len){
     print_error(args,"mod: argc != 2",l->e);
     return nil;
@@ -535,9 +535,9 @@ static expr primop_mod(expr args, lisp l){
     print_error(args,"mod: 0/",l->e);
     return nil;
   }
-  ne->data.integer = car(args)->data.integer % tmp;
+  nx->data.integer = car(args)->data.integer % tmp;
 
-  return ne;
+  return nx;
 }
 
 static expr primop_car(expr args, lisp l){
@@ -556,24 +556,24 @@ static expr primop_car(expr args, lisp l){
 }
 
 static expr primop_cdr(expr args, lisp l){
-  expr ne, carg;
+  expr nx, carg;
   if(0 == args->len){
     return nil;
   }
-  ne = mkobj(S_LIST,l->e);
+  nx = mkobj(S_LIST,l->e);
   carg = car(args);
   if((S_LIST != carg->type) || (1>=carg->len)){
     return nil;
   }
 
-  ne->data.list = wmalloc((carg->len - 1)*sizeof(expr),l->e);
-  memcpy(ne->data.list,carg->data.list + 1,(carg->len - 1)*sizeof(expr));
-  ne->len = carg->len - 1;
-  return ne;
+  nx->data.list = wmalloc((carg->len - 1)*sizeof(expr),l->e);
+  memcpy(nx->data.list,carg->data.list + 1,(carg->len - 1)*sizeof(expr));
+  nx->len = carg->len - 1;
+  return nx;
 }
 
 static expr primop_cons(expr args, lisp l){
-  expr ne = mkobj(S_LIST,l->e),prepend,list;
+  expr nx = mkobj(S_LIST,l->e),prepend,list;
   if(2!=args->len){
     print_error(args,"cons: argc != 2",l->e);
     return nil;
@@ -581,19 +581,19 @@ static expr primop_cons(expr args, lisp l){
   prepend = car(args);
   list = cadr(args);
   if(S_NIL == list->type){
-    append(ne,prepend,l->e);
+    append(nx,prepend,l->e);
   } else if (S_LIST == list->type){
     /** @todo turn into mklist **/
-    ne->data.list = wmalloc((list->len + 1)*sizeof(expr),l->e);
-    car(ne) = prepend;
-    memcpy(ne->data.list + 1,list->data.list,(list->len)*sizeof(expr));
-    ne->len = list->len + 1;
+    nx->data.list = wmalloc((list->len + 1)*sizeof(expr),l->e);
+    car(nx) = prepend;
+    memcpy(nx->data.list + 1,list->data.list,(list->len)*sizeof(expr));
+    nx->len = list->len + 1;
     /****************************/
   } else {
-    append(ne,prepend,l->e);
-    append(ne,list,l->e);
+    append(nx,prepend,l->e);
+    append(nx,list,l->e);
   }
-  return ne;
+  return nx;
 }
 
 static expr primop_nth(expr args, lisp l){
@@ -627,18 +627,18 @@ static expr primop_nth(expr args, lisp l){
     return nth(a2,i);
   } else { /*must be string*/
     {
-      expr ne = mkobj(S_STRING,l->e);
-      ne->data.string = wcalloc(sizeof(char),2,l->e);
-      ne->data.string[0] = a2->data.string[i];
-      ne->len = 1;
-      return ne;
+      expr nx = mkobj(S_STRING,l->e);
+      nx->data.string = wcalloc(sizeof(char),2,l->e);
+      nx->data.string[0] = a2->data.string[i];
+      nx->len = 1;
+      return nx;
     }
   }
   return nil;
 }
 
 static expr primop_len(expr args, lisp l){
-  expr a1, ne = mkobj(S_INTEGER,l->e);
+  expr a1, nx = mkobj(S_INTEGER,l->e);
   if(1 != args->len){
     print_error(args,"len: argc != 1",l->e);
     return nil;
@@ -648,23 +648,23 @@ static expr primop_len(expr args, lisp l){
     print_error(args,"len: arg 2 != list || string",l->e);
     return nil;
   }
-  ne->data.integer = a1->len;
-  return ne;
+  nx->data.integer = a1->len;
+  return nx;
 }
 
 static expr primop_numeq(expr args, lisp l){
   unsigned int i;
-  expr ne = mkobj(S_INTEGER,l->e);
+  expr nx = mkobj(S_INTEGER,l->e);
   if(0 == args->len)
     return nil;
-  ne = nth(args,0);
-  intchk(ne,l->e);
+  nx = nth(args,0);
+  intchk(nx,l->e);
   for(i = 1; i < args->len; i++){
     intchk(nth(args,i),l->e);
-    if(ne->data.integer != (nth(args,i)->data.integer)){
+    if(nx->data.integer != (nth(args,i)->data.integer)){
       return nil;
     }
-    ne->data.integer = (nth(args,i)->data.integer);
+    nx->data.integer = (nth(args,i)->data.integer);
   }
   return tee;
 }
@@ -676,7 +676,7 @@ static expr primop_printexpr(expr args, lisp l){
 }
 
 static expr primop_scar(expr args, lisp l){
-  expr a1,ne;
+  expr nx, a1;
   if(1!=args->len){
     print_error(args,"car: argc != 1",l->e);
     return nil;
@@ -686,32 +686,32 @@ static expr primop_scar(expr args, lisp l){
     print_error(args,"args != string",l->e);
     return nil;
   }
-  ne = mkobj(S_STRING,l->e);
-  ne->data.string = wcalloc(sizeof(char),a1->len?2:0,l->e);
-  ne->data.string[0] = a1->data.string[0];
-  ne->len = 1;
-  return ne;
+  nx = mkobj(S_STRING,l->e);
+  nx->data.string = wcalloc(sizeof(char),a1->len?2:0,l->e);
+  nx->data.string[0] = a1->data.string[0];
+  nx->len = 1;
+  return nx;
 }
 
 static expr primop_scdr(expr args, lisp l){
-  expr ne, carg;
+  expr nx, carg;
   if(0 == args->len){
     return nil;
   }
-  ne = mkobj(S_STRING,l->e);
+  nx = mkobj(S_STRING,l->e);
   carg = car(args);
   if((S_STRING != carg->type)  || (1>=carg->len)){
     return nil;
   }
 
-  ne->data.string = wcalloc(sizeof(char),carg->len,l->e);/*not len + 1*/
-  strcpy(ne->data.string,carg->data.string + 1);
-  ne->len = carg->len - 1;
-  return ne;
+  nx->data.string = wcalloc(sizeof(char),carg->len,l->e);/*not len + 1*/
+  strcpy(nx->data.string,carg->data.string + 1);
+  nx->len = carg->len - 1;
+  return nx;
 }
 
 static expr primop_scons(expr args, lisp l){
-  expr ne = mkobj(S_LIST,l->e),prepend,list;
+  expr nx = mkobj(S_LIST,l->e),prepend,list;
   if(2!=args->len){
     print_error(args,"cons: argc != 2",l->e);
     return nil;
@@ -719,16 +719,16 @@ static expr primop_scons(expr args, lisp l){
   prepend = car(args);
   list = cadr(args);
   if((S_STRING == list->type) && (S_STRING == prepend->type)){
-    ne->type = S_STRING;
-    ne->data.string = wcalloc(sizeof(char),(list->len)+(prepend->len)+1,l->e);
-    ne->len = list->len + prepend->len;
-    strcpy(ne->data.string,prepend->data.string);
-    strcat(ne->data.string,list->data.string);
+    nx->type = S_STRING;
+    nx->data.string = wcalloc(sizeof(char),(list->len)+(prepend->len)+1,l->e);
+    nx->len = list->len + prepend->len;
+    strcpy(nx->data.string,prepend->data.string);
+    strcat(nx->data.string,list->data.string);
   } else {
     print_error(args,"cons: arg != string",l->e);
     return nil;
   }
-  return ne;
+  return nx;
 }
 
 
