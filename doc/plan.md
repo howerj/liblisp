@@ -28,10 +28,22 @@ Bignums:
 
 The steps and sections I need to work on are:
 
+### Garbage Collection
+
+**DONE**
+
+Add simple garbage collection so we do not end up taking up all the memory!
+
+
 ### Add config file
 
 A simple configuration file would be nice, named *config.lsp* or something, it
 would be easy enough to do given the already available parser/evaluator.
+
+Configuration for:
+* Default file(s) to read in before start up
+* Colors for various symbols
+* Set command line args automatically
 
 ### Text processing primitives and file I/O
 
@@ -39,6 +51,8 @@ I would like to make file I/O and text processing easy like they are in perl,
 awk and sed.
 
 ### Colorize output and pretty print it
+
+**DONE**
 
 Pretty printing S-expressions should be relatively easy, colorizing the output
 on demand as well could make any output easier to read. 
