@@ -111,7 +111,7 @@ int wprintd(cell_t d, io *o, io *e){
  *  @return         EOF on failure, number of characters written on success
  *                  
  **/
-int wprints(const char *s, io *o , io *e){
+int wputs(const char *s, io *o , io *e){
   /**@warning count can go negative when is should not!**/
   int count = 0;
   int c;
@@ -148,16 +148,16 @@ void doreport(const char *s, char *cfile, unsigned int linenum, io *e)
     critical_failure_f = true;
   }
 
-  wprints("(error \"",e,e);
-  wprints(s,e,e);
-  wprints("\" \"",e,e);
-  wprints(cfile,e,e);
-  wprints("\" ",e,e);
+  wputs("(error \"",e,e);
+  wputs(s,e,e);
+  wputs("\" \"",e,e);
+  wputs(cfile,e,e);
+  wputs("\" ",e,e);
   wprintd(linenum,e,e);
-  wprints(")\n",e,e);
+  wputs(")\n",e,e);
 
   if(true == critical_failure_f){
-    wprints("(error \"critical failure\")\n",e,e);
+    wputs("(error \"critical failure\")\n",e,e);
     exit(EXIT_FAILURE);
   }
   return;

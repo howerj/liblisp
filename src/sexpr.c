@@ -98,10 +98,10 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
   indent();
   switch (x->type) {
   case S_NIL:
-    wprints("()\n",o,e);
+    wputs("()\n",o,e);
     return;
   case S_TEE:
-    wprints("#t\n",o,e);
+    wputs("#t\n",o,e);
     return;
   case S_LIST:
     emit('(');
@@ -136,10 +136,10 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     wputc('\n',o,e);
     return;
   case S_PRIMITIVE:
-    wprints("#PRIMOP\n",o,e);
+    wputs("#PRIMOP\n",o,e);
     return;
   case S_PROC: 
-    wprints("#PROC\n",o,e); 
+    wputs("#PROC\n",o,e); 
     if(true == print_proc_f)
       print_expr(x->data.list[1],o,0,e);
     return;
@@ -175,18 +175,18 @@ void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
   if((NULL == e) || (NULL == e->ptr.file))
     e = &fallback;
 
-  wprints("(error \"",e,e); 
-  wprints(msg,e,e); 
-  wprints("\" \"",e,e); 
-  wprints(cfile,e,e); 
-  wprints("\" ",e,e); 
+  wputs("(error \"",e,e); 
+  wputs(msg,e,e); 
+  wputs("\" \"",e,e); 
+  wputs(cfile,e,e); 
+  wputs("\" ",e,e); 
   wprintd(linenum,e,e);
   if(NULL == x){
   } else {
     wputc('\n',e,e);
     print_expr(x,e,1,e);
   }
-  wprints(")\n",e,e); 
+  wputs(")\n",e,e); 
   return;
 }
 

@@ -55,6 +55,10 @@ report:
 	-wc src/*.c src/*.h &> $(REPORT_DIR)/wc.log
 	-readelf -sW bin/*.o &> $(REPORT_DIR)/elf.log
 
+tar:
+	make clean
+	tar cf /tmp/backup.tar .
+
 ## cleanup ####################################################################
 
 clean:
