@@ -48,7 +48,7 @@ static int getopt(char *arg);
 static int repl(lisp l);
 
 static bool printGlobals_f = false;
-static char *usage = "./lisp -hdVG <file>\n";
+static char *usage = "./lisp -hdcVG <file>\n";
 
 /**
  * version should include md5sum calculated from
@@ -67,6 +67,8 @@ Author:\n\
   Richard James Howe\n\
 \n\
   -h      Print this help message.\n\
+  -d      Turn on any debugging information, if any, print to stderr.\n\
+  -c      Turn color on, does not check istty().\n\
   -V      Print version number.\n\
   -G      Print a list of all globals on normal program exit.\n\
   <file>  Read from <file> instead of stdin.\n\
@@ -94,8 +96,10 @@ static int getopt(char *arg){
         printf("%s",version);
         break;
       case 'd':
-        printf("debugging turned on\n");
         set_mem_debug(true);
+        break;
+      case 'c':
+        set_color_on(true);
         break;
       case 'G':
         printGlobals_f = true;

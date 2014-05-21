@@ -40,20 +40,31 @@
 #include "type.h"   /* Project wide types */
 #include "io.h"     /* I/O wrappers */
 #include "mem.h"    /* free wrappers */
+#include "color.h"  /* ANSI color escape sequences */
 #include <string.h> /* strtol(), strspn(), strlen(), memset() */
 #include <ctype.h>  /* isspace() */
 
-
-
-static bool coloron_f = false;
+static bool color_on_f = false;
+static bool print_proc_f = false; /*print actual code after #proc*/
 
 static expr parse_string(io *i, io *e);
 static expr parse_symbol(io *i, io *e); /* and integers!*/
 static expr parse_list(io *i, io *e);
 
-static bool print_proc_f = false; /*print actual code after #proc*/
+#define color_on(X,O,E) if(true==color_on_f){wputs((X),(O),(E));}
 
 /*** interface functions *****************************************************/
+
+/**
+ *  @brief          Set whether to print out colors, *does not check if
+ *                  we are printing to a terminal or not, it is either on
+ *                  or off*.
+ *  @param          flag boolean flag to set color_on_f
+ *  @return         void
+ **/
+void set_color_on(bool flag){
+  color_on_f = flag;
+}
 
 /**
  *  @brief          Parses a list or atom, returning the root
@@ -101,60 +112,80 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
   indent();
   switch (x->type) {
   case S_NIL:
+    color_on(ANSI_COLOR_RED,o,e);
     wputs("()\n",o,e);
-    return;
+    break;
   case S_TEE:
+    color_on(ANSI_COLOR_GREEN,o,e);
     wputs("#t\n",o,e);
-    return;
+    break;
   case S_LIST:
     wputs("(\n",o,e);
     for (i = 0; i < x->len; i++)
       print_expr(x->data.list[i], o, depth + 1,e);
     indent();
     wputs(")\n",o,e);
-    return;
+    break;
   case S_SYMBOL:
   case S_STRING:
-    if (x->type == S_STRING)
+  {
+    bool isstring = S_STRING == x->type ? true : false; /*isnotsymbol*/
+    color_on(true==isstring?ANSI_COLOR_RED:ANSI_COLOR_YELLOW,o,e);
+    if (isstring){
       wputc('"',o,e);
+    }
     for (i = 0; i < x->len; i++) {
       switch ((x->data.string)[i]) {
       case '"':
       case '\\':
+        color_on(ANSI_COLOR_MAGENTA,o,e);
         wputc('\\', o,e);
         break;
       case ')':
       case '(':
-        if (x->type == S_SYMBOL)
+        if (x->type == S_SYMBOL){
+          color_on(ANSI_COLOR_MAGENTA,o,e);
           wputc('\\',o,e);
+        }
       }
       wputc((x->data.string)[i], o,e);
+      color_on(true==isstring?ANSI_COLOR_RED:ANSI_COLOR_YELLOW,o,e);
     }
-    if (x->type == S_STRING)
+    if (isstring)
       wputc('"',o,e);
     wputc('\n',o,e);
-    return;
+  }
+  break;
   case S_INTEGER:
+    color_on(ANSI_COLOR_MAGENTA,o,e);
     wprintd(x->data.integer,o,e);
     wputc('\n',o,e);
-    return;
+    break;
   case S_PRIMITIVE:
+    color_on(ANSI_COLOR_BLUE,o,e);
     wputs("#PRIMOP\n",o,e);
-    return;
+    break;
   case S_PROC: 
+    color_on(ANSI_COLOR_BLUE,o,e);
     wputs("#PROC\n",o,e); 
+    color_on(ANSI_RESET,o,e);
     if(true == print_proc_f)
       print_expr(x->data.list[1],o,0,e);
-    return;
+    break;
   case S_ERROR: /** @todo implement error support **/     
   case S_FILE: /** @todo implement file support, then printing**/     
+    color_on(ANSI_COLOR_RED,o,e);
     report("File/Error printing not supported!",e);
-    return;
+    break;
   default: /* should never get here */
+    color_on(ANSI_COLOR_RED,o,e);
     report("print: not a known printable type",e);
+    color_on(ANSI_RESET,o,e);
     exit(EXIT_FAILURE);
-    return;
+    break;
   }
+  color_on(ANSI_RESET,o,e);
+  return;
 #undef indent
 }
 
@@ -177,6 +208,7 @@ void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
   if((NULL == e) || (NULL == e->ptr.file))
     e = &fallback;
 
+  color_on(ANSI_BOLD_TXT,e,e);
   wputs("(error \"",e,e); 
   wputs(msg,e,e); 
   wputs("\" \"",e,e); 
@@ -186,9 +218,12 @@ void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
   if(NULL == x){
   } else {
     wputc('\n',e,e);
+    color_on(ANSI_RESET,e,e);
     print_expr(x,e,1,e);
   }
+  color_on(ANSI_BOLD_TXT,e,e);
   wputs(")\n",e,e); 
+  color_on(ANSI_RESET,e,e);
   return;
 }
 
