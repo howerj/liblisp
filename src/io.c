@@ -104,7 +104,7 @@ int wprintd(cell_t d, io *o, io *e){
 }
 
 /**
- *  @brief          wrapper to print out a string
+ *  @brief          wrapper to print out a string, *does not append newline*
  *  @param          s string to output
  *  @param          o output stream to print to
  *  @param          e error output stream

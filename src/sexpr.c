@@ -59,7 +59,7 @@ static bool print_proc_f = false; /*print actual code after #proc*/
  *  @return         NULL or parsed list
  **/
 expr parse_term(io *i, io *e){
-  char c;
+  int c;
   while (EOF!=(c=wgetc(i,e))){
     if (isspace(c)) {
       continue;
@@ -90,7 +90,6 @@ expr parse_term(io *i, io *e){
  **/
 void print_expr(expr x, io *o, unsigned int depth, io *e){
 #define indent() for(i = 0; i < depth; i++) wputc(' ',o,e)
-#define emit(X)  do{ wputc((X),o,e); wputc('\n',o,e); }while(0)
   unsigned int i;
   if (!x)
     return;
@@ -104,16 +103,16 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     wputs("#t\n",o,e);
     return;
   case S_LIST:
-    emit('(');
+    wputs("(\n",o,e);
     for (i = 0; i < x->len; i++)
-      print_expr(x->data.list[i], o , depth + 1,e);
+      print_expr(x->data.list[i], o, depth + 1,e);
     indent();
-    emit(')');
+    wputs(")\n",o,e);
     return;
   case S_SYMBOL:
   case S_STRING:
     if (x->type == S_STRING)
-      wputc('"', o,e);
+      wputc('"',o,e);
     for (i = 0; i < x->len; i++) {
       switch ((x->data.string)[i]) {
       case '"':
@@ -145,7 +144,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     return;
   case S_ERROR: /** @todo implement error support **/     
   case S_FILE: /** @todo implement file support, then printing**/     
-    report("UNIMPLEMENTED (TODO)",e);
+    report("File/Error printing not supported!",e);
     return;
   default: /* should never get here */
     report("print: not a known printable type",e);
@@ -153,7 +152,6 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     return;
   }
 #undef indent
-#undef emit
 }
 
 /**
@@ -202,7 +200,8 @@ void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
 static expr parse_symbol(io *i, io *e){ /* and integers!*/
   expr ex = NULL;
   unsigned int count = 0;
-  char c, buf[BUFLEN];
+  int c;
+  char buf[BUFLEN];
   bool negative;
   ex = gccalloc(e);
 
@@ -270,7 +269,8 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
 static expr parse_string(io *i, io *e){
   expr ex = NULL;
   unsigned int count = 0;
-  char c, buf[BUFLEN];
+  int c; 
+  char buf[BUFLEN];
 
   ex = gccalloc(e);
   memset(buf, '\0', BUFLEN);

@@ -69,8 +69,8 @@ static expr mksym(char *s, io *e);
 static expr mkprimop(expr (*func)(expr args, lisp l),io *e);
 static expr mkproc(expr args, expr code, expr env, io *e);
 static expr evlis(expr x,expr env,lisp l);
-static expr apply(expr proc, expr args,expr env, lisp l); /*add env for dynamic scope?*/
-static expr dofind(expr env, expr x, io *e);
+static expr apply(expr proc, expr args, lisp l); /*add env for dynamic scope?*/
+static expr dofind(expr env, expr x); /*add error handling?*/
 static expr find(expr env, expr x, lisp l);
 static expr extend(expr sym, expr val, expr env, io *e);
 static char *sdup(const char *s, io *e); 
@@ -266,7 +266,7 @@ expr eval(expr x, expr env, lisp l){
           }
           return mkproc(cadr(x),caddr(x),env,l->e);
         } else {
-          return apply(foundx,evlis(x,env,l),env,l);
+          return apply(foundx,evlis(x,env,l),l);
         }
       } else {
         print_error(car(x),"cannot apply",l->e);
@@ -305,9 +305,9 @@ expr eval(expr x, expr env, lisp l){
 
 /**find a symbol in an environment and the global list**/
 static expr find(expr env, expr x, lisp l){
-  expr nx = dofind(env,x,l->e);
+  expr nx = dofind(env,x);
   if(nil == nx){
-    nx = dofind(l->global,x,l->e);
+    nx = dofind(l->global,x);
     if(nil == nx){
       return nil;
     }
@@ -316,7 +316,7 @@ static expr find(expr env, expr x, lisp l){
 }
 
 /** find a symbol in a special type of list **/
-static expr dofind(expr env, expr x, io *e){
+static expr dofind(expr env, expr x){
   /** @todo make this function more robust **/
   unsigned int i;
   char *s;
@@ -432,7 +432,7 @@ static expr extensions(expr env, expr syms, expr vals, io *e){
 }
 
 /** apply a procedure over arguments given an environment **/
-static expr apply(expr proc, expr args, expr env, lisp l){
+static expr apply(expr proc, expr args, lisp l){
   expr nenv;
   if(S_PRIMITIVE == proc->type){
     return (proc->data.func)(args,l);

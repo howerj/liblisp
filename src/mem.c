@@ -32,6 +32,7 @@ struct heap{
  * instead of just exiting, perhaps we should restart gracefully?
  */
 static unsigned int alloccounter = 0;
+static bool debug_f = false;
 static struct heap heaplist = {NULL,NULL};
 static struct heap *heaphead = &heaplist;
 
@@ -52,6 +53,12 @@ void *wmalloc(size_t size, io *e){
     report("too many mallocs",e);
     exit(EXIT_FAILURE);
   }
+  if(true == debug_f){
+    wputs("wfree:",e,e);
+    wprintd(alloccounter,e,e);
+    wputc('\n',e,e);
+  }
+
   v = malloc(size);
   if(NULL == v){
     report("malloc failed",e);
@@ -74,6 +81,13 @@ void *wcalloc(size_t num, size_t size, io *e){
     report("too many mallocs",e);
     exit(EXIT_FAILURE);
   }
+
+  if(true == debug_f){
+    wputs("wfree:",e,e);
+    wprintd(alloccounter,e,e);
+    wputc('\n',e,e);
+  }
+
   v = calloc(num,size);
   if(NULL == v){
     report("calloc failed",e);
@@ -142,6 +156,11 @@ expr gccalloc(io *e){
 void wfree(void *ptr, io *e){
   if(NULL != ptr){ 
     alloccounter--;
+    if(true == debug_f){
+      wputs("wfree:",e,e);
+      wprintd(alloccounter,e,e);
+      wputc('\n',e,e);
+    }
   }
   free(ptr);
 }

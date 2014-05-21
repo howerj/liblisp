@@ -28,6 +28,11 @@ Bignums:
 
 The steps and sections I need to work on are:
 
+### Add config file
+
+A simple configuration file would be nice, named *config.lsp* or something, it
+would be easy enough to do given the already available parser/evaluator.
+
 ### Text processing primitives and file I/O
 
 I would like to make file I/O and text processing easy like they are in perl,
