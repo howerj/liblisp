@@ -31,7 +31,7 @@ struct heap{
  * fails instead of trying allocating everything when we do something wrong,
  * instead of just exiting, perhaps we should restart gracefully?
  */
-static unsigned int alloccounter = 0;
+static signed int alloccounter = 0;
 static bool debug_f = false;
 static struct heap heaplist = {NULL,NULL};
 static struct heap *heaphead = &heaplist;
@@ -39,6 +39,15 @@ static struct heap *heaphead = &heaplist;
 static void gcinner(expr x, io *e);
 
 /*** interface functions *****************************************************/
+
+/**
+ *  @brief          Set debugging on.
+ *  @param          flag 
+ *  @return         void
+ **/
+void set_mem_debug(bool flag){
+  debug_f = flag;
+}
 
 /**
  *  @brief          wrapper around malloc 
@@ -54,7 +63,7 @@ void *wmalloc(size_t size, io *e){
     exit(EXIT_FAILURE);
   }
   if(true == debug_f){
-    wputs("wfree:",e,e);
+    wputs("wmalloc:",e,e);
     wprintd(alloccounter,e,e);
     wputc('\n',e,e);
   }
@@ -83,7 +92,7 @@ void *wcalloc(size_t num, size_t size, io *e){
   }
 
   if(true == debug_f){
-    wputs("wfree:",e,e);
+    wputs("wcalloc:",e,e);
     wprintd(alloccounter,e,e);
     wputc('\n',e,e);
   }

@@ -48,7 +48,7 @@ static int getopt(char *arg);
 static int repl(lisp l);
 
 static bool printGlobals_f = false;
-static char *usage = "./lisp -hVG <file>\n";
+static char *usage = "./lisp -hdVG <file>\n";
 
 /**
  * version should include md5sum calculated from
@@ -92,6 +92,10 @@ static int getopt(char *arg){
         break;
       case 'V':
         printf("%s",version);
+        break;
+      case 'd':
+        printf("debugging turned on\n");
+        set_mem_debug(true);
         break;
       case 'G':
         printGlobals_f = true;

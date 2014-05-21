@@ -12,7 +12,9 @@
 
 #include "io.h"
 
-#define MAX_ALLOCS (1024u*1024u)
+#define MAX_ALLOCS ((signed int)(1024*1024))
+
+void set_mem_debug(bool flag);
 
 void *wmalloc(size_t size, io *e);
 void *wcalloc(size_t num, size_t size, io *e);

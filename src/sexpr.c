@@ -43,6 +43,10 @@
 #include <string.h> /* strtol(), strspn(), strlen(), memset() */
 #include <ctype.h>  /* isspace() */
 
+
+
+static bool coloron_f = false;
+
 static expr parse_string(io *i, io *e);
 static expr parse_symbol(io *i, io *e); /* and integers!*/
 static expr parse_list(io *i, io *e);
