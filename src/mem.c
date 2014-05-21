@@ -3,7 +3,7 @@
  *  @brief          Memory allocation wrappers and handling
  *  @author         Richard James Howe.
  *  @copyright      Copyright 2013 Richard James Howe.
- *  @license        GPL v3.0
+ *  @license        GPL v2.0 or later version
  *  @email          howe.r.j.89@gmail.com
  *  @details
  *

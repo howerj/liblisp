@@ -2,7 +2,7 @@
 # File:			Makefile                                                          #
 # Author: 	Richard James Howe                                                #
 # Project: 	LSP Lisp Interpreter Makefile                                     #
-# License:	GPLv3.0                                                           #
+# License:	GPL v2.0 or later version                                         #
 ###############################################################################
 
 ## Variables ##################################################################
@@ -35,6 +35,9 @@ valgrind: bin/lisp
 
 strace: bin/lisp
 	strace bin/./lisp -G lsp/lib.lsp
+
+ltrace: bin/lisp
+	ltrace bin/./lisp -G lsp/lib.lsp
 
 # Most current version of git; The idea would be to use this to generate
 # a header file as a version number for the program.
