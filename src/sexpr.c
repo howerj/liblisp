@@ -271,8 +271,10 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
       report(buf,e);
       goto fail;
     }
+
     if (isspace(c))
       goto success;
+
     if ((c == ')') || (c == '(')) {
       wungetc(c,i,e);
       goto success;

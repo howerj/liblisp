@@ -443,7 +443,7 @@ static expr apply(expr proc, expr args, lisp l){
       return nil;
     }
     nenv = extensions(procenv(proc),procargs(proc),args,l->e);
-    print_expr(nenv,l->o,0,l->e);
+    /*print_expr(nenv,l->o,0,l->e);//might be useful to keep in! */
     return eval(proccode(proc),nenv,l);
   }
 
