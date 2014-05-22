@@ -13,9 +13,9 @@
     (mod x y)))))
 
 
-"Being passed the wrong environment? Or evaluating at the wrong time?
-Reason for internal symbols for \"if\". Need progn? Eval all if into
-symbols, return and execute. Big changes to system needed."
+;Being passed the wrong environment? Or evaluating at the wrong time?
+;Reason for internal symbols for "if". Need progn? Eval all if into
+;symbols, return and execute. Big changes to system needed."
 
 (define !
   (lambda (N)
@@ -23,7 +23,7 @@ symbols, return and execute. Big changes to system needed."
         1
         (* N (! (- N 1))))))
 
-"doesn't work; example of the above"
+; doesn't work; example of the above
 (define tst (lambda (X) (if X (* X X) X)))
 
 

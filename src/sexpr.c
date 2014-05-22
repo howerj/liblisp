@@ -50,6 +50,7 @@ static bool print_proc_f = false; /*print actual code after #proc*/
 static expr parse_string(io *i, io *e);
 static expr parse_symbol(io *i, io *e); /* and integers!*/
 static expr parse_list(io *i, io *e);
+static bool parse_comment(io *i, io *e);
 
 #define color_on(X,O,E) if(true==color_on_f){wputs((X),(O),(E));}
 
@@ -82,7 +83,11 @@ expr parse_term(io *i, io *e){
     switch (c) {
     case ')':
       report("unmatched ')'",e);
-      return NULL;
+      continue;
+    case ';':
+      if(true == parse_comment(i,e))
+        return NULL;
+      continue;
     case '(':
       return parse_list(i,e);
     case '"':
@@ -156,6 +161,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
         break;
       case ')':
       case '(':
+      case ';':
         if (x->type == S_SYMBOL){
           color_on(ANSI_COLOR_MAGENTA,o,e);
           wputc('\\',o,e);
@@ -272,6 +278,11 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
       goto success;
     }
 
+    if(c == ';'){
+      parse_comment(i,e);
+      goto success;
+    }
+
     switch (c) {
     case '\\':
       switch (c=wgetc(i,e)) {
@@ -279,6 +290,7 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
       case '"':
       case '(':
       case ')':
+      case ';':
         buf[count++] = c;
         continue;
       default:
@@ -400,6 +412,10 @@ static expr parse_list(io *i, io *e){
     }
 
     switch (c) {
+    case ';':
+      if(true == parse_comment(i,e))
+        goto fail;
+      break;
     case '"':
       chld = parse_string(i,e);
       if (!chld)
@@ -434,4 +450,20 @@ static expr parse_list(io *i, io *e){
  return ex;
 }
 
+/**
+ *  @brief          Parses a comment, in the future, we might want to parse this
+ *                  and return it as an expression so it can be used later.
+ *  @param          i input stream
+ *  @param          e error output stream
+ *  @return         boolean; true on error/EOF, false on no error / no EOF
+ **/
+static bool parse_comment(io *i, io *e){
+  int c;
+  while (EOF!=(c=wgetc(i,e))){
+    if('\n' == c){
+      return false;
+    }
+  }
+  return true;
+}
 
