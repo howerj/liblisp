@@ -128,10 +128,13 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     wputs("(",o,e);
     for (i = 0; i < x->len; i++){
       if(0 != i){
-        indent(depth?depth+1:1);
+        if(2 == x->len)
+          wputc(' ',o,e);
+        else
+          indent(depth?depth+1:1);
       }
       print_expr(x->data.list[i], o, depth + 1,e);
-      if(i < x->len-1)
+      if((i < x->len-1) && (2 != x->len))
         wputc('\n',o,e);
     }
     wputs(")",o,e);
