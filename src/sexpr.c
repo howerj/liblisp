@@ -104,29 +104,39 @@ expr parse_term(io *i, io *e){
  *  @return         void
  **/
 void print_expr(expr x, io *o, unsigned int depth, io *e){
-#define indent() for(i = 0; i < depth; i++) wputc(' ',o,e)
+#define indent(DEPTH) do{\
+  unsigned int __index;\
+  for(__index = 0; __index < (DEPTH); __index++)\
+    wputc(' ',o,e);\
+  }while(false)
+
   unsigned int i;
+
   if (!x)
     return;
 
-  indent();
   switch (x->type) {
   case S_NIL:
     color_on(ANSI_COLOR_RED,o,e);
-    wputs("()\n",o,e);
+    wputs("()",o,e);
     break;
   case S_TEE:
     color_on(ANSI_COLOR_GREEN,o,e);
-    wputs("#t\n",o,e);
+    wputs("#t",o,e);
     break;
   case S_LIST:
-    wputs("(\n",o,e);
-    for (i = 0; i < x->len; i++)
+    wputs("(",o,e);
+    for (i = 0; i < x->len; i++){
+      if(0 != i){
+        indent(depth?depth+1:1);
+      }
       print_expr(x->data.list[i], o, depth + 1,e);
-    indent();
-    wputs(")\n",o,e);
+      if(i < x->len-1)
+        wputc('\n',o,e);
+    }
+    wputs(")",o,e);
     break;
-  case S_SYMBOL:
+  case S_SYMBOL: /*symbols are yellow, strings are red, escaped chars magenta*/
   case S_STRING:
   {
     bool isstring = S_STRING == x->type ? true : false; /*isnotsymbol*/
@@ -153,21 +163,19 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     }
     if (isstring)
       wputc('"',o,e);
-    wputc('\n',o,e);
   }
   break;
   case S_INTEGER:
     color_on(ANSI_COLOR_MAGENTA,o,e);
     wprintd(x->data.integer,o,e);
-    wputc('\n',o,e);
     break;
   case S_PRIMITIVE:
     color_on(ANSI_COLOR_BLUE,o,e);
-    wputs("#PRIMOP\n",o,e);
+    wputs("#PRIMOP",o,e);
     break;
   case S_PROC: 
     color_on(ANSI_COLOR_BLUE,o,e);
-    wputs("#PROC\n",o,e); 
+    wputs("#PROC",o,e); 
     color_on(ANSI_RESET,o,e);
     if(true == print_proc_f)
       print_expr(x->data.list[1],o,0,e);
@@ -185,6 +193,8 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     break;
   }
   color_on(ANSI_RESET,o,e);
+  if(0 == depth)
+    wputc('\n',o,e);
   return;
 #undef indent
 }

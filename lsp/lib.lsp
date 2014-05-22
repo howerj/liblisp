@@ -25,3 +25,6 @@ symbols, return and execute. Big changes to system needed."
 
 "doesn't work; example of the above"
 (define tst (lambda (X) (if X (* X X) X)))
+
+
+(quote (1 2 3 (1 2 3 (1 2 3 "hello" (1 2))) 4 5))

@@ -26,7 +26,7 @@ bin/lisp: $(OBJFILES)
 	-mv *.i *.s $(REPORT_DIR)
 
 run: bin/lisp
-	bin/./lisp -c lsp/lib.lsp
+	bin/./lisp -cG lsp/lib.lsp
 
 ## testing ####################################################################
 
@@ -47,7 +47,6 @@ ltrace: bin/lisp
 
 doxygen:
 	-doxygen doc/doxygen.conf
-
 
 report:
 	-echo "Reports generated in $(REPORT_DIR)"
