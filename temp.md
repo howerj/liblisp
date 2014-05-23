@@ -1,0 +1,20 @@
+## temp.md
+
+### A temporary to-do list:
+
+* Clean up code;
+  - 0 for error
+  - 1 for ok
+  - if bool, not the current way
+
+* Go through to-dos in program
+* Handle EOF on output
+* Check everything for *consistency*
+* Implement all basic primitive ops
+* Put all primops in a separate C-file
+* Create a better interface
+* Rename wput, wprint, etc. No 'w' prefix, come up with another one
+  to avoid confusion with 'wide' chars.
+* Macros with return in them should be removed
+* Abide more by the linux kernel style guides at:
+  - <https://www.kernel.org/doc/Documentation/CodingStyle>
