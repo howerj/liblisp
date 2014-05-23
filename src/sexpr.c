@@ -13,6 +13,8 @@
  *  The two main functions 
  *    - Parse an S-expression (parse_term)
  *    - Print out an S-expression (print_expr)
+ *    - Print out an S-expression (print_error) with possibly
+ *      invalid arguments, this should be used for error messages.
  *
  *  There are sub-functions called by the parser that could be useful
  *  in their own right and might change so they can be accessed externally
@@ -47,8 +49,9 @@
 static bool color_on_f = false;
 static bool print_proc_f = false; /*print actual code after #proc*/
 
-static expr parse_string(io *i, io *e);
+static bool indent(unsigned int depth, io *o, io *e);
 static expr parse_symbol(io *i, io *e); /* and integers!*/
+static expr parse_string(io *i, io *e);
 static expr parse_list(io *i, io *e);
 static bool parse_comment(io *i, io *e);
 
@@ -109,12 +112,6 @@ expr parse_term(io *i, io *e){
  *  @return         void
  **/
 void print_expr(expr x, io *o, unsigned int depth, io *e){
-#define indent(DEPTH) do{\
-  unsigned int __index;\
-  for(__index = 0; __index < (DEPTH); __index++)\
-    wputc(' ',o,e);\
-  }while(false)
-
   unsigned int i;
 
   if (!x)
@@ -136,7 +133,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
         if(2 == x->len)
           wputc(' ',o,e);
         else
-          indent(depth?depth+1:1);
+          indent(depth?depth+1:1,o,e);
       }
       print_expr(x->data.list[i], o, depth + 1,e);
       if((i < x->len-1) && (2 != x->len))
@@ -205,7 +202,6 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
   if(0 == depth)
     wputc('\n',o,e);
   return;
-#undef indent
 }
 
 /**
@@ -246,7 +242,40 @@ void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
   return;
 }
 
+/**
+ *  @brief          Takes an already existing list and appends an atom to it
+ *  @param          list a list to append an atom to
+ *  @param          ele  the atom to append to the list
+ *  @param          e    error output stream
+ *  @return         void
+ *
+ *  @todo           Error handline
+ *  @todo           Check for list type OR proc type
+ **/
+void append(expr list, expr ele, io *e)
+{ 
+  NULLCHK(list,e);
+  NULLCHK(ele,e);
+  list->data.list = wrealloc(list->data.list, sizeof(expr) * ++list->len,e);
+  (list->data.list)[list->len - 1] = ele;
+}
+
 /*****************************************************************************/
+
+/**
+ *  @brief          Indent a line with spaces 'depth' amount of times
+ *  @param          depth depth to indent to
+ *  @param          o output stream
+ *  @param          e error output stream
+ *  @return         true on error, false on no error
+ **/
+static bool indent(unsigned int depth, io *o, io *e){
+  unsigned int i;
+  for(i = 0; i < depth; i++)
+    if(EOF == wputc(' ',o,e))
+      return true;
+  return false;
+}
 
 /**
  *  @brief          parse a symbol or integer (in decimal or
@@ -374,24 +403,6 @@ static expr parse_string(io *i, io *e){
   ex->data.string = wmalloc(ex->len + 1,e);
   strcpy(ex->data.string, buf);
   return ex;
-}
-
-/**
- *  @brief          Takes an already existing list and appends an atom to it
- *  @param          list a list to append an atom to
- *  @param          ele  the atom to append to the list
- *  @param          e    error output stream
- *  @return         void
- *
- *  @todo           Error handline
- *  @todo           Check for list type OR proc type
- **/
-void append(expr list, expr ele, io *e)
-{ 
-  NULLCHK(list,e);
-  NULLCHK(ele,e);
-  list->data.list = wrealloc(list->data.list, sizeof(expr) * ++list->len,e);
-  (list->data.list)[list->len - 1] = ele;
 }
 
 /**
