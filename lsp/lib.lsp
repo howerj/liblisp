@@ -12,6 +12,16 @@
    (gcd y 
     (mod x y)))))
 
+(define bool
+ (lambda
+   (x)
+   (if
+    (eqt x ())
+    0
+    (if
+     (eqt x t)
+     1
+     nil)))) ; error instead of nil?
 
 ;Being passed the wrong environment? Or evaluating at the wrong time?
 ;Reason for internal symbols for "if". Need progn? Eval all if into

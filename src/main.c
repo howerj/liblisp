@@ -163,8 +163,8 @@ int main(int argc, char *argv[]){
         fclose(input);
       }
       break;
-      case getopt_output_file:
-      case getopt_string_input:
+      case getopt_output_file:  /*not implemented yet*/
+      case getopt_string_input: /*not implemented yet*/
       case getopt_error:
       default:
         fprintf(stderr,"(error \"fatal: should not get here\" \"%s\" %d)\n",

@@ -248,15 +248,15 @@ void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
     e = &fallback;
 
   color_on(ANSI_BOLD_TXT,e,e);
-  wputs("(error \"",e,e); 
+  wputs("(error \n \"",e,e); 
   wputs(msg,e,e); 
-  wputs("\" \"",e,e); 
+  wputs("\"\n \"",e,e); 
   wputs(cfile,e,e); 
-  wputs("\" ",e,e); 
+  wputs("\"\n ",e,e); 
   wprintd(linenum,e,e);
   if(NULL == x){
   } else {
-    wputc('\n',e,e);
+    wputs("\n ",e,e);
     color_on(ANSI_RESET,e,e);
     print_expr(x,e,1,e);
   }

@@ -24,7 +24,8 @@
  *         - Register internal functions as lisp primitives.
  *         - random, seed
  *         - eq > < <= >=
- *         - string manipulation and regexes; tr, sed, //m, pack, unpack, ...
+ *         - string manipulation and regexes; tr, sed, //m, pack, unpack, 
+ *           split, join
  *         - type? <- returns type of expr
  *         - type coercion and casting
  *         - file manipulation and i/o: read, format, 
@@ -96,6 +97,20 @@ static expr primop_scons(expr args, lisp l);
 static expr primop_typeeq(expr args, lisp l);
 static expr primop_reverse(expr args, lisp l);
 
+/*
+static expr primop_nummore(expr args, lisp l);
+static expr primop_nummoreeq(expr args, lisp l);
+static expr primop_numless(expr args, lisp l);
+static expr primop_numlesseq(expr args, lisp l);
+static expr primop_min(expr args, lisp l);
+static expr primop_max(expr args, lisp l);
+static expr primop_eval(expr args, lisp l);
+static expr primop_read(expr args, lisp l);
+static expr primop_getc(expr args, lisp l);
+static expr primop_gets(expr args, lisp l);
+static expr primop_putc(expr args, lisp l);
+static expr primop_find(expr args, lisp l);
+*/
 /*** interface functions *****************************************************/
 
 /**
@@ -105,13 +120,13 @@ static expr primop_reverse(expr args, lisp l);
  **/
 lisp initlisp(void){
   lisp l;
-  l         = wcalloc(1,sizeof (lispenv_t),NULL);
-  l->global = wcalloc(1,sizeof (sexpr_t),NULL);
-  l->env    = wcalloc(1,sizeof (sexpr_t),NULL);
+  l         = wcalloc(1,sizeof(*l),NULL);
+  l->global = wcalloc(1,sizeof(sexpr_t),NULL);
+  l->env    = wcalloc(1,sizeof(sexpr_t),NULL);
 
-  l->i = wcalloc(1,sizeof (io),NULL);
-  l->o = wcalloc(1,sizeof (io),NULL);
-  l->e = wcalloc(1,sizeof (io),NULL);
+  l->i = wcalloc(1,sizeof(io),NULL);
+  l->o = wcalloc(1,sizeof(io),NULL);
+  l->e = wcalloc(1,sizeof(io),NULL);
 
   /* set up file I/O and pointers */
   l->i->type     = file_in;
@@ -167,18 +182,16 @@ lisp initlisp(void){
 
 /**
  *  @brief          Destroy and clean up a lisp environment
- *  @param          A initialized lisp environment
+ *  @param          An initialized lisp environment
  *  @return         void
  **/
 void endlisp(lisp l){
-  /**@todo free all garbage-collection handled files**/
-
   io e = {file_out, {NULL}, 0, 0, '\0', false};
   e.ptr.file = stderr;
 
   fflush(NULL);
 
-  /*do not call mark before this sweep*/
+  /*do not call mark before **this** sweep*/
   gcsweep(&e);
 
   wfree(l->e, &e);

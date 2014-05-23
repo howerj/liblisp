@@ -59,6 +59,7 @@ typedef struct {
   ioptr ptr;              /* either FILE* or string */
   unsigned int position;  /* position in string */
   unsigned int max;       /* max string length, if known */
+  /*unsigned int linenum; // @todo implement line number counting */
   char c;                 /* character store for wungetc() */
   bool ungetc;            /* true if we have ungetc'ed a character */
 } io;
