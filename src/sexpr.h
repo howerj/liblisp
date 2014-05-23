@@ -16,6 +16,7 @@
 
 /**** function prototypes *****************************************************/
 void set_color_on(bool flag);
+void set_print_proc(bool flag);
 expr parse_term(io *i, io *e);
 void print_expr(expr x, io *o, unsigned int depth, io *e);
 void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e);

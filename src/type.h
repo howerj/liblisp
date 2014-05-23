@@ -28,7 +28,7 @@ typedef lispenv_t *lisp;
 
 typedef enum {
   S_NIL,      /* 0: () */
-  S_TEE,      /* 1: #t */
+  S_TEE,      /* 1: t */
   S_LIST,     /* 2: list */
   S_STRING,   /* 3: string */
   S_SYMBOL,   /* 4: symbol, positive or negative, input in decimal or octal */

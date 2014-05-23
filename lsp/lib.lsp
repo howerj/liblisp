@@ -18,13 +18,15 @@
 ;symbols, return and execute. Big changes to system needed."
 
 (define !
-  (lambda (N)
-    (if (= N 1)
+  (lambda (x)
+    (if (= x 1)
         1
-        (* N (! (- N 1))))))
+        (* x (! (- x 1))))))
 
-; doesn't work; example of the above
-(define tst (lambda (X) (if X (* X X) X)))
-
-
-(quote (1 2 3 (1 2 3 (1 2 3 "hello" (1 2))) 4 5))
+; pretty printing test
+(quote 
+ (1 2 3 
+  (1 2 3 
+   (1 2 3 "hello" 
+    (1 2))) 
+  4 5))

@@ -48,7 +48,7 @@ static int getopt(char *arg);
 static int repl(lisp l);
 
 static bool printGlobals_f = false;
-static char *usage = "./lisp -hdcVG <file>\n";
+static char *usage = "./lisp -hdcpVG <file>\n";
 
 /**
  * version should include md5sum calculated from
@@ -66,12 +66,13 @@ Program:\n\
 Author:\n\
   Richard James Howe\n\
 \n\
-  -h      Print this help message.\n\
-  -d      Turn on any debugging information, if any, print to stderr.\n\
-  -c      Turn color on, does not check istty().\n\
-  -V      Print version number.\n\
-  -G      Print a list of all globals on normal program exit.\n\
-  <file>  Read from <file> instead of stdin.\n\
+  -h        Print this help message.\n\
+  -d        Turn on any debugging information, if any, print to stderr.\n\
+  -c        Turn color on, does not check istty().\n\
+  -p        Print out procedures in full.\n\
+  -V        Print version number.\n\
+  -G        Print a list of all globals on normal program exit.\n\
+  <files>   Read from <file> instead of stdin. This can be a list of files.\n\
 ";
 
 /** 
@@ -101,6 +102,9 @@ static int getopt(char *arg){
       case 'c':
         set_color_on(true);
         break;
+      case 'p':
+        set_print_proc(true);
+        break;
       case 'G':
         printGlobals_f = true;
         break;
@@ -112,6 +116,16 @@ static int getopt(char *arg){
   return getopt_switch;
 }
 
+/** 
+ *  @brief    repl implements a lisp Read-Evaluate-Print-Loop
+ *  @param    l an initialized lisp environment
+ *  @return   Always zero at the moment
+ *
+ *  @todo When Error Expression have been properly implemented any
+ *        errors that have not been caught should be returned by repl
+ *        or handled by it to avoid multiple error messages being printed
+ *        out.
+ */
 static int repl(lisp l){
   expr x;
   while(NULL != (x = parse_term(l->i, l->e))){
@@ -153,6 +167,8 @@ int main(int argc, char *argv[]){
       case getopt_string_input:
       case getopt_error:
       default:
+        fprintf(stderr,"(error \"fatal: should not get here\" \"%s\" %d)\n",
+            __FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
   }

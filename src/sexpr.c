@@ -71,6 +71,17 @@ void set_color_on(bool flag){
 }
 
 /**
+ *  @brief          Set whether we should print "#PROC" when printing
+ *                  a user defined procedure, or if we should actually
+ *                  print the contents of said procedure fully.
+ *  @param          flag boolean flag to set print_proc_f
+ *  @return         void
+ **/
+void set_print_proc(bool flag){
+  print_proc_f = flag;
+}
+
+/**
  *  @brief          Parses a list or atom, returning the root
  *                  of the S-expression.
  *  @param          i input stream
@@ -124,7 +135,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     break;
   case S_TEE:
     color_on(ANSI_COLOR_GREEN,o,e);
-    wputs("#t",o,e);
+    wputs("t",o,e);
     break;
   case S_LIST:
     wputs("(",o,e);
@@ -180,11 +191,24 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
     wputs("#PRIMOP",o,e);
     break;
   case S_PROC: 
-    color_on(ANSI_COLOR_BLUE,o,e);
-    wputs("#PROC",o,e); 
-    color_on(ANSI_RESET,o,e);
-    if(true == print_proc_f)
-      print_expr(x->data.list[1],o,0,e);
+    if(true == print_proc_f){
+      wputc('\n',o,e);
+      indent(depth,o,e);
+      wputs("(",o,e);
+      color_on(ANSI_COLOR_YELLOW,o,e);
+      wputs("lambda\n",o,e); 
+      color_on(ANSI_RESET,o,e);
+      indent(depth+1,o,e);
+      print_expr(x->data.list[0],o,depth+1,e);
+      wputc('\n',o,e);
+      indent(depth+1,o,e);
+      print_expr(x->data.list[1],o,depth+1,e);
+      wputs(")",o,e); 
+    } else {
+      color_on(ANSI_COLOR_BLUE,o,e);
+      wputs("#PROC",o,e); 
+      color_on(ANSI_RESET,o,e);
+    }
     break;
   case S_ERROR: /** @todo implement error support **/     
   case S_FILE: /** @todo implement file support, then printing**/     

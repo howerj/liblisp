@@ -775,7 +775,7 @@ static expr primop_reverse(expr args, lisp l){
   }
   carg = car(args);
   type = carg->type;
-  if((S_LIST != type) && (S_SYMBOL != type)){
+  if((S_LIST != type) && (S_STRING != type)){
     print_error(args,"reverse: not a reversible type",l->e);
     return nil;
   }
