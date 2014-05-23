@@ -304,7 +304,7 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
     if (isspace(c))
       goto success;
 
-    if ((c == ')') || (c == '(')) {
+    if ((c == '(') || (c == ')')) {
       wungetc(c,i,e);
       goto success;
     }
@@ -335,7 +335,6 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
       buf[count++] = c;
     }
   }
-
  fail:
   return NULL;
 
@@ -420,9 +419,8 @@ static expr parse_list(io *i, io *e){
   ex->len = 0;
 
   while (EOF!=(c=wgetc(i,e))){
-    if (isspace(c)) {
+    if (isspace(c)) 
       continue;
-    }
 
     switch (c) {
     case ';':
