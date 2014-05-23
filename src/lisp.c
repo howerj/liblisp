@@ -33,6 +33,7 @@
  *         - max, min, abs, ...
  *         - Error handling and recovery
  *         - not, and, or, logical functions as well!
+ *         - set related functions; intersection, union, member, ...
  *         - comment; instead of normal comments, comments and the
  *         unevaluated sexpression could be stored for later retrieval
  *         and inspection, keeping the source and the runnning program
@@ -93,6 +94,7 @@ static expr primop_printexpr(expr args, lisp l);
 static expr primop_scar(expr args, lisp l);
 static expr primop_scdr(expr args, lisp l);
 static expr primop_scons(expr args, lisp l);
+static expr primop_typeeq(expr args, lisp l);
 
 /*** interface functions *****************************************************/
 
@@ -158,7 +160,7 @@ lisp initlisp(void){
   extendprimop("scar",    primop_scar,      l->global, l->e);
   extendprimop("scdr",    primop_scdr,      l->global, l->e);
   extendprimop("scons",   primop_scons,     l->global, l->e);
-
+  extendprimop("eqt",     primop_typeeq,    l->global, l->e);
   return l;
 }
 
@@ -654,7 +656,7 @@ static expr primop_len(expr args, lisp l){
 
 static expr primop_numeq(expr args, lisp l){
   unsigned int i;
-  expr nx = mkobj(S_INTEGER,l->e);
+  expr nx;
   if(0 == args->len)
     return nil;
   nx = nth(args,0);
@@ -731,6 +733,19 @@ static expr primop_scons(expr args, lisp l){
   return nx;
 }
 
+static expr primop_typeeq(expr args, lisp l){
+  unsigned int i;
+  expr nx;
+  if(0 == args->len)
+    return nil;
+  nx = nth(args,0);
+  for(i = 1; i < args->len; i++){
+    if(nx->type != (nth(args,i)->type)){
+      return nil;
+    }
+  }
+  return tee;
+}
 
 #undef intchk
 
