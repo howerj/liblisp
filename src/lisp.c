@@ -23,7 +23,6 @@
  *  @todo Make more primitives and mechanisms for handling things:
  *         - Register internal functions as lisp primitives.
  *         - random, seed
- *         - reverse, more advanced lisp manipulation funcs ...
  *         - eq > < <= >=
  *         - string manipulation and regexes; tr, sed, //m, pack, unpack, ...
  *         - type? <- returns type of expr
@@ -95,6 +94,7 @@ static expr primop_scar(expr args, lisp l);
 static expr primop_scdr(expr args, lisp l);
 static expr primop_scons(expr args, lisp l);
 static expr primop_typeeq(expr args, lisp l);
+static expr primop_reverse(expr args, lisp l);
 
 /*** interface functions *****************************************************/
 
@@ -161,6 +161,7 @@ lisp initlisp(void){
   extendprimop("scdr",    primop_scdr,      l->global, l->e);
   extendprimop("scons",   primop_scons,     l->global, l->e);
   extendprimop("eqt",     primop_typeeq,    l->global, l->e);
+  extendprimop("reverse", primop_reverse,   l->global, l->e);
   return l;
 }
 
@@ -462,6 +463,7 @@ static expr apply(expr proc, expr args, lisp l){
     return nil;\
   }
 
+/**add a list of numbers**/
 static expr primop_add(expr args, lisp l){
   unsigned int i;
   expr nx = mkobj(S_INTEGER,l->e);
@@ -474,6 +476,7 @@ static expr primop_add(expr args, lisp l){
   return nx;
 }
 
+/**subtract a list of numbers from the 1 st arg**/
 static expr primop_sub(expr args, lisp l){
   unsigned int i;
   expr nx = mkobj(S_INTEGER,l->e);
@@ -488,6 +491,7 @@ static expr primop_sub(expr args, lisp l){
   return nx;
 }
 
+/**multiply a list of numbers together**/
 static expr primop_prod(expr args, lisp l){
   unsigned int i;
   expr nx = mkobj(S_INTEGER,l->e);
@@ -502,6 +506,7 @@ static expr primop_prod(expr args, lisp l){
   return nx;
 }
 
+/**divide the first argument by a list of numbers**/
 static expr primop_div(expr args, lisp l){
   unsigned int i,tmp;
   expr nx = mkobj(S_INTEGER,l->e);
@@ -522,6 +527,7 @@ static expr primop_div(expr args, lisp l){
   return nx;
 }
 
+/**arg_1 modulo arg_2**/
 static expr primop_mod(expr args, lisp l){
   unsigned int tmp;
   expr nx = mkobj(S_INTEGER,l->e);
@@ -542,6 +548,7 @@ static expr primop_mod(expr args, lisp l){
   return nx;
 }
 
+/**car**/
 static expr primop_car(expr args, lisp l){
   expr a1;
   if(1!=args->len){
@@ -557,6 +564,7 @@ static expr primop_car(expr args, lisp l){
   return car(a1);
 }
 
+/**cdr**/
 static expr primop_cdr(expr args, lisp l){
   expr nx, carg;
   if(0 == args->len){
@@ -574,6 +582,7 @@ static expr primop_cdr(expr args, lisp l){
   return nx;
 }
 
+/**cons**/
 static expr primop_cons(expr args, lisp l){
   expr nx = mkobj(S_LIST,l->e),prepend,list;
   if(2!=args->len){
@@ -598,6 +607,7 @@ static expr primop_cons(expr args, lisp l){
   return nx;
 }
 
+/**nth element in a list or string**/
 static expr primop_nth(expr args, lisp l){
   cell_t i;
   expr a1,a2;
@@ -639,6 +649,7 @@ static expr primop_nth(expr args, lisp l){
   return nil;
 }
 
+/**length of a list or string**/
 static expr primop_len(expr args, lisp l){
   expr a1, nx = mkobj(S_INTEGER,l->e);
   if(1 != args->len){
@@ -654,6 +665,7 @@ static expr primop_len(expr args, lisp l){
   return nx;
 }
 
+/**test equality of the 1st arg against a list of numbers**/
 static expr primop_numeq(expr args, lisp l){
   unsigned int i;
   expr nx;
@@ -671,12 +683,14 @@ static expr primop_numeq(expr args, lisp l){
   return tee;
 }
 
+/**print**/
 static expr primop_printexpr(expr args, lisp l){
   /* @todo if arg = 1, treat as Output redirection, else normal out */
   print_expr(args,l->o,0,l->e);
   return args;
 }
 
+/**car for strings**/
 static expr primop_scar(expr args, lisp l){
   expr nx, a1;
   if(1!=args->len){
@@ -695,6 +709,7 @@ static expr primop_scar(expr args, lisp l){
   return nx;
 }
 
+/**cdr for strings**/
 static expr primop_scdr(expr args, lisp l){
   expr nx, carg;
   if(0 == args->len){
@@ -712,6 +727,7 @@ static expr primop_scdr(expr args, lisp l){
   return nx;
 }
 
+/**cons for strings**/
 static expr primop_scons(expr args, lisp l){
   expr nx = mkobj(S_LIST,l->e),prepend,list;
   if(2!=args->len){
@@ -733,6 +749,7 @@ static expr primop_scons(expr args, lisp l){
   return nx;
 }
 
+/**type equality**/
 static expr primop_typeeq(expr args, lisp l){
   unsigned int i;
   expr nx;
@@ -745,6 +762,39 @@ static expr primop_typeeq(expr args, lisp l){
     }
   }
   return tee;
+}
+
+/**reverse a list or a string**/
+static expr primop_reverse(expr args, lisp l){
+  unsigned int i;
+  expr nx, carg;
+  sexpr_e type;
+  if(1 != args->len){
+    print_error(args,"reverse: argc != 1",l->e);
+    return nil;
+  }
+  carg = car(args);
+  type = carg->type;
+  if((S_LIST != type) && (S_SYMBOL != type)){
+    print_error(args,"reverse: not a reversible type",l->e);
+    return nil;
+  }
+  nx = mkobj(type,l->e);
+
+  if(S_LIST == type){
+    nx->data.list = wmalloc(carg->len*sizeof(expr),l->e);
+    for(i = 0; i < carg->len; i++){
+      nth(nx,carg->len - i - 1) = nth(carg,i);
+    }
+    nx->len = carg->len;
+  } else { /*is a string*/
+    nx->data.string = wcalloc(sizeof(char),carg->len*sizeof(expr) + 1,l->e);
+    for(i = 0; i < carg->len; i++){
+      nx->data.string[carg->len - i - 1] = carg->data.string[i];   
+    }
+    nx->len = carg->len;
+  }
+  return nx;
 }
 
 #undef intchk

@@ -114,7 +114,7 @@ expr parse_term(io *i, io *e){
 void print_expr(expr x, io *o, unsigned int depth, io *e){
   unsigned int i;
 
-  if (!x)
+  if (NULL == x)
     return;
 
   switch (x->type) {
