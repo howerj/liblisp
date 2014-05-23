@@ -31,24 +31,25 @@
 
 #include <stdio.h>  /* printf(), fopen(), fclose() */
 #include <stdlib.h> /* exit() */
+#include <string.h> /* strlen() */
 #include "type.h"
 #include "mem.h"
 #include "sexpr.h"
 #include "lisp.h"
 
 typedef enum{
-  getopt_switch,
-  getopt_input_file,
-  getopt_output_file,
-  getopt_string_input,
-  getopt_error
+  getopt_switch,        /* 0: switch statement, eg. sets some internal bool */
+  getopt_input_file,    /* 1: try to treat argument as an input file */
+  getopt_output_file,   /* 2: try to redirect output to this file */
+  getopt_string_input,  /* 3: eval! */
+  getopt_error          /* 4: PEBKAC error: debugging is a AI complete problem*/
 } getopt_e;
 
 static int getopt(char *arg);
 static int repl(lisp l);
 
 static bool printGlobals_f = false;
-static char *usage = "./lisp -hdcpVG <file>\n";
+static char *usage = "./lisp -hdcpeoVG file... '(expr)'...\n";
 
 /**
  * version should include md5sum calculated from
@@ -66,17 +67,18 @@ Program:\n\
 Author:\n\
   Richard James Howe\n\
 \n\
-  -h        Print this help message.\n\
-  -d        Turn on any debugging information, if any, print to stderr.\n\
-  -c        Turn color on, does not check istty().\n\
-  -p        Print out procedures in full.\n\
-  -V        Print version number.\n\
-  -G        Print a list of all globals on normal program exit.\n\
-  <files>   Read from <file> instead of stdin. This can be a list of files.\n\
+  -h   This message.\n\
+  -d   Extra debugging information on stderr.\n\
+  -c   Color on.\n\
+  -p   Print out full procedure.\n\
+  -e   Next argument is an expression to evaluate.\n\
+  -o   Next argument is a file to write to.\n\
+  -V   Version number.\n\
+  -G   Print Globals list on normal exit.\n\
 ";
 
 /** 
- *  @brief    Process options; caution - may use exit()!
+ *  @brief    Process command line options
  *  @param    arg   current command line argument
  *  @return   getopt_e, a self describing enum.        
  */
@@ -105,6 +107,10 @@ static int getopt(char *arg){
       case 'p':
         set_print_proc(true);
         break;
+      case 'e':
+        return getopt_string_input;
+      case 'o':
+        return getopt_output_file;
       case 'G':
         printGlobals_f = true;
         break;
@@ -140,9 +146,8 @@ static int repl(lisp l){
 int main(int argc, char *argv[]){
   int i;
   lisp l;
-  FILE *input;
+  FILE *input, *output;
 
-  /** setup environment */
   l = initlisp();
 
   for(i = 1; i < argc; i++){
@@ -151,28 +156,57 @@ int main(int argc, char *argv[]){
         /*getopt_switch means getopt set some flags or printed something*/
         break;
       case getopt_input_file:
-      { /*try to treat it as an output file*/
-        printf("(file input \"%s\")\n",argv[i]);
+        /*try to treat it as an output file*/
+        printf("(input 'file \"%s\")\n",argv[i]);
         if(NULL == (input = fopen(argv[i],"r"))){
           fprintf(stderr,"(error \"unable to read '%s'\")\n",argv[i]);
           exit(EXIT_FAILURE);
         }
-
+        memset(l->i,0,sizeof(*l->i));
+        l->i->type = file_in;
         l->i->ptr.file = input;
         repl(l);
         fclose(input);
-      }
-      break;
-      case getopt_output_file:  /*not implemented yet*/
+        break;
       case getopt_string_input: /*not implemented yet*/
+        if(++i < argc){
+          memset(l->i,0,sizeof(*l->i));
+          l->i->type = string_in;
+          l->i->ptr.string = argv[i];
+          l->i->max = strlen(argv[i]);
+          printf("(input 'string \"%s\")\n",argv[i]);
+          repl(l);
+        } else {
+          fprintf(stderr,"(error \"fatal: expecting arg after -e\" \"%s\" %d)\n",
+              __FILE__,__LINE__);
+          exit(EXIT_FAILURE);
+        }
+      break;
+      case getopt_output_file:
+        if(++i < argc){
+          printf("(output 'file \"%s\")\n",argv[i]);
+          if(NULL == (output = fopen(argv[i],"w"))){
+            fprintf(stderr,"(error \"unable to write to '%s'\")\n",argv[i]);
+            exit(EXIT_FAILURE);
+          }
+          l->o->type = file_out;
+          l->o->ptr.file = output;
+        } else {
+          fprintf(stderr,"(error \"fatal: expecting arg after -o\" \"%s\" %d)\n",
+              __FILE__,__LINE__);
+          exit(EXIT_FAILURE);
+        }
+      break;
       case getopt_error:
       default:
-        fprintf(stderr,"(error \"fatal: should not get here\" \"%s\" %d)\n",
+        fprintf(stderr,"(error \"fatal: invalid command opts\" \"%s\" %d)\n",
             __FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
   }
 
+  memset(l->i,0,sizeof(*l->i));
+  l->i->type = file_in;
   l->i->ptr.file = stdin;
   repl(l);
 

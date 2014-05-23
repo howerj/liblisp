@@ -18,3 +18,8 @@
 * Macros with return in them should be removed
 * Abide more by the linux kernel style guides at:
   - <https://www.kernel.org/doc/Documentation/CodingStyle>
+
+* What would it take to implement pipes, lisp s-expression pipes, with the
+  I/O system?
+  - Write output string on one lisp thread
+  - Read input string on another lisp thread, blocking.
