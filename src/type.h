@@ -31,7 +31,7 @@ typedef enum {
   S_TEE,      /* 1: t */
   S_LIST,     /* 2: list */
   S_STRING,   /* 3: string */
-  S_SYMBOL,   /* 4: symbol, positive or negative, input in decimal or octal */
+  S_SYMBOL,   /* 4: symbol */
   S_INTEGER,  /* 5: integer */
   S_PRIMITIVE,/* 6: a primitive function */
   S_FILE,     /* 7: for file I/O */
@@ -84,8 +84,7 @@ struct lispenv_t{ /** a lisp environment */
   io *i; /* input */
   io *o; /* output */
   io *e; /* stderr */
-  expr global; /** 
-                 * global list of key-value pairs
+  expr global; /** global list of key-value pairs
                  * ((key_0 val_0) (key_1 val_1) ... (key_n val_n))
                 **/
   expr env;
