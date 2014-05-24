@@ -24,7 +24,7 @@
  *
  *    make
  *
- *  At the top level. No libraries bar the standard C library is needed
+ *  At the top level. No libraries, bar the standard C library, are needed
  *  to compile the project.
  *
  **/
@@ -92,8 +92,7 @@ static int getopt(char *arg){
   while((c = *arg++)){
     switch(c){
       case 'h':
-        printf("%s",usage);
-        printf("%s",help);
+        printf("%s%s",usage,help);
         break;
       case 'V':
         printf("%s",version);
@@ -177,8 +176,7 @@ int main(int argc, char *argv[]){
           printf("(input 'string \"%s\")\n",argv[i]);
           repl(l);
         } else {
-          fprintf(stderr,"(error \"fatal: expecting arg after -e\" \"%s\" %d)\n",
-              __FILE__,__LINE__);
+          print_error(NULL,"fatal: expecting arg after -e",NULL);
           exit(EXIT_FAILURE);
         }
       break;
@@ -192,15 +190,13 @@ int main(int argc, char *argv[]){
           l->o->type = file_out;
           l->o->ptr.file = output;
         } else {
-          fprintf(stderr,"(error \"fatal: expecting arg after -o\" \"%s\" %d)\n",
-              __FILE__,__LINE__);
+          print_error(NULL,"fatal: expecting arg after -o",NULL);
           exit(EXIT_FAILURE);
         }
       break;
       case getopt_error:
       default:
-        fprintf(stderr,"(error \"fatal: invalid command opts\" \"%s\" %d)\n",
-            __FILE__,__LINE__);
+        print_error(NULL,"fatal: invalid command opts",NULL);
         exit(EXIT_FAILURE);
     }
   }

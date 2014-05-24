@@ -2,8 +2,6 @@
 (define caddr (lambda (x) (car (cdr (cdr x)))))
 (define cadddr (lambda (x) (car (cdr (cdr (cdr x))))))
 
-(define sumofsqrs (lambda (x y) (+ (* x x) (* y y))))
-
 (define gcd 
  (lambda (x y) 
   (if 
@@ -32,6 +30,14 @@
     (if (= x 1)
         1
         (* x (! (- x 1))))))
+
+
+; This show cases the inefficiency of my environment!
+(define explode
+ (lambda (x y)
+  (if (scdr x)
+   (explode (scdr x) (cons (scar x) y))
+   (reverse (cons (scar x) y)))))
 
 ; pretty printing test
 ;(quote 
