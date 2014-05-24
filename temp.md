@@ -7,6 +7,9 @@
   - 1 for ok
   - if bool, not the current way
 
+* I *really* should convert the program to use cons cells instead
+  of arrays at its basic type to speed things up, as its just inefficient
+  otherwise.
 * Go through to-dos in program
 * Handle EOF on output
 * Check everything for *consistency*

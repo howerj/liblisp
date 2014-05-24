@@ -716,9 +716,8 @@ static expr primop_scar(expr args, lisp l){
     return nil;
   }
   nx = mkobj(S_STRING,l->e);
-  nx->data.string = wcalloc(sizeof(char),a1->len?2:1,l->e);
-  if(1 >= a1->len)
-    nx->data.string[0] = a1->data.string[0];
+  nx->data.string = wcalloc(sizeof(char),2,l->e);
+  nx->data.string[0] = a1->data.string[0];
   nx->len = 1;
   return nx;
 }
