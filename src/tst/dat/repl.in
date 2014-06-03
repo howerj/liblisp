@@ -3,6 +3,10 @@
 ; Errors are not tested as their output format is subject to arbitrary change
 ; One the lisp interpreter becomes more advanced, I could use the meta programming
 ; features to simplify the testing somewhat.
+; 
+; Each new primitive operation should be tested when it has been added to the
+; Interpreter, the corresponding output file will need to be updated as well in
+; that case.
 
 (define minus_one -5)
 (define pos_number 42)
