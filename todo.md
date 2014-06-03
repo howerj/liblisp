@@ -7,6 +7,10 @@
   - 1 for ok
   - if bool, not the current way
 
+* API:
+  - All names should begin with file name prepended to function
+  or variable name.
+
 * I *really* should convert the program to use cons cells instead
   of arrays at its basic type to speed things up, as its just inefficient
   otherwise.
