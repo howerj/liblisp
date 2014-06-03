@@ -1,6 +1,14 @@
-## temp.md
+## todo.md
 
 ### A temporary to-do list:
+
+* Memory: Garbage collection,
+  Garbage collection should act inside the lisp environment not globally.
+
+* Unit Tests / Test benches
+  Writing unit tests / test benches would really help in moving the code
+  to use different data structures, it would help in incrementally moving
+  it from one to the other.
 
 * Clean up code;
   - 0 for error
