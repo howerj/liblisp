@@ -48,19 +48,10 @@ typedef enum{
 } getopt_e;
 
 static int getopt(char *arg);
+static void setfin(io *i, FILE *in);
 
 static bool printGlobals_f = false;
 static char *usage = "./lisp -hdcpeoVG file... '(expr)'...\n";
-
-/**
- * version should include md5sum calculated from
- *  c and h files, excluding the file it gets put
- *  into. This will be included here.
- *
- *  Generation would be like this:
- *  md5sum *.c *.h | md5sum | more_processing > version/version.h
- *  in the makefile
- */
 static char *version = __DATE__ " : " __TIME__ "\n";
 static char *help = "\
 Program:\n\
@@ -108,6 +99,18 @@ static int getopt(char *arg){
   return getopt_switch;
 }
 
+/** 
+ *  @brief    Set up a I/O struct to take file input
+ *  @param    i     io struct to set up
+ *  @param    in    Input file descriptor
+ *  @return   getopt_e, a self describing enum.        
+ */
+static void setfin(io *i, FILE *in){
+  memset(i,0,sizeof(*i));
+  i->type = file_in;
+  i->ptr.file = in;
+}
+
 int main(int argc, char *argv[]){
   int i;
   lisp l;
@@ -127,9 +130,7 @@ int main(int argc, char *argv[]){
           fprintf(stderr,"(error \"unable to read '%s'\")\n",argv[i]);
           exit(EXIT_FAILURE);
         }
-        memset(l->i,0,sizeof(*l->i));
-        l->i->type = file_in;
-        l->i->ptr.file = input;
+        setfin(l->i,input);
         lisp_repl(l);
         fclose(input);
         break;
@@ -167,9 +168,7 @@ int main(int argc, char *argv[]){
     }
   }
 
-  memset(l->i,0,sizeof(*l->i));
-  l->i->type = file_in;
-  l->i->ptr.file = stdin;
+  setfin(l->i,stdin);
   lisp_repl(l);
 
   if(true == printGlobals_f){

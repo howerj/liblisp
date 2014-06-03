@@ -1,0 +1,12 @@
+color
+io
+lisp
+main
+mem
+sexpr
+type
+repl
+*.o
+*.swp
+*.swo
+*~
