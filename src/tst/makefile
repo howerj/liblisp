@@ -18,10 +18,13 @@ all: repl
 %.o: %.c *.h makefile
 	$(CC) -c $(CCFLAGS) -o $@ $<
 
-repl: $(OBJFILES) repl.o
+repl: $(OBJFILES) repl.o dat/repl.in dat/repl.out
 	$(CC) $(CCFLAGS) $(OBJFILES) repl.o -o repl
+	cat dat/repl.in | ./repl > repl.tmp
+	diff dat/repl.out repl.tmp
+	@echo "repl: pass";
 
 clean:
-	-rm -rf *.o $(TSTBINARIES)
+	-rm -rf *.o $(TSTBINARIES) *.tmp
 
 ## EOF ########################################################################

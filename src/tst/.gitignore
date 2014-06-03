@@ -10,3 +10,4 @@ repl
 *.swp
 *.swo
 *~
+*.tmp
