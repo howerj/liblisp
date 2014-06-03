@@ -824,6 +824,11 @@ static expr primop_scons(expr args, lisp l){
 static expr primop_typeeq(expr args, lisp l){
   unsigned int i;
   expr nx;
+  if(args == NULL){ /*here to supress warning*/
+    sexpr_perror(args,"eqt: passed NULL",l->e);
+    return nil;
+  }
+
   if(0 == args->len)
     return nil;
   nx = nth(args,0);
