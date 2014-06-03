@@ -11,15 +11,15 @@
 #define SEXPR_H
 
 /**** macros ******************************************************************/
-#define print_error(EXP,MSG,E)  doprint_error((EXP),(MSG),__FILE__,__LINE__,(E))
+#define sexpr_perror(EXP,MSG,E)  dosexpr_perror((EXP),(MSG),__FILE__,__LINE__,(E))
 /******************************************************************************/
 
 /**** function prototypes *****************************************************/
 void set_color_on(bool flag);
 void set_print_proc(bool flag);
-expr parse_term(io *i, io *e);
-void print_expr(expr x, io *o, unsigned int depth, io *e);
-void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e);
+expr sexpr_parse(io *i, io *e);
+void sexpr_print(expr x, io *o, unsigned int depth, io *e);
+void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io *e);
 void append(expr list, expr ele, io *e);
 /******************************************************************************/
 

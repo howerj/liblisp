@@ -11,6 +11,15 @@
   - All names should begin with file name prepended to function
   or variable name.
 
+* Version calculation:
+
+Calculating the version number *could* be useful, I guess. The process should
+be automatic, something like:
+
+```sh
+    md5sum *.c *.h | md5sum | more_processing > version/version.h
+```
+
 * I *really* should convert the program to use cons cells instead
   of arrays at its basic type to speed things up, as its just inefficient
   otherwise.

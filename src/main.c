@@ -10,8 +10,10 @@
  *
  *  @todo   Unit tests for each module
  *  @todo   Orient the lisp towards processing text à la mode de awk/sed/tr 
+ *  @todo   Rewrite basic types used in implementation from arrays to cons
+ *          cells as it should be.
  *
- *  @mainpage LSP (Lispy Space Princess) Lisp
+ *  @mainpage LSP Lisp
  *
  *  \section intro_sec Introduction
  *
@@ -41,12 +43,11 @@ typedef enum{
   getopt_switch,        /* 0: switch statement, eg. sets some internal bool */
   getopt_input_file,    /* 1: try to treat argument as an input file */
   getopt_output_file,   /* 2: try to redirect output to this file */
-  getopt_string_input,  /* 3: eval! */
+  getopt_string_input,  /* 3: lisp_eval! */
   getopt_error          /* 4: PEBKAC error: debugging is a AI complete problem*/
 } getopt_e;
 
 static int getopt(char *arg);
-static int repl(lisp l);
 
 static bool printGlobals_f = false;
 static char *usage = "./lisp -hdcpeoVG file... '(expr)'...\n";
@@ -71,7 +72,7 @@ Author:\n\
   -d   Extra debugging information on stderr.\n\
   -c   Color on.\n\
   -p   Print out full procedure.\n\
-  -e   Next argument is an expression to evaluate.\n\
+  -e   Next argument is an expression to lisp_evaluate.\n\
   -o   Next argument is a file to write to.\n\
   -V   Version number.\n\
   -G   Print Globals list on normal exit.\n\
@@ -91,28 +92,14 @@ static int getopt(char *arg){
 
   while((c = *arg++)){
     switch(c){
-      case 'h':
-        printf("%s%s",usage,help);
-        break;
-      case 'V':
-        printf("%s",version);
-        break;
-      case 'd':
-        set_mem_debug(true);
-        break;
-      case 'c':
-        set_color_on(true);
-        break;
-      case 'p':
-        set_print_proc(true);
-        break;
-      case 'e':
-        return getopt_string_input;
-      case 'o':
-        return getopt_output_file;
-      case 'G':
-        printGlobals_f = true;
-        break;
+      case 'h': printf("%s%s",usage,help); break;
+      case 'V': printf("%s",version); break;
+      case 'd': set_mem_debug(true); break;
+      case 'c': set_color_on(true); break;
+      case 'p': set_print_proc(true); break;
+      case 'e': return getopt_string_input;
+      case 'o': return getopt_output_file;
+      case 'G': printGlobals_f = true; break;
       default:
         fprintf(stderr,"unknown option: '%c'\n%s", c, usage);
         return getopt_error;
@@ -121,33 +108,12 @@ static int getopt(char *arg){
   return getopt_switch;
 }
 
-/** 
- *  @brief    repl implements a lisp Read-Evaluate-Print-Loop
- *  @param    l an initialized lisp environment
- *  @return   Always zero at the moment
- *
- *  @todo When Error Expression have been properly implemented any
- *        errors that have not been caught should be returned by repl
- *        or handled by it to avoid multiple error messages being printed
- *        out.
- */
-static int repl(lisp l){
-  expr x;
-  while(NULL != (x = parse_term(l->i, l->e))){
-    x = eval(x,l->env,l);
-    print_expr(x,l->o,0,l->e);
-    gcmark(l->global,l->e);
-    gcsweep(l->e);
-  }
-  return 0;
-}
-
 int main(int argc, char *argv[]){
   int i;
   lisp l;
   FILE *input, *output;
 
-  l = initlisp();
+  l = lisp_init();
 
   for(i = 1; i < argc; i++){
     switch(getopt(argv[i])){
@@ -164,7 +130,7 @@ int main(int argc, char *argv[]){
         memset(l->i,0,sizeof(*l->i));
         l->i->type = file_in;
         l->i->ptr.file = input;
-        repl(l);
+        lisp_repl(l);
         fclose(input);
         break;
       case getopt_string_input: /*not implemented yet*/
@@ -174,9 +140,9 @@ int main(int argc, char *argv[]){
           l->i->ptr.string = argv[i];
           l->i->max = strlen(argv[i]);
           printf("(input 'string \"%s\")\n",argv[i]);
-          repl(l);
+          lisp_repl(l);
         } else {
-          print_error(NULL,"fatal: expecting arg after -e",NULL);
+          sexpr_perror(NULL,"fatal: expecting arg after -e",NULL);
           exit(EXIT_FAILURE);
         }
       break;
@@ -190,13 +156,13 @@ int main(int argc, char *argv[]){
           l->o->type = file_out;
           l->o->ptr.file = output;
         } else {
-          print_error(NULL,"fatal: expecting arg after -o",NULL);
+          sexpr_perror(NULL,"fatal: expecting arg after -o",NULL);
           exit(EXIT_FAILURE);
         }
       break;
       case getopt_error:
       default:
-        print_error(NULL,"fatal: invalid command opts",NULL);
+        sexpr_perror(NULL,"fatal: invalid command opts",NULL);
         exit(EXIT_FAILURE);
     }
   }
@@ -204,13 +170,13 @@ int main(int argc, char *argv[]){
   memset(l->i,0,sizeof(*l->i));
   l->i->type = file_in;
   l->i->ptr.file = stdin;
-  repl(l);
+  lisp_repl(l);
 
   if(true == printGlobals_f){
-    print_expr(l->global,l->o,0,l->e);
+    sexpr_print(l->global,l->o,0,l->e);
   }
 
-  endlisp(l);
+  lisp_end(l);
 
   return EXIT_SUCCESS;
 }

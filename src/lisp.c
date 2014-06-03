@@ -14,7 +14,7 @@
  *  o:      output
  *  e:      standard error output
  *  x:      expression
- *  args:   a list of *evaluated* arguments
+ *  args:   a list of *lisp_evaluated* arguments
  *  nx:     a newly created expression
  *
  *  @todo Better error handling; a new primitive type should be made
@@ -35,7 +35,7 @@
  *         - not, and, or, logical functions as well!
  *         - set related functions; intersection, union, member, ...
  *         - comment; instead of normal comments, comments and the
- *         unevaluated sexpression could be stored for later retrieval
+ *         unlisp_evaluated sexpression could be stored for later retrilisp_eval
  *         and inspection, keeping the source and the runnning program
  *         united.
  *         - modules; keywords for helping in the creation of modules
@@ -104,7 +104,7 @@ static expr primop_numless(expr args, lisp l);
 static expr primop_numlesseq(expr args, lisp l);
 static expr primop_min(expr args, lisp l);
 static expr primop_max(expr args, lisp l);
-static expr primop_eval(expr args, lisp l);
+static expr primop_lisp_eval(expr args, lisp l);
 static expr primop_read(expr args, lisp l);
 static expr primop_getc(expr args, lisp l);
 static expr primop_gets(expr args, lisp l);
@@ -118,7 +118,7 @@ static expr primop_find(expr args, lisp l);
  *  @param          void
  *  @return         A fully initialized lisp environment
  **/
-lisp initlisp(void){
+lisp lisp_init(void){
   lisp l;
   l         = wcalloc(1,sizeof(*l),NULL);
   l->global = wcalloc(1,sizeof(sexpr_t),NULL);
@@ -180,12 +180,35 @@ lisp initlisp(void){
   return l;
 }
 
+/** 
+ *  @brief    lisp_repl implements a lisp Read-Evaluate-Print-Loop
+ *  @param    l an initialized lisp environment
+ *  @return   Always zero at the moment
+ *
+ *  @todo When Error Expression have been properly implemented any
+ *        errors that have not been caught should be returned by lisp_repl
+ *        or handled by it to avoid multiple error messages being printed
+ *        out.
+ */
+int lisp_repl(lisp l){
+  expr x;
+  while(NULL != (x = sexpr_parse(l->i, l->e))){
+    x = lisp_eval(x,l->env,l);
+    sexpr_print(x,l->o,0,l->e);
+    gcmark(l->global,l->e);
+    gcsweep(l->e);
+  }
+  return 0;
+}
+
+
+
 /**
  *  @brief          Destroy and clean up a lisp environment
  *  @param          An initialized lisp environment
  *  @return         void
  **/
-void endlisp(lisp l){
+void lisp_end(lisp l){
   io e = {file_out, {NULL}, 0, 0, '\0', false};
   e.ptr.file = stderr;
 
@@ -209,15 +232,15 @@ void endlisp(lisp l){
 /**
  *  @brief          Evaluate an already parsed lisp expression
  *  @param          x   The s-expression to parse
- *  @param          env The environment to evaluate in
+ *  @param          env The environment to lisp_evaluate in
  *  @param          l   The global lisp environment
- *  @return         An evaluated expression, possibly ready for printing.
+ *  @return         An lisp_evaluated expression, possibly ready for printing.
  **/
-expr eval(expr x, expr env, lisp l){
+expr lisp_eval(expr x, expr env, lisp l){
   unsigned int i;
 
   if(NULL==x){
-    print_error(NULL,"passed nul",l->e);
+    sexpr_perror(NULL,"passed nul",l->e);
     abort();
   }
 
@@ -226,58 +249,58 @@ expr eval(expr x, expr env, lisp l){
       if(tstlen(x,0)) /* () */
         return nil;
       if(S_SYMBOL==car(x)->type){
-        const expr foundx = eval(car(x),env,l);
+        const expr foundx = lisp_eval(car(x),env,l);
         if(foundx == s_if){ /* (if test conseq alt) */
           if(!tstlen(x,4)){
-            print_error(x,"if: argc != 4",l->e);
+            sexpr_perror(x,"if: argc != 4",l->e);
             return nil;
           }
-          if(nil == eval(cadr(x),env,l)){
-            return eval(cadddr(x),env,l);
+          if(nil == lisp_eval(cadr(x),env,l)){
+            return lisp_eval(cadddr(x),env,l);
           } else {
-            return eval(caddr(x),env,l);
+            return lisp_eval(caddr(x),env,l);
           }
         } else if (foundx == s_begin){ /* (begin exp ... ) */
           if(tstlen(x,1)){
             return nil;
           }
           for (i = 1; i < x->len - 1; i++){
-            eval(nth(x,i),env,l);
+            lisp_eval(nth(x,i),env,l);
           }
-          return eval(nth(x,i),env,l);
+          return lisp_eval(nth(x,i),env,l);
         } else if (foundx == s_quote){ /* (quote exp) */
           if(!tstlen(x,2)){
-            print_error(x,"quote: argc != 1",l->e);
+            sexpr_perror(x,"quote: argc != 1",l->e);
             return nil;
           }
           return cadr(x);
         } else if (foundx == s_set){
           expr nx;
           if(!tstlen(x,3)){
-            print_error(x,"set: argc != 2",l->e);
+            sexpr_perror(x,"set: argc != 2",l->e);
             return nil;
           }
           nx = find(env,cadr(x),l);
           if(nil == nx){
-            print_error(cadr(x),"unbound symbol",l->e);
+            sexpr_perror(cadr(x),"unbound symbol",l->e);
             return nil;
           }
-          nx->data.list[1] = eval(caddr(x),env,l);
+          nx->data.list[1] = lisp_eval(caddr(x),env,l);
           return cadr(nx);
         } else if (foundx == s_define){ 
           { 
             expr nx;
             /*@todo if already defined, or is an internal symbol, report error */
             if(!tstlen(x,3)){
-              print_error(x,"define: argc != 2",l->e);
+              sexpr_perror(x,"define: argc != 2",l->e);
               return nil;
             }
-            nx = extend(cadr(x),eval(caddr(x),env,l),l->global,l->e);
+            nx = extend(cadr(x),lisp_eval(caddr(x),env,l),l->global,l->e);
             return nx;
           }
         } else if (foundx == s_lambda){
           if(!tstlen(x,3)){
-            print_error(x,"lambda: argc != 2",l->e);
+            sexpr_perror(x,"lambda: argc != 2",l->e);
             return nil;
           }
           return mkproc(cadr(x),caddr(x),env,l->e);
@@ -285,7 +308,7 @@ expr eval(expr x, expr env, lisp l){
           return apply(foundx,evlis(x,env,l),l);
         }
       } else {
-        print_error(car(x),"cannot apply",l->e);
+        sexpr_perror(car(x),"cannot apply",l->e);
         return nil;
       }
       break;
@@ -293,13 +316,13 @@ expr eval(expr x, expr env, lisp l){
       {
         expr nx = find(env,x,l);
         if(nil == nx){
-          print_error(x,"unbound symbol",l->e);
+          sexpr_perror(x,"unbound symbol",l->e);
           return nil;
         }
         return cadr(nx);
       }
     case S_FILE: /* to implement */
-      print_error(NULL,"file type unimplemented",l->e);
+      sexpr_perror(NULL,"file type unimplemented",l->e);
       return nil;
     case S_NIL:
     case S_TEE:
@@ -309,11 +332,11 @@ expr eval(expr x, expr env, lisp l){
     case S_PRIMITIVE:
       return x;
     default:
-      print_error(NULL,"fatal: unknown type",l->e);
+      sexpr_perror(NULL,"fatal: unknown type",l->e);
       abort();
   }
 
-  print_error(NULL,"should never get here",l->e);
+  sexpr_perror(NULL,"should never get here",l->e);
   return x;
 }
 
@@ -367,7 +390,7 @@ static expr extend(expr sym, expr val, expr env, io *e){
 static char *sdup(const char *s, io *e){
   char *ns;
   if(NULL == s){
-    print_error(NULL,"passed NULL",e);
+    sexpr_perror(NULL,"passed NULL",e);
   }
   ns = wmalloc(sizeof(char)*(strlen(s)+1),e);
   strcpy(ns,s);
@@ -424,13 +447,13 @@ static expr mkproc(expr args, expr code, expr env, io *e){
   return nx;
 }
 
-/** evaluate a list **/
+/** lisp_evaluate a list **/
 static expr evlis(expr x,expr env,lisp l){
   unsigned int i;
   expr nx;
   nx = mkobj(S_LIST,l->e);
   for(i = 1/*skip 0!*/; i < x->len; i++){
-    append(nx,eval(nth(x,i),env,l),l->e);
+    append(nx,lisp_eval(nth(x,i),env,l),l->e);
   }
   return nx;
 }
@@ -455,15 +478,15 @@ static expr apply(expr proc, expr args, lisp l){
   }
   if(S_PROC == proc->type){
     if(args->len != procargs(proc)->len){
-      print_error(args,"expected number of args incorrect",l->e);
+      sexpr_perror(args,"expected number of args incorrect",l->e);
       return nil;
     }
     nenv = extensions(procenv(proc),procargs(proc),args,l->e);
-    /*print_expr(nenv,l->o,0,l->e);//might be useful to keep in! */
-    return eval(proccode(proc),nenv,l);
+    /*sexpr_print(nenv,l->o,0,l->e);//might be useful to keep in! */
+    return lisp_eval(proccode(proc),nenv,l);
   }
 
-  print_error(proc,"apply failed",l->e);
+  sexpr_perror(proc,"apply failed",l->e);
   return nil;
 }
 
@@ -472,7 +495,7 @@ static expr apply(expr proc, expr args, lisp l){
 /**macro helpers for primops**/
 #define intchk(EXP,ERR)\
   if(S_INTEGER!=((EXP)->type)){\
-    print_error((EXP),"arg != integer",(ERR));\
+    sexpr_perror((EXP),"arg != integer",(ERR));\
     return nil;\
   }
 
@@ -533,7 +556,7 @@ static expr primop_div(expr args, lisp l){
     if(tmp){
       nx->data.integer/=tmp;
     }else{
-      print_error(args,"div: 0/",l->e);
+      sexpr_perror(args,"div: 0/",l->e);
       return nil;
     }
   }
@@ -545,7 +568,7 @@ static expr primop_mod(expr args, lisp l){
   unsigned int tmp;
   expr nx = mkobj(S_INTEGER,l->e);
   if(2!=args->len){
-    print_error(args,"mod: argc != 2",l->e);
+    sexpr_perror(args,"mod: argc != 2",l->e);
     return nil;
   }
   intchk(car(args),l->e);
@@ -553,7 +576,7 @@ static expr primop_mod(expr args, lisp l){
 
   tmp = cadr(args)->data.integer;
   if(0 == tmp){
-    print_error(args,"mod: 0/",l->e);
+    sexpr_perror(args,"mod: 0/",l->e);
     return nil;
   }
   nx->data.integer = car(args)->data.integer % tmp;
@@ -565,13 +588,13 @@ static expr primop_mod(expr args, lisp l){
 static expr primop_car(expr args, lisp l){
   expr a1;
   if(1!=args->len){
-    print_error(args,"car: argc != 1",l->e);
+    sexpr_perror(args,"car: argc != 1",l->e);
     return nil;
   }
 
   a1 = car(args);
   if(S_LIST != a1->type){
-    print_error(args,"args != list",l->e);
+    sexpr_perror(args,"args != list",l->e);
     return nil;
   }
   return car(a1);
@@ -599,7 +622,7 @@ static expr primop_cdr(expr args, lisp l){
 static expr primop_cons(expr args, lisp l){
   expr nx = mkobj(S_LIST,l->e),prepend,list;
   if(2!=args->len){
-    print_error(args,"cons: argc != 2",l->e);
+    sexpr_perror(args,"cons: argc != 2",l->e);
     return nil;
   }
   prepend = car(args);
@@ -625,17 +648,17 @@ static expr primop_nth(expr args, lisp l){
   cell_t i;
   expr a1,a2;
   if(2 != args->len){
-    print_error(args,"nth: argc != 2",l->e);
+    sexpr_perror(args,"nth: argc != 2",l->e);
     return nil;
   }
   a1 = car(args);
   a2 = cadr(args);
   if(S_INTEGER != a1->type){
-    print_error(args,"nth: arg 1 != integer",l->e);
+    sexpr_perror(args,"nth: arg 1 != integer",l->e);
     return nil;
   }
   if((S_LIST != a2->type) && (S_STRING != a2->type)){
-    print_error(args,"nth: arg 2 != list || string",l->e);
+    sexpr_perror(args,"nth: arg 2 != list || string",l->e);
     return nil;
   }
 
@@ -666,12 +689,12 @@ static expr primop_nth(expr args, lisp l){
 static expr primop_len(expr args, lisp l){
   expr a1, nx = mkobj(S_INTEGER,l->e);
   if(1 != args->len){
-    print_error(args,"len: argc != 1",l->e);
+    sexpr_perror(args,"len: argc != 1",l->e);
     return nil;
   }
   a1 = car(args);
   if((S_LIST != a1->type) && (S_STRING != a1->type)){
-    print_error(args,"len: arg 2 != list || string",l->e);
+    sexpr_perror(args,"len: arg 2 != list || string",l->e);
     return nil;
   }
   nx->data.integer = a1->len;
@@ -699,7 +722,7 @@ static expr primop_numeq(expr args, lisp l){
 /**print**/
 static expr primop_printexpr(expr args, lisp l){
   /* @todo if arg = 1, treat as Output redirection, else normal out */
-  print_expr(args,l->o,0,l->e);
+  sexpr_print(args,l->o,0,l->e);
   return args;
 }
 
@@ -707,12 +730,12 @@ static expr primop_printexpr(expr args, lisp l){
 static expr primop_scar(expr args, lisp l){
   expr nx, a1;
   if(1!=args->len){
-    print_error(args,"car: argc != 1",l->e);
+    sexpr_perror(args,"car: argc != 1",l->e);
     return nil;
   }
   a1 = car(args);
   if(S_STRING != a1->type){
-    print_error(args,"args != string",l->e);
+    sexpr_perror(args,"args != string",l->e);
     return nil;
   }
   nx = mkobj(S_STRING,l->e);
@@ -744,7 +767,7 @@ static expr primop_scdr(expr args, lisp l){
 static expr primop_scons(expr args, lisp l){
   expr nx = mkobj(S_LIST,l->e),prepend,list;
   if(2!=args->len){
-    print_error(args,"cons: argc != 2",l->e);
+    sexpr_perror(args,"cons: argc != 2",l->e);
     return nil;
   }
   prepend = car(args);
@@ -756,7 +779,7 @@ static expr primop_scons(expr args, lisp l){
     strcpy(nx->data.string,prepend->data.string);
     strcat(nx->data.string,list->data.string);
   } else {
-    print_error(args,"cons: arg != string",l->e);
+    sexpr_perror(args,"cons: arg != string",l->e);
     return nil;
   }
   return nx;
@@ -783,13 +806,13 @@ static expr primop_reverse(expr args, lisp l){
   expr nx, carg;
   sexpr_e type;
   if(1 != args->len){
-    print_error(args,"reverse: argc != 1",l->e);
+    sexpr_perror(args,"reverse: argc != 1",l->e);
     return nil;
   }
   carg = car(args);
   type = carg->type;
   if((S_LIST != type) && (S_STRING != type)){
-    print_error(args,"reverse: not a reversible type",l->e);
+    sexpr_perror(args,"reverse: not a reversible type",l->e);
     return nil;
   }
   nx = mkobj(type,l->e);

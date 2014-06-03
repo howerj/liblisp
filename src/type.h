@@ -44,7 +44,7 @@ typedef enum { /* enum describing all the I/O destinations */
   invalid_io,  /* error on incorrectly set up I/O*/
   file_in,     
   file_out,
-  string_in,   /* read from a string, for things like eval("(+ 2 2)") */
+  string_in,   /* read from a string, for things like lisp_eval("(+ 2 2)") */
   string_out   /* write to a string, if you want */
 } iotype;
 

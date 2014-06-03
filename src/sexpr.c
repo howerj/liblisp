@@ -11,9 +11,9 @@
  *  is a small, generic, parser that could be used for other projects.
  *
  *  The two main functions 
- *    - Parse an S-expression (parse_term)
- *    - Print out an S-expression (print_expr)
- *    - Print out an S-expression (print_error) with possibly
+ *    - Parse an S-expression (sexpr_parse)
+ *    - Print out an S-expression (sexpr_print)
+ *    - Print out an S-expression (sexpr_perror) with possibly
  *      invalid arguments, this should be used for error messages.
  *
  *  There are sub-functions called by the parser that could be useful
@@ -88,7 +88,7 @@ void set_print_proc(bool flag){
  *  @param          e error output stream
  *  @return         NULL or parsed list
  **/
-expr parse_term(io *i, io *e){
+expr sexpr_parse(io *i, io *e){
   int c;
   while (EOF!=(c=wgetc(i,e))){
     if (isspace(c)) {
@@ -122,7 +122,7 @@ expr parse_term(io *i, io *e){
  *  @param          e     error output stream
  *  @return         void
  **/
-void print_expr(expr x, io *o, unsigned int depth, io *e){
+void sexpr_print(expr x, io *o, unsigned int depth, io *e){
   unsigned int i;
 
   if (NULL == x)
@@ -146,7 +146,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
         else
           indent(depth?depth+1:1,o,e);
       }
-      print_expr(x->data.list[i], o, depth + 1,e);
+      sexpr_print(x->data.list[i], o, depth + 1,e);
       if((i < x->len-1) && (2 != x->len))
         wputc('\n',o,e);
     }
@@ -199,10 +199,10 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
       wputs("lambda\n",o,e); 
       color_on(ANSI_RESET,o,e);
       indent(depth+1,o,e);
-      print_expr(x->data.list[0],o,depth+1,e);
+      sexpr_print(x->data.list[0],o,depth+1,e);
       wputc('\n',o,e);
       indent(depth+1,o,e);
-      print_expr(x->data.list[1],o,depth+1,e);
+      sexpr_print(x->data.list[1],o,depth+1,e);
       wputs(")",o,e); 
     } else {
       color_on(ANSI_COLOR_BLUE,o,e);
@@ -231,7 +231,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
 /**
  *  @brief          Print out an error message while trying to handle
  *                  invalid arguments gracefully. A macro called
- *                  print_error should be defined in the header so you
+ *                  sexpr_perror should be defined in the header so you
  *                  do not have to pass cfile and linenum constantly to it.
  *  @param          x       NULL or expression to print
  *  @param          msg     Error message to print
@@ -240,7 +240,7 @@ void print_expr(expr x, io *o, unsigned int depth, io *e){
  *  @param          e       Output wrapper stream, if NULL, default to stderr
  *  @return         void
  **/
-void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
+void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
   static io fallback = { file_out, { NULL }, 0, 0, 0, false };
   fallback.ptr.file = stderr;
 
@@ -258,7 +258,7 @@ void doprint_error(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
   } else {
     wputs("\n ",e,e);
     color_on(ANSI_RESET,e,e);
-    print_expr(x,e,1,e);
+    sexpr_print(x,e,1,e);
   }
   color_on(ANSI_BOLD_TXT,e,e);
   wputs(")\n",e,e); 

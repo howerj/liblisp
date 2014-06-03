@@ -10,8 +10,9 @@
 #ifndef LISP_H
 #define LISP_H
 
-expr eval(expr x, expr env, lisp l);
-lisp initlisp(void);
-void endlisp(lisp l);
+lisp lisp_init(void);
+expr lisp_eval(expr x, expr env, lisp l);
+int  lisp_repl(lisp l);
+void lisp_end(lisp l);
 
 #endif
