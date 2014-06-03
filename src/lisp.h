@@ -11,8 +11,13 @@
 #define LISP_H
 
 lisp lisp_init(void);
-expr lisp_eval(expr x, expr env, lisp l);
-int  lisp_repl(lisp l);
+lisp lisp_repl(lisp l);
 void lisp_end(lisp l);
+
+expr lisp_read(io *i, io* e);
+expr lisp_eval(expr x, expr env, lisp l);
+void lisp_print(expr x, io *o, io *e);
+/*void lisp_doperror(expr x, io *o, io *e);*?
+void lisp_clean(lisp l);
 
 #endif

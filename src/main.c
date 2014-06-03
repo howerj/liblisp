@@ -173,7 +173,7 @@ int main(int argc, char *argv[]){
   lisp_repl(l);
 
   if(true == printGlobals_f){
-    sexpr_print(l->global,l->o,0,l->e);
+    lisp_print(l->global,l->o,l->e);
   }
 
   lisp_end(l);

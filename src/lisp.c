@@ -34,6 +34,9 @@
  *         - Error handling and recovery
  *         - not, and, or, logical functions as well!
  *         - set related functions; intersection, union, member, ...
+ *         - Memory control functions:
+ *            - Raw pointer control
+ *            - Force mark/collect
  *         - comment; instead of normal comments, comments and the
  *         unlisp_evaluated sexpression could be stored for later retrilisp_eval
  *         and inspection, keeping the source and the runnning program
@@ -190,7 +193,7 @@ lisp lisp_init(void){
  *        or handled by it to avoid multiple error messages being printed
  *        out.
  */
-int lisp_repl(lisp l){
+lisp lisp_repl(lisp l){
   expr x;
   while(NULL != (x = sexpr_parse(l->i, l->e))){
     x = lisp_eval(x,l->env,l);
@@ -198,7 +201,7 @@ int lisp_repl(lisp l){
     gcmark(l->global,l->e);
     gcsweep(l->e);
   }
-  return 0;
+  return l;
 }
 
 
@@ -228,6 +231,28 @@ void lisp_end(lisp l){
 
   return;
 }
+
+/**
+ *  @brief          Read in an s-expression 
+ *  @param          i   Read input from...
+ *  @param          e   Error stream output
+ *  @return         A valid s-expression, which might be an error!
+ **/
+expr lisp_read(io *i, io* e){
+  return sexpr_parse(i, e);
+}
+
+/**
+ *  @brief          Print out an s-expression
+ *  @param          o   Output stream
+ *  @param          e   Error stream output
+ *  @return         void
+ **/
+void lisp_print(expr x, io *o, io *e){
+  sexpr_print(x,o,0,e);
+  return;
+}
+
 
 /**
  *  @brief          Evaluate an already parsed lisp expression
@@ -338,6 +363,16 @@ expr lisp_eval(expr x, expr env, lisp l){
 
   sexpr_perror(NULL,"should never get here",l->e);
   return x;
+}
+
+/**
+ *  @brief          Garbage collection
+ *  @param          l   Lisp environment to mark and collect
+ *  @return         void
+ **/
+void lisp_clean(lisp l){
+    gcmark(l->global,l->e);
+    gcsweep(l->e);
 }
 
 /*** internal functions ******************************************************/
