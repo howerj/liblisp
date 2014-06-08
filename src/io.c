@@ -33,7 +33,8 @@ int wputc(char c, io *o, io *e){
       return EOF;
     }
   } else {
-    /** error */
+    /*programmer error; some kind of error reporting would be nice*/
+    exit(EXIT_FAILURE);
   }
   return EOF;
 }
@@ -58,7 +59,8 @@ int wgetc(io *i, io *e){
   } else if(string_in == i->type){
     return (i->ptr.string[i->position])?i->ptr.string[i->position++]:EOF;
   } else {
-    /** error */
+    /*programmer error; some kind of error reporting would be nice*/
+    exit(EXIT_FAILURE);
   }
   return EOF;
 }
@@ -98,7 +100,8 @@ int wprintd(cell_t d, io *o, io *e){
   } else if(string_out == o->type){
     return sprintf(o->ptr.string + o->position,"%d",d);
   } else {
-    /** error */
+    /*programmer error; some kind of error reporting would be nice*/
+    exit(EXIT_FAILURE);
   }
   return -1; /* returns negative like printf would on failure */
 }
