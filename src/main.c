@@ -74,7 +74,8 @@ Author:\n\
  *  @param    arg   current command line argument
  *  @return   getopt_e, a self describing enum.        
  */
-static int getopt(char *arg){
+static int 
+getopt(char *arg){
   int c;
 
   if('-' != *arg++){ 
@@ -105,13 +106,15 @@ static int getopt(char *arg){
  *  @param    in    Input file descriptor
  *  @return   getopt_e, a self describing enum.        
  */
-static void setfin(io *i, FILE *in){
+static void 
+setfin(io *i, FILE *in){
   memset(i,0,sizeof(*i));
   i->type = file_in;
   i->ptr.file = in;
 }
 
-int main(int argc, char *argv[]){
+int 
+main(int argc, char *argv[]){
   int i;
   lisp l;
   FILE *input, *output;

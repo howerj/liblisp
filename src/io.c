@@ -19,7 +19,8 @@
  *  @param          e error output stream
  *  @return         EOF on failure, character to output on success
  **/
-int wputc(char c, io *o, io *e){
+int 
+wputc(char c, io *o, io *e){
   NULLCHK(o,e);
   NULLCHK(o->ptr.file,e);
 
@@ -45,7 +46,8 @@ int wputc(char c, io *o, io *e){
  *  @param          e error output stream
  *  @return         EOF on failure, character input on success
  **/
-int wgetc(io *i, io *e){
+int 
+wgetc(io *i, io *e){
   NULLCHK(i,e);
   NULLCHK(i->ptr.file,e);
 
@@ -72,7 +74,8 @@ int wgetc(io *i, io *e){
  *  @param          e error output stream
  *  @return         EOF if failed, character we put back if succeeded.
  **/
-int wungetc(char c, io *i, io *e){
+int 
+wungetc(char c, io *i, io *e){
   NULLCHK(i,e);
   NULLCHK(i->ptr.file,e);
   if(true == i->ungetc){
@@ -92,7 +95,8 @@ int wungetc(char c, io *i, io *e){
  *  @return         negative number if operation failed, otherwise the
  *                  total number of characters written
  **/
-int wprintd(cell_t d, io *o, io *e){
+int 
+wprintd(cell_t d, io *o, io *e){
   /**@todo rewrite so it does not use sprintf/fprintf**/
   NULLCHK(o,e);
   if(file_out == o->type){
@@ -114,7 +118,8 @@ int wprintd(cell_t d, io *o, io *e){
  *  @return         EOF on failure, number of characters written on success
  *                  
  **/
-int wputs(const char *s, io *o , io *e){
+int 
+wputs(const char *s, io *o , io *e){
   /**@warning count can go negative when is should not!**/
   int count = 0;
   int c;
@@ -136,7 +141,8 @@ int wputs(const char *s, io *o , io *e){
  *  @return         void
  *                  
  **/
-void doreport(const char *s, char *cfile, unsigned int linenum, io *e)
+void 
+doreport(const char *s, char *cfile, unsigned int linenum, io *e)
 { 
   io n_e = {file_out, {NULL}, 0, 0, '\0', false};
   bool critical_failure_f = false;

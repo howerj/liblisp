@@ -66,7 +66,8 @@ static bool parse_comment(io *i, io *e);
  *  @param          flag boolean flag to set color_on_f
  *  @return         void
  **/
-void set_color_on(bool flag){
+void 
+set_color_on(bool flag){
   color_on_f = flag;
 }
 
@@ -77,7 +78,8 @@ void set_color_on(bool flag){
  *  @param          flag boolean flag to set print_proc_f
  *  @return         void
  **/
-void set_print_proc(bool flag){
+void 
+set_print_proc(bool flag){
   print_proc_f = flag;
 }
 
@@ -88,7 +90,8 @@ void set_print_proc(bool flag){
  *  @param          e error output stream
  *  @return         NULL or parsed list
  **/
-expr sexpr_parse(io *i, io *e){
+expr 
+sexpr_parse(io *i, io *e){
   int c;
   while (EOF!=(c=wgetc(i,e))){
     if (isspace(c)) {
@@ -122,7 +125,8 @@ expr sexpr_parse(io *i, io *e){
  *  @param          e     error output stream
  *  @return         void
  **/
-void sexpr_print(expr x, io *o, unsigned int depth, io *e){
+void 
+sexpr_print(expr x, io *o, unsigned int depth, io *e){
   unsigned int i;
 
   if (NULL == x)
@@ -240,7 +244,8 @@ void sexpr_print(expr x, io *o, unsigned int depth, io *e){
  *  @param          e       Output wrapper stream, if NULL, default to stderr
  *  @return         void
  **/
-void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
+void 
+dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
   static io fallback = { file_out, { NULL }, 0, 0, 0, false };
   fallback.ptr.file = stderr;
 
@@ -276,7 +281,8 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io *e)
  *  @todo           Error handline
  *  @todo           Check for list type OR proc type
  **/
-void append(expr list, expr ele, io *e)
+void 
+append(expr list, expr ele, io *e)
 { 
   NULLCHK(list,e);
   NULLCHK(ele,e);
@@ -293,7 +299,8 @@ void append(expr list, expr ele, io *e)
  *  @param          e error output stream
  *  @return         true on error, false on no error
  **/
-static bool indent(unsigned int depth, io *o, io *e){
+static bool 
+indent(unsigned int depth, io *o, io *e){
   unsigned int i;
   for(i = 0; i < depth; i++)
     if(EOF == wputc(' ',o,e))
@@ -308,7 +315,8 @@ static bool indent(unsigned int depth, io *o, io *e){
  *  @param          e error output stream
  *  @return         NULL or parsed symbol / integer
  **/
-static expr parse_symbol(io *i, io *e){ /* and integers!*/
+static expr 
+parse_symbol(io *i, io *e){ /* and integers!*/
   expr ex = NULL;
   unsigned int count = 0;
   int c;
@@ -384,7 +392,8 @@ static expr parse_symbol(io *i, io *e){ /* and integers!*/
  *  @param          e error output stream
  *  @return         NULL or parsed string
  **/
-static expr parse_string(io *i, io *e){
+static expr 
+parse_string(io *i, io *e){
   expr ex = NULL;
   unsigned int count = 0;
   int c; 
@@ -435,7 +444,8 @@ static expr parse_string(io *i, io *e){
  *  @param          e error output stream
  *  @return         NULL or parsed list
  **/
-static expr parse_list(io *i, io *e){
+static expr 
+parse_list(io *i, io *e){
   expr ex = NULL, chld;
   char c;
 
@@ -492,7 +502,8 @@ static expr parse_list(io *i, io *e){
  *  @param          e error output stream
  *  @return         boolean; true on error/EOF, false on no error / no EOF
  **/
-static bool parse_comment(io *i, io *e){
+static bool 
+parse_comment(io *i, io *e){
   int c;
   while (EOF!=(c=wgetc(i,e))){
     if('\n' == c){

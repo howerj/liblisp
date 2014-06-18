@@ -56,7 +56,8 @@ void set_mem_debug(bool flag){
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
  **/
-void *wmalloc(size_t size, io *e){
+void *
+wmalloc(size_t size, io *e){
   void* v;
   if(MAX_ALLOCS < alloccounter++){
     report("too many mallocs",e);
@@ -84,7 +85,8 @@ void *wmalloc(size_t size, io *e){
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-void *wcalloc(size_t num, size_t size, io *e){
+void *
+wcalloc(size_t num, size_t size, io *e){
   void* v;
   if(MAX_ALLOCS < alloccounter++){
     report("too many mallocs",e);
@@ -114,7 +116,8 @@ void *wcalloc(size_t num, size_t size, io *e){
  *  @return         pointer to newly resized storage on success, 
  *                  exits program on failure!
  **/
-void *wrealloc(void *ptr, size_t size, io *e){
+void *
+wrealloc(void *ptr, size_t size, io *e){
   void* v;
   v = realloc(ptr,size);
   if(NULL == v){
@@ -131,7 +134,8 @@ void *wrealloc(void *ptr, size_t size, io *e){
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
  **/
-expr gcmalloc(io *e){
+expr 
+gcmalloc(io *e){
   void* v;
   v = wmalloc(sizeof(struct sexpr_t),e);
   return v;
@@ -145,7 +149,8 @@ expr gcmalloc(io *e){
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-expr gccalloc(io *e){
+expr 
+gccalloc(io *e){
   expr v;
   struct heap *nextheap;
   v = wcalloc(1,sizeof(struct sexpr_t), e);
@@ -162,7 +167,8 @@ expr gccalloc(io *e){
  *  @param          e    error output stream
  *  @return         void
  **/
-void wfree(void *ptr, io *e){
+void 
+wfree(void *ptr, io *e){
   if(NULL != ptr){ 
     alloccounter--;
     if(true == debug_f){
@@ -182,7 +188,8 @@ void wfree(void *ptr, io *e){
  *  @param          e    error output stream
  *  @return         false == root was not marked, and now is
  **/
-int gcmark(expr root, io *e){
+int 
+gcmark(expr root, io *e){
   if(NULL == root)
     return false;
 
@@ -223,7 +230,8 @@ int gcmark(expr root, io *e){
  *  @param          e    error output stream
  *  @return         void
  **/
-void gcsweep(io *e){
+void 
+gcsweep(io *e){
   /**@todo this really needs cleaning up**/
   struct heap *ll, *pll;
   if(NULL == heaplist.next) /*pass first element, do not collect element*/
@@ -261,7 +269,8 @@ void gcsweep(io *e){
  *  @param          e     error output stream
  *  @return         void
  **/
-static void gcinner(expr x, io *e){
+static void 
+gcinner(expr x, io *e){
   if (NULL==x)
     return;
 
