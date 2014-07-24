@@ -178,6 +178,7 @@ wfree(void *ptr, io *e){
     }
   }
   free(ptr);
+  ptr = NULL;
 }
 
 /**
