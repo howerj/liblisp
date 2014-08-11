@@ -16,14 +16,14 @@
 
 void set_mem_debug(bool flag);
 
-void *wmalloc(size_t size, io *e);
-void *wcalloc(size_t num, size_t size, io *e);
-void *wrealloc(void *ptr, size_t size, io *e);
-void wfree(void * ptr, io *e);
+void *wmalloc(size_t size, io * e);
+void *wcalloc(size_t num, size_t size, io * e);
+void *wrealloc(void *ptr, size_t size, io * e);
+void wfree(void *ptr, io * e);
 
-expr gcmalloc(io *e);
-expr gccalloc(io *e);
-int  gcmark(expr root, io *e);
-void gcsweep(io *e);
+expr gcmalloc(io * e);
+expr gccalloc(io * e);
+int gcmark(expr root, io * e);
+void gcsweep(io * e);
 
 #endif

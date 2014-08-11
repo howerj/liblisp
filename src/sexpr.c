@@ -39,21 +39,21 @@
  *
  **/
 
-#include "type.h"   /* Project wide types */
-#include "io.h"     /* I/O wrappers */
-#include "mem.h"    /* free wrappers */
-#include "color.h"  /* ANSI color escape sequences */
-#include <string.h> /* strtol(), strspn(), strlen(), memset() */
-#include <ctype.h>  /* isspace() */
+#include "type.h"               /* Project wide types */
+#include "io.h"                 /* I/O wrappers */
+#include "mem.h"                /* free wrappers */
+#include "color.h"              /* ANSI color escape sequences */
+#include <string.h>             /* strtol(), strspn(), strlen(), memset() */
+#include <ctype.h>              /* isspace() */
 
 static bool color_on_f = false;
-static bool print_proc_f = false; /*print actual code after #proc*/
+static bool print_proc_f = false;       /*print actual code after #proc */
 
-static bool indent(unsigned int depth, io *o, io *e);
-static expr parse_symbol(io *i, io *e); /* and integers!*/
-static expr parse_string(io *i, io *e);
-static expr parse_list(io *i, io *e);
-static bool parse_comment(io *i, io *e);
+static bool indent(unsigned int depth, io * o, io * e);
+static expr parse_symbol(io * i, io * e);       /* and integers! */
+static expr parse_string(io * i, io * e);
+static expr parse_list(io * i, io * e);
+static bool parse_comment(io * i, io * e);
 
 #define color_on(X,O,E) if(true==color_on_f){wputs((X),(O),(E));}
 
@@ -66,9 +66,9 @@ static bool parse_comment(io *i, io *e);
  *  @param          flag boolean flag to set color_on_f
  *  @return         void
  **/
-void 
-set_color_on(bool flag){
-  color_on_f = flag;
+void set_color_on(bool flag)
+{
+        color_on_f = flag;
 }
 
 /**
@@ -78,9 +78,9 @@ set_color_on(bool flag){
  *  @param          flag boolean flag to set print_proc_f
  *  @return         void
  **/
-void 
-set_print_proc(bool flag){
-  print_proc_f = flag;
+void set_print_proc(bool flag)
+{
+        print_proc_f = flag;
 }
 
 /**
@@ -90,31 +90,31 @@ set_print_proc(bool flag){
  *  @param          e error output stream
  *  @return         NULL or parsed list
  **/
-expr 
-sexpr_parse(io *i, io *e){
-  int c;
-  while (EOF!=(c=wgetc(i,e))){
-    if (isspace(c)) {
-      continue;
-    }
-    switch (c) {
-    case ')':
-      report("unmatched ')'",e);
-      continue;
-    case ';':
-      if(true == parse_comment(i,e))
+expr sexpr_parse(io * i, io * e)
+{
+        int c;
+        while (EOF != (c = wgetc(i, e))) {
+                if (isspace(c)) {
+                        continue;
+                }
+                switch (c) {
+                case ')':
+                        report("unmatched ')'", e);
+                        continue;
+                case ';':
+                        if (true == parse_comment(i, e))
+                                return NULL;
+                        continue;
+                case '(':
+                        return parse_list(i, e);
+                case '"':
+                        return parse_string(i, e);
+                default:
+                        wungetc(c, i, e);
+                        return parse_symbol(i, e);
+                }
+        }
         return NULL;
-      continue;
-    case '(':
-      return parse_list(i,e);
-    case '"':
-      return parse_string(i,e);
-    default:
-      wungetc(c,i,e);
-      return parse_symbol(i,e);
-    }
-  }
-  return NULL;
 }
 
 /**
@@ -125,111 +125,113 @@ sexpr_parse(io *i, io *e){
  *  @param          e     error output stream
  *  @return         void
  **/
-void 
-sexpr_print(expr x, io *o, unsigned int depth, io *e){
-  unsigned int i;
+void sexpr_print(expr x, io * o, unsigned int depth, io * e)
+{
+        unsigned int i;
 
-  if (NULL == x)
-    return;
+        if (NULL == x)
+                return;
 
-  switch (x->type) {
-  case S_NIL:
-    color_on(ANSI_COLOR_RED,o,e);
-    wputs("()",o,e);
-    break;
-  case S_TEE:
-    color_on(ANSI_COLOR_GREEN,o,e);
-    wputs("t",o,e);
-    break;
-  case S_LIST:
-    wputs("(",o,e);
-    for (i = 0; i < x->len; i++){
-      if(0 != i){
-        if(2 == x->len)
-          wputc(' ',o,e);
-        else
-          indent(depth?depth+1:1,o,e);
-      }
-      sexpr_print(x->data.list[i], o, depth + 1,e);
-      if((i < x->len-1) && (2 != x->len))
-        wputc('\n',o,e);
-    }
-    wputs(")",o,e);
-    break;
-  case S_SYMBOL: /*symbols are yellow, strings are red, escaped chars magenta*/
-  case S_STRING:
-  {
-    bool isstring = S_STRING == x->type ? true : false; /*isnotsymbol*/
-    color_on(true==isstring?ANSI_COLOR_RED:ANSI_COLOR_YELLOW,o,e);
-    if (isstring){
-      wputc('"',o,e);
-    }
-    for (i = 0; i < x->len; i++) {
-      switch ((x->data.string)[i]) {
-      case '"':
-      case '\\':
-        color_on(ANSI_COLOR_MAGENTA,o,e);
-        wputc('\\', o,e);
-        break;
-      case ')':
-      case '(':
-      case ';':
-        if (x->type == S_SYMBOL){
-          color_on(ANSI_COLOR_MAGENTA,o,e);
-          wputc('\\',o,e);
+        switch (x->type) {
+        case S_NIL:
+                color_on(ANSI_COLOR_RED, o, e);
+                wputs("()", o, e);
+                break;
+        case S_TEE:
+                color_on(ANSI_COLOR_GREEN, o, e);
+                wputs("t", o, e);
+                break;
+        case S_LIST:
+                wputs("(", o, e);
+                for (i = 0; i < x->len; i++) {
+                        if (0 != i) {
+                                if (2 == x->len)
+                                        wputc(' ', o, e);
+                                else
+                                        indent(depth ? depth + 1 : 1, o, e);
+                        }
+                        sexpr_print(x->data.list[i], o, depth + 1, e);
+                        if ((i < x->len - 1) && (2 != x->len))
+                                wputc('\n', o, e);
+                }
+                wputs(")", o, e);
+                break;
+        case S_SYMBOL:         /*symbols are yellow, strings are red, escaped chars magenta */
+        case S_STRING:
+                {
+                        bool isstring = S_STRING == x->type ? true : false;     /*isnotsymbol */
+                        color_on(true == isstring ? ANSI_COLOR_RED : ANSI_COLOR_YELLOW, o, e);
+                        if (isstring) {
+                                wputc('"', o, e);
+                        }
+                        for (i = 0; i < x->len; i++) {
+                                switch ((x->data.string)[i]) {
+                                case '"':
+                                case '\\':
+                                        color_on(ANSI_COLOR_MAGENTA, o, e);
+                                        wputc('\\', o, e);
+                                        break;
+                                case ')':
+                                case '(':
+                                case ';':
+                                        if (x->type == S_SYMBOL) {
+                                                color_on(ANSI_COLOR_MAGENTA, o, e);
+                                                wputc('\\', o, e);
+                                        }
+                                }
+                                wputc((x->data.string)[i], o, e);
+                                color_on(true == isstring ? ANSI_COLOR_RED : ANSI_COLOR_YELLOW, o, e);
+                        }
+                        if (isstring)
+                                wputc('"', o, e);
+                }
+                break;
+        case S_INTEGER:
+                color_on(ANSI_COLOR_MAGENTA, o, e);
+                wprintd(x->data.integer, o, e);
+                break;
+        case S_PRIMITIVE:
+                color_on(ANSI_COLOR_BLUE, o, e);
+                wputs("#PRIMOP", o, e);
+                break;
+        case S_PROC:
+                if (true == print_proc_f) {
+                        wputc('\n', o, e);
+                        indent(depth, o, e);
+                        wputs("(", o, e);
+                        color_on(ANSI_COLOR_YELLOW, o, e);
+                        wputs("lambda\n", o, e);
+                        color_on(ANSI_RESET, o, e);
+                        indent(depth + 1, o, e);
+                        sexpr_print(x->data.list[0], o, depth + 1, e);
+                        wputc('\n', o, e);
+                        indent(depth + 1, o, e);
+                        sexpr_print(x->data.list[1], o, depth + 1, e);
+                        wputs(")", o, e);
+                } else {
+                        color_on(ANSI_COLOR_BLUE, o, e);
+                        wputs("#PROC", o, e);
+                        color_on(ANSI_RESET, o, e);
+                }
+                break;
+        case S_ERROR:
+                /** @todo implement error support **/
+        case S_FILE:
+               /** @todo implement file support, then printing**/
+                color_on(ANSI_COLOR_RED, o, e);
+                report("File/Error printing not supported!", e);
+                break;
+        default:               /* should never get here */
+                color_on(ANSI_COLOR_RED, o, e);
+                report("print: not a known printable type", e);
+                color_on(ANSI_RESET, o, e);
+                exit(EXIT_FAILURE);
+                break;
         }
-      }
-      wputc((x->data.string)[i], o,e);
-      color_on(true==isstring?ANSI_COLOR_RED:ANSI_COLOR_YELLOW,o,e);
-    }
-    if (isstring)
-      wputc('"',o,e);
-  }
-  break;
-  case S_INTEGER:
-    color_on(ANSI_COLOR_MAGENTA,o,e);
-    wprintd(x->data.integer,o,e);
-    break;
-  case S_PRIMITIVE:
-    color_on(ANSI_COLOR_BLUE,o,e);
-    wputs("#PRIMOP",o,e);
-    break;
-  case S_PROC: 
-    if(true == print_proc_f){
-      wputc('\n',o,e);
-      indent(depth,o,e);
-      wputs("(",o,e);
-      color_on(ANSI_COLOR_YELLOW,o,e);
-      wputs("lambda\n",o,e); 
-      color_on(ANSI_RESET,o,e);
-      indent(depth+1,o,e);
-      sexpr_print(x->data.list[0],o,depth+1,e);
-      wputc('\n',o,e);
-      indent(depth+1,o,e);
-      sexpr_print(x->data.list[1],o,depth+1,e);
-      wputs(")",o,e); 
-    } else {
-      color_on(ANSI_COLOR_BLUE,o,e);
-      wputs("#PROC",o,e); 
-      color_on(ANSI_RESET,o,e);
-    }
-    break;
-  case S_ERROR: /** @todo implement error support **/     
-  case S_FILE: /** @todo implement file support, then printing**/     
-    color_on(ANSI_COLOR_RED,o,e);
-    report("File/Error printing not supported!",e);
-    break;
-  default: /* should never get here */
-    color_on(ANSI_COLOR_RED,o,e);
-    report("print: not a known printable type",e);
-    color_on(ANSI_RESET,o,e);
-    exit(EXIT_FAILURE);
-    break;
-  }
-  color_on(ANSI_RESET,o,e);
-  if(0 == depth)
-    wputc('\n',o,e);
-  return;
+        color_on(ANSI_RESET, o, e);
+        if (0 == depth)
+                wputc('\n', o, e);
+        return;
 }
 
 /**
@@ -244,31 +246,31 @@ sexpr_print(expr x, io *o, unsigned int depth, io *e){
  *  @param          e       Output wrapper stream, if NULL, default to stderr
  *  @return         void
  **/
-void 
-dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
-  static io fallback = { file_out, { NULL }, 0, 0, 0, false };
-  fallback.ptr.file = stderr;
+void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io * e)
+{
+        static io fallback = { file_out, {NULL}, 0, 0, 0, false };
+        fallback.ptr.file = stderr;
 
-  if((NULL == e) || (NULL == e->ptr.file))
-    e = &fallback;
+        if ((NULL == e) || (NULL == e->ptr.file))
+                e = &fallback;
 
-  color_on(ANSI_BOLD_TXT,e,e);
-  wputs("(error \n \"",e,e); 
-  wputs(msg,e,e); 
-  wputs("\"\n \"",e,e); 
-  wputs(cfile,e,e); 
-  wputs("\"\n ",e,e); 
-  wprintd(linenum,e,e);
-  if(NULL == x){
-  } else {
-    wputs("\n ",e,e);
-    color_on(ANSI_RESET,e,e);
-    sexpr_print(x,e,1,e);
-  }
-  color_on(ANSI_BOLD_TXT,e,e);
-  wputs(")\n",e,e); 
-  color_on(ANSI_RESET,e,e);
-  return;
+        color_on(ANSI_BOLD_TXT, e, e);
+        wputs("(error \n \"", e, e);
+        wputs(msg, e, e);
+        wputs("\"\n \"", e, e);
+        wputs(cfile, e, e);
+        wputs("\"\n ", e, e);
+        wprintd(linenum, e, e);
+        if (NULL == x) {
+        } else {
+                wputs("\n ", e, e);
+                color_on(ANSI_RESET, e, e);
+                sexpr_print(x, e, 1, e);
+        }
+        color_on(ANSI_BOLD_TXT, e, e);
+        wputs(")\n", e, e);
+        color_on(ANSI_RESET, e, e);
+        return;
 }
 
 /**
@@ -281,13 +283,12 @@ dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io *e){
  *  @todo           Error handline
  *  @todo           Check for list type OR proc type
  **/
-void 
-append(expr list, expr ele, io *e)
-{ 
-  NULLCHK(list,e);
-  NULLCHK(ele,e);
-  list->data.list = wrealloc(list->data.list, sizeof(expr) * ++list->len,e);
-  (list->data.list)[list->len - 1] = ele;
+void append(expr list, expr ele, io * e)
+{
+        NULLCHK(list, e);
+        NULLCHK(ele, e);
+        list->data.list = wrealloc(list->data.list, sizeof(expr) * ++list->len, e);
+        (list->data.list)[list->len - 1] = ele;
 }
 
 /*****************************************************************************/
@@ -299,13 +300,13 @@ append(expr list, expr ele, io *e)
  *  @param          e error output stream
  *  @return         true on error, false on no error
  **/
-static bool 
-indent(unsigned int depth, io *o, io *e){
-  unsigned int i;
-  for(i = 0; i < depth; i++)
-    if(EOF == wputc(' ',o,e))
-      return true;
-  return false;
+static bool indent(unsigned int depth, io * o, io * e)
+{
+        unsigned int i;
+        for (i = 0; i < depth; i++)
+                if (EOF == wputc(' ', o, e))
+                        return true;
+        return false;
 }
 
 /**
@@ -315,75 +316,75 @@ indent(unsigned int depth, io *o, io *e){
  *  @param          e error output stream
  *  @return         NULL or parsed symbol / integer
  **/
-static expr 
-parse_symbol(io *i, io *e){ /* and integers!*/
-  expr ex = NULL;
-  unsigned int count = 0;
-  int c;
-  char buf[BUFLEN];
-  bool negative;
-  ex = gccalloc(e);
+static expr parse_symbol(io * i, io * e)
+{                               /* and integers! */
+        expr ex = NULL;
+        unsigned int count = 0;
+        int c;
+        char buf[BUFLEN];
+        bool negative;
+        ex = gccalloc(e);
 
-  memset(buf, '\0', BUFLEN);
+        memset(buf, '\0', BUFLEN);
 
-  while (EOF!=(c=wgetc(i,e))){
-    if (BUFLEN <= count) {
-      report("symbol too long",e);
-      report(buf,e);
-      goto fail;
-    }
+        while (EOF != (c = wgetc(i, e))) {
+                if (BUFLEN <= count) {
+                        report("symbol too long", e);
+                        report(buf, e);
+                        goto fail;
+                }
 
-    if (isspace(c))
-      goto success;
+                if (isspace(c))
+                        goto success;
 
-    if ((c == '(') || (c == ')')) {
-      wungetc(c,i,e);
-      goto success;
-    }
+                if ((c == '(') || (c == ')')) {
+                        wungetc(c, i, e);
+                        goto success;
+                }
 
-    if(c == ';'){
-      parse_comment(i,e);
-      goto success;
-    }
+                if (c == ';') {
+                        parse_comment(i, e);
+                        goto success;
+                }
 
-    switch (c) {
-    case '\\':
-      switch (c=wgetc(i,e)) {
-      case '\\':
-      case '"':
-      case '(':
-      case ')':
-      case ';':
-        buf[count++] = c;
-        continue;
-      default:
-        report(buf,e);
-        goto fail;
-      }
-    case '"':
-      report(buf,e);
-      goto success;
-    default:
-      buf[count++] = c;
-    }
-  }
+                switch (c) {
+                case '\\':
+                        switch (c = wgetc(i, e)) {
+                        case '\\':
+                        case '"':
+                        case '(':
+                        case ')':
+                        case ';':
+                                buf[count++] = c;
+                                continue;
+                        default:
+                                report(buf, e);
+                                goto fail;
+                        }
+                case '"':
+                        report(buf, e);
+                        goto success;
+                default:
+                        buf[count++] = c;
+                }
+        }
  fail:
-  return NULL;
+        return NULL;
 
  success:
-  ex->len = strlen(buf);
+        ex->len = strlen(buf);
 
   /** @todo Clean up negative handling and handle hex **/
-  negative=(('-'==buf[0])||('+'==buf[0]))&&(ex->len-1)?true:false;
-  if(strspn(negative?buf+1:buf,"0123456789")==(ex->len-(negative?1:0))){
-    ex->type = S_INTEGER;
-    ex->data.integer = strtol(buf,NULL,0);
-  } else{
-    ex->type = S_SYMBOL;
-    ex->data.symbol = wmalloc(ex->len + 1,e);
-    strcpy(ex->data.symbol, buf);
-  }
-  return ex;
+        negative = (('-' == buf[0]) || ('+' == buf[0])) && (ex->len - 1) ? true : false;
+        if (strspn(negative ? buf + 1 : buf, "0123456789") == (ex->len - (negative ? 1 : 0))) {
+                ex->type = S_INTEGER;
+                ex->data.integer = strtol(buf, NULL, 0);
+        } else {
+                ex->type = S_SYMBOL;
+                ex->data.symbol = wmalloc(ex->len + 1, e);
+                strcpy(ex->data.symbol, buf);
+        }
+        return ex;
 }
 
 /**
@@ -392,49 +393,49 @@ parse_symbol(io *i, io *e){ /* and integers!*/
  *  @param          e error output stream
  *  @return         NULL or parsed string
  **/
-static expr 
-parse_string(io *i, io *e){
-  expr ex = NULL;
-  unsigned int count = 0;
-  int c; 
-  char buf[BUFLEN];
+static expr parse_string(io * i, io * e)
+{
+        expr ex = NULL;
+        unsigned int count = 0;
+        int c;
+        char buf[BUFLEN];
 
-  ex = gccalloc(e);
-  memset(buf, '\0', BUFLEN);
+        ex = gccalloc(e);
+        memset(buf, '\0', BUFLEN);
 
-  while (EOF!=(c=wgetc(i,e))){
-    if (BUFLEN <= count) {
-      report("string too long",e);
-      report(buf,e); /* check if correct */
-      goto fail;
-    }
-    switch (c) {
-    case '\\':
-      switch (c=wgetc(i,e)) {
-      case '\\':
-      case '"':
-        buf[count++] = c;
-        continue;
-      default:
-        report("invalid escape char",e);
-        report(buf,e);
-        goto fail;
-      }
-    case '"':
-      goto success;
-    default:
-      buf[count++] = c;
-    }
-  }
+        while (EOF != (c = wgetc(i, e))) {
+                if (BUFLEN <= count) {
+                        report("string too long", e);
+                        report(buf, e); /* check if correct */
+                        goto fail;
+                }
+                switch (c) {
+                case '\\':
+                        switch (c = wgetc(i, e)) {
+                        case '\\':
+                        case '"':
+                                buf[count++] = c;
+                                continue;
+                        default:
+                                report("invalid escape char", e);
+                                report(buf, e);
+                                goto fail;
+                        }
+                case '"':
+                        goto success;
+                default:
+                        buf[count++] = c;
+                }
+        }
  fail:
-  return NULL;
+        return NULL;
 
  success:
-  ex->type = S_STRING;
-  ex->len = strlen(buf);
-  ex->data.string = wmalloc(ex->len + 1,e);
-  strcpy(ex->data.string, buf);
-  return ex;
+        ex->type = S_STRING;
+        ex->len = strlen(buf);
+        ex->data.string = wmalloc(ex->len + 1, e);
+        strcpy(ex->data.string, buf);
+        return ex;
 }
 
 /**
@@ -444,55 +445,55 @@ parse_string(io *i, io *e){
  *  @param          e error output stream
  *  @return         NULL or parsed list
  **/
-static expr 
-parse_list(io *i, io *e){
-  expr ex = NULL, chld;
-  char c;
+static expr parse_list(io * i, io * e)
+{
+        expr ex = NULL, chld;
+        char c;
 
-  ex = gccalloc(e);
-  ex->len = 0;
+        ex = gccalloc(e);
+        ex->len = 0;
 
-  while (EOF!=(c=wgetc(i,e))){
-    if (isspace(c)) 
-      continue;
+        while (EOF != (c = wgetc(i, e))) {
+                if (isspace(c))
+                        continue;
 
-    switch (c) {
-    case ';':
-      if(true == parse_comment(i,e))
-        goto fail;
-      break;
-    case '"':
-      chld = parse_string(i,e);
-      if (!chld)
-        goto fail;
-      append(ex,chld,e);
-      continue;
-    case '(':
-      chld = parse_list(i,e);
-      if (!chld)
-        goto fail;
-      append(ex,chld,e);
-      continue;
-    case ')':
-      goto success;
+                switch (c) {
+                case ';':
+                        if (true == parse_comment(i, e))
+                                goto fail;
+                        break;
+                case '"':
+                        chld = parse_string(i, e);
+                        if (!chld)
+                                goto fail;
+                        append(ex, chld, e);
+                        continue;
+                case '(':
+                        chld = parse_list(i, e);
+                        if (!chld)
+                                goto fail;
+                        append(ex, chld, e);
+                        continue;
+                case ')':
+                        goto success;
 
-    default:
-      wungetc(c,i,e);
-      chld = parse_symbol(i,e);
-      if (!chld)
-        goto fail;
-      append(ex,chld,e);
-      continue;
-    }
-  }
+                default:
+                        wungetc(c, i, e);
+                        chld = parse_symbol(i, e);
+                        if (!chld)
+                                goto fail;
+                        append(ex, chld, e);
+                        continue;
+                }
+        }
 
  fail:
- report("list err",e);
- return NULL;
+        report("list err", e);
+        return NULL;
 
  success:
- ex->type = S_LIST;
- return ex;
+        ex->type = S_LIST;
+        return ex;
 }
 
 /**
@@ -502,14 +503,13 @@ parse_list(io *i, io *e){
  *  @param          e error output stream
  *  @return         boolean; true on error/EOF, false on no error / no EOF
  **/
-static bool 
-parse_comment(io *i, io *e){
-  int c;
-  while (EOF!=(c=wgetc(i,e))){
-    if('\n' == c){
-      return false;
-    }
-  }
-  return true;
+static bool parse_comment(io * i, io * e)
+{
+        int c;
+        while (EOF != (c = wgetc(i, e))) {
+                if ('\n' == c) {
+                        return false;
+                }
+        }
+        return true;
 }
-

@@ -5,6 +5,8 @@
 # License:	GPL v2.0 or later version                                         #
 ###############################################################################
 
+.PHONY: doxygen indent report tar clean valgrind strace ltrace
+
 ## Variables ##################################################################
 REPORT_DIR=doc/log
 CC=gcc # clang should work as well.
@@ -45,8 +47,13 @@ ltrace: bin/lisp
 
 ## documentation ##############################################################
 
-doxygen:
+
+
+doxygen: doc/doxygen.conf
 	-doxygen doc/doxygen.conf
+
+indent:
+	indent -linux -nut -l 150 src/*.c src/*.h
 
 report:
 	-echo "Reports generated in $(REPORT_DIR)"
@@ -61,7 +68,7 @@ tar:
 ## cleanup ####################################################################
 
 clean:
-	-rm -rf bin/*.o bin/lisp doc/htm/ doc/man doc/latex
+	-rm -rf bin/*.o bin/lisp doc/htm/ doc/man doc/latex src/*~
 	-rm -rf $(REPORT_DIR)/*.i $(REPORT_DIR)/*.s $(REPORT_DIR)/*.log
 
 ## EOF ########################################################################

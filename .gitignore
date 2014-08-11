@@ -1,6 +1,8 @@
 *.swp
 *.swo
 *.o
+*~
+src/*~
 *.ascii
 *.log
 lisp

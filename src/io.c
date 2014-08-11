@@ -19,25 +19,25 @@
  *  @param          e error output stream
  *  @return         EOF on failure, character to output on success
  **/
-int 
-wputc(char c, io *o, io *e){
-  NULLCHK(o,e);
-  NULLCHK(o->ptr.file,e);
+int wputc(char c, io * o, io * e)
+{
+        NULLCHK(o, e);
+        NULLCHK(o->ptr.file, e);
 
-  if(file_out == o->type){
-    return fputc(c, o->ptr.file);
-  } else if(string_out == o->type){
-    if(o->position < o->max){
-      o->ptr.string[o->position++] = c;
-      return c;
-    } else {
-      return EOF;
-    }
-  } else {
-    /*programmer error; some kind of error reporting would be nice*/
-    exit(EXIT_FAILURE);
-  }
-  return EOF;
+        if (file_out == o->type) {
+                return fputc(c, o->ptr.file);
+        } else if (string_out == o->type) {
+                if (o->position < o->max) {
+                        o->ptr.string[o->position++] = c;
+                        return c;
+                } else {
+                        return EOF;
+                }
+        } else {
+                /*programmer error; some kind of error reporting would be nice */
+                exit(EXIT_FAILURE);
+        }
+        return EOF;
 }
 
 /**
@@ -46,25 +46,25 @@ wputc(char c, io *o, io *e){
  *  @param          e error output stream
  *  @return         EOF on failure, character input on success
  **/
-int 
-wgetc(io *i, io *e){
-  NULLCHK(i,e);
-  NULLCHK(i->ptr.file,e);
+int wgetc(io * i, io * e)
+{
+        NULLCHK(i, e);
+        NULLCHK(i->ptr.file, e);
 
-  if(true == i->ungetc){
-    i->ungetc = false;
-    return i->c;
-  }
+        if (true == i->ungetc) {
+                i->ungetc = false;
+                return i->c;
+        }
 
-  if(file_in == i->type){
-    return fgetc(i->ptr.file);
-  } else if(string_in == i->type){
-    return (i->ptr.string[i->position])?i->ptr.string[i->position++]:EOF;
-  } else {
-    /*programmer error; some kind of error reporting would be nice*/
-    exit(EXIT_FAILURE);
-  }
-  return EOF;
+        if (file_in == i->type) {
+                return fgetc(i->ptr.file);
+        } else if (string_in == i->type) {
+                return (i->ptr.string[i->position]) ? i->ptr.string[i->position++] : EOF;
+        } else {
+                /*programmer error; some kind of error reporting would be nice */
+                exit(EXIT_FAILURE);
+        }
+        return EOF;
 }
 
 /**
@@ -74,16 +74,16 @@ wgetc(io *i, io *e){
  *  @param          e error output stream
  *  @return         EOF if failed, character we put back if succeeded.
  **/
-int 
-wungetc(char c, io *i, io *e){
-  NULLCHK(i,e);
-  NULLCHK(i->ptr.file,e);
-  if(true == i->ungetc){
-    return EOF;
-  }
-  i->c = c;
-  i->ungetc = true;
-  return c;
+int wungetc(char c, io * i, io * e)
+{
+        NULLCHK(i, e);
+        NULLCHK(i->ptr.file, e);
+        if (true == i->ungetc) {
+                return EOF;
+        }
+        i->c = c;
+        i->ungetc = true;
+        return c;
 }
 
 /**
@@ -95,19 +95,19 @@ wungetc(char c, io *i, io *e){
  *  @return         negative number if operation failed, otherwise the
  *                  total number of characters written
  **/
-int 
-wprintd(cell_t d, io *o, io *e){
+int wprintd(cell_t d, io * o, io * e)
+{
   /**@todo rewrite so it does not use sprintf/fprintf**/
-  NULLCHK(o,e);
-  if(file_out == o->type){
-    return fprintf(o->ptr.file,"%d",d);
-  } else if(string_out == o->type){
-    return sprintf(o->ptr.string + o->position,"%d",d);
-  } else {
-    /*programmer error; some kind of error reporting would be nice*/
-    exit(EXIT_FAILURE);
-  }
-  return -1; /* returns negative like printf would on failure */
+        NULLCHK(o, e);
+        if (file_out == o->type) {
+                return fprintf(o->ptr.file, "%d", d);
+        } else if (string_out == o->type) {
+                return sprintf(o->ptr.string + o->position, "%d", d);
+        } else {
+                /*programmer error; some kind of error reporting would be nice */
+                exit(EXIT_FAILURE);
+        }
+        return -1;              /* returns negative like printf would on failure */
 }
 
 /**
@@ -118,16 +118,16 @@ wprintd(cell_t d, io *o, io *e){
  *  @return         EOF on failure, number of characters written on success
  *                  
  **/
-int 
-wputs(const char *s, io *o , io *e){
+int wputs(const char *s, io * o, io * e)
+{
   /**@warning count can go negative when is should not!**/
-  int count = 0;
-  int c;
-  NULLCHK(o,e);
-  while((c=*(s+(count++))))
-    if (EOF == wputc((char)c,o,e))
-      return EOF;
-  return count;
+        int count = 0;
+        int c;
+        NULLCHK(o, e);
+        while ((c = *(s + (count++))))
+                if (EOF == wputc((char)c, o, e))
+                        return EOF;
+        return count;
 }
 
 /**
@@ -141,34 +141,30 @@ wputs(const char *s, io *o , io *e){
  *  @return         void
  *                  
  **/
-void 
-doreport(const char *s, char *cfile, unsigned int linenum, io *e)
-{ 
-  io n_e = {file_out, {NULL}, 0, 0, '\0', false};
-  bool critical_failure_f = false;
-  n_e.ptr.file = stderr;
-  
-  if(
-      (NULL == e) || (NULL == e->ptr.file)
-      ||
-      ((file_out != e->type) && (string_out != e->type))
-    ){
-    e = &n_e;
-    critical_failure_f = true;
-  }
+void doreport(const char *s, char *cfile, unsigned int linenum, io * e)
+{
+        io n_e = { file_out, {NULL}, 0, 0, '\0', false };
+        bool critical_failure_f = false;
+        n_e.ptr.file = stderr;
 
-  wputs("(error \"",e,e);
-  wputs(s,e,e);
-  wputs("\" \"",e,e);
-  wputs(cfile,e,e);
-  wputs("\" ",e,e);
-  wprintd(linenum,e,e);
-  wputs(")\n",e,e);
+        if ((NULL == e) || (NULL == e->ptr.file)
+            || ((file_out != e->type) && (string_out != e->type))
+            ) {
+                e = &n_e;
+                critical_failure_f = true;
+        }
 
-  if(true == critical_failure_f){
-    wputs("(error \"critical failure\")\n",e,e);
-    exit(EXIT_FAILURE);
-  }
-  return;
+        wputs("(error \"", e, e);
+        wputs(s, e, e);
+        wputs("\" \"", e, e);
+        wputs(cfile, e, e);
+        wputs("\" ", e, e);
+        wprintd(linenum, e, e);
+        wputs(")\n", e, e);
+
+        if (true == critical_failure_f) {
+                wputs("(error \"critical failure\")\n", e, e);
+                exit(EXIT_FAILURE);
+        }
+        return;
 }
-

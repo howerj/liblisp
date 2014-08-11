@@ -21,9 +21,9 @@
 #include "mem.h"
 #include <stdlib.h> /** malloc(), calloc(), realloc(), free(), exit() */
 
-struct heap{
-  expr x;
-  struct heap *next;
+struct heap {
+        expr x;
+        struct heap *next;
 };
 
 /* 
@@ -33,10 +33,11 @@ struct heap{
  */
 static signed int alloccounter = 0;
 static bool debug_f = false;
-static struct heap heaplist = {NULL,NULL};
+static struct heap heaplist = { NULL, NULL };
+
 static struct heap *heaphead = &heaplist;
 
-static void gcinner(expr x, io *e);
+static void gcinner(expr x, io * e);
 
 /*** interface functions *****************************************************/
 
@@ -45,8 +46,9 @@ static void gcinner(expr x, io *e);
  *  @param          flag 
  *  @return         void
  **/
-void set_mem_debug(bool flag){
-  debug_f = flag;
+void set_mem_debug(bool flag)
+{
+        debug_f = flag;
 }
 
 /**
@@ -56,25 +58,25 @@ void set_mem_debug(bool flag){
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
  **/
-void *
-wmalloc(size_t size, io *e){
-  void* v;
-  if(MAX_ALLOCS < alloccounter++){
-    report("too many mallocs",e);
-    exit(EXIT_FAILURE);
-  }
-  if(true == debug_f){
-    wputs("wmalloc:",e,e);
-    wprintd(alloccounter,e,e);
-    wputc('\n',e,e);
-  }
+void *wmalloc(size_t size, io * e)
+{
+        void *v;
+        if (MAX_ALLOCS < alloccounter++) {
+                report("too many mallocs", e);
+                exit(EXIT_FAILURE);
+        }
+        if (true == debug_f) {
+                wputs("wmalloc:", e, e);
+                wprintd(alloccounter, e, e);
+                wputc('\n', e, e);
+        }
 
-  v = malloc(size);
-  if(NULL == v){
-    report("malloc failed",e);
-    exit(EXIT_FAILURE);
-  }
-  return v;
+        v = malloc(size);
+        if (NULL == v) {
+                report("malloc failed", e);
+                exit(EXIT_FAILURE);
+        }
+        return v;
 }
 
 /**
@@ -85,26 +87,26 @@ wmalloc(size_t size, io *e){
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-void *
-wcalloc(size_t num, size_t size, io *e){
-  void* v;
-  if(MAX_ALLOCS < alloccounter++){
-    report("too many mallocs",e);
-    exit(EXIT_FAILURE);
-  }
+void *wcalloc(size_t num, size_t size, io * e)
+{
+        void *v;
+        if (MAX_ALLOCS < alloccounter++) {
+                report("too many mallocs", e);
+                exit(EXIT_FAILURE);
+        }
 
-  if(true == debug_f){
-    wputs("wcalloc:",e,e);
-    wprintd(alloccounter,e,e);
-    wputc('\n',e,e);
-  }
+        if (true == debug_f) {
+                wputs("wcalloc:", e, e);
+                wprintd(alloccounter, e, e);
+                wputc('\n', e, e);
+        }
 
-  v = calloc(num,size);
-  if(NULL == v){
-    report("calloc failed",e);
-    exit(EXIT_FAILURE);
-  }
-  return v;
+        v = calloc(num, size);
+        if (NULL == v) {
+                report("calloc failed", e);
+                exit(EXIT_FAILURE);
+        }
+        return v;
 }
 
 /**
@@ -116,15 +118,18 @@ wcalloc(size_t num, size_t size, io *e){
  *  @return         pointer to newly resized storage on success, 
  *                  exits program on failure!
  **/
-void *
-wrealloc(void *ptr, size_t size, io *e){
-  void* v;
-  v = realloc(ptr,size);
-  if(NULL == v){
-    report("realloc failed",e);
-    exit(EXIT_FAILURE);
-  }
-  return v;
+void *wrealloc(void *ptr, size_t size, io * e)
+{
+        void *v;
+        v = realloc(ptr, size);
+        if (NULL == ptr){ /*acts as malloc*/
+                alloccounter++;
+        }
+        if (NULL == v) {
+                report("realloc failed", e);
+                exit(EXIT_FAILURE);
+        }
+        return v;
 }
 
 /**
@@ -134,11 +139,11 @@ wrealloc(void *ptr, size_t size, io *e){
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
  **/
-expr 
-gcmalloc(io *e){
-  void* v;
-  v = wmalloc(sizeof(struct sexpr_t),e);
-  return v;
+expr gcmalloc(io * e)
+{
+        void *v;
+        v = wmalloc(sizeof(struct sexpr_t), e);
+        return v;
 }
 
 /**
@@ -149,16 +154,16 @@ gcmalloc(io *e){
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-expr 
-gccalloc(io *e){
-  expr v;
-  struct heap *nextheap;
-  v = wcalloc(1,sizeof(struct sexpr_t), e);
-  nextheap = wcalloc(1,sizeof(struct heap), e);
-  nextheap->x = v;
-  heaphead->next = nextheap;
-  heaphead = nextheap;
-  return v;
+expr gccalloc(io * e)
+{
+        expr v;
+        struct heap *nextheap;
+        v = wcalloc(1, sizeof(struct sexpr_t), e);
+        nextheap = wcalloc(1, sizeof(struct heap), e);
+        nextheap->x = v;
+        heaphead->next = nextheap;
+        heaphead = nextheap;
+        return v;
 }
 
 /**
@@ -167,18 +172,18 @@ gccalloc(io *e){
  *  @param          e    error output stream
  *  @return         void
  **/
-void 
-wfree(void *ptr, io *e){
-  if(NULL != ptr){ 
-    alloccounter--;
-    if(true == debug_f){
-      wputs("wfree:",e,e);
-      wprintd(alloccounter,e,e);
-      wputc('\n',e,e);
-    }
-  }
-  free(ptr);
-  ptr = NULL;
+void wfree(void *ptr, io * e)
+{
+        if (NULL != ptr) {
+                alloccounter--;
+                if (true == debug_f) {
+                        wputs("wfree:", e, e);
+                        wprintd(alloccounter, e, e);
+                        wputc('\n', e, e);
+                }
+        }
+        free(ptr);
+        ptr = NULL;
 }
 
 /**
@@ -189,41 +194,41 @@ wfree(void *ptr, io *e){
  *  @param          e    error output stream
  *  @return         false == root was not marked, and now is
  **/
-int 
-gcmark(expr root, io *e){
-  if(NULL == root)
-    return false;
+int gcmark(expr root, io * e)
+{
+        if (NULL == root)
+                return false;
 
-  root->gcmark = true;
+        root->gcmark = true;
 
-  switch(root->type){
-    case S_LIST:
-      {
-        unsigned int i;
-        for(i = 0; i < root->len; i++)
-          gcmark(root->data.list[i],e);
-      }
-      return false;
-    case S_PROC:
-      /*@todo Put the S_PROC structure into type.h**/
-      gcmark(root->data.list[0],e);
-      gcmark(root->data.list[1],e);
-      gcmark(root->data.list[2],e);
-      return false;
-    case S_PRIMITIVE:
-    case S_NIL:
-    case S_TEE:
-    case S_STRING:
-    case S_SYMBOL:
-    case S_INTEGER:
-    case S_ERROR:
-    case S_FILE:
-      break;
-    default:
-      fprintf(stderr,"unmarkable type\n");
-      exit(EXIT_FAILURE);
-  }
-  return false;
+        switch (root->type) {
+        case S_LIST:
+                {
+                        unsigned int i;
+                        for (i = 0; i < root->len; i++)
+                                gcmark(root->data.list[i], e);
+                }
+                return false;
+        case S_PROC:
+                /*@todo Put the S_PROC structure into type.h* */
+                gcmark(root->data.list[0], e);
+                gcmark(root->data.list[1], e);
+                gcmark(root->data.list[2], e);
+                return false;
+        case S_PRIMITIVE:
+        case S_NIL:
+        case S_TEE:
+        case S_STRING:
+        case S_SYMBOL:
+        case S_INTEGER:
+        case S_ERROR:
+        case S_FILE:
+                break;
+        default:
+                fprintf(stderr, "unmarkable type\n");
+                exit(EXIT_FAILURE);
+        }
+        return false;
 }
 
 /**
@@ -231,35 +236,35 @@ gcmark(expr root, io *e){
  *  @param          e    error output stream
  *  @return         void
  **/
-void 
-gcsweep(io *e){
+void gcsweep(io * e)
+{
   /**@todo this really needs cleaning up**/
-  struct heap *ll, *pll;
-  if(NULL == heaplist.next) /*pass first element, do not collect element*/
-    return;
-  for(ll = heaplist.next, pll = &heaplist; ll != heaphead; ){
-    if(true == ll->x->gcmark){
-      ll->x->gcmark = false;
-      pll = ll; 
-      ll = ll->next;
-    } else {
-      gcinner(ll->x,e);
-      ll->x = NULL;
-      pll->next = ll->next;
-      wfree(ll,e);
-      ll = pll->next;
-    }
-  }
-  if((heaphead != &heaplist) && (NULL != heaphead->x)){
-    if(true == heaphead->x->gcmark){
-      ll->x->gcmark = false;
-    } else {
-      gcinner(heaphead->x,e);
-      heaphead->x = NULL;
-      wfree(heaphead,e);
-      heaphead = pll;
-    }
-  }
+        struct heap *ll, *pll;
+        if (NULL == heaplist.next)      /*pass first element, do not collect element */
+                return;
+        for (ll = heaplist.next, pll = &heaplist; ll != heaphead;) {
+                if (true == ll->x->gcmark) {
+                        ll->x->gcmark = false;
+                        pll = ll;
+                        ll = ll->next;
+                } else {
+                        gcinner(ll->x, e);
+                        ll->x = NULL;
+                        pll->next = ll->next;
+                        wfree(ll, e);
+                        ll = pll->next;
+                }
+        }
+        if ((heaphead != &heaplist) && (NULL != heaphead->x)) {
+                if (true == heaphead->x->gcmark) {
+                        ll->x->gcmark = false;
+                } else {
+                        gcinner(heaphead->x, e);
+                        heaphead->x = NULL;
+                        wfree(heaphead, e);
+                        heaphead = pll;
+                }
+        }
 }
 
 /*****************************************************************************/
@@ -270,45 +275,47 @@ gcsweep(io *e){
  *  @param          e     error output stream
  *  @return         void
  **/
-static void 
-gcinner(expr x, io *e){
-  if (NULL==x)
-    return;
+static void gcinner(expr x, io * e)
+{
+        if (NULL == x)
+                return;
 
-  switch (x->type) {
-  case S_TEE:
-  case S_NIL:
-  case S_INTEGER:
-  case S_PRIMITIVE:
-    wfree(x,e);
-    break;
-  case S_PROC: 
-    wfree(x->data.list,e);
-    wfree(x,e);
-    break;
-  case S_LIST:
-    wfree(x->data.list,e);
-    wfree(x,e);
-    return;
-  case S_SYMBOL: 
-    wfree(x->data.symbol,e);
-    wfree(x,e);
-    return;
-  case S_STRING:
-    wfree(x->data.string,e);
-    wfree(x,e);
-    return;
-  case S_ERROR: /** @todo implement error support **/
-    wfree(x,e);
-    return;
-  case S_FILE: /** @todo implement file support **/
-    report("UNIMPLEMENTED (TODO)",e);
-    break;
-  default: /* should never get here */
-    report("free: not a known 'free-able' type",e);
-    exit(EXIT_FAILURE);
-    return;
-  }
+        switch (x->type) {
+        case S_TEE:
+        case S_NIL:
+        case S_INTEGER:
+        case S_PRIMITIVE:
+                wfree(x, e);
+                break;
+        case S_PROC:
+                wfree(x->data.list, e);
+                wfree(x, e);
+                break;
+        case S_LIST:
+                wfree(x->data.list, e);
+                wfree(x, e);
+                return;
+        case S_SYMBOL:
+                wfree(x->data.symbol, e);
+                wfree(x, e);
+                return;
+        case S_STRING:
+                wfree(x->data.string, e);
+                wfree(x, e);
+                return;
+        case S_ERROR:
+                /** @todo implement error support **/
+                wfree(x, e);
+                return;
+        case S_FILE:
+               /** @todo implement file support **/
+                report("UNIMPLEMENTED (TODO)", e);
+                break;
+        default:               /* should never get here */
+                report("free: not a known 'free-able' type", e);
+                exit(EXIT_FAILURE);
+                return;
+        }
 }
 
 /*****************************************************************************/
