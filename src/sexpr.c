@@ -10,7 +10,7 @@
  *  This S-expression parser, although made for a lisp interpreter,
  *  is a small, generic, parser that could be used for other projects.
  *
- *  The two main functions 
+ *  The three main functions are:
  *    - Parse an S-expression (sexpr_parse)
  *    - Print out an S-expression (sexpr_print)
  *    - Print out an S-expression (sexpr_perror) with possibly
@@ -19,9 +19,6 @@
  *  There are sub-functions called by the parser that could be useful
  *  in their own right and might change so they can be accessed externally
  *  later.
- *
- *  There are a number of types that are defined in "types.h" that it
- *  *could* return but does not.
  *
  *  @todo Add in syntax for quotes:
  *        '(list ...) become (quote (list ...))
@@ -46,11 +43,13 @@
 #include <string.h>             /* strtol(), strspn(), strlen(), memset() */
 #include <ctype.h>              /* isspace() */
 
-static bool color_on_f = false;
-static bool print_proc_f = false;       /*print actual code after #proc */
+static bool color_on_f = false;     /*turn color on/off*/
+static bool print_proc_f = false;   /*print actual code after #proc */
+static bool parse_numbers_f = true; /*parse numbers as numbers not symbols*/
 
 static bool indent(unsigned int depth, io * o, io * e);
-static expr parse_symbol(io * i, io * e);       /* and integers! */
+static bool isnumber(const char *buf, size_t string_l , io *e);
+static expr parse_symbol(io * i, io * e); /* and integers (optionally) */
 static expr parse_string(io * i, io * e);
 static expr parse_list(io * i, io * e);
 static bool parse_comment(io * i, io * e);
@@ -156,7 +155,7 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
                 }
                 wputs(")", o, e);
                 break;
-        case S_SYMBOL:         /*symbols are yellow, strings are red, escaped chars magenta */
+        case S_SYMBOL: /*symbols are yellow, strings are red, escaped chars magenta */
         case S_STRING:
                 {
                         bool isstring = S_STRING == x->type ? true : false;     /*isnotsymbol */
@@ -310,6 +309,19 @@ static bool indent(unsigned int depth, io * o, io * e)
 }
 
 /**
+ *  @brief          Test whether buf is a number or not
+ *  @param          buf       string to test for
+ *  @param          string_l  length of string, avoids recalculation
+ *  @param          e         error output stream
+ *  @return         true if it is a number, false otherwise
+ **/
+static bool isnumber(const char *buf, size_t string_l , io *e){
+        bool negative;
+        negative = (('-' == buf[0]) || ('+' == buf[0])) && (string_l - 1) ? true : false;
+        return strspn(negative ? buf + 1 : buf, "0123456789") == (string_l - (negative ? 1 : 0));
+}
+
+/**
  *  @brief          parse a symbol or integer (in decimal or
  *                  octal format, positive or negative)
  *  @param          i input stream
@@ -322,7 +334,6 @@ static expr parse_symbol(io * i, io * e)
         unsigned int count = 0;
         int c;
         char buf[BUFLEN];
-        bool negative;
         ex = gccalloc(e);
 
         memset(buf, '\0', BUFLEN);
@@ -374,9 +385,7 @@ static expr parse_symbol(io * i, io * e)
  success:
         ex->len = strlen(buf);
 
-  /** @todo Clean up negative handling and handle hex **/
-        negative = (('-' == buf[0]) || ('+' == buf[0])) && (ex->len - 1) ? true : false;
-        if (strspn(negative ? buf + 1 : buf, "0123456789") == (ex->len - (negative ? 1 : 0))) {
+        if ((true == parse_numbers_f) && isnumber(buf,ex->len,e)) {
                 ex->type = S_INTEGER;
                 ex->data.integer = strtol(buf, NULL, 0);
         } else {

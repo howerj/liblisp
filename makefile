@@ -33,13 +33,13 @@ run: bin/lisp
 ## testing ####################################################################
 
 valgrind: bin/lisp
-	valgrind bin/./lisp -cG lsp/lib.lsp
+	valgrind bin/./lisp -cG lsp/lib.lsp /dev/stdin
 
 strace: bin/lisp
-	strace bin/./lisp -cG lsp/lib.lsp
+	strace bin/./lisp -cG lsp/lib.lsp /dev/stdin
 
 ltrace: bin/lisp
-	ltrace bin/./lisp -cG lsp/lib.lsp
+	ltrace bin/./lisp -cG lsp/lib.lsp /dev/stdin
 
 # Most current version of git; The idea would be to use this to generate
 # a header file as a version number for the program.

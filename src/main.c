@@ -191,13 +191,14 @@ int main(int argc, char *argv[])
         if(false == nostdin){ 
                 setfin(l->i, stdin);
                 lisp_repl(l);
-
-                if (true == printGlobals_f) {
-                        lisp_print(l->global, l->o, l->e);
-                }
-
-                lisp_end(l);
         }
+
+        if (true == printGlobals_f) {
+                lisp_print(l->global, l->o, l->e);
+        }
+
+        lisp_end(l);
 
         return EXIT_SUCCESS;
 }
+
