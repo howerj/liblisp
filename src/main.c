@@ -130,6 +130,7 @@ static void setfin(io * i, FILE * in)
 int main(int argc, char *argv[])
 {
         int i;
+        int nostdin = false; /*don't read from stdin after processing flags*/
         lisp l;
         FILE *input, *output;
 
@@ -140,9 +141,9 @@ int main(int argc, char *argv[])
                 case getopt_switch:
                         /*getopt_switch means getopt set some flags or printed something */
                         break;
-                case getopt_input_file:
+                case getopt_input_file: /* ./lisp file.lsp */
                         /*try to treat it as an output file */
-                        printf("(input 'file \"%s\")\n", argv[i]);
+                        /*printf("(input 'file \"%s\")\n", argv[i]);*/
                         if (NULL == (input = fopen(argv[i], "r"))) {
                                 fprintf(stderr, "(error \"unable to read '%s'\")\n", argv[i]);
                                 exit(EXIT_FAILURE);
@@ -150,23 +151,25 @@ int main(int argc, char *argv[])
                         setfin(l->i, input);
                         lisp_repl(l);
                         fclose(input);
+                        nostdin = true;
                         break;
-                case getopt_string_input:      /*not implemented yet */
+                case getopt_string_input: /* ./lisp -e '(+ 2 2)' */
                         if (++i < argc) {
                                 memset(l->i, 0, sizeof(*l->i));
                                 l->i->type = string_in;
                                 l->i->ptr.string = argv[i];
                                 l->i->max = strlen(argv[i]);
-                                printf("(input 'string \"%s\")\n", argv[i]);
+                                /*printf("(input 'string \"%s\")\n", argv[i]);*/
                                 lisp_repl(l);
                         } else {
                                 sexpr_perror(NULL, "fatal: expecting arg after -e", NULL);
                                 exit(EXIT_FAILURE);
                         }
+                        nostdin = true;
                         break;
                 case getopt_output_file:
                         if (++i < argc) {
-                                printf("(output 'file \"%s\")\n", argv[i]);
+                                /*printf("(output 'file \"%s\")\n", argv[i]);*/
                                 if (NULL == (output = fopen(argv[i], "w"))) {
                                         fprintf(stderr, "(error \"unable to write to '%s'\")\n", argv[i]);
                                         exit(EXIT_FAILURE);
@@ -185,14 +188,16 @@ int main(int argc, char *argv[])
                 }
         }
 
-        setfin(l->i, stdin);
-        lisp_repl(l);
+        if(false == nostdin){ 
+                setfin(l->i, stdin);
+                lisp_repl(l);
 
-        if (true == printGlobals_f) {
-                lisp_print(l->global, l->o, l->e);
+                if (true == printGlobals_f) {
+                        lisp_print(l->global, l->o, l->e);
+                }
+
+                lisp_end(l);
         }
-
-        lisp_end(l);
 
         return EXIT_SUCCESS;
 }

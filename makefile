@@ -1,11 +1,11 @@
 ###############################################################################
-# File:			Makefile                                                          #
-# Author: 	Richard James Howe                                                #
-# Project: 	LSP Lisp Interpreter Makefile                                     #
-# License:	GPL v2.0 or later version                                         #
+# File:     Makefile                                                          #
+# Author:   Richard James Howe                                                #
+# Project:  LSP Lisp Interpreter Makefile                                     #
+# License:  GPL v2.0 or later version                                         #
 ###############################################################################
 
-.PHONY: doxygen indent report tar clean valgrind strace ltrace
+.PHONY: doxygen indent report tar clean valgrind strace ltrace 
 
 ## Variables ##################################################################
 REPORT_DIR=doc/log

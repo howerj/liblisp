@@ -200,8 +200,7 @@ lisp lisp_repl(lisp l)
         while (NULL != (x = sexpr_parse(l->i, l->e))) {
                 x = lisp_eval(x, l->env, l);
                 sexpr_print(x, l->o, 0, l->e);
-                gcmark(l->global, l->e);
-                gcsweep(l->e);
+                lisp_clean(l);
         }
         return l;
 }

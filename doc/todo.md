@@ -2,6 +2,13 @@
 
 ### A temporary to-do list:
 
+* The parser should:
+  - Handle arbitrary precision numbers
+  - Handle arbitrary length strings
+  - Parse special forms into enums such as
+        "if", "begin", ...
+    but do so *optionally*
+
 * Memory: Garbage collection,
   Garbage collection should act inside the lisp environment not globally.
 
