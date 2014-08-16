@@ -28,7 +28,7 @@ bin/lisp: $(OBJFILES)
 	-mv *.i *.s $(REPORT_DIR)
 
 run: bin/lisp
-	bin/./lisp -c lsp/lib.lsp
+	bin/./lisp -c lsp/lib.lsp /dev/stdin
 
 ## testing ####################################################################
 

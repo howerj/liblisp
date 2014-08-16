@@ -43,12 +43,16 @@
 #include <string.h>             /* strtol(), strspn(), strlen(), memset() */
 #include <ctype.h>              /* isspace() */
 
+static const char *octal_s       = "01234567";
+static const char *decimal_s     = "0123456789";
+static const char *hexadecimal_s = "0123456789abcdefABCDEF";
+
 static bool color_on_f = false;     /*turn color on/off*/
 static bool print_proc_f = false;   /*print actual code after #proc */
 static bool parse_numbers_f = true; /*parse numbers as numbers not symbols*/
 
 static bool indent(unsigned int depth, io * o, io * e);
-static bool isnumber(const char *buf, size_t string_l , io *e);
+static bool isnumber(const char *buf, size_t string_l);
 static expr parse_symbol(io * i, io * e); /* and integers (optionally) */
 static expr parse_string(io * i, io * e);
 static expr parse_list(io * i, io * e);
@@ -80,6 +84,17 @@ void set_color_on(bool flag)
 void set_print_proc(bool flag)
 {
         print_proc_f = flag;
+}
+
+/**
+ *  @brief          If set to true (as is default) we parse numbers
+ *                  as numbers and not as symbols
+ *  @param          flag boolean flag to set parse_numbers_f
+ *  @return         void
+ **/
+void set_parse_numbers(bool flag)
+{
+        parse_numbers_f = flag;
 }
 
 /**
@@ -312,13 +327,26 @@ static bool indent(unsigned int depth, io * o, io * e)
  *  @brief          Test whether buf is a number or not
  *  @param          buf       string to test for
  *  @param          string_l  length of string, avoids recalculation
- *  @param          e         error output stream
  *  @return         true if it is a number, false otherwise
  **/
-static bool isnumber(const char *buf, size_t string_l , io *e){
-        bool negative;
-        negative = (('-' == buf[0]) || ('+' == buf[0])) && (string_l - 1) ? true : false;
-        return strspn(negative ? buf + 1 : buf, "0123456789") == (string_l - (negative ? 1 : 0));
+
+static bool isnumber(const char *buf, size_t string_l){
+        if('-' == buf[0] || ('+' == buf[0])){
+                /*don't want negative hex/octal or + - symbols*/
+                if((1 == string_l) || ('0' == buf[1]))
+                        return 0;
+                else
+                        return strspn(buf + 1, decimal_s) == (string_l - 1);
+        }
+        if('0' == buf[0] && (string_l > 1)){
+                if(('x' == buf[1]) || ('X' == buf[1]))
+                        return strspn(buf + 2, hexadecimal_s) == (string_l - 2);
+                else{
+                        return strspn(buf, octal_s) == string_l;
+                }
+
+        }
+        return strspn(buf,decimal_s) == string_l;
 }
 
 /**
@@ -385,7 +413,7 @@ static expr parse_symbol(io * i, io * e)
  success:
         ex->len = strlen(buf);
 
-        if ((true == parse_numbers_f) && isnumber(buf,ex->len,e)) {
+        if ((true == parse_numbers_f) && isnumber(buf,ex->len)) {
                 ex->type = S_INTEGER;
                 ex->data.integer = strtol(buf, NULL, 0);
         } else {
@@ -522,3 +550,4 @@ static bool parse_comment(io * i, io * e)
         }
         return true;
 }
+

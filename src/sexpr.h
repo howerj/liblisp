@@ -17,6 +17,8 @@
 /**** function prototypes *****************************************************/
 void set_color_on(bool flag);
 void set_print_proc(bool flag);
+void set_parse_numbers(bool flag);
+
 expr sexpr_parse(io * i, io * e);
 void sexpr_print(expr x, io * o, unsigned int depth, io * e);
 void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io * e);

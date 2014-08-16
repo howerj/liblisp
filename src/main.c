@@ -17,7 +17,7 @@
  *
  *  \section intro_sec Introduction
  *
- *  A lisp written in ANSI C, mainly for my own education, that I hope
+ *  A lisp written in (mostly) ANSI C, mainly for my own education, that I hope
  *  to make into something (at least semi-) useful.
  *
  *  \section install_sec Installation
