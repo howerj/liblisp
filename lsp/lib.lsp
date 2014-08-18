@@ -19,11 +19,11 @@
     (if
      (eqt x t)
      1
-     nil)))) ; error instead of nil?
+     nil)))) # error instead of nil?
 
-;Being passed the wrong environment? Or evaluating at the wrong time?
-;Reason for internal symbols for "if". Need progn? Eval all if into
-;symbols, return and execute. Big changes to system needed."
+#Being passed the wrong environment? Or evaluating at the wrong time?
+#Reason for internal symbols for "if". Need progn? Eval all if into
+#symbols, return and execute. Big changes to system needed."
 
 (define !
   (lambda (x)
@@ -32,17 +32,17 @@
         (* x (! (- x 1))))))
 
 
-; This show cases the inefficiency of my environment!
+# This show cases the inefficiency of my environment!
 (define explode
  (lambda (x y)
   (if (scdr x)
    (explode (scdr x) (cons (scar x) y))
    (reverse (cons (scar x) y)))))
 
-; pretty printing test
-;(quote 
-; (1 2 3 
-;  (1 2 3 
-;   (1 2 3 "hello" 
-;    (1 2))) 
-;  4 5))
+# pretty printing test
+#(quote 
+# (1 2 3 
+#  (1 2 3 
+#   (1 2 3 "hello" 
+#    (1 2))) 
+#  4 5))

@@ -5,13 +5,15 @@
 # License:  GPL v2.0 or later version                                         #
 ###############################################################################
 
-.PHONY: doxygen indent report tar clean valgrind strace ltrace 
+.PHONY: all doxygen indent report tar clean valgrind strace ltrace 
 
 ## Variables ##################################################################
+
+SHELL=/bin/sh
 REPORT_DIR=doc/log
-CC=gcc # clang should work as well.
-# add -g and -pg for profiling
-CCFLAGS=-Wall -Wextra -ansi -pedantic -O2 -g -save-temps -fverbose-asm
+CC=gcc
+INDENT=-linux -nut -l 150
+CFLAGS=-Wall -Wextra -ansi -pedantic -Os -g
 OBJFILES=bin/io.o bin/mem.o bin/sexpr.o bin/lisp.o bin/main.o 
 
 ## building ###################################################################
@@ -21,11 +23,10 @@ OBJFILES=bin/io.o bin/mem.o bin/sexpr.o bin/lisp.o bin/main.o
 all: bin/lisp
 
 bin/%.o: src/%.c src/*.h makefile
-	$(CC) -c $(CCFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 bin/lisp: $(OBJFILES)
-	$(CC) $(CCFLAGS) $(OBJFILES) -o bin/lisp
-	-mv *.i *.s $(REPORT_DIR)
+	$(CC) $(CFLAGS) $(OBJFILES) -o bin/lisp
 
 run: bin/lisp
 	bin/./lisp -c lsp/lib.lsp /dev/stdin
@@ -35,25 +36,16 @@ run: bin/lisp
 valgrind: bin/lisp
 	valgrind bin/./lisp -cG lsp/lib.lsp /dev/stdin
 
-strace: bin/lisp
-	strace bin/./lisp -cG lsp/lib.lsp /dev/stdin
-
 ltrace: bin/lisp
 	ltrace bin/./lisp -cG lsp/lib.lsp /dev/stdin
 
-# Most current version of git; The idea would be to use this to generate
-# a header file as a version number for the program.
-# git log | grep "^commit" | head -n 1 | awk '{print $2}'
-
 ## documentation ##############################################################
-
-
 
 doxygen: doc/doxygen.conf
 	-doxygen doc/doxygen.conf
 
 indent:
-	indent -linux -nut -l 150 src/*.c src/*.h
+	indent $(INDENT) src/*.c src/*.h
 
 report:
 	-echo "Reports generated in $(REPORT_DIR)"

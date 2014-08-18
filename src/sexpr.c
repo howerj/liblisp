@@ -20,6 +20,9 @@
  *  in their own right and might change so they can be accessed externally
  *  later.
  *
+ *  A possible addition would be the ability to set what character
+ *  demarks comments.
+ *
  *  @todo Add in syntax for quotes:
  *        '(list ...) become (quote (list ...))
  *        But make it optional
@@ -115,7 +118,7 @@ expr sexpr_parse(io * i, io * e)
                 case ')':
                         report("unmatched ')'", e);
                         continue;
-                case ';':
+                case '#': 
                         if (true == parse_comment(i, e))
                                 return NULL;
                         continue;
@@ -187,7 +190,7 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
                                         break;
                                 case ')':
                                 case '(':
-                                case ';':
+                                case '#':
                                         if (x->type == S_SYMBOL) {
                                                 color_on(ANSI_COLOR_MAGENTA, o, e);
                                                 wputc('\\', o, e);
@@ -381,7 +384,7 @@ static expr parse_symbol(io * i, io * e)
                         goto success;
                 }
 
-                if (c == ';') {
+                if (c == '#') {
                         parse_comment(i, e);
                         goto success;
                 }
@@ -393,7 +396,7 @@ static expr parse_symbol(io * i, io * e)
                         case '"':
                         case '(':
                         case ')':
-                        case ';':
+                        case '#':
                                 buf[count++] = c;
                                 continue;
                         default:
@@ -495,7 +498,7 @@ static expr parse_list(io * i, io * e)
                         continue;
 
                 switch (c) {
-                case ';':
+                case '#':
                         if (true == parse_comment(i, e))
                                 goto fail;
                         break;

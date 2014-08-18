@@ -18,6 +18,10 @@ doc/htm/
 doc/htm/*
 doc/latex/
 doc/latex/*
+doc/xml/*
+doc/xml
+doc/rtf/*
+doc/rtf/
 doc/man/
 doc/man/*
 *.out
