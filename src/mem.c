@@ -61,7 +61,7 @@ void set_mem_debug(bool flag)
 void *wmalloc(size_t size, io * e)
 {
         void *v;
-        if(0 == size)
+        if (0 == size)
                 return NULL;
 
         if (MAX_ALLOCS < alloccounter++) {
@@ -124,12 +124,12 @@ void *wcalloc(size_t num, size_t size, io * e)
 void *wrealloc(void *ptr, size_t size, io * e)
 {
         void *v;
-        if (0 == size){ /*acts as free*/
+        if (0 == size) {        /*acts as free */
                 alloccounter--;
                 free(ptr);
         }
         v = realloc(ptr, size);
-        if (NULL == ptr){ /*acts as malloc*/
+        if (NULL == ptr) {      /*acts as malloc */
                 alloccounter++;
         }
         if (NULL == v) {

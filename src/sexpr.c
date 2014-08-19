@@ -46,17 +46,17 @@
 #include <string.h>             /* strtol(), strspn(), strlen(), memset() */
 #include <ctype.h>              /* isspace() */
 
-static const char *octal_s       = "01234567";
-static const char *decimal_s     = "0123456789";
+static const char *octal_s = "01234567";
+static const char *decimal_s = "0123456789";
 static const char *hexadecimal_s = "0123456789abcdefABCDEF";
 
-static bool color_on_f = false;     /*turn color on/off*/
-static bool print_proc_f = false;   /*print actual code after #proc */
-static bool parse_numbers_f = true; /*parse numbers as numbers not symbols*/
+static bool color_on_f = false; /*turn color on/off */
+static bool print_proc_f = false;       /*print actual code after #proc */
+static bool parse_numbers_f = true;     /*parse numbers as numbers not symbols */
 
 static bool indent(unsigned int depth, io * o, io * e);
 static bool isnumber(const char *buf, size_t string_l);
-static expr parse_symbol(io * i, io * e); /* and integers (optionally) */
+static expr parse_symbol(io * i, io * e);       /* and integers (optionally) */
 static expr parse_string(io * i, io * e);
 static expr parse_list(io * i, io * e);
 static bool parse_comment(io * i, io * e);
@@ -118,7 +118,7 @@ expr sexpr_parse(io * i, io * e)
                 case ')':
                         report("unmatched ')'", e);
                         continue;
-                case '#': 
+                case '#':
                         if (true == parse_comment(i, e))
                                 return NULL;
                         continue;
@@ -126,6 +126,8 @@ expr sexpr_parse(io * i, io * e)
                         return parse_list(i, e);
                 case '"':
                         return parse_string(i, e);
+                /*case '/': return parse_regex(i,e);*/
+                /*case '<': return parse_file(i,e);*/
                 default:
                         wungetc(c, i, e);
                         return parse_symbol(i, e);
@@ -173,7 +175,7 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
                 }
                 wputs(")", o, e);
                 break;
-        case S_SYMBOL: /*symbols are yellow, strings are red, escaped chars magenta */
+        case S_SYMBOL:         /*symbols are yellow, strings are red, escaped chars magenta */
         case S_STRING:
                 {
                         bool isstring = S_STRING == x->type ? true : false;     /*isnotsymbol */
@@ -333,23 +335,24 @@ static bool indent(unsigned int depth, io * o, io * e)
  *  @return         true if it is a number, false otherwise
  **/
 
-static bool isnumber(const char *buf, size_t string_l){
-        if('-' == buf[0] || ('+' == buf[0])){
-                /*don't want negative hex/octal or + - symbols*/
-                if((1 == string_l) || ('0' == buf[1]))
+static bool isnumber(const char *buf, size_t string_l)
+{
+        if ('-' == buf[0] || ('+' == buf[0])) {
+                /*don't want negative hex/octal or + - symbols */
+                if ((1 == string_l) || ('0' == buf[1]))
                         return 0;
                 else
                         return strspn(buf + 1, decimal_s) == (string_l - 1);
         }
-        if('0' == buf[0] && (string_l > 1)){
-                if(('x' == buf[1]) || ('X' == buf[1]))
+        if ('0' == buf[0] && (string_l > 1)) {
+                if (('x' == buf[1]) || ('X' == buf[1]))
                         return strspn(buf + 2, hexadecimal_s) == (string_l - 2);
-                else{
+                else {
                         return strspn(buf, octal_s) == string_l;
                 }
 
         }
-        return strspn(buf,decimal_s) == string_l;
+        return strspn(buf, decimal_s) == string_l;
 }
 
 /**
@@ -416,7 +419,7 @@ static expr parse_symbol(io * i, io * e)
  success:
         ex->len = strlen(buf);
 
-        if ((true == parse_numbers_f) && isnumber(buf,ex->len)) {
+        if ((true == parse_numbers_f) && isnumber(buf, ex->len)) {
                 ex->type = S_INTEGER;
                 ex->data.integer = strtol(buf, NULL, 0);
         } else {
@@ -553,4 +556,3 @@ static bool parse_comment(io * i, io * e)
         }
         return true;
 }
-

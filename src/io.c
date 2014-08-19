@@ -111,6 +111,30 @@ int wprintd(cell_t d, io * o, io * e)
 }
 
 /**
+ *  @brief          wrapper to print out a pointer; this should be rewritten
+ *                  to avoid using fprintf and sprintf 
+ *  @param          pointer to print out
+ *  @param          o output stream to print to
+ *  @param          e error output stream
+ *  @return         negative number if operation failed, otherwise the
+ *                  total number of characters written
+ **/
+int wprintp(void *p, io * o, io * e)
+{
+  /**@todo rewrite so it does not use sprintf/fprintf**/
+        NULLCHK(o, e);
+        if (file_out == o->type) {
+                return fprintf(o->ptr.file, "%p", p);
+        } else if (string_out == o->type) {
+                return sprintf(o->ptr.string + o->position, "%p", p);
+        } else {
+                /*programmer error; some kind of error reporting would be nice */
+                exit(EXIT_FAILURE);
+        }
+        return -1;              /* returns negative like printf would on failure */
+}
+
+/**
  *  @brief          wrapper to print out a string, *does not append newline*
  *  @param          s string to output
  *  @param          o output stream to print to
