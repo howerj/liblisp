@@ -128,6 +128,7 @@ expr sexpr_parse(io * i, io * e)
                         return parse_string(i, e);
                 /*case '/': return parse_regex(i,e);*/
                 /*case '<': return parse_file(i,e);*/
+                /*case '\'': return parse_quote(i,e);*/
                 default:
                         wungetc(c, i, e);
                         return parse_symbol(i, e);

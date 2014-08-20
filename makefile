@@ -12,6 +12,7 @@
 SHELL=/bin/sh
 REPORT_DIR=doc/log
 CC=gcc
+INPUTF=lsp/lib.lsp /dev/stdin
 INDENT=-linux -nut -l 150
 CFLAGS=-Wall -Wextra -ansi -pedantic -Os -g
 OBJFILES=bin/io.o bin/mem.o bin/sexpr.o bin/lisp.o bin/main.o 
@@ -29,15 +30,15 @@ bin/lisp: $(OBJFILES)
 	$(CC) $(CFLAGS) $(OBJFILES) -o bin/lisp
 
 run: bin/lisp
-	bin/./lisp -c lsp/lib.lsp /dev/stdin
+	bin/./lisp -c $(INPUTF)
 
 ## testing ####################################################################
 
 valgrind: bin/lisp
-	valgrind bin/./lisp -cG lsp/lib.lsp /dev/stdin
+	valgrind bin/./lisp -cG $(INPUTF)
 
 ltrace: bin/lisp
-	ltrace bin/./lisp -cG lsp/lib.lsp /dev/stdin
+	ltrace bin/./lisp -cG $(INPUTF)
 
 ## documentation ##############################################################
 

@@ -27,16 +27,17 @@ typedef struct lispenv_t lispenv_t;
 typedef lispenv_t *lisp;
 
 typedef enum {
-        S_NIL,                  /* 0: () */
-        S_TEE,                  /* 1: t */
-        S_LIST,                 /* 2: list */
-        S_STRING,               /* 3: string */
-        S_SYMBOL,               /* 4: symbol */
-        S_INTEGER,              /* 5: integer */
-        S_PRIMITIVE,            /* 6: a primitive function */
-        S_FILE,                 /* 7: for file I/O */
-        S_PROC,                 /* 8: lambda procedure */
-        S_ERROR                 /* 9: error return and handling */
+        S_NIL,                  /* 0:  () */
+        S_TEE,                  /* 1:  t */
+        S_LIST,                 /* 2:  list */
+        S_STRING,               /* 3:  string */
+        S_SYMBOL,               /* 4:  symbol */
+        S_INTEGER,              /* 5:  integer */
+        S_PRIMITIVE,            /* 6:  a primitive function */
+        S_FILE,                 /* 7:  for file I/O */
+        S_PROC,                 /* 8:  lambda procedure */
+        S_QUOTE,                /* 9:  quoted expression */
+        S_ERROR                 /* 10: error return and handling */
 } sexpr_e;
 
 /*io module*/
