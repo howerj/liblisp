@@ -1,14 +1,16 @@
-/* http://www.cs.princeton.edu/courses/archive/spr09/cos333/beautiful.html */
 
 typedef enum{
-  regex_fail = -1,
-  regex_nomatch = 0,
-  regex_match = 1
+  REGEX_FAIL = -1,
+  REGEX_NOMATCH = 0,
+  REGEX_MATCH = 1
 } regex_e;
 
-typedef enum{
-  false,
-  true
-} bool;
+#define REGEX_MAX_DEPTH (8192u)
 
-int match(char *regexp, char *text);
+typedef enum{
+        false,
+        true
+}bool;
+
+int regex_match(char *regexp, char *text);
+

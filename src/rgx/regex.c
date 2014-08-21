@@ -9,17 +9,15 @@
  *  '?' *seems* to work
  *  '+' *seems* to work
  */
-#include "regex.h"
 #include <stdio.h>
 #include <string.h>
-
-#define MAX_DEPTH (8192u)
+#include "regex.h"
 
 static int matchhere(char *regexp, char *text, unsigned int depth);
 static int matchstar(bool literal, int c, char *regexp, char *text, unsigned int depth);
 
 /* match: search for regexp anywhere in text */
-int match(char *regexp, char *text)
+int regex_match(char *regexp, char *text)
 {
   unsigned int depth = 0;
   if (regexp[0] == '^')
@@ -34,7 +32,7 @@ int match(char *regexp, char *text)
 /* matchhere: search for regexp at beginning of text */
 int matchhere(char *regexp, char *text, unsigned int depth)
 {
-  if(MAX_DEPTH < depth)
+  if(REGEX_MAX_DEPTH < depth)
     return -1;
 BEGIN:
   if (regexp[0] == '\0')
@@ -74,11 +72,12 @@ BEGIN:
 /* matchstar: search for c*regexp at beginning of text */
 int matchstar(bool literal, int c, char *regexp, char *text, unsigned int depth)
 {
-  if(MAX_DEPTH < depth)
+  if(REGEX_MAX_DEPTH < depth)
     return -1;
-  do {                          /* a * matches zero or more instances */
+  do { /* a * matches zero or more instances */
     if (matchhere(regexp, text, depth + 1))
       return 1;
   } while (*text != '\0' && (*text++ == c || (c == '.' && !literal)));
   return 0;
 }
+

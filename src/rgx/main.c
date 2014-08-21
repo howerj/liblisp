@@ -14,8 +14,8 @@ void grep(char *regex, FILE * input)
   while (fgets(buf, BUFSZ, input)) {
     i++;
     buf[strlen(buf)-1] = '\0'; /*replace newline*/
-    if (match(regex, buf)) {
-      printf("%d:\t%s\n", i, buf);
+    if (REGEX_MATCH ==regex_match(regex, buf)) {
+      printf("%s\n", buf);
     }
     memset(buf, '\0', BUFSZ);
   }
