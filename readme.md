@@ -57,3 +57,6 @@ Or change directories to build folder [bin/](bin/) and run
 * [src/](src/)
   * Contains all of the C sources files, that is, the actual interpreter.
 
+## BUGS
+
+* Yes
