@@ -17,6 +17,7 @@
  *  args:   a list of *lisp_evaluated* arguments
  *  nx:     a newly created expression
  *
+ *  @todo Check for return values on all functions that can fail!
  *  @todo Better error handling; a new primitive type should be made
  *        for it, one that can be caught.
  *  @todo Make the special forms less special!
