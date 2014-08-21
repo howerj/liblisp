@@ -1,16 +1,15 @@
 
-typedef enum{
-  REGEX_FAIL = -1,
-  REGEX_NOMATCH = 0,
-  REGEX_MATCH = 1
+typedef enum {
+        REGEX_FAIL = -1,
+        REGEX_NOMATCH = 0,
+        REGEX_MATCH = 1
 } regex_e;
 
 #define REGEX_MAX_DEPTH (8192u)
 
-typedef enum{
+typedef enum {
         false,
         true
-}bool;
+} bool;
 
 int regex_match(char *regexp, char *text);
-

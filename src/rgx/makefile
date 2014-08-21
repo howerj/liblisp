@@ -1,9 +1,18 @@
+###############################################################################
+# File:     Makefile                                                          #
+# Project:  regex engine test                                                 #
+###############################################################################
+
+.PHONY: all indent clean
+
+SHELL=/bin/sh
+INDENT=-linux -nut -l 150
 CC=gcc
-CCOPTS=-Wall -Wextra -ansi -pedantic -O2
+CCOPTS=-Wall -Wextra -ansi -pedantic -Os -g
 
 all: grep
 
-regex.o: regex.c regex.h
+regex.o: regex.c regex.h makefile
 	$(CC) $(CCOPTS) -c regex.c -o regex.o
 
 grep: main.c regex.o
@@ -13,6 +22,6 @@ clean:
 	rm -f *~ *.o grep *.log
 
 indent:
-	indent -linux -nut -i2 *.c *.h
-	make clean
+	indent $(INDENT) *.c *.h
+	rm -f *~
 
