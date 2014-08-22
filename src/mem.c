@@ -141,7 +141,6 @@ void *wrealloc(void *ptr, size_t size, io * e)
 
 /**
  *  @brief          wrapper around malloc for garbage collection
- *  @param          size size of desired memory block in bytes
  *  @param          e    error output stream
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
@@ -155,8 +154,6 @@ expr gcmalloc(io * e)
 
 /**
  *  @brief          wrapper around calloc for garbage collection
- *  @param          num  number of elements to allocate
- *  @param          size size of elements to allocate
  *  @param          e    error output stream
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!

@@ -119,7 +119,6 @@ static expr primop_find(expr args, lisp l);
 
 /**
  *  @brief          Initialize the lisp interpreter
- *  @param          void
  *  @return         A fully initialized lisp environment
  **/
 lisp lisp_init(void)
@@ -208,7 +207,7 @@ lisp lisp_repl(lisp l)
 
 /**
  *  @brief          Destroy and clean up a lisp environment
- *  @param          An initialized lisp environment
+ *  @param          l   initialized lisp environment
  *  @return         void
  **/
 void lisp_end(lisp l)

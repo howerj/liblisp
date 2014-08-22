@@ -1,7 +1,8 @@
 /**
  *  @file           regex.c
  *  @brief          A limited regex parser
- *  @author         Richard James Howe <see note>
+ *  @author         Richard Howe, See Note
+ *  @license        Unknown
  *  @email          howe.r.j.89@gmail.com
  *
  *  This is a simple regex engine based on the code obtained from
@@ -100,7 +101,9 @@ int matchhere(char *regexp, char *text, unsigned int depth)
 }
 
 /**
- *  @brief          Search for c* regexp at beginning of text
+ *  @brief          Search for c*regexp at beginning of text
+ *  @param          literal     'c' is a literal character not regex op           
+ *  @param          c           character to match
  *  @param          regexp      The regular expression
  *  @param          text        The text to perform the match on
  *  @param          depth       Current recursion depth

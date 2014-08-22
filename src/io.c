@@ -113,7 +113,7 @@ int wprintd(cell_t d, io * o, io * e)
 /**
  *  @brief          wrapper to print out a pointer; this should be rewritten
  *                  to avoid using fprintf and sprintf 
- *  @param          pointer to print out
+ *  @param          p pointer to print out
  *  @param          o output stream to print to
  *  @param          e error output stream
  *  @return         negative number if operation failed, otherwise the
