@@ -245,6 +245,7 @@ expr lisp_read(io * i, io * e)
 
 /**
  *  @brief          Print out an s-expression
+ *  @param          x   Expression to print
  *  @param          o   Output stream
  *  @param          e   Error stream output
  *  @return         void

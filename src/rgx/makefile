@@ -15,8 +15,8 @@ all: grep
 regex.o: regex.c regex.h makefile
 	$(CC) $(CCOPTS) -c regex.c -o regex.o
 
-grep: main.c regex.o
-	$(CC) main.c regex.o -o grep
+grep: grep.c regex.o
+	$(CC) grep.c regex.o -o grep
 
 clean:
 	rm -f *~ *.o grep *.log
