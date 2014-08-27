@@ -63,5 +63,6 @@ tar:
 clean:
 	-rm -rf bin/*.o bin/lisp doc/htm/ doc/man doc/latex src/*~
 	-rm -rf $(REPORT_DIR)/*.i $(REPORT_DIR)/*.s $(REPORT_DIR)/*.log
+	-rm -rf *.log
 
 ## EOF ########################################################################

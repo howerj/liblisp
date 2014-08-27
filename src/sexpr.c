@@ -212,7 +212,7 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
                 break;
         case S_PRIMITIVE:
                 color_on(ANSI_COLOR_BLUE, o, e);
-                wputs("#PRIMOP", o, e);
+                wputs("<PRIMOP>", o, e);
                 break;
         case S_PROC:
                 if (true == print_proc_f) {
