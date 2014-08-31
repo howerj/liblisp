@@ -23,7 +23,7 @@
  *  @todo Make the special forms less special!
  *  @todo Make more primitives and mechanisms for handling things:
  *         - Register internal functions as lisp primitives.
- *         - random, seed
+ *         - time, perhaps; random can be acquired from /dev/urandom
  *         - eq > < <= >=
  *         - string manipulation and regexes; tr, sed, //m, pack, unpack, 
  *           split, join
@@ -36,7 +36,6 @@
  *         - not, and, or, logical functions as well!
  *         - set related functions; intersection, union, member, ...
  *         - Memory control functions:
- *            - Raw pointer control
  *            - Force mark/collect
  *         - comment; instead of normal comments, comments and the
  *         unlisp_evaluated sexpression could be stored for later retrilisp_eval

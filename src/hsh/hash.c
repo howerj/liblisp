@@ -7,16 +7,17 @@
  *  @email          howe.r.j.89@gmail.com
  *
  *  @todo Delete entry function
- *  @todo Clean up
- *  @todo Support associative arrays
- *  @todo Replace char -> uint8_t
- *  @todo Integrate with lisp interpreter
+ *  @todo Add foreach, delete
+ *  @todo Replace char -> uint8_t, or void*
+ *  @todo change hash print function to use the IO wrapper I made
+ *  @todo This should use the memory allocation wrappers I made
+ *  @todo Integrate with lisp interpreter *OR* make more generic via void*
  **/
 #include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <assert.h>
+#include <stdlib.h> /* free, calloc */
+#include <string.h> /* strcmp, strlen, strcpy */
+#include <stdio.h>  /* printf */
+#include <assert.h> /* assert */
 #include "hash.h"
 
 /* private types */

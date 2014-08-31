@@ -78,7 +78,7 @@ void set_color_on(bool flag)
 }
 
 /**
- *  @brief          Set whether we should print "#PROC" when printing
+ *  @brief          Set whether we should print "<PROC>" when printing
  *                  a user defined procedure, or if we should actually
  *                  print the contents of said procedure fully.
  *  @param          flag boolean flag to set print_proc_f
@@ -230,7 +230,7 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
                         wputs(")", o, e);
                 } else {
                         color_on(ANSI_COLOR_BLUE, o, e);
-                        wputs("#PROC", o, e);
+                        wputs("<PROC>", o, e);
                         color_on(ANSI_RESET, o, e);
                 }
                 break;
@@ -492,7 +492,7 @@ static expr parse_string(io * i, io * e)
 static expr parse_list(io * i, io * e)
 {
         expr ex = NULL, chld;
-        char c;
+        int c;
 
         ex = gccalloc(e);
         ex->len = 0;

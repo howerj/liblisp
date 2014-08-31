@@ -9,8 +9,6 @@
  **/
 
 struct hashentry;
-struct hashtable;
-
 typedef struct hashtable hashtable_t;
 
 hashtable_t *hash_create(size_t len);
