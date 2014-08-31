@@ -12,6 +12,24 @@
 * Memory: Garbage collection,
   Garbage collection should act inside the lisp environment not globally.
 
+* Tail call optimization;
+  This is a must, tail call optimization can be achieved by moving some
+  primitives into eval
+
+* Macros
+  At the moment a macro system has not been implemented or designed
+
+* Lisp bug; ./lisp -e 'ErroneousInput$48w9'
+  This should fail
+
+* Memcpy should check its arguments, as well as other library calls
+  - Check realloc, string library functions, etc.
+
+* Special parsing of if,begin,... etc. Best way to deal with this?
+
+
+* Move primops to a separate file
+
 * Unit Tests / Test benches
   Writing unit tests / test benches would really help in moving the code
   to use different data structures, it would help in incrementally moving
@@ -54,3 +72,23 @@ be automatic, something like:
   I/O system?
   - Write output string on one lisp thread
   - Read input string on another lisp thread, blocking.
+
+### Notes
+
+* assert("This is an assert comment" && (NULL != ptr));
+* Use @bug in doxygen.
+* Eventually I should be able to create a macro such that "ca+d+r" would parse
+  correctly
+* Add in references:
+  <http://c2.com/cgi/wiki?ImplementingLisp>
+  For example.
+* Use Xmacros where appropriate:
+  <https://en.wikipedia.org/wiki/X_Macro>
+* Use Opaque Pointers where appropriate:
+  <https://en.wikipedia.org/wiki/Opaque_pointer>
+
+#### Hash lib
+
+* 'Delete' in hash implementation, rework the hash library
+* Should use void\* (and sexpr\_t for the special case of this program)
+
