@@ -9,6 +9,10 @@
         "if", "begin", ...
     but do so *optionally*
 
+* Rethink special forms;
+  - Use "cond" instead of "if"
+  - Add "loop"
+
 * Memory: Garbage collection,
   Garbage collection should act inside the lisp environment not globally.
 
