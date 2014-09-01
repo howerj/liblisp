@@ -152,7 +152,7 @@ void hash_insert(hashtable * ht, const char *key, const char *val)
 
 /** 
  *  @brief    Print out a hash table
- *  @param    ht        The hash table to print out
+ *  @param    table     The hash table to print out
  *  @return   void      
  */
 void hash_print(hashtable * table)
@@ -170,7 +170,7 @@ void hash_print(hashtable * table)
 
 /** 
  *  @brief    Lookup a key in the hash table
- *  @param    ht        The hash table to search in
+ *  @param    table     The hash table to search in
  *  @param    key       The key to search for
  *  @return   The key, if found, NULL otherwise
  */
@@ -192,8 +192,8 @@ char *hash_lookup(hashtable * table, const char *key)
 
 /** 
  *  @brief    Get information; number of collisions
- *  @param    ht        Hash table containing the information
- *  @return   unsigned int Number of collisions
+ *  @param    table             Hash table containing the information
+ *  @return   unsigned int      Number of collisions
  */
 unsigned int hash_get_collisions(hashtable_t * table){
         assert(NULL != table);
@@ -202,8 +202,8 @@ unsigned int hash_get_collisions(hashtable_t * table){
 
 /** 
  *  @brief    Get information; Number of unique keys
- *  @param    ht        Hash table containing the information
- *  @return   unsigned int Number of unique keys
+ *  @param    table             Hash table containing the information
+ *  @return   unsigned int      Number of unique keys
  */
 unsigned int hash_get_uniquekeys(hashtable_t * table){
         assert(NULL != table);
@@ -212,8 +212,8 @@ unsigned int hash_get_uniquekeys(hashtable_t * table){
 
 /** 
  *  @brief    Get information; number of keys that have had their value replaced
- *  @param    ht        Hash table containing the information
- *  @return   unsigned int Number of replacements
+ *  @param    table             Hash table containing the information
+ *  @return   unsigned int      Number of replacements
  */
 unsigned int hash_get_replaced(hashtable_t * table){
         assert(NULL != table);
