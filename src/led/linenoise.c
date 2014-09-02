@@ -4,6 +4,7 @@
  *              line editing lib needs to be 20,000 lines of C code.
  * @author      Salvatore Sanfilippo
  * @author      Pieter Noordhuis
+ * @license     BSD (included as comment)
  *
  * !!! This is a fork of the original code !!!
  *
@@ -49,9 +50,6 @@
  * References:
  * - http://invisible-island.net/xterm/ctlseqs/ctlseqs.html
  * - http://www.3waylabs.com/nw/WWW/products/wizcon/vt220.html
- *
- * Bloat:
- * - History search like Ctrl+r in readline?
  *
  * List of escape sequences used by this program, we do everything just
  * with three sequences. In order to be so cheap we may have some

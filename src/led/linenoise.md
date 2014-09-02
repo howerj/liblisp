@@ -1,3 +1,12 @@
+# Preamble
+
+This is a modified version of "linenoise" library originally obtained from
+<https://github.com/antirez/linenoise>, it has been modified to bring it
+closer to how the rest of the code in the lisp repository is structured
+but the changes are mostly superficial.
+ 
+        - RJH
+
 # Linenoise
 
 A minimal, zero-config, BSD licensed, readline replacement used in Redis,
@@ -41,9 +50,9 @@ to linenoise if not.
 
 ## Terminals, in 2010.
 
-Apparently almost every terminal you can happen to use today has some
-kind of support for VT100 alike escape sequences. So I tried to write a
-lib using just very basic VT100 features. The resulting library appears
+Apparently almost every terminal you happen to use today has some kind of
+support for VT100 like escape sequences. So I tried to write a library
+using just the very basic VT100 features. The resulting library appears
 to work everywhere I tried to use it.
 
 Since it's so young I guess there are a few bugs, or the lib may not
@@ -75,5 +84,7 @@ Please test it everywhere you can and report back!
 Patches should be provided in the respect of linenoise sensibility for small
 easy to understand code.
 
-Send feedbacks to antirez at gmail
+(Note; originally it said "Send feedback to antirez at gmail" however this
+ library has been modified from the original, so make sure any bugs are
+ present also in the original before sending feedback).
 
