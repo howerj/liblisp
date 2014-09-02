@@ -73,6 +73,7 @@ static expr primop_scdr(expr args, lisp l);
 static expr primop_scons(expr args, lisp l);
 static expr primop_typeeq(expr args, lisp l);
 static expr primop_reverse(expr args, lisp l);
+static expr primop_system(expr args, lisp l);
 
 /*
 static expr primop_nummore(expr args, lisp l);
@@ -119,12 +120,12 @@ lisp lisp_init(void)
         nil = mkobj(S_NIL, l->e);
         tee = mkobj(S_TEE, l->e);
 
-        s_if = mksym(sdup("if", l->e), l->e);
+        s_if     = mksym(sdup("if", l->e), l->e);
         s_lambda = mksym(sdup("lambda", l->e), l->e);
-        s_begin = mksym(sdup("begin", l->e), l->e);
+        s_begin  = mksym(sdup("begin", l->e), l->e);
         s_define = mksym(sdup("define", l->e), l->e);
-        s_set = mksym(sdup("set", l->e), l->e);
-        s_quote = mksym(sdup("quote", l->e), l->e);
+        s_set    = mksym(sdup("set", l->e), l->e);
+        s_quote  = mksym(sdup("quote", l->e), l->e);
 
         extend(mksym(sdup("nil", l->e), l->e), nil, l->global, l->e);
         extend(mksym(sdup("t", l->e), l->e), tee, l->global, l->e);
@@ -154,6 +155,8 @@ lisp lisp_init(void)
         extendprimop("scons", primop_scons, l->global, l->e);
         extendprimop("eqt", primop_typeeq, l->global, l->e);
         extendprimop("reverse", primop_reverse, l->global, l->e);
+        extendprimop("system", primop_system, l->global, l->e);
+
         return l;
 }
 
@@ -877,6 +880,29 @@ static expr primop_reverse(expr args, lisp l)
                 }
                 nx->len = carg->len;
         }
+        return nx;
+}
+
+static expr primop_system(expr args, lisp l){
+        int i;
+        expr nx, carg;
+
+        if (1 != args->len) {
+                sexpr_perror(args, "system: argc != 1", l->e);
+                return nil;
+        }
+        carg = car(args);
+        if(S_STRING != carg->type){
+                sexpr_perror(args, "system: arg != string", l->e);
+                return nil;
+        }
+        i = system(carg->data.string);
+        if(0 > i)
+                return nil;
+
+        nx = mkobj(S_INTEGER, l->e);
+        nx->data.integer = i;
+
         return nx;
 }
 
