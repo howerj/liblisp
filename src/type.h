@@ -61,7 +61,7 @@ typedef struct {
         unsigned int position;  /* position in string */
         unsigned int max;       /* max string length, if known */
         /*unsigned int linenum; // @todo implement line number counting */
-        char c;                 /* character store for wungetc() */
+        char c;                 /* character store for io_ungetc() */
         bool ungetc;            /* true if we have ungetc'ed a character */
 } io;
 
@@ -77,7 +77,7 @@ struct sexpr_t { /** base type for our expressions */
                  expr(*func) (expr args, lisp l);       /*primitive operations */
         } data;
         sexpr_e type;
-        unsigned int gcmark:1;  /*the mark of the garbage collector */
+        unsigned int mem_gc_mark:1;  /*the mark of the garbage collector */
 };
 
 /**lisp global environment struct**/
