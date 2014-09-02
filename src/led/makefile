@@ -3,6 +3,7 @@
 
 CC=gcc
 CFLAGS=-Wall -W -Os -g
+INDENT=-linux -nut -l 150
 OBJFILES=example.o linenoise.o
 TARGET=example
 

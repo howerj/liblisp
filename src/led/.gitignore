@@ -3,3 +3,4 @@ linenoise_example
 example
 *.o
 history.txt
+*.log
