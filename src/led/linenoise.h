@@ -1,5 +1,14 @@
-/* linenoise.h -- guerrilla line editing library against the idea that a
- * line editing lib needs to be 20,000 lines of C code.
+/*
+ * @file        linenoise.h
+ * @warning     This is a fork of the original! Do not contact the
+ *              authors about bugs in *this* version!
+ * @brief       A guerrilla line editing library against the idea that a
+ *              line editing lib needs to be 20,000 lines of C code, header only
+ * @author      Salvatore Sanfilippo
+ * @author      Pieter Noordhuis
+ * @license     BSD (included as comment)
+ *
+ *
  *
  * See linenoise.c for more information.
  *
@@ -41,23 +50,23 @@
 extern "C" {
 #endif
 
-        typedef struct linenoiseCompletions {
+        typedef struct linenoise_completions {
                 size_t len;
                 char **cvec;
-        } linenoiseCompletions;
+        } linenoise_completions;
 
-        typedef void (linenoiseCompletionCallback) (const char *, linenoiseCompletions *);
-        void linenoiseSetCompletionCallback(linenoiseCompletionCallback *);
-        void linenoiseAddCompletion(linenoiseCompletions *, const char *);
+        typedef void (linenoise_completion_callback) (const char *, linenoise_completions *);
+        void linenoise_set_completion_callback(linenoise_completion_callback *);
+        void linenoise_add_completion(linenoise_completions *, const char *);
 
         char *linenoise(const char *prompt);
-        int linenoiseHistoryAdd(const char *line);
-        int linenoiseHistorySetMaxLen(int len);
-        int linenoiseHistorySave(const char *filename);
-        int linenoiseHistoryLoad(const char *filename);
-        void linenoiseClearScreen(void);
-        void linenoiseSetMultiLine(int ml);
-        void linenoisePrintKeyCodes(void);
+        int linenoise_history_add(const char *line);
+        int linenoise_history_set_maxlen(int len);
+        int linenoise_history_save(const char *filename);
+        int linenoise_history_load(const char *filename);
+        void linenoise_clearscreen(void);
+        void linenoise_set_multiline(int ml);
+        void linenoise_print_keycodes(void);
 
 #ifdef __cplusplus
 }

@@ -1,12 +1,12 @@
 /** 
  * @file        linenoise.c 
+ * @warning     This is a fork of the original! Do not contact the
+ *              authors about bugs in *this* version!
  * @brief       A guerrilla line editing library against the idea that a
  *              line editing lib needs to be 20,000 lines of C code.
  * @author      Salvatore Sanfilippo
  * @author      Pieter Noordhuis
  * @license     BSD (included as comment)
- *
- * !!! This is a fork of the original code !!!
  *
  * You can find the original/latest source code at:
  * 
@@ -111,7 +111,7 @@
 
 static char *unsupported_term[] = { "dumb", "cons25", "emacs", NULL };
 
-static linenoiseCompletionCallback *completionCallback = NULL;
+static linenoise_completion_callback *completionCallback = NULL;
 
 static struct termios orig_termios;     /* In order to restore at exit. */
 static int rawmode = 0;         /* For atexit() function to check if restore is needed */
@@ -162,7 +162,7 @@ enum KEY_ACTION {
 };
 
 static void linenoiseAtExit(void);
-int linenoiseHistoryAdd(const char *line);
+int linenoise_history_add(const char *line);
 static void refreshLine(struct linenoiseState *l);
 
 /* Debugging macro. */
@@ -191,7 +191,7 @@ FILE *lndebug_fp = NULL;
  *  @param          flag boolean flag to set color_on_f
  *  @return         void
  **/
-void linenoiseSetMultiLine(int ml)
+void linenoise_set_multiline(int ml)
 {
         mlmode = ml;
 }
@@ -330,7 +330,7 @@ static int getColumns(int ifd, int ofd)
 }
 
 /* Clear the screen. Used to handle ctrl+l */
-void linenoiseClearScreen(void)
+void linenoise_clearscreen(void)
 {
         if (write(STDOUT_FILENO, "\x1b[H\x1b[2J", 7) <= 0) {
                 /* nothing to do, just to avoid warning. */
@@ -347,8 +347,8 @@ static void linenoiseBeep(void)
 
 /******************************** Completion *********************************/
 
-/* Free a list of completion option populated by linenoiseAddCompletion(). */
-static void freeCompletions(linenoiseCompletions * lc)
+/* Free a list of completion option populated by linenoise_add_completion(). */
+static void freeCompletions(linenoise_completions * lc)
 {
         size_t i;
         for (i = 0; i < lc->len; i++)
@@ -365,7 +365,7 @@ static void freeCompletions(linenoiseCompletions * lc)
  * structure as described in the structure definition. */
 static int completeLine(struct linenoiseState *ls)
 {
-        linenoiseCompletions lc = { 0, NULL };
+        linenoise_completions lc = { 0, NULL };
         int nread, nwritten;
         char c = 0;
 
@@ -425,7 +425,7 @@ static int completeLine(struct linenoiseState *ls)
 }
 
 /* Register a callback function to be called for tab-completion. */
-void linenoiseSetCompletionCallback(linenoiseCompletionCallback * fn)
+void linenoise_set_completion_callback(linenoise_completion_callback * fn)
 {
         completionCallback = fn;
 }
@@ -434,7 +434,7 @@ void linenoiseSetCompletionCallback(linenoiseCompletionCallback * fn)
  * in order to add completion options given the input string when the
  * user typed <tab>. See the example.c source code for a very easy to
  * understand example. */
-void linenoiseAddCompletion(linenoiseCompletions * lc, const char *str)
+void linenoise_add_completion(linenoise_completions * lc, const char *str)
 {
         size_t len = strlen(str);
         char *copy, **cvec;
@@ -619,7 +619,7 @@ static void refreshLine(struct linenoiseState *l)
 /* Insert the character 'c' at cursor current position.
  *
  * On error writing to the terminal -1 is returned, otherwise 0. */
-int linenoiseEditInsert(struct linenoiseState *l, char c)
+int linenoise_edit_insert(struct linenoiseState *l, char c)
 {
         if (l->len < l->buflen) {
                 if (l->len == l->pos) {
@@ -648,7 +648,7 @@ int linenoiseEditInsert(struct linenoiseState *l, char c)
 }
 
 /* Move cursor on the left. */
-void linenoiseEditMoveLeft(struct linenoiseState *l)
+void linenoise_edit_move_left(struct linenoiseState *l)
 {
         if (l->pos > 0) {
                 l->pos--;
@@ -657,7 +657,7 @@ void linenoiseEditMoveLeft(struct linenoiseState *l)
 }
 
 /* Move cursor on the right. */
-void linenoiseEditMoveRight(struct linenoiseState *l)
+void linenoise_edit_move_right(struct linenoiseState *l)
 {
         if (l->pos != l->len) {
                 l->pos++;
@@ -666,7 +666,7 @@ void linenoiseEditMoveRight(struct linenoiseState *l)
 }
 
 /* Move cursor to the start of the line. */
-void linenoiseEditMoveHome(struct linenoiseState *l)
+void linenoise_edit_move_home(struct linenoiseState *l)
 {
         if (l->pos != 0) {
                 l->pos = 0;
@@ -675,7 +675,7 @@ void linenoiseEditMoveHome(struct linenoiseState *l)
 }
 
 /* Move cursor to the end of the line. */
-void linenoiseEditMoveEnd(struct linenoiseState *l)
+void linenoise_edit_move_end(struct linenoiseState *l)
 {
         if (l->pos != l->len) {
                 l->pos = l->len;
@@ -685,7 +685,7 @@ void linenoiseEditMoveEnd(struct linenoiseState *l)
 
 /* Substitute the currently edited line with the next or previous history
  * entry as specified by 'dir'. */
-void linenoiseEditHistoryNext(struct linenoiseState *l, int dir)
+void linenoise_edit_history_next(struct linenoiseState *l, int dir)
 {
         if (history_len > 1) {
                 /* Update the current history entry before to
@@ -710,7 +710,7 @@ void linenoiseEditHistoryNext(struct linenoiseState *l, int dir)
 
 /* Delete the character at the right of the cursor without altering the cursor
  * position. Basically this is what happens with the "Delete" keyboard key. */
-void linenoiseEditDelete(struct linenoiseState *l)
+void linenoise_edit_delete(struct linenoiseState *l)
 {
         if (l->len > 0 && l->pos < l->len) {
                 memmove(l->buf + l->pos, l->buf + l->pos + 1, l->len - l->pos - 1);
@@ -721,7 +721,7 @@ void linenoiseEditDelete(struct linenoiseState *l)
 }
 
 /* Backspace implementation. */
-void linenoiseEditBackspace(struct linenoiseState *l)
+void linenoise_edit_backspace(struct linenoiseState *l)
 {
         if (l->pos > 0 && l->len > 0) {
                 memmove(l->buf + l->pos - 1, l->buf + l->pos, l->len - l->pos);
@@ -734,7 +734,7 @@ void linenoiseEditBackspace(struct linenoiseState *l)
 
 /* Delete the previosu word, maintaining the cursor at the start of the
  * current word. */
-void linenoiseEditDeletePrevWord(struct linenoiseState *l)
+void linenoise_edit_deletePrevWord(struct linenoiseState *l)
 {
         size_t old_pos = l->pos;
         size_t diff;
@@ -781,7 +781,7 @@ static int linenoiseEdit(int stdin_fd, int stdout_fd, char *buf, size_t buflen, 
 
         /* The latest history entry is always our current buffer, that
          * initially is just an empty string. */
-        linenoiseHistoryAdd("");
+        linenoise_history_add("");
 
         if (write(l.ofd, prompt, l.plen) == -1)
                 return -1;
@@ -817,12 +817,12 @@ static int linenoiseEdit(int stdin_fd, int stdout_fd, char *buf, size_t buflen, 
                         return -1;
                 case BACKSPACE: /*fall through*/    
                 case CTRL_H:        
-                        linenoiseEditBackspace(&l);
+                        linenoise_edit_backspace(&l);
                         break;
                 case CTRL_D: /* remove char at right of cursor, or of the
                                 line is empty, act as end-of-file. */
                         if (l.len > 0) {
-                                linenoiseEditDelete(&l);
+                                linenoise_edit_delete(&l);
                         } else {
                                 history_len--;
                                 free(history[history_len]);
@@ -840,16 +840,16 @@ static int linenoiseEdit(int stdin_fd, int stdout_fd, char *buf, size_t buflen, 
                         }
                         break;
                 case CTRL_B:
-                        linenoiseEditMoveLeft(&l);
+                        linenoise_edit_move_left(&l);
                         break;
                 case CTRL_F: 
-                        linenoiseEditMoveRight(&l);
+                        linenoise_edit_move_right(&l);
                         break;
                 case CTRL_P:
-                        linenoiseEditHistoryNext(&l, LINENOISE_HISTORY_PREV);
+                        linenoise_edit_history_next(&l, LINENOISE_HISTORY_PREV);
                         break;
                 case CTRL_N:
-                        linenoiseEditHistoryNext(&l, LINENOISE_HISTORY_NEXT);
+                        linenoise_edit_history_next(&l, LINENOISE_HISTORY_NEXT);
                         break;
                 case ESC: /* begin escape sequence */
                         /* Read the next two bytes representing the escape sequence.
@@ -869,29 +869,29 @@ static int linenoiseEdit(int stdin_fd, int stdout_fd, char *buf, size_t buflen, 
                                         if (seq[2] == '~') {
                                                 switch (seq[1]) {
                                                 case '3':      /* Delete key. */
-                                                        linenoiseEditDelete(&l);
+                                                        linenoise_edit_delete(&l);
                                                         break;
                                                 }
                                         }
                                 } else {
                                         switch (seq[1]) {
                                         case 'A':      /* Up */
-                                                linenoiseEditHistoryNext(&l, LINENOISE_HISTORY_PREV);
+                                                linenoise_edit_history_next(&l, LINENOISE_HISTORY_PREV);
                                                 break;
                                         case 'B':      /* Down */
-                                                linenoiseEditHistoryNext(&l, LINENOISE_HISTORY_NEXT);
+                                                linenoise_edit_history_next(&l, LINENOISE_HISTORY_NEXT);
                                                 break;
                                         case 'C':      /* Right */
-                                                linenoiseEditMoveRight(&l);
+                                                linenoise_edit_move_right(&l);
                                                 break;
                                         case 'D':      /* Left */
-                                                linenoiseEditMoveLeft(&l);
+                                                linenoise_edit_move_left(&l);
                                                 break;
                                         case 'H':      /* Home */
-                                                linenoiseEditMoveHome(&l);
+                                                linenoise_edit_move_home(&l);
                                                 break;
                                         case 'F':      /* End */
-                                                linenoiseEditMoveEnd(&l);
+                                                linenoise_edit_move_end(&l);
                                                 break;
                                         }
                                 }
@@ -901,16 +901,16 @@ static int linenoiseEdit(int stdin_fd, int stdout_fd, char *buf, size_t buflen, 
                         else if (seq[0] == 'O') {
                                 switch (seq[1]) {
                                 case 'H':      /* Home */
-                                        linenoiseEditMoveHome(&l);
+                                        linenoise_edit_move_home(&l);
                                         break;
                                 case 'F':      /* End */
-                                        linenoiseEditMoveEnd(&l);
+                                        linenoise_edit_move_end(&l);
                                         break;
                                 }
                         }
                         break;
                 default:
-                        if (linenoiseEditInsert(&l, c))
+                        if (linenoise_edit_insert(&l, c))
                                 return -1;
                         break;
                 case CTRL_U:   /* delete the whole line. */
@@ -924,17 +924,17 @@ static int linenoiseEdit(int stdin_fd, int stdout_fd, char *buf, size_t buflen, 
                         refreshLine(&l);
                         break;
                 case CTRL_A:   /* go to the start of the line */
-                        linenoiseEditMoveHome(&l);
+                        linenoise_edit_move_home(&l);
                         break;
                 case CTRL_E:   /* go to the end of the line */
-                        linenoiseEditMoveEnd(&l);
+                        linenoise_edit_move_end(&l);
                         break;
                 case CTRL_L:   /* clear screen */
-                        linenoiseClearScreen();
+                        linenoise_clearscreen();
                         refreshLine(&l);
                         break;
                 case CTRL_W:   /* delete previous word */
-                        linenoiseEditDeletePrevWord(&l);
+                        linenoise_edit_deletePrevWord(&l);
                         break;
                 }
         }
@@ -944,7 +944,7 @@ static int linenoiseEdit(int stdin_fd, int stdout_fd, char *buf, size_t buflen, 
 /* This special mode is used by linenoise in order to print scan codes
  * on screen for debugging / development purposes. It is implemented
  * by the linenoise_example program using the --keycodes option. */
-void linenoisePrintKeyCodes(void)
+void linenoise_print_keycodes(void)
 {
         char quit[4];
 
@@ -1061,7 +1061,7 @@ static void linenoiseAtExit(void)
  * histories, but will work well for a few hundred of entries.
  *
  * Using a circular buffer is smarter, but a bit more complex to handle. */
-int linenoiseHistoryAdd(const char *line)
+int linenoise_history_add(const char *line)
 {
         char *linecopy;
 
@@ -1099,7 +1099,7 @@ int linenoiseHistoryAdd(const char *line)
  * if there is already some history, the function will make sure to retain
  * just the latest 'len' elements if the new history length value is smaller
  * than the amount of items already inside the history. */
-int linenoiseHistorySetMaxLen(int len)
+int linenoise_history_set_maxlen(int len)
 {
         char **new;
 
@@ -1133,7 +1133,7 @@ int linenoiseHistorySetMaxLen(int len)
 
 /* Save the history in the specified file. On success 0 is returned
  * otherwise -1 is returned. */
-int linenoiseHistorySave(const char *filename)
+int linenoise_history_save(const char *filename)
 {
         FILE *fp = fopen(filename, "w");
         int j;
@@ -1151,7 +1151,7 @@ int linenoiseHistorySave(const char *filename)
  *
  * If the file exists and the operation succeeded 0 is returned, otherwise
  * on error -1 is returned. */
-int linenoiseHistoryLoad(const char *filename)
+int linenoise_history_load(const char *filename)
 {
         FILE *fp = fopen(filename, "r");
         char buf[LINENOISE_MAX_LINE];
@@ -1167,7 +1167,7 @@ int linenoiseHistoryLoad(const char *filename)
                         p = strchr(buf, '\n');
                 if (p)
                         *p = '\0';
-                linenoiseHistoryAdd(buf);
+                linenoise_history_add(buf);
         }
         fclose(fp);
         return 0;
