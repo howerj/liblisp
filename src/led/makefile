@@ -4,15 +4,17 @@
 CC=gcc
 CFLAGS=-Wall -W -Os -g
 INDENT=-linux -nut -l 150
-OBJFILES=example.o linenoise.o
-TARGET=example
+OBJFILES=example.o linenoise.o io.o mem.o sexpr.o lisp.o 
+
+#TARGET=example
+TARGET=llsp
 
 .PHONY: all indent run clean
 
 all: $(TARGET)
 
 $(TARGET): $(OBJFILES)
-	$(CC) $(CFLAGS) $(OBJFILES) -o example 
+	$(CC) $(CFLAGS) $(OBJFILES) -o $(TARGET)
 
 %.o: %.c *.h makefile
 	$(CC) -c $(CFLAGS) -o $@ $<
