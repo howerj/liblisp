@@ -1,6 +1,6 @@
 /**
  *  @file           lisp.c
- *  @brief          The Lisp Interpreter; Lispy Space Princess
+ *  @brief          The Lisp Interpreter
  *  @author         Richard James Howe.
  *  @copyright      Copyright 2013 Richard James Howe.
  *  @license        GPL v2.0 or later version
@@ -17,32 +17,6 @@
  *  args:   a list of *lisp_evaluated* arguments
  *  nx:     a newly created expression
  *
- *  @todo Check for return values on all functions that can fail!
- *  @todo Better error handling; a new primitive type should be made
- *        for it, one that can be caught.
- *  @todo Make the special forms less special!
- *  @todo Make more primitives and mechanisms for handling things:
- *         - Register internal functions as lisp primitives.
- *         - time, perhaps; random can be acquired from /dev/urandom
- *         - eq > < <= >=
- *         - string manipulation and regexes; tr, sed, //m, pack, unpack, 
- *           split, join
- *         - type? <- returns type of expr
- *         - type coercion and casting
- *         - file manipulation and i/o: read, format, 
- *           read-char read-line write-string, ...
- *         - max, min, abs, ...
- *         - Error handling and recovery
- *         - not, and, or, logical functions as well!
- *         - set related functions; intersection, union, member, ...
- *         - Memory control functions:
- *            - Force mark/collect
- *         - comment; instead of normal comments, comments and the
- *         unlisp_evaluated sexpression could be stored for later retrilisp_eval
- *         and inspection, keeping the source and the runnning program
- *         united.
- *         - modules; keywords for helping in the creation of modules
- *         and importing them.
  **/
 
 #include <string.h>             /* strcmp, strlen, strcat */

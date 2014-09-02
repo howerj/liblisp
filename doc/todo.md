@@ -82,6 +82,36 @@ be automatic, something like:
   - Write output string on one lisp thread
   - Read input string on another lisp thread, blocking.
 
+### lisp.c specific
+
+* Check for return values on all functions that can fail!
+* Better error handling; a new primitive type should be made
+* for it, one that can be caught.
+* Make the special forms less special!
+* Make more primitives and mechanisms for handling things:
+  - Register internal functions as lisp primitives.
+  - time, perhaps; random can be acquired from /dev/urandom
+  - eq > < <= >=
+  - string manipulation and regexes; tr, sed, //m, pack, unpack, 
+  split, join
+  - type? <- returns type of expr
+  - type coercion and casting
+  - file manipulation and i/o: read, format, 
+    read-char read-line write-string, ...
+  - max, min, abs, ...
+  - Error handling and recovery
+  not, and, or, logical functions as well!
+  - set related functions; intersection, union, member, ...
+  - Memory control functions:
+  - Force mark/collect
+  - comment; instead of normal comments, comments and the
+  unlisp\_evaluated sexpression could be stored for later retrilisp\_eval
+  and inspection, keeping the source and the runnning program
+  united.
+  - modules; keywords for helping in the creation of modules
+  and importing them.
+
+
 ### Notes
 
 * assert("This is an assert comment" && (NULL != ptr));
