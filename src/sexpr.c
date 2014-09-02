@@ -61,7 +61,7 @@ static expr parse_string(io * i, io * e);
 static expr parse_list(io * i, io * e);
 static bool parse_comment(io * i, io * e);
 
-#define color_on(X,O,E) if(true==color_on_f){wputs((X),(O),(E));}
+#define color_on(X,O,E) if(true==color_on_f){io_puts((X),(O),(E));}
 
 /*** interface functions *****************************************************/
 
@@ -110,7 +110,7 @@ void sexpr_set_parse_numbers(bool flag)
 expr sexpr_parse(io * i, io * e)
 {
         int c;
-        while (EOF != (c = wgetc(i, e))) {
+        while (EOF != (c = io_getc(i, e))) {
                 if (isspace(c)) {
                         continue;
                 }
@@ -130,7 +130,7 @@ expr sexpr_parse(io * i, io * e)
                 /*case '<': return parse_file(i,e);*/
                 /*case '\'': return parse_quote(i,e);*/
                 default:
-                        wungetc(c, i, e);
+                        io_ungetc(c, i, e);
                         return parse_symbol(i, e);
                 }
         }
@@ -155,26 +155,26 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
         switch (x->type) {
         case S_NIL:
                 color_on(ANSI_COLOR_RED, o, e);
-                wputs("()", o, e);
+                io_puts("()", o, e);
                 break;
         case S_TEE:
                 color_on(ANSI_COLOR_GREEN, o, e);
-                wputs("t", o, e);
+                io_puts("t", o, e);
                 break;
         case S_LIST:
-                wputs("(", o, e);
+                io_puts("(", o, e);
                 for (i = 0; i < x->len; i++) {
                         if (0 != i) {
                                 if (2 == x->len)
-                                        wputc(' ', o, e);
+                                        io_putc(' ', o, e);
                                 else
                                         indent(depth ? depth + 1 : 1, o, e);
                         }
                         sexpr_print(x->data.list[i], o, depth + 1, e);
                         if ((i < x->len - 1) && (2 != x->len))
-                                wputc('\n', o, e);
+                                io_putc('\n', o, e);
                 }
-                wputs(")", o, e);
+                io_puts(")", o, e);
                 break;
         case S_SYMBOL:         /*symbols are yellow, strings are red, escaped chars magenta */
         case S_STRING:
@@ -182,55 +182,55 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
                         bool isstring = S_STRING == x->type ? true : false;     /*isnotsymbol */
                         color_on(true == isstring ? ANSI_COLOR_RED : ANSI_COLOR_YELLOW, o, e);
                         if (isstring) {
-                                wputc('"', o, e);
+                                io_putc('"', o, e);
                         }
                         for (i = 0; i < x->len; i++) {
                                 switch ((x->data.string)[i]) {
                                 case '"':
                                 case '\\':
                                         color_on(ANSI_COLOR_MAGENTA, o, e);
-                                        wputc('\\', o, e);
+                                        io_putc('\\', o, e);
                                         break;
                                 case ')':
                                 case '(':
                                 case '#':
                                         if (x->type == S_SYMBOL) {
                                                 color_on(ANSI_COLOR_MAGENTA, o, e);
-                                                wputc('\\', o, e);
+                                                io_putc('\\', o, e);
                                         }
                                 }
-                                wputc((x->data.string)[i], o, e);
+                                io_putc((x->data.string)[i], o, e);
                                 color_on(true == isstring ? ANSI_COLOR_RED : ANSI_COLOR_YELLOW, o, e);
                         }
                         if (isstring)
-                                wputc('"', o, e);
+                                io_putc('"', o, e);
                 }
                 break;
         case S_INTEGER:
                 color_on(ANSI_COLOR_MAGENTA, o, e);
-                wprintd(x->data.integer, o, e);
+                io_printd(x->data.integer, o, e);
                 break;
         case S_PRIMITIVE:
                 color_on(ANSI_COLOR_BLUE, o, e);
-                wputs("<PRIMOP>", o, e);
+                io_puts("<PRIMOP>", o, e);
                 break;
         case S_PROC:
                 if (true == print_proc_f) {
-                        wputc('\n', o, e);
+                        io_putc('\n', o, e);
                         indent(depth, o, e);
-                        wputs("(", o, e);
+                        io_puts("(", o, e);
                         color_on(ANSI_COLOR_YELLOW, o, e);
-                        wputs("lambda\n", o, e);
+                        io_puts("lambda\n", o, e);
                         color_on(ANSI_RESET, o, e);
                         indent(depth + 1, o, e);
                         sexpr_print(x->data.list[0], o, depth + 1, e);
-                        wputc('\n', o, e);
+                        io_putc('\n', o, e);
                         indent(depth + 1, o, e);
                         sexpr_print(x->data.list[1], o, depth + 1, e);
-                        wputs(")", o, e);
+                        io_puts(")", o, e);
                 } else {
                         color_on(ANSI_COLOR_BLUE, o, e);
-                        wputs("<PROC>", o, e);
+                        io_puts("<PROC>", o, e);
                         color_on(ANSI_RESET, o, e);
                 }
                 break;
@@ -250,7 +250,7 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
         }
         color_on(ANSI_RESET, o, e);
         if (0 == depth)
-                wputc('\n', o, e);
+                io_putc('\n', o, e);
         return;
 }
 
@@ -275,20 +275,20 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io * e
                 e = &fallback;
 
         color_on(ANSI_BOLD_TXT, e, e);
-        wputs("(error \n \"", e, e);
-        wputs(msg, e, e);
-        wputs("\"\n \"", e, e);
-        wputs(cfile, e, e);
-        wputs("\"\n ", e, e);
-        wprintd(linenum, e, e);
+        io_puts("(error \n \"", e, e);
+        io_puts(msg, e, e);
+        io_puts("\"\n \"", e, e);
+        io_puts(cfile, e, e);
+        io_puts("\"\n ", e, e);
+        io_printd(linenum, e, e);
         if (NULL == x) {
         } else {
-                wputs("\n ", e, e);
+                io_puts("\n ", e, e);
                 color_on(ANSI_RESET, e, e);
                 sexpr_print(x, e, 1, e);
         }
         color_on(ANSI_BOLD_TXT, e, e);
-        wputs(")\n", e, e);
+        io_puts(")\n", e, e);
         color_on(ANSI_RESET, e, e);
         return;
 }
@@ -307,7 +307,7 @@ void append(expr list, expr ele, io * e)
 {
         NULLCHK(list, e);
         NULLCHK(ele, e);
-        list->data.list = wrealloc(list->data.list, sizeof(expr) * ++list->len, e);
+        list->data.list = mem_realloc(list->data.list, sizeof(expr) * ++list->len, e);
         (list->data.list)[list->len - 1] = ele;
 }
 
@@ -324,7 +324,7 @@ static bool indent(unsigned int depth, io * o, io * e)
 {
         unsigned int i;
         for (i = 0; i < depth; i++)
-                if (EOF == wputc(' ', o, e))
+                if (EOF == io_putc(' ', o, e))
                         return true;
         return false;
 }
@@ -369,11 +369,11 @@ static expr parse_symbol(io * i, io * e)
         unsigned int count = 0;
         int c;
         char buf[BUFLEN];
-        ex = gccalloc(e);
+        ex = mem_gc_calloc(e);
 
         memset(buf, '\0', BUFLEN);
 
-        while (EOF != (c = wgetc(i, e))) {
+        while (EOF != (c = io_getc(i, e))) {
                 if (BUFLEN <= count) {
                         report("symbol too long", e);
                         report(buf, e);
@@ -384,7 +384,7 @@ static expr parse_symbol(io * i, io * e)
                         goto success;
 
                 if ((c == '(') || (c == ')')) {
-                        wungetc(c, i, e);
+                        io_ungetc(c, i, e);
                         goto success;
                 }
 
@@ -395,7 +395,7 @@ static expr parse_symbol(io * i, io * e)
 
                 switch (c) {
                 case '\\':
-                        switch (c = wgetc(i, e)) {
+                        switch (c = io_getc(i, e)) {
                         case '\\':
                         case '"':
                         case '(':
@@ -425,7 +425,7 @@ static expr parse_symbol(io * i, io * e)
                 ex->data.integer = strtol(buf, NULL, 0);
         } else {
                 ex->type = S_SYMBOL;
-                ex->data.symbol = wmalloc(ex->len + 1, e);
+                ex->data.symbol = _malloc(ex->len + 1, e);
                 strcpy(ex->data.symbol, buf);
         }
         return ex;
@@ -444,10 +444,10 @@ static expr parse_string(io * i, io * e)
         int c;
         char buf[BUFLEN];
 
-        ex = gccalloc(e);
+        ex = mem_gc_calloc(e);
         memset(buf, '\0', BUFLEN);
 
-        while (EOF != (c = wgetc(i, e))) {
+        while (EOF != (c = io_getc(i, e))) {
                 if (BUFLEN <= count) {
                         report("string too long", e);
                         report(buf, e); /* check if correct */
@@ -455,7 +455,7 @@ static expr parse_string(io * i, io * e)
                 }
                 switch (c) {
                 case '\\':
-                        switch (c = wgetc(i, e)) {
+                        switch (c = io_getc(i, e)) {
                         case '\\':
                         case '"':
                                 buf[count++] = c;
@@ -477,7 +477,7 @@ static expr parse_string(io * i, io * e)
  success:
         ex->type = S_STRING;
         ex->len = strlen(buf);
-        ex->data.string = wmalloc(ex->len + 1, e);
+        ex->data.string = _malloc(ex->len + 1, e);
         strcpy(ex->data.string, buf);
         return ex;
 }
@@ -494,10 +494,10 @@ static expr parse_list(io * i, io * e)
         expr ex = NULL, chld;
         int c;
 
-        ex = gccalloc(e);
+        ex = mem_gc_calloc(e);
         ex->len = 0;
 
-        while (EOF != (c = wgetc(i, e))) {
+        while (EOF != (c = io_getc(i, e))) {
                 if (isspace(c))
                         continue;
 
@@ -522,7 +522,7 @@ static expr parse_list(io * i, io * e)
                         goto success;
 
                 default:
-                        wungetc(c, i, e);
+                        io_ungetc(c, i, e);
                         chld = parse_symbol(i, e);
                         if (!chld)
                                 goto fail;
@@ -550,7 +550,7 @@ static expr parse_list(io * i, io * e)
 static bool parse_comment(io * i, io * e)
 {
         int c;
-        while (EOF != (c = wgetc(i, e))) {
+        while (EOF != (c = io_getc(i, e))) {
                 if ('\n' == c) {
                         return false;
                 }

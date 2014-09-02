@@ -98,13 +98,13 @@ static expr primop_find(expr args, lisp l);
 lisp lisp_init(void)
 {
         lisp l;
-        l = wcalloc(1, sizeof(*l), NULL);
-        l->global = wcalloc(1, sizeof(sexpr_t), NULL);
-        l->env = wcalloc(1, sizeof(sexpr_t), NULL);
+        l = mem_calloc(1, sizeof(*l), NULL);
+        l->global = mem_calloc(1, sizeof(sexpr_t), NULL);
+        l->env = mem_calloc(1, sizeof(sexpr_t), NULL);
 
-        l->i = wcalloc(1, sizeof(io), NULL);
-        l->o = wcalloc(1, sizeof(io), NULL);
-        l->e = wcalloc(1, sizeof(io), NULL);
+        l->i = mem_calloc(1, sizeof(io), NULL);
+        l->o = mem_calloc(1, sizeof(io), NULL);
+        l->e = mem_calloc(1, sizeof(io), NULL);
 
         /* set up file I/O and pointers */
         l->i->type = file_in;
@@ -194,16 +194,16 @@ void lisp_end(lisp l)
         fflush(NULL);
 
         /*do not call mark before **this** sweep */
-        gcsweep(&e);
+        mem_gc_sweep(&e);
 
-        wfree(l->e, &e);
-        wfree(l->o, &e);
-        wfree(l->i, &e);
+        mem_free(l->e, &e);
+        mem_free(l->o, &e);
+        mem_free(l->i, &e);
 
-        wfree(l->env, &e);
-        wfree(l->global->data.list, &e);
-        wfree(l->global, &e);
-        wfree(l, &e);
+        mem_free(l->env, &e);
+        mem_free(l->global->data.list, &e);
+        mem_free(l->global, &e);
+        mem_free(l, &e);
 
         return;
 }
@@ -351,8 +351,8 @@ expr lisp_eval(expr x, expr env, lisp l)
  **/
 void lisp_clean(lisp l)
 {
-        gcmark(l->global, l->e);
-        gcsweep(l->e);
+        mem_gc_mark(l->global, l->e);
+        mem_gc_sweep(l->e);
 }
 
 /*** internal functions ******************************************************/
@@ -412,7 +412,7 @@ static char *sdup(const char *s, io * e)
         if (NULL == s) {
                 sexpr_perror(NULL, "passed NULL", e);
         }
-        ns = wmalloc(sizeof(char) * (strlen(s) + 1), e);
+        ns = _malloc(sizeof(char) * (strlen(s) + 1), e);
         strcpy(ns, s);
         return ns;
 }
@@ -427,7 +427,7 @@ static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), expr en
 static expr mkobj(sexpr_e type, io * e)
 {
         expr nx;
-        nx = gccalloc(e);
+        nx = mem_gc_calloc(e);
         nx->len = 0;
         nx->type = type;
         return nx;
@@ -464,7 +464,7 @@ static expr mkproc(expr args, expr code, expr env, io * e)
         append(nx, code, e);
   /** @todo turn into mklist **/
         nenv = mkobj(S_LIST, e);
-        nenv->data.list = wmalloc(env->len * sizeof(expr), e);
+        nenv->data.list = _malloc(env->len * sizeof(expr), e);
         memcpy(nenv->data.list, env->data.list, (env->len) * sizeof(expr));
         nenv->len = env->len;
   /****************************/
@@ -647,7 +647,7 @@ static expr primop_cdr(expr args, lisp l)
                 return nil;
         }
 
-        nx->data.list = wmalloc((carg->len - 1) * sizeof(expr), l->e);
+        nx->data.list = _malloc((carg->len - 1) * sizeof(expr), l->e);
         memcpy(nx->data.list, carg->data.list + 1, (carg->len - 1) * sizeof(expr));
         nx->len = carg->len - 1;
         return nx;
@@ -667,7 +667,7 @@ static expr primop_cons(expr args, lisp l)
                 append(nx, prepend, l->e);
         } else if (S_LIST == list->type) {
     /** @todo turn into mklist **/
-                nx->data.list = wmalloc((list->len + 1) * sizeof(expr), l->e);
+                nx->data.list = _malloc((list->len + 1) * sizeof(expr), l->e);
                 car(nx) = prepend;
                 memcpy(nx->data.list + 1, list->data.list, (list->len) * sizeof(expr));
                 nx->len = list->len + 1;
@@ -713,7 +713,7 @@ static expr primop_nth(expr args, lisp l)
         } else {                /*must be string */
                 {
                         expr nx = mkobj(S_STRING, l->e);
-                        nx->data.string = wcalloc(sizeof(char), 2, l->e);
+                        nx->data.string = mem_calloc(sizeof(char), 2, l->e);
                         nx->data.string[0] = a2->data.string[i];
                         nx->len = 1;
                         return nx;
@@ -780,7 +780,7 @@ static expr primop_scar(expr args, lisp l)
                 return nil;
         }
         nx = mkobj(S_STRING, l->e);
-        nx->data.string = wcalloc(sizeof(char), 2, l->e);
+        nx->data.string = mem_calloc(sizeof(char), 2, l->e);
         nx->data.string[0] = a1->data.string[0];
         nx->len = 1;
         return nx;
@@ -799,7 +799,7 @@ static expr primop_scdr(expr args, lisp l)
                 return nil;
         }
 
-        nx->data.string = wcalloc(sizeof(char), carg->len, l->e);       /*not len + 1 */
+        nx->data.string = mem_calloc(sizeof(char), carg->len, l->e);       /*not len + 1 */
         strcpy(nx->data.string, carg->data.string + 1);
         nx->len = carg->len - 1;
         return nx;
@@ -817,7 +817,7 @@ static expr primop_scons(expr args, lisp l)
         list = cadr(args);
         if ((S_STRING == list->type) && (S_STRING == prepend->type)) {
                 nx->type = S_STRING;
-                nx->data.string = wcalloc(sizeof(char), (list->len) + (prepend->len) + 1, l->e);
+                nx->data.string = mem_calloc(sizeof(char), (list->len) + (prepend->len) + 1, l->e);
                 nx->len = list->len + prepend->len;
                 strcpy(nx->data.string, prepend->data.string);
                 strcat(nx->data.string, list->data.string);
@@ -868,13 +868,13 @@ static expr primop_reverse(expr args, lisp l)
         nx = mkobj(type, l->e);
 
         if (S_LIST == type) {
-                nx->data.list = wmalloc(carg->len * sizeof(expr), l->e);
+                nx->data.list = _malloc(carg->len * sizeof(expr), l->e);
                 for (i = 0; i < carg->len; i++) {
                         nth(nx, carg->len - i - 1) = nth(carg, i);
                 }
                 nx->len = carg->len;
         } else {                /*is a string */
-                nx->data.string = wcalloc(sizeof(char), carg->len * sizeof(expr) + 1, l->e);
+                nx->data.string = mem_calloc(sizeof(char), carg->len * sizeof(expr) + 1, l->e);
                 for (i = 0; i < carg->len; i++) {
                         nx->data.string[carg->len - i - 1] = carg->data.string[i];
                 }

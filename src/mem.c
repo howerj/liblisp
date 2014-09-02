@@ -58,7 +58,7 @@ void mem_set_debug(bool flag)
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
  **/
-void *wmalloc(size_t size, io * e)
+void *_malloc(size_t size, io * e)
 {
         void *v;
         if (0 == size)
@@ -69,9 +69,9 @@ void *wmalloc(size_t size, io * e)
                 exit(EXIT_FAILURE);
         }
         if (true == debug_f) {
-                wputs("wmalloc:", e, e);
-                wprintd(alloccounter, e, e);
-                wputc('\n', e, e);
+                io_puts("_malloc:", e, e);
+                io_printd(alloccounter, e, e);
+                io_putc('\n', e, e);
         }
 
         v = malloc(size);
@@ -90,7 +90,7 @@ void *wmalloc(size_t size, io * e)
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-void *wcalloc(size_t num, size_t size, io * e)
+void *mem_calloc(size_t num, size_t size, io * e)
 {
         void *v;
         if (MAX_ALLOCS < alloccounter++) {
@@ -99,9 +99,9 @@ void *wcalloc(size_t num, size_t size, io * e)
         }
 
         if (true == debug_f) {
-                wputs("wcalloc:", e, e);
-                wprintd(alloccounter, e, e);
-                wputc('\n', e, e);
+                io_puts("mem_calloc:", e, e);
+                io_printd(alloccounter, e, e);
+                io_putc('\n', e, e);
         }
 
         v = calloc(num, size);
@@ -121,7 +121,7 @@ void *wcalloc(size_t num, size_t size, io * e)
  *  @return         pointer to newly resized storage on success, 
  *                  exits program on failure!
  **/
-void *wrealloc(void *ptr, size_t size, io * e)
+void *mem_realloc(void *ptr, size_t size, io * e)
 {
         void *v;
         if (0 == size) {        /*acts as free */
@@ -145,10 +145,10 @@ void *wrealloc(void *ptr, size_t size, io * e)
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
  **/
-expr gcmalloc(io * e)
+expr mem_gc_malloc(io * e)
 {
         void *v;
-        v = wmalloc(sizeof(struct sexpr_t), e);
+        v = _malloc(sizeof(struct sexpr_t), e);
         return v;
 }
 
@@ -158,12 +158,12 @@ expr gcmalloc(io * e)
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-expr gccalloc(io * e)
+expr mem_gc_calloc(io * e)
 {
         expr v;
         struct heap *nextheap;
-        v = wcalloc(1, sizeof(struct sexpr_t), e);
-        nextheap = wcalloc(1, sizeof(struct heap), e);
+        v = mem_calloc(1, sizeof(struct sexpr_t), e);
+        nextheap = mem_calloc(1, sizeof(struct heap), e);
         nextheap->x = v;
         heaphead->next = nextheap;
         heaphead = nextheap;
@@ -176,14 +176,14 @@ expr gccalloc(io * e)
  *  @param          e    error output stream
  *  @return         void
  **/
-void wfree(void *ptr, io * e)
+void mem_free(void *ptr, io * e)
 {
         if (NULL != ptr) {
                 alloccounter--;
                 if (true == debug_f) {
-                        wputs("wfree:", e, e);
-                        wprintd(alloccounter, e, e);
-                        wputc('\n', e, e);
+                        io_puts("mem_free:", e, e);
+                        io_printd(alloccounter, e, e);
+                        io_putc('\n', e, e);
                 }
         }
         free(ptr);
@@ -198,26 +198,26 @@ void wfree(void *ptr, io * e)
  *  @param          e    error output stream
  *  @return         false == root was not marked, and now is
  **/
-int gcmark(expr root, io * e)
+int mem_gc_mark(expr root, io * e)
 {
         if (NULL == root)
                 return false;
 
-        root->gcmark = true;
+        root->mem_gc_mark = true;
 
         switch (root->type) {
         case S_LIST:
                 {
                         unsigned int i;
                         for (i = 0; i < root->len; i++)
-                                gcmark(root->data.list[i], e);
+                                mem_gc_mark(root->data.list[i], e);
                 }
                 return false;
         case S_PROC:
                 /*@todo Put the S_PROC structure into type.h* */
-                gcmark(root->data.list[0], e);
-                gcmark(root->data.list[1], e);
-                gcmark(root->data.list[2], e);
+                mem_gc_mark(root->data.list[0], e);
+                mem_gc_mark(root->data.list[1], e);
+                mem_gc_mark(root->data.list[2], e);
                 return false;
         case S_PRIMITIVE:
         case S_NIL:
@@ -240,32 +240,32 @@ int gcmark(expr root, io * e)
  *  @param          e    error output stream
  *  @return         void
  **/
-void gcsweep(io * e)
+void mem_gc_sweep(io * e)
 {
   /**@todo this really needs cleaning up**/
         struct heap *ll, *pll;
         if (NULL == heaplist.next)      /*pass first element, do not collect element */
                 return;
         for (ll = heaplist.next, pll = &heaplist; ll != heaphead;) {
-                if (true == ll->x->gcmark) {
-                        ll->x->gcmark = false;
+                if (true == ll->x->mem_gc_mark) {
+                        ll->x->mem_gc_mark = false;
                         pll = ll;
                         ll = ll->next;
                 } else {
                         gcinner(ll->x, e);
                         ll->x = NULL;
                         pll->next = ll->next;
-                        wfree(ll, e);
+                        mem_free(ll, e);
                         ll = pll->next;
                 }
         }
         if ((heaphead != &heaplist) && (NULL != heaphead->x)) {
-                if (true == heaphead->x->gcmark) {
-                        ll->x->gcmark = false;
+                if (true == heaphead->x->mem_gc_mark) {
+                        ll->x->mem_gc_mark = false;
                 } else {
                         gcinner(heaphead->x, e);
                         heaphead->x = NULL;
-                        wfree(heaphead, e);
+                        mem_free(heaphead, e);
                         heaphead = pll;
                 }
         }
@@ -289,27 +289,27 @@ static void gcinner(expr x, io * e)
         case S_NIL:
         case S_INTEGER:
         case S_PRIMITIVE:
-                wfree(x, e);
+                mem_free(x, e);
                 break;
         case S_PROC:
-                wfree(x->data.list, e);
-                wfree(x, e);
+                mem_free(x->data.list, e);
+                mem_free(x, e);
                 break;
         case S_LIST:
-                wfree(x->data.list, e);
-                wfree(x, e);
+                mem_free(x->data.list, e);
+                mem_free(x, e);
                 return;
         case S_SYMBOL:
-                wfree(x->data.symbol, e);
-                wfree(x, e);
+                mem_free(x->data.symbol, e);
+                mem_free(x, e);
                 return;
         case S_STRING:
-                wfree(x->data.string, e);
-                wfree(x, e);
+                mem_free(x->data.string, e);
+                mem_free(x, e);
                 return;
         case S_ERROR:
                 /** @todo implement error support **/
-                wfree(x, e);
+                mem_free(x, e);
                 return;
         case S_FILE:
                /** @todo implement file support **/

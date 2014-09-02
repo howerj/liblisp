@@ -19,7 +19,7 @@
  *  @param          e error output stream
  *  @return         EOF on failure, character to output on success
  **/
-int wputc(char c, io * o, io * e)
+int io_putc(char c, io * o, io * e)
 {
         NULLCHK(o, e);
         NULLCHK(o->ptr.file, e);
@@ -41,12 +41,12 @@ int wputc(char c, io * o, io * e)
 }
 
 /**
- *  @brief          wrapper around wputc; get input from file or string
+ *  @brief          wrapper around io_putc; get input from file or string
  *  @param          i input stream
  *  @param          e error output stream
  *  @return         EOF on failure, character input on success
  **/
-int wgetc(io * i, io * e)
+int io_getc(io * i, io * e)
 {
         NULLCHK(i, e);
         NULLCHK(i->ptr.file, e);
@@ -74,7 +74,7 @@ int wgetc(io * i, io * e)
  *  @param          e error output stream
  *  @return         EOF if failed, character we put back if succeeded.
  **/
-int wungetc(char c, io * i, io * e)
+int io_ungetc(char c, io * i, io * e)
 {
         NULLCHK(i, e);
         NULLCHK(i->ptr.file, e);
@@ -95,7 +95,7 @@ int wungetc(char c, io * i, io * e)
  *  @return         negative number if operation failed, otherwise the
  *                  total number of characters written
  **/
-int wprintd(cell_t d, io * o, io * e)
+int io_printd(cell_t d, io * o, io * e)
 {
   /**@todo rewrite so it does not use sprintf/fprintf**/
         NULLCHK(o, e);
@@ -119,7 +119,7 @@ int wprintd(cell_t d, io * o, io * e)
  *  @return         negative number if operation failed, otherwise the
  *                  total number of characters written
  **/
-int wprintp(void *p, io * o, io * e)
+int io_printp(void *p, io * o, io * e)
 {
   /**@todo rewrite so it does not use sprintf/fprintf**/
         NULLCHK(o, e);
@@ -142,14 +142,14 @@ int wprintp(void *p, io * o, io * e)
  *  @return         EOF on failure, number of characters written on success
  *                  
  **/
-int wputs(const char *s, io * o, io * e)
+int io_puts(const char *s, io * o, io * e)
 {
   /**@warning count can go negative when is should not!**/
         int count = 0;
         int c;
         NULLCHK(o, e);
         while ((c = *(s + (count++))))
-                if (EOF == wputc((char)c, o, e))
+                if (EOF == io_putc((char)c, o, e))
                         return EOF;
         return count;
 }
@@ -178,16 +178,16 @@ void doreport(const char *s, char *cfile, unsigned int linenum, io * e)
                 critical_failure_f = true;
         }
 
-        wputs("(error \"", e, e);
-        wputs(s, e, e);
-        wputs("\" \"", e, e);
-        wputs(cfile, e, e);
-        wputs("\" ", e, e);
-        wprintd(linenum, e, e);
-        wputs(")\n", e, e);
+        io_puts("(error \"", e, e);
+        io_puts(s, e, e);
+        io_puts("\" \"", e, e);
+        io_puts(cfile, e, e);
+        io_puts("\" ", e, e);
+        io_printd(linenum, e, e);
+        io_puts(")\n", e, e);
 
         if (true == critical_failure_f) {
-                wputs("(error \"critical failure\")\n", e, e);
+                io_puts("(error \"critical failure\")\n", e, e);
                 exit(EXIT_FAILURE);
         }
         return;
