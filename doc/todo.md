@@ -2,6 +2,11 @@
 
 ### A temporary to-do list:
 
+* Unit tests for each module
+* Orient the lisp towards processing text à la mode de awk/sed/tr 
+* Rewrite basic types used in implementation from arrays to cons
+  cells as it should be.
+ 
 * The parser should:
   - Handle arbitrary precision numbers
   - Handle arbitrary length strings

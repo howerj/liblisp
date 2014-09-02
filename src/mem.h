@@ -14,7 +14,7 @@
 
 #define MAX_ALLOCS ((signed int)(1024*1024))
 
-void set_mem_debug(bool flag);
+void mem_set_debug(bool flag);
 
 void *wmalloc(size_t size, io * e);
 void *wcalloc(size_t num, size_t size, io * e);

@@ -6,13 +6,6 @@
  *  @license        GPL v2.0 or later version
  *  @email          howe.r.j.89@gmail.com
  *
- *  Generic TODO List:
- *
- *  @todo   Unit tests for each module
- *  @todo   Orient the lisp towards processing text à la mode de awk/sed/tr 
- *  @todo   Rewrite basic types used in implementation from arrays to cons
- *          cells as it should be.
- *
  *  @mainpage LSP Lisp
  *
  *  \section intro_sec Introduction
@@ -91,13 +84,13 @@ static int getopt(char *arg)
                         printf("%s", version);
                         break;
                 case 'd':
-                        set_mem_debug(true);
+                        mem_set_debug(true);
                         break;
                 case 'c':
-                        set_color_on(true);
+                        sexpr_set_color_on(true);
                         break;
                 case 'p':
-                        set_print_proc(true);
+                        sexpr_set_print_proc(true);
                         break;
                 case 'e':
                         return getopt_string_input;
@@ -130,7 +123,7 @@ static void setfin(io * i, FILE * in)
 int main(int argc, char *argv[])
 {
         int i;
-        int nostdin = false;    /*don't read from stdin after processing flags */
+        bool nostdin_f = false; /*don't read from stdin after processing flags */
         lisp l;
         FILE *input, *output;
 
@@ -151,7 +144,7 @@ int main(int argc, char *argv[])
                         setfin(l->i, input);
                         lisp_repl(l);
                         fclose(input);
-                        nostdin = true;
+                        nostdin_f = true;
                         break;
                 case getopt_string_input:      /* ./lisp -e '(+ 2 2)' */
                         if (++i < argc) {
@@ -165,7 +158,7 @@ int main(int argc, char *argv[])
                                 sexpr_perror(NULL, "fatal: expecting arg after -e", NULL);
                                 exit(EXIT_FAILURE);
                         }
-                        nostdin = true;
+                        nostdin_f = true;
                         break;
                 case getopt_output_file:
                         if (++i < argc) {
@@ -188,7 +181,7 @@ int main(int argc, char *argv[])
                 }
         }
 
-        if (false == nostdin) {
+        if (false == nostdin_f) {
                 setfin(l->i, stdin);
                 lisp_repl(l);
         }

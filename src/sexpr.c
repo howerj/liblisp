@@ -72,7 +72,7 @@ static bool parse_comment(io * i, io * e);
  *  @param          flag boolean flag to set color_on_f
  *  @return         void
  **/
-void set_color_on(bool flag)
+void sexpr_set_color_on(bool flag)
 {
         color_on_f = flag;
 }
@@ -84,7 +84,7 @@ void set_color_on(bool flag)
  *  @param          flag boolean flag to set print_proc_f
  *  @return         void
  **/
-void set_print_proc(bool flag)
+void sexpr_set_print_proc(bool flag)
 {
         print_proc_f = flag;
 }
@@ -95,7 +95,7 @@ void set_print_proc(bool flag)
  *  @param          flag boolean flag to set parse_numbers_f
  *  @return         void
  **/
-void set_parse_numbers(bool flag)
+void sexpr_set_parse_numbers(bool flag)
 {
         parse_numbers_f = flag;
 }

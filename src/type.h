@@ -10,7 +10,7 @@
 #ifndef TYPE_H
 #define TYPE_H
 /*system types*/
-#include <stdint.h>             /* uint32_t */
+#include <stdint.h>             /* intX_t */
 #include <stdlib.h>             /* exit(), EXIT_FAILURE */
 #include <stdio.h>              /* ... lots of things ... */
 

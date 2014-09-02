@@ -46,7 +46,7 @@ static void gcinner(expr x, io * e);
  *  @param          flag 
  *  @return         void
  **/
-void set_mem_debug(bool flag)
+void mem_set_debug(bool flag)
 {
         debug_f = flag;
 }

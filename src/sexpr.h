@@ -15,9 +15,9 @@
 /******************************************************************************/
 
 /**** function prototypes *****************************************************/
-void set_color_on(bool flag);
-void set_print_proc(bool flag);
-void set_parse_numbers(bool flag);
+void sexpr_set_color_on(bool flag);
+void sexpr_set_print_proc(bool flag);
+void sexpr_set_parse_numbers(bool flag);
 
 expr sexpr_parse(io * i, io * e);
 void sexpr_print(expr x, io * o, unsigned int depth, io * e);
