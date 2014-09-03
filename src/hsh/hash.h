@@ -12,7 +12,7 @@ struct hashentry;
 typedef struct hashtable hashtable_t;
 
 hashtable_t *hash_create(size_t len);
-void hash_destroy(hashtable_t * ht);
+void hash_destroy(hashtable_t * table);
 void hash_insert(hashtable_t * ht, const char *key, const char *val);
 char *hash_lookup(hashtable_t * table, const char *key);
 void hash_print(hashtable_t * table);

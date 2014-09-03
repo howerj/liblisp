@@ -26,13 +26,17 @@ typedef struct hashentry {
         char *key;
         char *val;
         struct hashentry *next;    /*linked list of entries in a bin */
+#if 0
         struct hashentry *allnext; /*linked list of all entries */
+#endif
 } hashentry_t;
 
 typedef struct hashtable {
         size_t len;
         struct hashentry **table;
+#if 0
         struct hashentry *head;
+#endif
         unsigned int collisions;
         unsigned int uniquekeys;
         unsigned int replaced;
@@ -72,27 +76,32 @@ hashtable *hash_create(size_t len)
 
 /** 
  *  @brief    Destroy a hash table, freeing all the elements
- *  @param    ht The hash table to destroy
+ *  @param    table     The hash table to destroy
  *  @return   void
  */
-void hash_destroy(hashtable * ht)
+void hash_destroy(hashtable * table)
 {
+        size_t i;
         hashentry_t *current, *prev;
 
-        if (!ht)
+        if (NULL == table)
                 return;
 
-        current = ht->head;
-        while (current) {
-                prev = current;
-                current = current->allnext;
-                free(prev->key);
-                free(prev->val);
-                free(prev);
+        for(i = 0; i < table->len; i++){
+                if(NULL != table->table[i]){
+                        prev = NULL;
+                        for(current = table->table[i]; current; current = current->next){
+                                free(prev);
+                                free(current->key);
+                                free(current->val);
+                                prev = current;
+                        }
+                        free(prev);
+                }
         }
 
-        free(ht->table);
-        free(ht);
+        free(table->table);
+        free(table);
 
         return;
 }
@@ -126,14 +135,6 @@ void hash_insert(hashtable * ht, const char *key, const char *val)
         } else {
                 newt = hash_newpair(key, val);
 
-                /*add to list of all hashes */
-                if (!ht->head) {
-                        ht->head = newt;
-                } else {
-                        newt->allnext = ht->head;
-                        ht->head = newt;
-                }
-
                 ht->uniquekeys++;
                 if (current == ht->table[hash]) {
                         newt->next = current;
@@ -161,11 +162,13 @@ void hash_print(hashtable * table)
         if (!table)
                 return;
 
+#if 0
         current = table->head;
         while (current) {
                 printf("key '%s' val '%s'\n", current->key, current->val);
                 current = current->allnext;
         }
+#endif
 }
 
 /** 
