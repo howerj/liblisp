@@ -425,7 +425,7 @@ static expr parse_symbol(io * i, io * e)
                 ex->data.integer = strtol(buf, NULL, 0);
         } else {
                 ex->type = S_SYMBOL;
-                ex->data.symbol = _malloc(ex->len + 1, e);
+                ex->data.symbol = mem_malloc(ex->len + 1, e);
                 strcpy(ex->data.symbol, buf);
         }
         return ex;
@@ -477,7 +477,7 @@ static expr parse_string(io * i, io * e)
  success:
         ex->type = S_STRING;
         ex->len = strlen(buf);
-        ex->data.string = _malloc(ex->len + 1, e);
+        ex->data.string = mem_malloc(ex->len + 1, e);
         strcpy(ex->data.string, buf);
         return ex;
 }

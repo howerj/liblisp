@@ -58,7 +58,7 @@ void mem_set_debug(bool flag)
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
  **/
-void *_malloc(size_t size, io * e)
+void *mem_malloc(size_t size, io * e)
 {
         void *v;
         if (0 == size)
@@ -69,7 +69,7 @@ void *_malloc(size_t size, io * e)
                 exit(EXIT_FAILURE);
         }
         if (true == debug_f) {
-                io_puts("_malloc:", e, e);
+                io_puts("mem_malloc:", e, e);
                 io_printd(alloccounter, e, e);
                 io_putc('\n', e, e);
         }
@@ -148,7 +148,7 @@ void *mem_realloc(void *ptr, size_t size, io * e)
 expr mem_gc_malloc(io * e)
 {
         void *v;
-        v = _malloc(sizeof(struct sexpr_t), e);
+        v = mem_malloc(sizeof(struct sexpr_t), e);
         return v;
 }
 

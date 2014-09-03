@@ -412,7 +412,7 @@ static char *sdup(const char *s, io * e)
         if (NULL == s) {
                 sexpr_perror(NULL, "passed NULL", e);
         }
-        ns = _malloc(sizeof(char) * (strlen(s) + 1), e);
+        ns = mem_malloc(sizeof(char) * (strlen(s) + 1), e);
         strcpy(ns, s);
         return ns;
 }
@@ -464,7 +464,7 @@ static expr mkproc(expr args, expr code, expr env, io * e)
         append(nx, code, e);
   /** @todo turn into mklist **/
         nenv = mkobj(S_LIST, e);
-        nenv->data.list = _malloc(env->len * sizeof(expr), e);
+        nenv->data.list = mem_malloc(env->len * sizeof(expr), e);
         memcpy(nenv->data.list, env->data.list, (env->len) * sizeof(expr));
         nenv->len = env->len;
   /****************************/
@@ -647,7 +647,7 @@ static expr primop_cdr(expr args, lisp l)
                 return nil;
         }
 
-        nx->data.list = _malloc((carg->len - 1) * sizeof(expr), l->e);
+        nx->data.list = mem_malloc((carg->len - 1) * sizeof(expr), l->e);
         memcpy(nx->data.list, carg->data.list + 1, (carg->len - 1) * sizeof(expr));
         nx->len = carg->len - 1;
         return nx;
@@ -667,7 +667,7 @@ static expr primop_cons(expr args, lisp l)
                 append(nx, prepend, l->e);
         } else if (S_LIST == list->type) {
     /** @todo turn into mklist **/
-                nx->data.list = _malloc((list->len + 1) * sizeof(expr), l->e);
+                nx->data.list = mem_malloc((list->len + 1) * sizeof(expr), l->e);
                 car(nx) = prepend;
                 memcpy(nx->data.list + 1, list->data.list, (list->len) * sizeof(expr));
                 nx->len = list->len + 1;
@@ -868,7 +868,7 @@ static expr primop_reverse(expr args, lisp l)
         nx = mkobj(type, l->e);
 
         if (S_LIST == type) {
-                nx->data.list = _malloc(carg->len * sizeof(expr), l->e);
+                nx->data.list = mem_malloc(carg->len * sizeof(expr), l->e);
                 for (i = 0; i < carg->len; i++) {
                         nth(nx, carg->len - i - 1) = nth(carg, i);
                 }
