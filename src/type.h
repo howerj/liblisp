@@ -58,8 +58,8 @@ typedef union {                 /* pointers to where we want to write to or read
 typedef struct {
         iotype type;            /* what are we abstracting? */
         ioptr ptr;              /* either FILE* or string */
-        unsigned int position;  /* position in string */
-        unsigned int max;       /* max string length, if known */
+        size_t position;        /* position in string */
+        size_t max;             /* max string length, if known */
         /*unsigned int linenum; // @todo implement line number counting */
         char c;                 /* character store for io_ungetc() */
         bool ungetc;            /* true if we have ungetc'ed a character */
@@ -85,10 +85,7 @@ struct lispenv_t {/** a lisp environment */
         io *i;                  /* input */
         io *o;                  /* output */
         io *e;                  /* stderr */
-        expr global;
-               /** global list of key-value pairs
-                 * ((key_0 val_0) (key_1 val_1) ... (key_n val_n))
-                **/
+        expr global; /*global key-val list*/
         expr env;
 };
 
