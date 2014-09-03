@@ -3,7 +3,7 @@
  *  @brief          A test bench for a simple hash table implementation
  *  @author         Richard James Howe.
  *  @copyright      Copyright 2013 Richard James Howe.
- *  @license        GPL v2.0 or later version
+ *  @license        LGPL v2.1 or later version
  *  @email          howe.r.j.89@gmail.com
  **/
 

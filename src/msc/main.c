@@ -6,7 +6,7 @@
  *
  * @author         Richard James Howe.
  * @copyright      Copyright 2013 Richard James Howe.
- * @license        LGPL      
+ * @license        LGPL v2.1 or later version
  * @email          howe.r.j.89@gmail.com
  */
 #include <stdio.h>

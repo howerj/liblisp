@@ -2,7 +2,7 @@
 # File:     Makefile                                                          #
 # Author:   Richard James Howe                                                #
 # Project:  LSP Lisp Interpreter Makefile                                     #
-# License:  GPL v2.0 or later version                                         #
+# License:  LGPL v2.1 or later version                                        #
 ###############################################################################
 
 .PHONY: all doxygen indent report tar clean valgrind strace ltrace 

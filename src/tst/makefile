@@ -1,8 +1,8 @@
 ###############################################################################
-# File:			Makefile                                                          #
-# Author: 	Richard James Howe                                                #
-# Project: 	LSP Lisp Interpreter Makefile                                     #
-# License:	GPL v2.0 or later version                                         #
+# File:       Makefile                                                        #
+# Author:     Richard James Howe                                              #
+# Project:    LSP Lisp Interpreter Makefile                                   #
+# License:    LGPL v2.0 or later version                                      #
 ###############################################################################
 
 ## Variables ##################################################################

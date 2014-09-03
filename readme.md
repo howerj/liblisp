@@ -15,7 +15,7 @@ I intend to make the documentation quite extensive!
 * Author:
   - Richard James Howe
 * License:
-  - GPL v2.0 or later version
+  - LGPL v2.1 or later version
 * Email:
   - <howe.r.j.89@gmail.com>
 
