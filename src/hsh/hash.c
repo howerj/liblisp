@@ -158,17 +158,18 @@ void hash_insert(hashtable * ht, const char *key, const char *val)
  */
 void hash_print(hashtable * table)
 {
+        size_t i;
         hashentry_t *current;
-        if (!table)
+
+        if (NULL == table)
                 return;
 
-#if 0
-        current = table->head;
-        while (current) {
-                printf("key '%s' val '%s'\n", current->key, current->val);
-                current = current->allnext;
+        for(i = 0; i < table->len; i++){
+                if(NULL != table->table[i]){
+                        for(current = table->table[i]; current; current = current->next)
+                                printf("key '%s' val '%s'\n", current->key, current->val);
+                }
         }
-#endif
 }
 
 /** 
