@@ -268,7 +268,7 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
  **/
 void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io * e)
 {
-        static io fallback = { file_out, {NULL}, 0, 0, 0, false };
+        static io fallback = { IO_FILE_OUT, {NULL}, 0, 0, 0, false };
         fallback.ptr.file = stderr;
 
         if ((NULL == e) || (NULL == e->ptr.file))

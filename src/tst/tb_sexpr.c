@@ -2,9 +2,9 @@
 #include "sexpr.h"
 
 int main(void){
-  io i = {file_in,  {NULL}, 0, 0, '\0', false};
-  io o = {file_out, {NULL}, 0, 0, '\0', false};
-  io e = {file_out, {NULL}, 0, 0, '\0', false};
+  io i = {IO_FILE_IN,  {NULL}, 0, 0, '\0', false};
+  io o = {IO_FILE_OUT, {NULL}, 0, 0, '\0', false};
+  io e = {IO_FILE_OUT, {NULL}, 0, 0, '\0', false};
   expr x;
   i.ptr.file = stdin;
   e.ptr.file = stderr;

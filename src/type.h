@@ -43,11 +43,11 @@ typedef enum {
 /**I/O abstraction structure**/
 typedef struct {
         enum iotype {
-                invalid_io, /* error on incorrectly set up I/O */
-                file_in,
-                file_out,
-                string_in, /* read from a string */
-                string_out /* write to a string, if you want */
+                IO_INVALID,   /* error on incorrectly set up I/O */
+                IO_FILE_IN,   /* read from file */
+                IO_FILE_OUT,  /* write to file */
+                IO_STRING_IN, /* read from a string */
+                IO_STRING_OUT /* write to a string, if you want */
         }type;
 
         union {

@@ -36,7 +36,7 @@ typedef enum {
         getopt_switch,          /* 0: switch statement, eg. sets some internal bool */
         getopt_input_file,      /* 1: try to treat argument as an input file */
         getopt_output_file,     /* 2: try to redirect output to this file */
-        getopt_string_input,    /* 3: lisp_eval! */
+        getopt_IO_STRING_INput,    /* 3: lisp_eval! */
         getopt_error            /* 4: PEBKAC error: debugging is a AI complete problem */
 } getopt_e;
 
@@ -93,7 +93,7 @@ static int getopt(char *arg)
                         sexpr_set_print_proc(true);
                         break;
                 case 'e':
-                        return getopt_string_input;
+                        return getopt_IO_STRING_INput;
                 case 'o':
                         return getopt_output_file;
                 case 'G':
@@ -116,7 +116,7 @@ static int getopt(char *arg)
 static void setfin(io * i, FILE * in)
 {
         memset(i, 0, sizeof(*i));
-        i->type = file_in;
+        i->type = IO_FILE_IN;
         i->ptr.file = in;
 }
 
@@ -146,10 +146,10 @@ int main(int argc, char *argv[])
                         fclose(input);
                         nostdin_f = true;
                         break;
-                case getopt_string_input:      /* ./lisp -e '(+ 2 2)' */
+                case getopt_IO_STRING_INput:      /* ./lisp -e '(+ 2 2)' */
                         if (++i < argc) {
                                 memset(l->i, 0, sizeof(*l->i));
-                                l->i->type = string_in;
+                                l->i->type = IO_STRING_IN;
                                 l->i->ptr.string = argv[i];
                                 l->i->max = strlen(argv[i]);
                                 /*printf("(input 'string \"%s\")\n", argv[i]); */
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
                                         fprintf(stderr, "(error \"unable to write to '%s'\")\n", argv[i]);
                                         exit(EXIT_FAILURE);
                                 }
-                                l->o->type = file_out;
+                                l->o->type = IO_FILE_OUT;
                                 l->o->ptr.file = output;
                         } else {
                                 sexpr_perror(NULL, "fatal: expecting arg after -o", NULL);

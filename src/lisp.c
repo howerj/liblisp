@@ -107,11 +107,11 @@ lisp lisp_init(void)
         l->e = mem_calloc(1, sizeof(io), NULL);
 
         /* set up file I/O and pointers */
-        l->i->type = file_in;
+        l->i->type = IO_FILE_IN;
         l->i->ptr.file = stdin;
-        l->o->type = file_out;
+        l->o->type = IO_FILE_OUT;
         l->o->ptr.file = stdout;
-        l->e->type = file_out;
+        l->e->type = IO_FILE_OUT;
         l->e->ptr.file = stderr;
         l->global->type = S_LIST;
         l->env->type = S_LIST;
@@ -188,7 +188,7 @@ lisp lisp_repl(lisp l)
  **/
 void lisp_end(lisp l)
 {
-        io e = { file_out, {NULL}, 0, 0, '\0', false };
+        io e = { IO_FILE_OUT, {NULL}, 0, 0, '\0', false };
         e.ptr.file = stderr;
 
         fflush(NULL);

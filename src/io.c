@@ -24,9 +24,9 @@ int io_putc(char c, io * o, io * e)
         NULLCHK(o, e);
         NULLCHK(o->ptr.file, e);
 
-        if (file_out == o->type) {
+        if (IO_FILE_OUT == o->type) {
                 return fputc(c, o->ptr.file);
-        } else if (string_out == o->type) {
+        } else if (IO_STRING_OUT == o->type) {
                 if (o->position < o->max) {
                         o->ptr.string[o->position++] = c;
                         return c;
@@ -56,9 +56,9 @@ int io_getc(io * i, io * e)
                 return i->c;
         }
 
-        if (file_in == i->type) {
+        if (IO_FILE_IN == i->type) {
                 return fgetc(i->ptr.file);
-        } else if (string_in == i->type) {
+        } else if (IO_STRING_IN == i->type) {
                 return (i->ptr.string[i->position]) ? i->ptr.string[i->position++] : EOF;
         } else {
                 /*programmer error; some kind of error reporting would be nice */
@@ -99,9 +99,9 @@ int io_printd(cell_t d, io * o, io * e)
 {
   /**@todo rewrite so it does not use sprintf/fprintf**/
         NULLCHK(o, e);
-        if (file_out == o->type) {
+        if (IO_FILE_OUT == o->type) {
                 return fprintf(o->ptr.file, "%d", d);
-        } else if (string_out == o->type) {
+        } else if (IO_STRING_OUT == o->type) {
                 return sprintf(o->ptr.string + o->position, "%d", d);
         } else {
                 /*programmer error; some kind of error reporting would be nice */
@@ -123,9 +123,9 @@ int io_printp(void *p, io * o, io * e)
 {
   /**@todo rewrite so it does not use sprintf/fprintf**/
         NULLCHK(o, e);
-        if (file_out == o->type) {
+        if (IO_FILE_OUT == o->type) {
                 return fprintf(o->ptr.file, "%p", p);
-        } else if (string_out == o->type) {
+        } else if (IO_STRING_OUT == o->type) {
                 return sprintf(o->ptr.string + o->position, "%p", p);
         } else {
                 /*programmer error; some kind of error reporting would be nice */
@@ -167,12 +167,12 @@ int io_puts(const char *s, io * o, io * e)
  **/
 void doreport(const char *s, char *cfile, unsigned int linenum, io * e)
 {
-        io n_e = { file_out, {NULL}, 0, 0, '\0', false };
+        io n_e = { IO_FILE_OUT, {NULL}, 0, 0, '\0', false };
         bool critical_failure_f = false;
         n_e.ptr.file = stderr;
 
         if ((NULL == e) || (NULL == e->ptr.file)
-            || ((file_out != e->type) && (string_out != e->type))
+            || ((IO_FILE_OUT != e->type) && (IO_STRING_OUT != e->type))
             ) {
                 e = &n_e;
                 critical_failure_f = true;
