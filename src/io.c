@@ -5,6 +5,17 @@
  *  @copyright      Copyright 2013 Richard James Howe.
  *  @license        LGPL v2.1 or later version
  *  @email          howe.r.j.89@gmail.com
+ *
+ *  @todo Implement set_error_stream instead of passing the error
+ *        constantly to functions like io_puts
+ *  @todo Implement functions to set input and output streams;
+ *      void io_string_in(io *i, char *s);
+ *      FILE *io_filename_in(io *i, char *file_name);
+ *      void io_file_in(io *i, FILE* file);
+ *      void io_string_out(io *o, char *s);
+ *      FILE *io_filename_out(io *o, char *file_name);
+ *      void io_file_out(io *o, FILE* file);
+ *
  **/
 
 #include "type.h"
@@ -131,7 +142,7 @@ int io_printp(void *p, io * o, io * e)
                 /*programmer error; some kind of error reporting would be nice */
                 exit(EXIT_FAILURE);
         }
-        return -1;              /* returns negative like printf would on failure */
+        return -1; /* returns negative like printf would on failure */
 }
 
 /**
@@ -165,7 +176,7 @@ int io_puts(const char *s, io * o, io * e)
  *  @return         void
  *                  
  **/
-void doreport(const char *s, char *cfile, unsigned int linenum, io * e)
+void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e)
 {
         io n_e = { IO_FILE_OUT, {NULL}, 0, 0, '\0', false };
         bool critical_failure_f = false;

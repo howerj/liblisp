@@ -11,8 +11,17 @@
   - Handle arbitrary precision numbers
   - Handle arbitrary length strings
   - Parse special forms into enums such as
-        "if", "begin", ...
-    but do so *optionally*
+  "if", "begin", ...
+  but do so *optionally*
+
+* Make the API simpler to use;
+  - Opaque pointers
+  - Functions to set up internals
+  - Do not allow stderr redirect? 
+  ie. 
+  io\_putc(char c, io * o, io * e);
+  becomes
+  io\_putc(char c, io * o);
 
 * Rethink special forms;
   - Use "cond" instead of "if"
