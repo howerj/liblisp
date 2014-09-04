@@ -36,7 +36,7 @@ typedef enum {
         getopt_switch,          /* 0: switch statement, eg. sets some internal bool */
         getopt_input_file,      /* 1: try to treat argument as an input file */
         getopt_output_file,     /* 2: try to redirect output to this file */
-        getopt_IO_STRING_INput,    /* 3: lisp_eval! */
+        getopt_string_input,    /* 3: lisp_eval! */
         getopt_error            /* 4: PEBKAC error: debugging is a AI complete problem */
 } getopt_e;
 
@@ -93,7 +93,7 @@ static int getopt(char *arg)
                         sexpr_set_print_proc(true);
                         break;
                 case 'e':
-                        return getopt_IO_STRING_INput;
+                        return getopt_string_input;
                 case 'o':
                         return getopt_output_file;
                 case 'G':
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
                         fclose(input);
                         nostdin_f = true;
                         break;
-                case getopt_IO_STRING_INput:      /* ./lisp -e '(+ 2 2)' */
+                case getopt_string_input:      /* ./lisp -e '(+ 2 2)' */
                         if (++i < argc) {
                                 memset(l->i, 0, sizeof(*l->i));
                                 l->i->type = IO_STRING_IN;
