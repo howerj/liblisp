@@ -40,27 +40,23 @@ typedef enum {
         S_ERROR                 /* 10: error return and handling */
 } sexpr_e;
 
-/*io module*/
-typedef enum {                  /* enum describing all the I/O destinations */
-        invalid_io,             /* error on incorrectly set up I/O */
-        file_in,
-        file_out,
-        string_in,              /* read from a string, for things like lisp_eval("(+ 2 2)") */
-        string_out              /* write to a string, if you want */
-} iotype;
-
-typedef union {                 /* pointers to where we want to write to or read from */
-        FILE *file;
-        char *string;
-} ioptr;
-
 /**I/O abstraction structure**/
 typedef struct {
-        iotype type;            /* what are we abstracting? */
-        ioptr ptr;              /* either FILE* or string */
+        enum iotype {
+                invalid_io, /* error on incorrectly set up I/O */
+                file_in,
+                file_out,
+                string_in, /* read from a string */
+                string_out /* write to a string, if you want */
+        }type;
+
+        union {
+                FILE *file;
+                char *string;
+        } ptr; 
+
         size_t position;        /* position in string */
         size_t max;             /* max string length, if known */
-        /*unsigned int linenum; // @todo implement line number counting */
         char c;                 /* character store for io_ungetc() */
         bool ungetc;            /* true if we have ungetc'ed a character */
 } io;
