@@ -26,17 +26,11 @@ typedef struct hashentry {
         char *key;
         char *val;
         struct hashentry *next;    /*linked list of entries in a bin */
-#if 0
-        struct hashentry *allnext; /*linked list of all entries */
-#endif
 } hashentry_t;
 
 typedef struct hashtable {
         size_t len;
         struct hashentry **table;
-#if 0
-        struct hashentry *head;
-#endif
         unsigned int collisions;
         unsigned int uniquekeys;
         unsigned int replaced;
