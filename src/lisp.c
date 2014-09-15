@@ -107,12 +107,10 @@ lisp lisp_init(void)
         l->e = mem_calloc(1, sizeof(io), NULL);
 
         /* set up file I/O and pointers */
-        l->i->type = IO_FILE_IN;
-        l->i->ptr.file = stdin;
-        l->o->type = IO_FILE_OUT;
-        l->o->ptr.file = stdout;
-        l->e->type = IO_FILE_OUT;
-        l->e->ptr.file = stderr;
+        io_file_in(l->i, stdin);
+        io_file_out(l->o, stdout);
+        io_file_out(l->e, stderr);
+
         l->global->type = S_LIST;
         l->env->type = S_LIST;
 

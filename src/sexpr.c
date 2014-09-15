@@ -268,10 +268,10 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
  **/
 void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io * e)
 {
-        static io fallback; 
+        static io *fallback; 
         io_file_out(&fallback, stderr);
 
-        if ((NULL == e) || (NULL == e->ptr.file))
+        if (NULL == e) 
                 e = &fallback;
 
         color_on(ANSI_BOLD_TXT, e, e);
