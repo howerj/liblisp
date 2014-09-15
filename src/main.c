@@ -41,7 +41,6 @@ typedef enum {
 } getopt_e;
 
 static int getopt(char *arg);
-static void setfin(io * i, FILE * in);
 
 static bool printGlobals_f = false;
 static char *usage = "./lisp -hdcpeoVG file... '(expr)'...\n";
@@ -107,25 +106,11 @@ static int getopt(char *arg)
         return getopt_switch;
 }
 
-/** 
- *  @brief    Set up a I/O struct to take file input
- *  @param    i     io struct to set up
- *  @param    in    Input file descriptor
- *  @return   getopt_e, a self describing enum.        
- */
-static void setfin(io * i, FILE * in)
-{
-        memset(i, 0, sizeof(*i));
-        i->type = IO_FILE_IN;
-        i->ptr.file = in;
-}
-
 int main(int argc, char *argv[])
 {
         int i;
         bool nostdin_f = false; /*don't read from stdin after processing flags */
         lisp l;
-        FILE *input, *output;
 
         l = lisp_init();
 
@@ -137,22 +122,15 @@ int main(int argc, char *argv[])
                 case getopt_input_file:        /* ./lisp file.lsp */
                         /*try to treat it as an output file */
                         /*printf("(input 'file \"%s\")\n", argv[i]); */
-                        if (NULL == (input = fopen(argv[i], "r"))) {
-                                fprintf(stderr, "(error \"unable to read '%s'\")\n", argv[i]);
-                                exit(EXIT_FAILURE);
-                        }
-                        setfin(l->i, input);
+                        io_filename_in(l->i, argv[i]);
                         lisp_repl(l);
-                        fclose(input);
+                        io_file_close(l->i);
                         nostdin_f = true;
                         break;
-                case getopt_string_input:      /* ./lisp -e '(+ 2 2)' */
+                case getopt_string_input:  /* ./lisp -e '(+ 2 2)' */
                         if (++i < argc) {
-                                memset(l->i, 0, sizeof(*l->i));
-                                l->i->type = IO_STRING_IN;
-                                l->i->ptr.string = argv[i];
-                                l->i->max = strlen(argv[i]);
                                 /*printf("(input 'string \"%s\")\n", argv[i]); */
+                                io_string_in(l->i, argv[i]);
                                 lisp_repl(l);
                         } else {
                                 sexpr_perror(NULL, "fatal: expecting arg after -e", NULL);
@@ -163,12 +141,7 @@ int main(int argc, char *argv[])
                 case getopt_output_file:
                         if (++i < argc) {
                                 /*printf("(output 'file \"%s\")\n", argv[i]); */
-                                if (NULL == (output = fopen(argv[i], "w"))) {
-                                        fprintf(stderr, "(error \"unable to write to '%s'\")\n", argv[i]);
-                                        exit(EXIT_FAILURE);
-                                }
-                                l->o->type = IO_FILE_OUT;
-                                l->o->ptr.file = output;
+                                io_filename_out(l->o,argv[i]);
                         } else {
                                 sexpr_perror(NULL, "fatal: expecting arg after -o", NULL);
                                 exit(EXIT_FAILURE);
@@ -182,7 +155,7 @@ int main(int argc, char *argv[])
         }
 
         if (false == nostdin_f) {
-                setfin(l->i, stdin);
+                io_file_in(l->i, stdin);
                 lisp_repl(l);
         }
 

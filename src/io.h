@@ -18,6 +18,14 @@
 /******************************************************************************/
 
 /**** function prototypes *****************************************************/
+void io_string_in(io *i, char *s);
+void io_string_out(io *o, char *s);
+FILE *io_filename_in(io *i, char *file_name);
+FILE *io_filename_out(io *o, char *file_name);
+void io_file_in(io *i, FILE* file);
+void io_file_out(io *o, FILE* file);
+void io_file_close(io *ioc);
+
 int io_putc(char c, io * o, io * e);
 int io_getc(io * i, io * e);
 int io_ungetc(char c, io * i, io * e);

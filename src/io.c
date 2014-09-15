@@ -8,26 +8,130 @@
  *
  *  @todo Implement set_error_stream instead of passing the error
  *        constantly to functions like io_puts
- *  @todo Implement functions to set input and output streams;
- *      void io_string_in(io *i, char *s);
- *      FILE *io_filename_in(io *i, char *file_name);
- *      void io_file_in(io *i, FILE* file);
- *      void io_string_out(io *o, char *s);
- *      FILE *io_filename_out(io *o, char *file_name);
- *      void io_file_out(io *o, FILE* file);
  *
  **/
 
+#include <assert.h>     /*assert*/
+#include <string.h>     /*strlen,memset*/
 #include "type.h"
 #include "io.h"
 
 /**** I/O functions **********************************************************/
 
 /**
+ *  @brief          Set input wrapper to read from a string
+ *  @param          i           input stream
+ *  @param          s           string to read from
+ *  @return         void
+ **/
+void io_string_in(io *i, char *s){
+        assert((NULL != i) && (NULL != s));
+        memset(i, 0, sizeof(*i));
+        i->type         = IO_STRING_IN;
+        i->ptr.string   = s;
+        i->max          = strlen(s);
+        return;
+}
+
+/**
+ *  @brief          Set output stream to point to a string
+ *  @param          o           output stream
+ *  @param          s           string to write to
+ *  @return         void
+ **/
+void io_string_out(io *o, char *s){
+        assert((NULL != o) && (NULL != s));
+        memset(o, 0, sizeof(*o));
+        o->type         = IO_STRING_OUT;
+        o->ptr.string   = s;
+        o->max          = strlen(s);
+        return;
+}
+
+/**
+ *  @brief          Attempts to open up a file called file_name for
+ *                  reading, setting the input stream wrapper to read
+ *                  from it.
+ *  @param          i           input stream
+ *  @param          file_name   File to open and read from
+ *  @return         FILE*       Initialized FILE*, or NULL on failure
+ **/
+FILE *io_filename_in(io *i, char *file_name){
+        assert((NULL != i)&&(NULL != file_name));
+        memset(i, 0, sizeof(*i));
+        i->type         = IO_FILE_IN;
+        if(NULL == (i->ptr.file = fopen(file_name, "r")))
+                return NULL;
+        return i->ptr.file;
+}
+
+/**
+ *  @brief          Attempt to open file_name for writing, setting the
+ *                  output wrapper to use it
+ *  @param          o           output stream
+ *  @param          file_name   file to open
+ *  @return         FILE*       Initialized file pointer, or NULL on failure
+ **/
+FILE *io_filename_out(io *o, char *file_name){
+        assert((NULL != o)&&(NULL != file_name));
+        memset(o, 0, sizeof(*o));
+        o->type         = IO_FILE_OUT;
+        if(NULL == (o->ptr.file = fopen(file_name, "w")))
+                return NULL;
+        return o->ptr.file;
+}
+
+/**
+ *  @brief          Set input stream wrapper to point to a FILE*
+ *  @param          i           input stream
+ *  @param          file        file to read from
+ *  @return         void
+ **/
+void io_file_in(io *i, FILE* file){
+        assert((NULL != i)&&(NULL != file));
+        memset(i, 0, sizeof(*i));
+        i->type         = IO_FILE_IN;
+        i->ptr.file     = file;
+        return;
+}
+
+/**
+ *  @brief          Set an output stream wrapper to use a FILE*
+ *  @param          o           output stream
+ *  @param          file        FILE* to write to
+ *  @return         void
+ **/
+void io_file_out(io *o, FILE* file){
+        assert((NULL != o)&&(NULL != file));
+        memset(o, 0, sizeof(*o));
+        o->type         = IO_FILE_OUT;
+        o->ptr.file     = file;
+        return;
+}
+
+/**
+ *  @brief          Flush and close an input or output stream
+ *  @param          ioc         Input or output stream to close
+ *  @return         void
+ **/
+void io_file_close(io *ioc){
+        assert(NULL != ioc);
+
+        if((IO_FILE_IN == ioc->type) || (IO_STRING_OUT == ioc->type)){
+                if(NULL != ioc->ptr.file){
+                        fflush(ioc->ptr.file);
+                        fclose(ioc->ptr.file);
+                        ioc->ptr.file = NULL;
+                }
+        }
+        return;
+}
+
+/**
  *  @brief          wrapper around putc; redirect output to a file or string
- *  @param          c output this character
- *  @param          o output stream
- *  @param          e error output stream
+ *  @param          c   output this character
+ *  @param          o   output stream
+ *  @param          e   error output stream
  *  @return         EOF on failure, character to output on success
  **/
 int io_putc(char c, io * o, io * e)
