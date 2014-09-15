@@ -21,7 +21,7 @@
  *  later.
  *
  *  A possible addition would be the ability to set what character
- *  demarks comments.
+ *  demarks comments. Other possible extras are:
  *
  *  @todo Add in syntax for quotes:
  *        '(list ...) become (quote (list ...))
@@ -268,8 +268,8 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
  **/
 void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io * e)
 {
-        static io fallback = { IO_FILE_OUT, {NULL}, 0, 0, 0, false };
-        fallback.ptr.file = stderr;
+        static io fallback; 
+        io_file_out(&fallback, stderr);
 
         if ((NULL == e) || (NULL == e->ptr.file))
                 e = &fallback;

@@ -188,8 +188,8 @@ lisp lisp_repl(lisp l)
  **/
 void lisp_end(lisp l)
 {
-        io e = { IO_FILE_OUT, {NULL}, 0, 0, '\0', false };
-        e.ptr.file = stderr;
+        io e;
+        io_file_out(&e, stderr);
 
         fflush(NULL);
 
