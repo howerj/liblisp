@@ -13,6 +13,7 @@
 #include <stdint.h>             /* intX_t */
 #include <stdlib.h>             /* exit(), EXIT_FAILURE */
 #include <stdio.h>              /* ... lots of things ... */
+#include "io.h"
 
 /*basic types*/
 typedef enum {
@@ -20,7 +21,6 @@ typedef enum {
         true
 } bool;                         /* be *very* careful with this type */
 
-typedef int32_t cell_t;         /* standard "machine word" size */
 typedef struct sexpr_t sexpr_t;
 typedef sexpr_t *expr;
 typedef struct lispenv_t lispenv_t;
@@ -40,32 +40,11 @@ typedef enum {
         S_ERROR                 /* 10: error return and handling */
 } sexpr_e;
 
-/**I/O abstraction structure**/
-typedef struct {
-        enum iotype {
-                IO_INVALID,   /* error on incorrectly set up I/O */
-                IO_FILE_IN,   /* read from file */
-                IO_FILE_OUT,  /* write to file */
-                IO_STRING_IN, /* read from a string */
-                IO_STRING_OUT /* write to a string, if you want */
-        }type;
-
-        union {
-                FILE *file;
-                char *string;
-        } ptr; 
-
-        size_t position;        /* position in string */
-        size_t max;             /* max string length, if known */
-        char c;                 /* character store for io_ungetc() */
-        bool ungetc;            /* true if we have ungetc'ed a character */
-} io;
-
 /**sexpr module**/
 struct sexpr_t { /** base type for our expressions */
         size_t len;
         union {
-                cell_t integer;
+                int32_t integer;
                 char *string;
                 char *symbol;
                 struct sexpr_t **list;

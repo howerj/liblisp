@@ -10,6 +10,9 @@
 #ifndef IO_H
 #define IO_H
 
+struct io;
+typedef struct io io;
+
 /**** macros ******************************************************************/
 #define BUFLEN        (256u)
 #define report(X,E)   io_doreport((X),__FILE__,__LINE__,(E))
@@ -29,7 +32,7 @@ void io_file_close(io *ioc);
 int io_putc(char c, io * o, io * e);
 int io_getc(io * i, io * e);
 int io_ungetc(char c, io * i, io * e);
-int io_printd(cell_t d, io * o, io * e);
+int io_printd(int32_t d, io * o, io * e);
 int io_printp(void *p, io * o, io * e);
 int io_puts(const char *s, io * o, io * e);/** error code?*/
 void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e);

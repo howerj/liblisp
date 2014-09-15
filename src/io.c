@@ -13,8 +13,29 @@
 
 #include <assert.h>     /*assert*/
 #include <string.h>     /*strlen,memset*/
+#include <stdio.h>
 #include "type.h"
-#include "io.h"
+
+/**I/O abstraction structure**/
+struct io {
+        enum iotype {
+                IO_INVALID,   /* error on incorrectly set up I/O */
+                IO_FILE_IN,   /* read from file */
+                IO_FILE_OUT,  /* write to file */
+                IO_STRING_IN, /* read from a string */
+                IO_STRING_OUT /* write to a string, if you want */
+        }type;
+
+        union {
+                FILE *file;
+                char *string;
+        } ptr; 
+
+        size_t position;        /* position in string */
+        size_t max;             /* max string length, if known */
+        char c;                 /* character store for io_ungetc() */
+        unsigned int ungetc;            /* true if we have ungetc'ed a character */
+};
 
 /**** I/O functions **********************************************************/
 
@@ -210,7 +231,7 @@ int io_ungetc(char c, io * i, io * e)
  *  @return         negative number if operation failed, otherwise the
  *                  total number of characters written
  **/
-int io_printd(cell_t d, io * o, io * e)
+int io_printd(int32_t d, io * o, io * e)
 {
   /**@todo rewrite so it does not use sprintf/fprintf**/
         NULLCHK(o, e);
