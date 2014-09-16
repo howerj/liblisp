@@ -159,6 +159,20 @@ lisp lisp_init(void)
 }
 
 /** 
+ *  @brief      Registers a function for use within the lisp environment    
+ *  @param      name    functions name
+ *  @param      func    function to register.
+ *  @param      l       lisp environment to register function in
+ *  @return     int     Error code, 0 = Ok, >0 is a failure.
+ */
+int lisp_register_function(char *name, expr(*func) (expr args, lisp l), lisp l){
+        if(NULL == extendprimop(name, func, l->global, l->e))
+                return -1;
+        else
+                return 0;
+}
+
+/** 
  *  @brief    lisp_repl implements a lisp Read-Evaluate-Print-Loop
  *  @param    l an initialized lisp environment
  *  @return   Always zero at the moment

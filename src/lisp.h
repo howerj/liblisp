@@ -17,6 +17,7 @@ void lisp_end(lisp l);
 expr lisp_read(io * i, io * e);
 expr lisp_eval(expr x, expr env, lisp l);
 void lisp_print(expr x, io * o, io * e);
+int lisp_register_function(char *name, expr(*func) (expr args, lisp l), lisp l);
 /*void lisp_doperror(expr x, io *o, io *e);*/
 void lisp_clean(lisp l);
 
