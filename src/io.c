@@ -16,17 +16,13 @@
  *
  **/
 
-#include <assert.h>     /*assert*/
-#include <string.h>     /*strlen,memset*/
-#include <stdio.h>      /*...*/
-#include <stdlib.h>     /*exit*/
-#include <stdint.h>
+#include <assert.h>   /* assert */
+#include <string.h>   /* strlen,memset */
+#include <stdio.h>    /* fprintf,sprintf,fclose,fputc,fopen,fflush,fgetc,EOF,FILE* */
+#include <stdlib.h>   /* exit */
+#include <stdint.h>   /* intX_t */
+#include <stdbool.h>  /* bool */
 #include "io.h"
-
-typedef enum{
-        false,
-        true
-} bool;
 
 /**I/O abstraction structure**/
 struct io {
@@ -45,8 +41,8 @@ struct io {
 
         size_t position;        /* position in string */
         size_t max;             /* max string length, if known */
+        unsigned int ungetc;    /* true if we have ungetc'ed a character */
         char c;                 /* character store for io_ungetc() */
-        unsigned int ungetc;            /* true if we have ungetc'ed a character */
 };
 
 /**** I/O functions **********************************************************/
