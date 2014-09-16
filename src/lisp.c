@@ -20,13 +20,15 @@
  **/
 
 #include <string.h>             /* strcmp, strlen, strcat */
+#include <assert.h>             /* assert */
 #include "type.h"               /* includes some std c library headers, as well as types */
 #include "io.h"
 #include "mem.h"
 #include "sexpr.h"
 #include "lisp.h"
 
-/** macro helpers **/
+/** helper macros **/
+
 #define car(X)      ((X)->data.list[0])
 #define cadr(X)     ((X)->data.list[1])
 #define caddr(X)    ((X)->data.list[2])
