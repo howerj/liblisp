@@ -9,10 +9,12 @@
  *
  */
 
-#include "type.h"
+#include <stdint.h>  /* intX_t */
+#include <stdio.h>   /* FILE* */
+#include <stdlib.h>  /* malloc(), calloc(), realloc(), free(), exit() */
+#include <stdbool.h> /* bool */
 #include "io.h"
 #include "mem.h"
-#include <stdlib.h> /** malloc(), calloc(), realloc(), free(), exit() */
 
 /* 
  * alloccounter is used to implement a crude way of making sure the program

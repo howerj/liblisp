@@ -10,8 +10,6 @@
 #ifndef MEM_H
 #define MEM_H
 
-#include "io.h"
-
 #define MAX_ALLOCS ((signed int)(1024*1024))
 
 void mem_set_debug(bool flag);

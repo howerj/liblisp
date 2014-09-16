@@ -3,7 +3,10 @@
 LSP Lisp:
 
 Lisp Interpreter; an experimental (in the sense of personal learning) lisp
-interpreter with minimal system dependencies to aide in portability.
+interpreter with minimal system dependencies to aide in portability. It is
+programmed in ANSI C, barring 'stdint.h' and 'stdbool.h', which could be
+replaced if necessary with strictly ANSI C types. It compiles with both the
+'ansi' and 'pedantic' flags under GCC and Clang regardless.
 
 It is currently still be developed and is in the **pre-alpha** phase.
 
@@ -60,3 +63,4 @@ Or change directories to build folder [bin/](bin/) and run
 ## BUGS
 
 * Yes
+
