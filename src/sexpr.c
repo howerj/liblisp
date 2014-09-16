@@ -42,6 +42,7 @@
 #include "type.h"               /* Project wide types */
 #include "io.h"                 /* I/O wrappers */
 #include "mem.h"                /* free wrappers */
+#include "gc.h"                 /* garbage collection wrappers*/
 #include "color.h"              /* ANSI color escape sequences */
 #include <string.h>             /* strtol(), strspn(), strlen(), memset() */
 #include <ctype.h>              /* isspace() */

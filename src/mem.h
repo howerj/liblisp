@@ -21,9 +21,4 @@ void *mem_calloc(size_t num, size_t size, io * e);
 void *mem_realloc(void *ptr, size_t size, io * e);
 void mem_free(void *ptr, io * e);
 
-expr mem_gc_malloc(io * e);
-expr mem_gc_calloc(io * e);
-int mem_gc_mark(expr root, io * e);
-void mem_gc_sweep(io * e);
-
 #endif

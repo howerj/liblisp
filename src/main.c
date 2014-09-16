@@ -29,6 +29,7 @@
 #include <string.h>             /* strlen() */
 #include "type.h"
 #include "mem.h"
+#include "gc.h"
 #include "sexpr.h"
 #include "lisp.h"
 

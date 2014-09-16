@@ -15,7 +15,7 @@ CC=gcc
 INPUTF=lsp/lib.lsp /dev/stdin
 INDENT=-linux -nut -l 150
 CFLAGS=-Wall -Wextra -ansi -pedantic -Os -g
-OBJFILES=bin/io.o bin/mem.o bin/sexpr.o bin/lisp.o bin/main.o 
+OBJFILES=bin/io.o bin/mem.o bin/gc.o bin/sexpr.o bin/lisp.o bin/main.o
 
 ## building ###################################################################
 # Only a C tool chain is necessary to built the project. Anything else is
