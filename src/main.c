@@ -106,46 +106,6 @@ static int getopt(char *arg)
         return getopt_switch;
 }
 
-/****** Example of function registering interface ****************************/
-
-#define car(X)      ((X)->data.list[0])
-
-/** make new object **/
-static expr mkobj(sexpr_e type, io * e)
-{
-        expr nx;
-        nx = mem_gc_calloc(e);
-        nx->len = 0;
-        nx->type = type;
-        return nx;
-}
-
-static expr primop_system2(expr args, lisp l){
-        int i;
-        expr nx, carg;
-
-        if (1 != args->len) {
-                sexpr_perror(args, "system: argc != 1", l->e);
-                return mkobj(S_NIL,l->e);
-        }
-        carg = car(args);
-        if(S_STRING != carg->type){
-                sexpr_perror(args, "system: arg != string", l->e);
-                return mkobj(S_NIL,l->e);
-        }
-        i = system(carg->data.string);
-        if(0 > i)
-                return mkobj(S_NIL,l->e);
-
-        nx = mkobj(S_INTEGER, l->e);
-        nx->data.integer = i;
-
-        return nx;
-}
-
-/*****************************************************************************/
-
-
 int main(int argc, char *argv[])
 {
         int i;
@@ -153,8 +113,6 @@ int main(int argc, char *argv[])
         lisp l;
 
         l = lisp_init();
-
-        lisp_register_function("sys2",primop_system2,l);
 
         for (i = 1; i < argc; i++) {
                 switch (getopt(argv[i])) {
