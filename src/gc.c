@@ -1,5 +1,5 @@
 /**
- *  @file           pgc.c
+ *  @file           gc.c
  *  @brief          A precise garbage collector
  *  @author         Richard James Howe.
  *  @copyright      Copyright 2013 Richard James Howe.

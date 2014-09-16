@@ -158,7 +158,6 @@ void io_file_close(io *ioc){
 /**
  *  @brief          Return the size of the 'io' struct, this is an incomplete
  *                  type to the outside world.
- *  @param          void
  *  @return         size_t size of io struct which is hidden from the outside
  **/
 size_t io_sizeof_io(void){
