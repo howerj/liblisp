@@ -269,10 +269,11 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
 void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io * e)
 {
         static io *fallback; 
-        io_file_out(&fallback, stderr);
-
-        if (NULL == e) 
-                e = &fallback;
+        if((NULL == e) && (NULL == fallback)){
+                fallback = mem_calloc(1, io_sizeof_io(), NULL);
+                io_file_out(fallback, stderr);
+                e = fallback;
+        }
 
         color_on(ANSI_BOLD_TXT, e, e);
         io_puts("(error \n \"", e, e);
@@ -290,6 +291,12 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io * e
         color_on(ANSI_BOLD_TXT, e, e);
         io_puts(")\n", e, e);
         color_on(ANSI_RESET, e, e);
+
+        if(fallback == e){
+                free(fallback);
+                fallback = NULL;
+        }
+
         return;
 }
 

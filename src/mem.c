@@ -180,7 +180,7 @@ void mem_free(void *ptr, io * e)
 {
         if (NULL != ptr) {
                 alloccounter--;
-                if (true == debug_f) {
+                if ((true == debug_f) && (NULL !=e)) {
                         io_puts("mem_free:", e, e);
                         io_printd(alloccounter, e, e);
                         io_putc('\n', e, e);

@@ -123,7 +123,8 @@ void io_file_in(io *i, FILE* file){
  *  @return         void
  **/
 void io_file_out(io *o, FILE* file){
-        assert((NULL != o)&&(NULL != file));
+        assert((NULL != o));
+        assert((NULL != file));
         memset(o, 0, sizeof(*o));
         o->type         = IO_FILE_OUT;
         o->ptr.file     = file;
@@ -146,6 +147,16 @@ void io_file_close(io *ioc){
                 }
         }
         return;
+}
+
+/**
+ *  @brief          Return the size of the 'io' struct, this is an incomplete
+ *                  type to the outside world.
+ *  @param          void
+ *  @return         size_t size of io struct which is hidden from the outside
+ **/
+size_t io_sizeof_io(void){
+        return sizeof(io);
 }
 
 /**

@@ -102,9 +102,9 @@ lisp lisp_init(void)
         l->global = mem_calloc(1, sizeof(sexpr_t), NULL);
         l->env = mem_calloc(1, sizeof(sexpr_t), NULL);
 
-        l->i = mem_calloc(1, sizeof(io), NULL);
-        l->o = mem_calloc(1, sizeof(io), NULL);
-        l->e = mem_calloc(1, sizeof(io), NULL);
+        l->i = mem_calloc(1, io_sizeof_io(), NULL);
+        l->o = mem_calloc(1, io_sizeof_io(), NULL);
+        l->e = mem_calloc(1, io_sizeof_io(), NULL);
 
         /* set up file I/O and pointers */
         io_file_in(l->i, stdin);
@@ -186,23 +186,24 @@ lisp lisp_repl(lisp l)
  **/
 void lisp_end(lisp l)
 {
-        io e;
-        io_file_out(&e, stderr);
+        io *e = mem_calloc(1, io_sizeof_io(),NULL);
+        io_file_out(e, stderr);
 
         fflush(NULL);
 
         /*do not call mark before **this** sweep */
-        mem_gc_sweep(&e);
+        mem_gc_sweep(e);
 
-        mem_free(l->e, &e);
-        mem_free(l->o, &e);
-        mem_free(l->i, &e);
+        mem_free(l->e, e);
+        mem_free(l->o, e);
+        mem_free(l->i, e);
 
-        mem_free(l->env, &e);
-        mem_free(l->global->data.list, &e);
-        mem_free(l->global, &e);
-        mem_free(l, &e);
+        mem_free(l->env, e);
+        mem_free(l->global->data.list, e);
+        mem_free(l->global, e);
+        mem_free(l, e);
 
+        mem_free(e,NULL);
         return;
 }
 
@@ -680,7 +681,7 @@ static expr primop_cons(expr args, lisp l)
 /**nth element in a list or string**/
 static expr primop_nth(expr args, lisp l)
 {
-        cell_t i;
+        int32_t i;
         expr a1, a2;
         if (2 != args->len) {
                 sexpr_perror(args, "nth: argc != 2", l->e);

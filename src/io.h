@@ -28,6 +28,7 @@ FILE *io_filename_out(io *o, char *file_name);
 void io_file_in(io *i, FILE* file);
 void io_file_out(io *o, FILE* file);
 void io_file_close(io *ioc);
+size_t io_sizeof_io(void);
 
 int io_putc(char c, io * o, io * e);
 int io_getc(io * i, io * e);
