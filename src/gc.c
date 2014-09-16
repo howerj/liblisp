@@ -34,7 +34,7 @@ static void gcinner(expr x, io * e);
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
  **/
-expr mem_gc_malloc(io * e)
+expr gc_malloc(io * e)
 {
         void *v;
         v = mem_malloc(sizeof(struct sexpr_t), e);
@@ -47,7 +47,7 @@ expr mem_gc_malloc(io * e)
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-expr mem_gc_calloc(io * e)
+expr gc_calloc(io * e)
 {
         expr v;
         struct heap *nextheap;
@@ -67,26 +67,26 @@ expr mem_gc_calloc(io * e)
  *  @param          e    error output stream
  *  @return         false == root was not marked, and now is
  **/
-int mem_gc_mark(expr root, io * e)
+int gc_mark(expr root, io * e)
 {
         if (NULL == root)
                 return false;
 
-        root->mem_gc_mark = true;
+        root->gc_mark = true;
 
         switch (root->type) {
         case S_LIST:
                 {
                         unsigned int i;
                         for (i = 0; i < root->len; i++)
-                                mem_gc_mark(root->data.list[i], e);
+                                gc_mark(root->data.list[i], e);
                 }
                 return false;
         case S_PROC:
                 /*@todo Put the S_PROC structure into type.h* */
-                mem_gc_mark(root->data.list[0], e);
-                mem_gc_mark(root->data.list[1], e);
-                mem_gc_mark(root->data.list[2], e);
+                gc_mark(root->data.list[0], e);
+                gc_mark(root->data.list[1], e);
+                gc_mark(root->data.list[2], e);
                 return false;
         case S_PRIMITIVE:
         case S_NIL:
@@ -109,15 +109,15 @@ int mem_gc_mark(expr root, io * e)
  *  @param          e    error output stream
  *  @return         void
  **/
-void mem_gc_sweep(io * e)
+void gc_sweep(io * e)
 {
   /**@todo this really needs cleaning up**/
         struct heap *ll, *pll;
         if (NULL == heaplist.next)      /*pass first element, do not collect element */
                 return;
         for (ll = heaplist.next, pll = &heaplist; ll != heaphead;) {
-                if (true == ll->x->mem_gc_mark) {
-                        ll->x->mem_gc_mark = false;
+                if (true == ll->x->gc_mark) {
+                        ll->x->gc_mark = false;
                         pll = ll;
                         ll = ll->next;
                 } else {
@@ -129,8 +129,8 @@ void mem_gc_sweep(io * e)
                 }
         }
         if ((heaphead != &heaplist) && (NULL != heaphead->x)) {
-                if (true == heaphead->x->mem_gc_mark) {
-                        ll->x->mem_gc_mark = false;
+                if (true == heaphead->x->gc_mark) {
+                        ll->x->gc_mark = false;
                 } else {
                         gcinner(heaphead->x, e);
                         heaphead->x = NULL;

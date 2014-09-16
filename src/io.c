@@ -9,6 +9,11 @@
  *  @todo Implement set_error_stream instead of passing the error
  *        constantly to functions like io_puts
  *
+ *  It is possible to implement something similar using 'setbuf' and
+ *  family from <stdio.h> and perhaps more cleanly and efficiently as
+ *  well. However it would not *quite* replicate what I want and such
+ *  functionality would have to be wrapped up anyway.
+ *
  **/
 
 #include <assert.h>     /*assert*/

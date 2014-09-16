@@ -377,7 +377,7 @@ static expr parse_symbol(io * i, io * e)
         unsigned int count = 0;
         int c;
         char buf[BUFLEN];
-        ex = mem_gc_calloc(e);
+        ex = gc_calloc(e);
 
         memset(buf, '\0', BUFLEN);
 
@@ -452,7 +452,7 @@ static expr parse_string(io * i, io * e)
         int c;
         char buf[BUFLEN];
 
-        ex = mem_gc_calloc(e);
+        ex = gc_calloc(e);
         memset(buf, '\0', BUFLEN);
 
         while (EOF != (c = io_getc(i, e))) {
@@ -502,7 +502,7 @@ static expr parse_list(io * i, io * e)
         expr ex = NULL, chld;
         int c;
 
-        ex = mem_gc_calloc(e);
+        ex = gc_calloc(e);
         ex->len = 0;
 
         while (EOF != (c = io_getc(i, e))) {

@@ -209,7 +209,7 @@ void lisp_end(lisp l)
         fflush(NULL);
 
         /*do not call mark before **this** sweep */
-        mem_gc_sweep(e);
+        gc_sweep(e);
 
         mem_free(l->e, e);
         mem_free(l->o, e);
@@ -367,8 +367,8 @@ expr lisp_eval(expr x, expr env, lisp l)
  **/
 void lisp_clean(lisp l)
 {
-        mem_gc_mark(l->global, l->e);
-        mem_gc_sweep(l->e);
+        gc_mark(l->global, l->e);
+        gc_sweep(l->e);
 }
 
 /*** internal functions ******************************************************/
@@ -443,7 +443,7 @@ static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), expr en
 static expr mkobj(sexpr_e type, io * e)
 {
         expr nx;
-        nx = mem_gc_calloc(e);
+        nx = gc_calloc(e);
         nx->len = 0;
         nx->type = type;
         return nx;

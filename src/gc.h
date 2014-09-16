@@ -10,12 +10,9 @@
 #ifndef GC_H
 #define GC_H
 
-#include "io.h"
-#include "type.h"
-
-expr mem_gc_malloc(io * e);
-expr mem_gc_calloc(io * e);
-int mem_gc_mark(expr root, io * e);
-void mem_gc_sweep(io * e);
+expr gc_malloc(io * e);
+expr gc_calloc(io * e);
+int  gc_mark(expr root, io * e);
+void gc_sweep(io * e);
 
 #endif

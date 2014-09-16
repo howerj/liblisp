@@ -53,7 +53,7 @@ struct sexpr_t { /** base type for our expressions */
                  expr(*func) (expr args, lisp l);       /*primitive operations */
         } data;
         sexpr_e type;
-        unsigned int mem_gc_mark:1;  /*the mark of the garbage collector */
+        unsigned int gc_mark:1;  /*the mark of the garbage collector */
 };
 
 /**lisp global environment struct**/
