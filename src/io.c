@@ -18,8 +18,15 @@
 
 #include <assert.h>     /*assert*/
 #include <string.h>     /*strlen,memset*/
-#include <stdio.h>
-#include "type.h"
+#include <stdio.h>      /*...*/
+#include <stdlib.h>     /*exit*/
+#include <stdint.h>
+#include "io.h"
+
+typedef enum{
+        false,
+        true
+} bool;
 
 /**I/O abstraction structure**/
 struct io {
