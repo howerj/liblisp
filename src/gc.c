@@ -11,9 +11,8 @@
  *  Out-Of-Memory errors should go here.
  */
 
-#include "type.h"
-#include "mem.h"
 #include "gc.h"
+#include "mem.h"
 
 struct heap {
         expr x;

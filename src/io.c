@@ -16,11 +16,11 @@
  *
  **/
 
+#include "io.h"
 #include <assert.h>  
 #include <string.h>  
 #include <stdlib.h>  
 #include <stdbool.h> 
-#include "io.h"
 
 /**I/O abstraction structure**/
 struct io {

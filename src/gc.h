@@ -11,6 +11,7 @@
 #define GC_H
 
 #include "io.h"
+#include "type.h"
 
 expr gc_malloc(io * e);
 expr gc_calloc(io * e);

@@ -9,9 +9,8 @@
  *
  */
 
-#include <string.h>
-#include "io.h"
 #include "mem.h"
+#include <string.h>
 
 /* 
  * alloccounter is used to implement a crude way of making sure the program

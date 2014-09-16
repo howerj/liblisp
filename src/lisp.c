@@ -19,9 +19,9 @@
  *
  **/
 
+#include "lisp.h"
 #include <string.h>
 #include <assert.h>
-#include "lisp.h"
 #include "mem.h"
 #include "gc.h"
 #include "sexpr.h"

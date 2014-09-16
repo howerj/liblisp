@@ -39,9 +39,9 @@
  *
  **/
 
+#include "sexpr.h"
 #include <string.h>
 #include <ctype.h>
-#include "sexpr.h"
 #include "mem.h" 
 #include "gc.h"  
 #include "color.h"
