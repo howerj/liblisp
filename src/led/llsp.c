@@ -88,10 +88,7 @@ int main(void){
                         linenoise_history_add(line);      
                         linenoise_history_save(hist_file);
 
-                        memset(l->i, 0, sizeof(*l->i));
-                        l->i->type = IO_STRING_IN;
-                        l->i->ptr.string = line;
-                        l->i->max = strlen(line);
+                        io_string_in(l->i,line);
                         lisp_repl(l);
                 }
 

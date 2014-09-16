@@ -2,16 +2,21 @@
 #include "sexpr.h"
 
 int main(void){
-  io i = {IO_FILE_IN,  {NULL}, 0, 0, '\0', false};
-  io o = {IO_FILE_OUT, {NULL}, 0, 0, '\0', false};
-  io e = {IO_FILE_OUT, {NULL}, 0, 0, '\0', false};
+  io *i = calloc(1, io_sizeof_io());
+  io *o = calloc(1, io_sizeof_io());
+  io *e = calloc(1, io_sizeof_io());
   expr x;
-  i.ptr.file = stdin;
-  e.ptr.file = stderr;
-  o.ptr.file = stdout;
+
+  io_file_in(i, stdin);
+  io_file_out(o, stdout);
+  io_file_out(e, stderr);
  
-  while((x = sexpr_parse(&i,&e)))
-    sexpr_print(x,&o,0,&e);
+  while((x = sexpr_parse(i,e)))
+    sexpr_print(x,o,0,e);
+
+  free(i);
+  free(o);
+  free(e);
 
   return 0;
 }
