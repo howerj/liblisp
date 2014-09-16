@@ -52,7 +52,6 @@ static expr apply(expr proc, expr args, lisp l);        /*add env for dynamic sc
 static expr dofind(expr env, expr x);   /*add error handling? */
 static expr find(expr env, expr x, lisp l);
 static expr extend(expr sym, expr val, expr env, io * e);
-static char *sdup(const char *s, io * e);
 static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), expr env, io * e);
 static expr extensions(expr env, expr syms, expr vals, io * e);
 
@@ -119,15 +118,15 @@ lisp lisp_init(void)
         nil = mkobj(S_NIL, l->e);
         tee = mkobj(S_TEE, l->e);
 
-        s_if     = mksym(sdup("if", l->e), l->e);
-        s_lambda = mksym(sdup("lambda", l->e), l->e);
-        s_begin  = mksym(sdup("begin", l->e), l->e);
-        s_define = mksym(sdup("define", l->e), l->e);
-        s_set    = mksym(sdup("set", l->e), l->e);
-        s_quote  = mksym(sdup("quote", l->e), l->e);
+        s_if     = mksym(mem_strdup("if", l->e), l->e);
+        s_lambda = mksym(mem_strdup("lambda", l->e), l->e);
+        s_begin  = mksym(mem_strdup("begin", l->e), l->e);
+        s_define = mksym(mem_strdup("define", l->e), l->e);
+        s_set    = mksym(mem_strdup("set", l->e), l->e);
+        s_quote  = mksym(mem_strdup("quote", l->e), l->e);
 
-        extend(mksym(sdup("nil", l->e), l->e), nil, l->global, l->e);
-        extend(mksym(sdup("t", l->e), l->e), tee, l->global, l->e);
+        extend(mksym(mem_strdup("nil", l->e), l->e), nil, l->global, l->e);
+        extend(mksym(mem_strdup("t", l->e), l->e), tee, l->global, l->e);
 
         extend(s_if, s_if, l->global, l->e);
         extend(s_lambda, s_lambda, l->global, l->e);
@@ -419,22 +418,10 @@ static expr extend(expr sym, expr val, expr env, io * e)
         return val;
 }
 
-/** duplicate a string **/
-static char *sdup(const char *s, io * e)
-{
-        char *ns;
-        if (NULL == s) {
-                sexpr_perror(NULL, "passed NULL", e);
-        }
-        ns = mem_malloc(sizeof(char) * (strlen(s) + 1), e);
-        strcpy(ns, s);
-        return ns;
-}
-
 /** extend the lisp environment with a primitive operator **/
 static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), expr env, io * e)
 {
-        return extend(mksym(sdup(s, e), e), mkprimop(func, e), env, e);
+        return extend(mksym(mem_strdup(s, e), e), mkprimop(func, e), env, e);
 }
 
 /** make new object **/

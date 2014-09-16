@@ -21,5 +21,7 @@ void *mem_malloc(size_t size, io * e);
 void *mem_calloc(size_t num, size_t size, io * e);
 void *mem_realloc(void *ptr, size_t size, io * e);
 void mem_free(void *ptr, io * e);
+char *mem_strdup(const char *s, io * e);
+
 
 #endif

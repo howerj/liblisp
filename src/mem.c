@@ -9,10 +9,7 @@
  *
  */
 
-#include <stdint.h>  /* intX_t */
-#include <stdio.h>   /* FILE* */
-#include <stdlib.h>  /* malloc(), calloc(), realloc(), free(), exit() */
-#include <stdbool.h> /* bool */
+#include <string.h>
 #include "io.h"
 #include "mem.h"
 
@@ -142,6 +139,24 @@ void mem_free(void *ptr, io * e)
         }
         free(ptr);
         ptr = NULL;
+}
+
+/**
+ *  @brief          Duplicate a string, allocating memory for it.
+ *  @param          s           string to duplicate
+ *  @param          e           error stream to print to
+ *  @return         char*       duplicate string
+ **/
+char *mem_strdup(const char *s, io * e)
+{
+        char *ns;
+        if (NULL == s) {
+                io_puts("mem_strdup: passed NULL", e, e);
+                abort();
+        }
+        ns = mem_malloc(sizeof(char) * (strlen(s) + 1), e);
+        strcpy(ns, s);
+        return ns;
 }
 
 /*****************************************************************************/
