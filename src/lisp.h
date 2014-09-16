@@ -10,6 +10,9 @@
 #ifndef LISP_H
 #define LISP_H
 
+#include "io.h"
+#include "type.h"
+
 lisp lisp_init(void);
 lisp lisp_repl(lisp l);
 void lisp_end(lisp l);

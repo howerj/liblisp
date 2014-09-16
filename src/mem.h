@@ -12,6 +12,9 @@
 
 #define MAX_ALLOCS ((signed int)(1024*1024))
 
+#include "io.h"
+#include "type.h"
+
 void mem_set_debug(bool flag);
 
 void *mem_malloc(size_t size, io * e);

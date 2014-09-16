@@ -39,13 +39,12 @@
  *
  **/
 
-#include "type.h"               /* Project wide types */
-#include "io.h"                 /* I/O wrappers */
-#include "mem.h"                /* free wrappers */
-#include "gc.h"                 /* garbage collection wrappers*/
-#include "color.h"              /* ANSI color escape sequences */
-#include <string.h>             /* strtol(), strspn(), strlen(), memset() */
-#include <ctype.h>              /* isspace() */
+#include <string.h>
+#include <ctype.h>
+#include "sexpr.h"
+#include "mem.h" 
+#include "gc.h"  
+#include "color.h"
 
 static const char *octal_s = "01234567";
 static const char *decimal_s = "0123456789";

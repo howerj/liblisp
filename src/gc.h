@@ -10,6 +10,8 @@
 #ifndef GC_H
 #define GC_H
 
+#include "io.h"
+
 expr gc_malloc(io * e);
 expr gc_calloc(io * e);
 int  gc_mark(expr root, io * e);

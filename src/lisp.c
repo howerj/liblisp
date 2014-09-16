@@ -19,14 +19,12 @@
  *
  **/
 
-#include <string.h>             /* strcmp, strlen, strcat */
-#include <assert.h>             /* assert */
-#include "type.h"               /* includes some std c library headers, as well as types */
-#include "io.h"
+#include <string.h>
+#include <assert.h>
+#include "lisp.h"
 #include "mem.h"
 #include "gc.h"
 #include "sexpr.h"
-#include "lisp.h"
 
 /** helper macros **/
 

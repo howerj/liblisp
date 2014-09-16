@@ -10,16 +10,11 @@
 #ifndef TYPE_H
 #define TYPE_H
 /*system types*/
-#include <stdint.h>             /* intX_t */
-#include <stdlib.h>             /* exit(), EXIT_FAILURE */
-#include <stdio.h>              /* ... lots of things ... */
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h> 
+#include <stdbool.h>            
 #include "io.h"
-
-/*basic types*/
-typedef enum {
-        false,
-        true
-} bool;                         /* be *very* careful with this type */
 
 typedef struct sexpr_t sexpr_t;
 typedef sexpr_t *expr;

@@ -24,14 +24,9 @@
  *
  **/
 
-#include <stdio.h>              /* printf(), fopen(), fclose() */
-#include <stdlib.h>             /* exit() */
-#include <string.h>             /* strlen() */
-#include "type.h"
-#include "mem.h"
-#include "gc.h"
-#include "sexpr.h"
 #include "lisp.h"
+#include "mem.h"
+#include "sexpr.h"
 
 typedef enum {
         getopt_switch,          /* 0: switch statement, eg. sets some internal bool */

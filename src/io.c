@@ -16,12 +16,10 @@
  *
  **/
 
-#include <assert.h>   /* assert */
-#include <string.h>   /* strlen,memset */
-#include <stdio.h>    /* fprintf,sprintf,fclose,fputc,fopen,fflush,fgetc,EOF,FILE* */
-#include <stdlib.h>   /* exit */
-#include <stdint.h>   /* intX_t */
-#include <stdbool.h>  /* bool */
+#include <assert.h>  
+#include <string.h>  
+#include <stdlib.h>  
+#include <stdbool.h> 
 #include "io.h"
 
 /**I/O abstraction structure**/
