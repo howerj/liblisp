@@ -44,9 +44,10 @@ correctly. To test it I should run the interpreter with Valgrind and "massif" to
 get an overview what is getting freed when, initial testing did not prove to go
 very well. 
 
-2. Funarg problem
+2. Funarg problem and evaluation.
 
-The funary problem is not solved correctly leading to incorrect code!
+The funary problem is not solved correctly leading to incorrect code! Also
+somethings are not evaluated at the right time.
 
 ### A more general To-Do section.
 
@@ -71,6 +72,13 @@ its items.
   moved to the test bench suite
   - There should be a 'source' and an 'include' directory.
   - Libraries should be created, both static and dynamics ones.
+
+* The core library is portable, however an external wrapper need
+  not be and as such could implement:
+  - dlopen wrapper to load dynamic library plug-ins
+  - line editor library 
+  - socket library (plug-in)
+  - OpenGL interface (plug in)
 
 * Make the API simpler to use;
   - Functions to set up internals
