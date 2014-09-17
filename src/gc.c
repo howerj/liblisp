@@ -76,7 +76,7 @@ int gc_mark(expr root, io * e)
         switch (root->type) {
         case S_LIST:
                 {
-                        unsigned int i;
+                        size_t i;
                         for (i = 0; i < root->len; i++)
                                 gc_mark(root->data.list[i], e);
                 }

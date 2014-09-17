@@ -8,7 +8,7 @@
 ## Variables ##################################################################
 CC=gcc 
 CCFLAGS=-Wall -Wextra -ansi -pedantic -O2 -g 
-OBJFILES=io.o mem.o sexpr.o lisp.o 
+OBJFILES=io.o mem.o gc.o sexpr.o lisp.o
 TSTBINARIES=repl sexpr
 
 ## building ###################################################################
@@ -24,8 +24,8 @@ repl: $(OBJFILES) repl.o dat/repl.in dat/repl.out
 	diff dat/repl.out repl.tmp
 	@echo "repl: pass";
 
-sexpr: io.o mem.o sexpr.o tb_sexpr.o dat/sexpr.in dat/sexpr.out 
-	$(CC) $(CCFLAGS) io.o mem.o sexpr.o tb_sexpr.o -o sexpr
+sexpr: io.o mem.o gc.o sexpr.o tb_sexpr.o dat/sexpr.in dat/sexpr.out
+	$(CC) $(CCFLAGS) io.o mem.o sexpr.o gc.o tb_sexpr.o -o sexpr
 	cat  dat/sexpr.in | ./sexpr > sexpr.tmp
 	diff dat/sexpr.out sexpr.tmp
 	@echo "sexpr: pass";

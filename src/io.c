@@ -8,6 +8,13 @@
  *
  *  @todo Implement set_error_stream instead of passing the error
  *        constantly to functions like io_puts
+ *  @todo Use stdarg.h where appropriate
+ *  @todo Error checking on return values.
+ *
+ *  This library allows redirection of input and output to
+ *  various different sources. It also would allow me to add in
+ *  a new arbitrary source later on, for example reading and
+ *  writing to and from sockets.
  *
  *  It is possible to implement something similar using 'setbuf' and
  *  family from <stdio.h> and perhaps more cleanly and efficiently as
@@ -87,7 +94,7 @@ FILE *io_filename_in(io *i, char *file_name){
         assert((NULL != i)&&(NULL != file_name));
         memset(i, 0, sizeof(*i));
         i->type         = IO_FILE_IN;
-        if(NULL == (i->ptr.file = fopen(file_name, "r")))
+        if(NULL == (i->ptr.file = fopen(file_name, "rb")))
                 return NULL;
         return i->ptr.file;
 }
@@ -103,7 +110,7 @@ FILE *io_filename_out(io *o, char *file_name){
         assert((NULL != o)&&(NULL != file_name));
         memset(o, 0, sizeof(*o));
         o->type         = IO_FILE_OUT;
-        if(NULL == (o->ptr.file = fopen(file_name, "w")))
+        if(NULL == (o->ptr.file = fopen(file_name, "wb")))
                 return NULL;
         return o->ptr.file;
 }
