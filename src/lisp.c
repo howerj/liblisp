@@ -75,20 +75,6 @@ static expr primop_typeeq(expr args, lisp l);
 static expr primop_reverse(expr args, lisp l);
 static expr primop_system(expr args, lisp l);
 
-/*
-static expr primop_nummore(expr args, lisp l);
-static expr primop_nummoreeq(expr args, lisp l);
-static expr primop_numless(expr args, lisp l);
-static expr primop_numlesseq(expr args, lisp l);
-static expr primop_min(expr args, lisp l);
-static expr primop_max(expr args, lisp l);
-static expr primop_lisp_eval(expr args, lisp l);
-static expr primop_read(expr args, lisp l);
-static expr primop_getc(expr args, lisp l);
-static expr primop_gets(expr args, lisp l);
-static expr primop_putc(expr args, lisp l);
-static expr primop_find(expr args, lisp l);
-*/
 /*** interface functions *****************************************************/
 
 /**
