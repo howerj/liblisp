@@ -49,6 +49,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+        #include <stddef.h>
 
         typedef struct linenoise_completions {
                 size_t len;
