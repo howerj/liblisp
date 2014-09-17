@@ -198,7 +198,7 @@ void linenoise_set_multiline(int ml)
 
 /* Return true if the terminal name is in the list of terminals we know are
  * not able to understand basic escape sequences. */
-static int isUnsupportedTerm(void)
+static int is_unsupported_term(void)
 {
         char *term = getenv("TERM");
         int j;
@@ -1011,7 +1011,7 @@ char *linenoise(const char *prompt)
         char buf[LINENOISE_MAX_LINE];
         int count;
 
-        if (isUnsupportedTerm()) {
+        if (is_unsupported_term()) {
                 size_t len;
 
                 printf("%s", prompt);
