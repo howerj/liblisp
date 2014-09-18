@@ -5,7 +5,8 @@
 # License:  LGPL v2.1 or later version                                        #
 ###############################################################################
 
-.PHONY: all doxygen indent report tar clean valgrind strace ltrace 
+MAKEFLAGS+= --no-builtin-rules
+.PHONY: all doxygen indent report tar clean valgrind ltrace 
 
 ## Variables ##################################################################
 
