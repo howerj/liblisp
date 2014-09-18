@@ -3,7 +3,8 @@
 This is a modified version of "linenoise" library originally obtained from
 <https://github.com/antirez/linenoise>, it has been modified to bring it
 closer to how the rest of the code in the lisp repository is structured
-but the changes are mostly superficial.
+but the changes are mostly superficial, but I have merged in vi key binding
+code.
  
         - RJH
 

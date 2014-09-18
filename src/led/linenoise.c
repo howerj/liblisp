@@ -10,6 +10,7 @@
  * @license     BSD (included as comment)
  *
  * @todo There are a few vi commands that should be added
+ * @todo The vi section and the rest should be separated.
  * @bug  Some of the characters in vi mode get eaten when they should not
  *
  * You can find the original/latest source code at:
@@ -260,7 +261,7 @@ static int enable_raw_mode(int fd)
         raw.c_oflag &= ~(OPOST);
         /* control modes - set 8 bit chars */
         raw.c_cflag |= (CS8);
-        /* local modes - choing off, canonical off, no extended functions,
+        /* local modes - echoing off, canonical off, no extended functions,
          * no signal chars (^Z,^C) */
         raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
         /* control chars - set return condition: min number of bytes and timer.
@@ -643,7 +644,7 @@ static void refresh_multi_line(struct linenoise_state *l)
         rpos2 = (plen + l->pos + l->cols) / l->cols; /* current cursor relative row. */
         LNDEBUG("rpos2 %d", rpos2);
 
-        /* Go up till we reach the expected positon. */
+        /* Go up till we reach the expected position. */
         if (rows - rpos2 > 0) {
                 LNDEBUG("go-up %d", rows - rpos2);
                 snprintf(seq, 64, "\x1b[%dA", rows - rpos2);
