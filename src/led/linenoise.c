@@ -6,6 +6,7 @@
  *              line editing lib needs to be 20,000 lines of C code.
  * @author      Salvatore Sanfilippo
  * @author      Pieter Noordhuis
+ * @author      Richard Howe
  * @license     BSD (included as comment)
  *
  * You can find the original/latest source code at:
@@ -14,6 +15,23 @@
  *
  * Does a number of crazy assumptions that happen to be true in 99.9999% of
  * the 2010 UNIX computers around.
+ * 
+ * DEVIATIONS FROM ORIGINAL:
+ * 
+ * This merges and updates changes from user 'bobrippling' on Github.com
+ * <https://github.com/bobrippling/linenoise/blob/master/linenoise.c>
+ * <https://github.com/antirez/linenoise/pull/11>
+ *
+ * The API has also been changed so better suite my style and a few minor
+ * typos fixed.
+ *
+ * ------------------------------------------------------------------------
+ *
+ * ADDITIONAL COPYRIGHT
+ *
+ * Copyright (c) 2014, Richard James Howe <howe.r.j.89@gmail.com>
+ *
+ * ORIGINAL COPYRIGHT HEADER
  *
  * ------------------------------------------------------------------------
  *
@@ -966,7 +984,32 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                                         case 't': /*fallthrough*/
                                         case 'T': /*fallthrough*/
                                         {
+                                                ssize_t dir, lim, cpos;
+                                                int find = 0; /* need to initialise the higher bytes */
 
+                                                if (read(l.ifd,&find,1) == -1) 
+                                                        break;
+
+                                                if (islower(c)) {
+                                                    /* forwards */
+                                                    lim = l.len;
+                                                    dir = 1;
+                                                } else {
+                                                    lim = dir = -1;
+                                                }
+
+                                                for (cpos = l.pos + dir; cpos != lim; cpos += dir) {
+                                                    if (buf[cpos] == find) {
+                                                        l.pos = cpos;
+                                                        if (tolower(c) == 't')
+                                                            l.pos -= dir;
+                                                        refresh_line(&l);
+                                                        break;
+                                                    }
+                                                }
+
+                                                if (cpos == lim) 
+                                                        linenoise_beep();
                                         }
                                         break;
                                         case 'c':
