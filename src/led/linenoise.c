@@ -972,7 +972,34 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                                         case 'c':
                                                 vi_escape = 0;
                                         case 'd': /*delete*/
-
+                                                if (read(l.ifd, seq, 1) == -1)
+                                                        break;
+                                                switch(seq[0]){
+                                                        case 'w':
+                                                                break;
+                                                        case 'b':
+                                                                linenoise_edit_delete_prev_word(&l);
+                                                                break;
+                                                        case '$':
+                                                                buf[l.pos] = '\0';
+                                                                l.len = l.pos;
+                                                                refresh_line(&l);
+                                                                break;
+                                                        case 'l':
+                                                                break;
+                                                        case 'h':
+                                                                break;
+                                                        case 'c':
+                                                        case 'd':
+                                                                buf[0] = '\0';
+                                                                l.pos = l.len = 0;
+                                                                refresh_line(&l);
+                                                                break;
+                                                        default:
+                                                                linenoise_beep();
+                                                                vi_escape = 1;
+                                                                break;
+                                                }
 
                                         break;
 
