@@ -56,6 +56,9 @@ might be nice to have section" and it might duplicate that priority section in
 its items.
 
 * Orient the lisp towards processing text à la mode de awk/sed/tr 
+  - Perhaps these could be implemented as a macro package?
+* String interpolation like in many shell and scripting languages could
+  be useful. How it would work and interact with lisp is another thing.
 * Rewrite basic types used in implementation from arrays to cons
   cells as it should be.
  
@@ -115,6 +118,10 @@ its items.
   - Check realloc, string library functions, etc.
 
 * Special parsing of if,begin,... etc. Best way to deal with this?
+
+* Support Unicode
+  Unicode is not supported and I do not know of the best way to support
+  it yet.
 
 * Move primops to a separate file
 
