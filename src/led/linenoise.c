@@ -341,7 +341,7 @@ void linenoise_clearscreen(void)
 
 /* Beep, used for completion when there is nothing to complete or when all
  * the choices were already shown. */
-static void linenoiseBeep(void)
+static void linenoise_beep(void)
 {
         fprintf(stderr, "\x7");
         fflush(stderr);
@@ -373,7 +373,7 @@ static int complete_line(struct linenoise_state *ls)
 
         completion_callback(ls->buf, &lc);
         if (lc.len == 0) {
-                linenoiseBeep();
+                linenoise_beep();
         } else {
                 size_t stop = 0, i = 0;
 
@@ -402,7 +402,7 @@ static int complete_line(struct linenoise_state *ls)
                         case TAB:        /* tab */
                                 i = (i + 1) % (lc.len + 1);
                                 if (i == lc.len)
-                                        linenoiseBeep();
+                                        linenoise_beep();
                                 break;
                         case ESC:       /* escape */
                                 /* Re-show original buffer */
@@ -857,10 +857,11 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                         /* Read the next two bytes representing the escape sequence.
                          * Use two calls to handle slow terminals returning the two
                          * chars at different times. */
+                         
                         if (read(l.ifd, seq, 1) == -1)
                                 break;
                         if (read(l.ifd, seq + 1, 1) == -1)
-                                break;
+                                        break;
 
                         /* ESC [ sequences. */
                         if (seq[0] == '[') {
@@ -906,11 +907,82 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                                         linenoise_edit_move_end(&l);
                                         break;
                                 }
+                        } else if(0 != vi_mode){
+                                vi_escape = 1;
                         }
                         break;
                 default:
-                        if (linenoise_edit_insert(&l, c))
-                                return -1;
+                        if(0 == vi_mode || 0 == vi_escape){
+                                if (linenoise_edit_insert(&l, c))
+                                        return -1;
+                        } else { /*in vi command mode*/
+                                switch(c){
+                                        case 'C': /*Change*/
+                                                vi_escape = 0;
+                                                /*fallthrough*/
+                                        case 'D': /*Delete from cursor to the end of the line*/
+                                                buf[l.pos] = '\0';
+                                                l.len = l.pos;
+                                                refresh_line(&l);
+                                                break;
+                                        case '0': /*Go to the beginning of the line*/
+                                                linenoise_edit_move_home(&l);
+                                                break;
+                                        case '$':
+                                                linenoise_edit_move_end(&l);
+                                                break;
+                                        case 'l': /*move right*/
+                                                linenoise_edit_move_right(&l);
+                                                break;
+                                        case 'h': /*move left*/
+                                                linenoise_edit_move_left(&l);
+                                                break;
+                                        case 'A':/*append at end of line*/
+                                                l.pos = l.len;
+                                                refresh_line(&l);
+                                                /*fallthrough*/
+                                        case 'a':/*append after the cursor*/
+                                                if(l.pos != l.len){
+                                                        l.pos++;
+                                                        refresh_line(&l);
+                                                }
+                                                /*fallthrough*/
+                                        case 'i':/*insert text before the cursor*/
+                                                vi_escape = 0;
+                                                break;
+                                        case 'I':/*Insert text before the first non-blank in the line*/
+                                                vi_escape = 0;
+                                                l.pos = 0;
+                                                refresh_line(&l);
+                                                break;
+                                        case 'k': /*move up*/
+                                                linenoise_edit_history_next(&l, LINENOISE_HISTORY_PREV);
+                                                break;
+                                        case 'j': /*move down*/
+                                                linenoise_edit_history_next(&l, LINENOISE_HISTORY_NEXT);
+                                                break;
+                                        case 'f': /*fallthrough*/
+                                        case 'F': /*fallthrough*/
+                                        case 't': /*fallthrough*/
+                                        case 'T': /*fallthrough*/
+                                        {
+
+                                        }
+                                        break;
+                                        case 'c':
+                                                vi_escape = 0;
+                                        case 'd': /*delete*/
+
+
+                                        break;
+
+
+                                        default:
+                                                linenoise_beep();
+                                                break;
+
+                                }
+                        }
                         break;
                 case CTRL_U:   /* delete the whole line. */
                         buf[0] = '\0';

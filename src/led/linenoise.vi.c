@@ -435,7 +435,6 @@ static int linenoisePrompt(int fd, char *buf, size_t buflen, const char *prompt)
                     case '$': goto vi_eol;
                     case 'l': goto right_arrow;
                     case 'h': goto left_arrow;
-
                     case 'A':
                         pos = len;
                         refreshLine(fd,prompt,buf,len,pos,cols);
