@@ -79,7 +79,8 @@ int main(void){
         lisp l;
 
         linenoise_set_completion_callback(completion);
-        linenoise_history_load(hist_file);   
+        linenoise_history_load(hist_file);
+        linenoise_vi_mode(1);
 
         l = lisp_init();
 

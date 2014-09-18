@@ -119,6 +119,8 @@ static int mlmode = 0;          /* Multi line mode. Default is single line. */
 static int atexit_registered = 0;       /* Register atexit just 1 time. */
 static int history_max_len = LINENOISE_DEFAULT_HISTORY_MAX_LEN;
 static int history_len = 0;
+static int vi_mode = 0;         /* is vi mode on? */
+static int vi_escape = 0;       /* are we in command or insert mode?*/
 static char **history = NULL;
 
 /* The linenoise_state structure represents the state during line editing.
@@ -895,10 +897,7 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                                                 break;
                                         }
                                 }
-                        }
-
-                        /* ESC O sequences. */
-                        else if (seq[0] == 'O') {
+                        } else if (seq[0] == 'O') { /* ESC O sequences. */
                                 switch (seq[1]) {
                                 case 'H':      /* Home */
                                         linenoise_edit_move_home(&l);
@@ -1173,3 +1172,6 @@ int linenoise_history_load(const char *filename)
         return 0;
 }
 
+void linenoise_vi_mode(int on){
+        vi_mode = on;
+}

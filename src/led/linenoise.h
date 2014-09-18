@@ -69,6 +69,8 @@ extern "C" {
         void linenoise_set_multiline(int ml);
         void linenoise_print_keycodes(void);
 
+        void linenoise_vi_mode(int on);
+
 #ifdef __cplusplus
 }
 #endif
