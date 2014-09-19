@@ -2,10 +2,9 @@
 .\" Contact howe.r.j.89@gmail.com to correct errors or typos.
 .TH man 1 "18 Sep 2014" "0.1.X" "lisp man page"
 .SH NAME
-lisp \- small lisp interpreter
+lisp \- small text processing oriented lisp interpreter
 .SH SYNOPSIS
-.B lisp 
-[OPTION] ... [FILE] ... [EXPRESSION] ...
+lisp [OPTION] ... [FILE] ... [EXPRESSION] ...
 .SH DESCRIPTION
 .\" I should reference other lisp interpreters using interpreter(1) syntax
 .\" And also the man page for this lisp interpreters C API
@@ -16,11 +15,36 @@ glue logic, prototyping and general hacking around.
 .TP
 .B -h
 Show a help message.
+.TP
+.B  -d   
+Extra debugging information on stderr.
+.TP
+.B  -c   
+Color on.
+.TP
+.B  -p   
+Print out full procedure.
+.TP
+.B  -e   
+Next argument is an expression to lisp_evaluate.
+.TP
+.B  -o   
+Next argument is a file to write to.
+.TP
+.B  -V   
+Version number.
+.TP
+.B  -G   
+Print Globals list on normal exit.
 
 .SH SEE ALSO
 lisp(3)
 .SH BUGS
 Seeing as this is a pre-version-1.0 not only are there many bugs but the
-language is not even that stable.
+language is not even that stable. Also the name itself is a bug, it is not
+exactly unique!
+
+If the project gets too big (>10kLOC) then this is also to be considered a
+bug.
 .SH AUTHOR
 Richard James Howe (howe.r.j.89@gmail.com)

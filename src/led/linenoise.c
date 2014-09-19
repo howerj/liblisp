@@ -11,7 +11,8 @@
  *
  * @todo There are a few vi commands that should be added
  * @todo The vi section and the rest should be separated.
- * @bug  Some of the characters in vi mode get eaten when they should not
+ * @todo It would probably be best to split up this file into separate
+ *       smaller ones.
  *
  * You can find the original/latest source code at:
  * 
@@ -390,7 +391,7 @@ static void linenoise_beep(void)
  * @brief Free a list of completion options populated by 
  *        linenoise_add_completion(). 
  **/
-static void freeCompletions(linenoise_completions * lc)
+static void free_completions(linenoise_completions * lc)
 {
         size_t i;
         for (i = 0; i < lc->len; i++)
@@ -434,7 +435,7 @@ static int complete_line(struct linenoise_state *ls)
 
                         nread = read(ls->ifd, &c, 1);
                         if (nread <= 0) {
-                                freeCompletions(&lc);
+                                free_completions(&lc);
                                 return -1;
                         }
 
@@ -462,7 +463,7 @@ static int complete_line(struct linenoise_state *ls)
                 }
         }
 
-        freeCompletions(&lc);
+        free_completions(&lc);
         return c;               /* Return last read character */
 }
 
@@ -940,8 +941,15 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                          
                         if (read(l.ifd, seq, 1) == -1)
                                 break;
-                        if (read(l.ifd, seq + 1, 1) == -1)
+
+                        if(0 == vi_mode && ('[' == seq[0] || 'O' == seq[0])){
+                                if (read(l.ifd, seq + 1, 1) == -1)
                                         break;
+                        } else {
+                                vi_escape = 1;
+                                c = seq[0];
+                                goto PROCESS_VI_COMMAND;
+                        }
 
                         /* ESC [ sequences. */
                         if (seq[0] == '[') {
@@ -989,9 +997,13 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                                 }
                         } else if(0 != vi_mode){
                                 vi_escape = 1;
+                                c = seq[0];
+                                goto PROCESS_VI_COMMAND;
                         }
                         break;
                 default:
+                        PROCESS_VI_COMMAND:
+
                         if(0 == vi_mode || 0 == vi_escape){
                                 if (linenoise_edit_insert(&l, c))
                                         return -1;
