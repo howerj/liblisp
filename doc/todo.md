@@ -212,4 +212,5 @@ I should implement the following functions;
 * Small lisp interpreters:
   <http://www.sonoma.edu/users/l/luvisi/sl3.c>
   <http://www.sonoma.edu/users/l/luvisi/sl5.c>
-
+* The Lambda Papers
+  <http://library.readscheme.org/page1.html>

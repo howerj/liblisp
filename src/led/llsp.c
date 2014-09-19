@@ -88,34 +88,35 @@ int count_parens(char *line){
 
         for(; '\0' != *line; line++){
                 switch(*line){
-                        case '(':
-                                count++;
-                                break;
-                        case ')':
-                                count--;
-                                break;
-                        case '\\': /*consume escaped chars*/
-                                if('\0' == *(line+1))
-                                        return count;
-                                line++;
-                                break;
-                        case '"': /*consume strings*/
-                                line++;
-                                for(; '\0' != *line; line++){
-                                        if('"' == *line)
-                                                break;
-                                        if('\\' == *line){
-                                                if('\0' == *(line+1)){
-                                                        return count;
-                                                } else {
-                                                        line++;
-                                                }
-                                        }
+                case '(':
+                        count++;
+                        break;
+                case ')':
+                        count--;
+                        break;
+                case '\\': /*consume escaped chars*/
+                        if('\0' == *(line+1))
+                                return count;
+                        line++;
+                        break;
+                case '"': /*consume strings*/
+                        if('\0' == *(++line))
+                                return count;
+                        for(; '\0' != *line; line++){
+                                if('"' == *line)
+                                        break;
 
+                                if('\\' == *line){
+                                        if('\0' == *(line+1))
+                                                return count;
+                                        else 
+                                                line++;
                                 }
-                                break;
-                        default:
-                                break;
+
+                        }
+                        break;
+                default:
+                        break;
                 }
         }
 
@@ -124,7 +125,7 @@ int count_parens(char *line){
 
 int main(void){
         char *line = NULL, *statement = NULL;;
-        int parent_count = 0, line_count = 0;;
+        int paren_count = 0, line_count = 0;;
         lisp l;
 
         linenoise_set_completion_callback(completion);
@@ -134,11 +135,21 @@ int main(void){
         l = lisp_init();
 
         statement = calloc(GENERIC_BUF_LEN, sizeof(*statement));
-        while ((line = linenoise("llsp> ")) != NULL){
+        while ((line = linenoise(line_count?"      ":"llsp> ")) != NULL){
                 if('\0' != line){
                         size_t allocate = 0;
-                        parent_count += count_parens(line);
+                        paren_count += count_parens(line);
 
+                        /*check for unbalanced parens*/
+                        if(paren_count < 0 && line_count == 0){
+                                fprintf(stderr,"Too many ')' not enough '('.\n");
+                                free(line);
+                                paren_count = 0;
+                                line = NULL;
+                                continue;
+                        }
+
+                        /*more core for the extra line*/
                         allocate = strlen(line) + 1;
                         allocate += (NULL==statement)? 0 : strlen(statement);
                         if(NULL == (statement = realloc(statement,allocate))){
@@ -148,13 +159,14 @@ int main(void){
 
                         strcat(statement,line);
 
-                        if(0 != parent_count){
+                        /*need a new line because we do not have a complete
+                         *statement*/
+                        if(0 != paren_count){
                                 free(line);
                                 line = NULL;
+                                line_count++;
                                 continue;
                         }
-
-                        fprintf(stderr,"statement:%s\n", statement);
 
                         linenoise_history_add(statement);      
                         linenoise_history_save(hist_file);
@@ -162,10 +174,8 @@ int main(void){
                         io_string_in(l->i,statement);
                         lisp_repl(l);
 
-                        free(statement);
-                        statement = NULL;
-                        statement = calloc(GENERIC_BUF_LEN, sizeof(*statement));
-                        line_count = 0;
+                        memset(statement, '\0', allocate);
+                        paren_count = line_count = 0;
                 }
 
                 free(line);
