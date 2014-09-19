@@ -6,6 +6,7 @@
 #include "linenoise.h"
 
 #define MAX_AUTO_COMPLETE_STR_LEN (256)
+#define GENERIC_BUF_LEN (256)
 
 static char *hist_file = "history.txt";
 
@@ -74,8 +75,56 @@ void completion(const char *buf, linenoise_completions * lc)
         }*/
 }
 
+/**
+ * @brief Parse a C-string counting the parentheses, accounting
+ *        for embedded strings and escape chars. We increment
+ *        the return value for a '(' and decrement it for a ')'
+ * @param       line    line to count parentheses in
+ * @return      int     0 means
+ *
+ */
+int count_parens(char *line){
+        int count = 0;
+
+        for(; '\0' != *line; line++){
+                switch(*line){
+                        case '(':
+                                count++;
+                                break;
+                        case ')':
+                                count--;
+                                break;
+                        case '\\': /*consume escaped chars*/
+                                if('\0' == *(line+1))
+                                        return count;
+                                line++;
+                                break;
+                        case '"': /*consume strings*/
+                                line++;
+                                for(; '\0' != *line; line++){
+                                        if('"' == *line)
+                                                break;
+                                        if('\\' == *line){
+                                                if('\0' == *(line+1)){
+                                                        return count;
+                                                } else {
+                                                        line++;
+                                                }
+                                        }
+
+                                }
+                                break;
+                        default:
+                                break;
+                }
+        }
+
+        return count;
+}
+
 int main(void){
-        char *line;
+        char *line = NULL, *statement = NULL;;
+        int parent_count = 0, line_count = 0;;
         lisp l;
 
         linenoise_set_completion_callback(completion);
@@ -84,18 +133,45 @@ int main(void){
 
         l = lisp_init();
 
+        statement = calloc(GENERIC_BUF_LEN, sizeof(*statement));
         while ((line = linenoise("llsp> ")) != NULL){
                 if('\0' != line){
-                        linenoise_history_add(line);      
+                        size_t allocate = 0;
+                        parent_count += count_parens(line);
+
+                        allocate = strlen(line) + 1;
+                        allocate += (NULL==statement)? 0 : strlen(statement);
+                        if(NULL == (statement = realloc(statement,allocate))){
+                                fprintf(stderr,"realloc failed\n");
+                                return EXIT_FAILURE;
+                        }
+
+                        strcat(statement,line);
+
+                        if(0 != parent_count){
+                                free(line);
+                                line = NULL;
+                                continue;
+                        }
+
+                        fprintf(stderr,"statement:%s\n", statement);
+
+                        linenoise_history_add(statement);      
                         linenoise_history_save(hist_file);
 
-                        io_string_in(l->i,line);
+                        io_string_in(l->i,statement);
                         lisp_repl(l);
+
+                        free(statement);
+                        statement = NULL;
+                        statement = calloc(GENERIC_BUF_LEN, sizeof(*statement));
+                        line_count = 0;
                 }
 
                 free(line);
                 line = NULL;
         }
+        free(statement);
         lisp_end(l);
         return 0;
 }
