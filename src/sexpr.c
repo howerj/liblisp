@@ -147,7 +147,7 @@ expr sexpr_parse(io * i, io * e)
  **/
 void sexpr_print(expr x, io * o, unsigned int depth, io * e)
 {
-        unsigned int i;
+        size_t i;
 
         if (NULL == x)
                 return;
@@ -429,7 +429,7 @@ static expr parse_symbol(io * i, io * e)
 
         if ((true == parse_numbers_f) && isnumber(buf, ex->len)) {
                 ex->type = S_INTEGER;
-                ex->data.integer = strtol(buf, NULL, 0);
+                ex->data.integer = (int32_t)strtol(buf, NULL, 0);
         } else {
                 ex->type = S_SYMBOL;
                 ex->data.symbol = mem_malloc(ex->len + 1, e);

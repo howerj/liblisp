@@ -152,7 +152,7 @@ void io_file_out(io *o, FILE* file){
 void io_file_close(io *ioc){
         assert(NULL != ioc);
 
-        if((IO_FILE_IN == ioc->type) || (IO_STRING_OUT == ioc->type)){
+        if((IO_FILE_IN == ioc->type) || (IO_FILE_OUT == ioc->type)){
                 if(NULL != ioc->ptr.file){
                         fflush(ioc->ptr.file);
                         fclose(ioc->ptr.file);

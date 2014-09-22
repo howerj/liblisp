@@ -1,7 +1,6 @@
 
 #include <ctype.h> /*isspace*/
 #include <string.h> /*strlen*/
-#include "type.h"
 #include "lisp.h"
 #include "linenoise.h"
 
@@ -10,6 +9,10 @@
 
 static char *hist_file = "history.txt";
 
+/**
+ * @brief This is an experimental completion callback, it
+ *        does not work *that* well.
+ **/
 void completion(const char *buf, linenoise_completions * lc)
 {
         size_t i, buf_len = strlen(buf);
@@ -68,11 +71,6 @@ void completion(const char *buf, linenoise_completions * lc)
                 default:
                         return;
         }
-        /*
-        if (buf[0] == 'h') {
-                linenoise_add_completion(lc, "hello");
-                linenoise_add_completion(lc, "hello there");
-        }*/
 }
 
 /**
@@ -81,8 +79,7 @@ void completion(const char *buf, linenoise_completions * lc)
  *        the return value for a '(' and decrement it for a ')'
  * @param       line    line to count parentheses in
  * @return      int     0 means
- *
- */
+ **/
 int count_parens(char *line){
         int count = 0;
 

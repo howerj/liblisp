@@ -82,7 +82,7 @@ int gc_mark(expr root, io * e)
                 }
                 return false;
         case S_PROC:
-                /*@todo Put the S_PROC structure into type.h* */
+                /** @todo Put the S_PROC structure into type.h **/
                 gc_mark(root->data.list[0], e);
                 gc_mark(root->data.list[1], e);
                 gc_mark(root->data.list[2], e);

@@ -17,7 +17,7 @@
  * fails instead of trying allocating everything when we do something wrong,
  * instead of just exiting, perhaps we should restart gracefully?
  */
-static signed int alloccounter = 0;
+static int32_t alloccounter = 0;
 static bool debug_f = false;
 
 /*** interface functions *****************************************************/

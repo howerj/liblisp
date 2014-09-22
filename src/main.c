@@ -118,8 +118,12 @@ int main(int argc, char *argv[])
                 case getopt_input_file:        /* ./lisp file.lsp */
                         /*try to treat it as an output file */
                         /*printf("(input 'file \"%s\")\n", argv[i]); */
-                        io_filename_in(l->i, argv[i]);
-                        lisp_repl(l);
+                        if(NULL == io_filename_in(l->i, argv[i])){
+                                sexpr_perror(NULL, "fatal: could not open file for reading", NULL);
+                                exit(EXIT_FAILURE);
+                        }
+                        /** @todo lisp_repl(l) should return an error expr on failure **/
+                        (void)lisp_repl(l); 
                         io_file_close(l->i);
                         nostdin_f = true;
                         break;
@@ -127,7 +131,8 @@ int main(int argc, char *argv[])
                         if (++i < argc) {
                                 /*printf("(input 'string \"%s\")\n", argv[i]); */
                                 io_string_in(l->i, argv[i]);
-                                lisp_repl(l);
+                                /** @todo lisp_repl(l) should return an error expr on failure **/
+                                (void)lisp_repl(l);
                         } else {
                                 sexpr_perror(NULL, "fatal: expecting arg after -e", NULL);
                                 exit(EXIT_FAILURE);
@@ -137,7 +142,10 @@ int main(int argc, char *argv[])
                 case getopt_output_file:
                         if (++i < argc) {
                                 /*printf("(output 'file \"%s\")\n", argv[i]); */
-                                io_filename_out(l->o,argv[i]);
+                                if(NULL == io_filename_out(l->o,argv[i])){
+                                        sexpr_perror(NULL, "fatal: could not open file for writing", NULL);
+                                        exit(EXIT_FAILURE);
+                                }
                         } else {
                                 sexpr_perror(NULL, "fatal: expecting arg after -o", NULL);
                                 exit(EXIT_FAILURE);
@@ -152,7 +160,8 @@ int main(int argc, char *argv[])
 
         if (false == nostdin_f) {
                 io_file_in(l->i, stdin);
-                lisp_repl(l);
+                /** @todo lisp_repl(l) should return an error expr on failure **/
+                (void)lisp_repl(l);
         }
 
         if (true == printGlobals_f) {
@@ -163,3 +172,4 @@ int main(int argc, char *argv[])
 
         return EXIT_SUCCESS;
 }
+

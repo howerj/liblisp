@@ -26,7 +26,12 @@
 #include "gc.h"
 #include "sexpr.h"
 
-/** helper macros **/
+typedef struct{
+        const char *s;
+        expr(*func) (expr args, lisp l);
+} primop_initializers;
+
+/* helper macros */
 
 #define CAR(X)      ((X)->data.list[0])
 #define CADR(X)     ((X)->data.list[1])
@@ -39,10 +44,10 @@
 #define PROCCODE(X) CADR(X)
 #define PROCENV(X)  CADDR(X)
 
-/** global-to-file special objects **/
+/* global-to-file special objects */
 static expr nil, tee, s_if, s_lambda, s_define, s_begin, s_set, s_quote;
 
-/** functions necessary for the intepreter **/
+/* functions necessary for the intepreter */
 static expr mkobj(sexpr_e type, io * e);
 static expr mksym(char *s, io * e);
 static expr mkprimop(expr(*func) (expr args, lisp l), io * e);
@@ -52,28 +57,50 @@ static expr apply(expr proc, expr args, lisp l);        /*add env for dynamic sc
 static expr dofind(expr env, expr x);   /*add error handling? */
 static expr find(expr env, expr x, lisp l);
 static expr extend(expr sym, expr val, expr env, io * e);
-static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), expr env, io * e);
+static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), lisp l);
 static expr extensions(expr env, expr syms, expr vals, io * e);
 
-/** built in primitives **/
-static expr primop_add(expr args, lisp l);
-static expr primop_sub(expr args, lisp l);
-static expr primop_prod(expr args, lisp l);
-static expr primop_div(expr args, lisp l);
-static expr primop_mod(expr args, lisp l);
-static expr primop_car(expr args, lisp l);
-static expr primop_cdr(expr args, lisp l);
-static expr primop_cons(expr args, lisp l);
-static expr primop_nth(expr args, lisp l);
-static expr primop_len(expr args, lisp l);
-static expr primop_numeq(expr args, lisp l);
-static expr primop_printexpr(expr args, lisp l);
-static expr primop_scar(expr args, lisp l);
-static expr primop_scdr(expr args, lisp l);
-static expr primop_scons(expr args, lisp l);
-static expr primop_typeeq(expr args, lisp l);
-static expr primop_reverse(expr args, lisp l);
-static expr primop_system(expr args, lisp l);
+/** 
+ * @brief List of primitive operations, used for initialization of structures 
+ *        and function declarations. It uses X-Macros to achieve this job.
+ *
+ * See:
+ *      <https://en.wikipedia.org/wiki/X_Macro>
+ *      <www.drdobbs.com/cpp/the-x-macro/228700289>
+ **/
+#define LIST_OF_PRIMITIVE_OPERATIONS\
+        PRIMOP_X("+",        primop_add)\
+        PRIMOP_X("-",        primop_sub)\
+        PRIMOP_X("*",        primop_prod)\
+        PRIMOP_X("/",        primop_div)\
+        PRIMOP_X("mod",      primop_mod)\
+        PRIMOP_X("car",      primop_car)\
+        PRIMOP_X("cdr",      primop_cdr)\
+        PRIMOP_X("cons",     primop_cons)\
+        PRIMOP_X("nth",      primop_nth)\
+        PRIMOP_X("length",   primop_len)\
+        PRIMOP_X("=",        primop_numeq)\
+        PRIMOP_X("print",    primop_printexpr)\
+        PRIMOP_X("scar",     primop_scar)\
+        PRIMOP_X("scdr",     primop_scdr)\
+        PRIMOP_X("scons",    primop_scons)\
+        PRIMOP_X("eqt",      primop_typeeq)\
+        PRIMOP_X("reverse",  primop_reverse)\
+        PRIMOP_X("system",   primop_system)
+ 
+/** @brief built in primitives, static declarations **/
+#define PRIMOP_X(STRING, FUNCTION) static expr FUNCTION(expr args, lisp l);
+LIST_OF_PRIMITIVE_OPERATIONS
+#undef PRIMOP_X
+
+/** @brief initializer table for primitive operations **/
+#define PRIMOP_X(STRING, FUNCTION) {STRING, FUNCTION},
+static primop_initializers primops[] = {
+        LIST_OF_PRIMITIVE_OPERATIONS
+        {NULL,       NULL} /* this *has* to be the last entry */
+};
+#undef PRIMOP_X
+
 
 /*** interface functions *****************************************************/
 
@@ -83,6 +110,7 @@ static expr primop_system(expr args, lisp l);
  **/
 lisp lisp_init(void)
 {
+        size_t i;
         lisp l;
         l = mem_calloc(1, sizeof(*l), NULL);
         l->global = mem_calloc(1, sizeof(sexpr_t), NULL);
@@ -104,44 +132,37 @@ lisp lisp_init(void)
         nil = mkobj(S_NIL, l->e);
         tee = mkobj(S_TEE, l->e);
 
-        s_if     = mksym(mem_strdup("if", l->e), l->e);
-        s_lambda = mksym(mem_strdup("lambda", l->e), l->e);
-        s_begin  = mksym(mem_strdup("begin", l->e), l->e);
-        s_define = mksym(mem_strdup("define", l->e), l->e);
-        s_set    = mksym(mem_strdup("set", l->e), l->e);
-        s_quote  = mksym(mem_strdup("quote", l->e), l->e);
+        s_if      =  mksym(mem_strdup("if",      l->e),  l->e);
+        s_lambda  =  mksym(mem_strdup("lambda",  l->e),  l->e);
+        s_begin   =  mksym(mem_strdup("begin",   l->e),  l->e);
+        s_define  =  mksym(mem_strdup("define",  l->e),  l->e);
+        s_set     =  mksym(mem_strdup("set",     l->e),  l->e);
+        s_quote   =  mksym(mem_strdup("quote",   l->e),  l->e);
 
-        extend(mksym(mem_strdup("nil", l->e), l->e), nil, l->global, l->e);
-        extend(mksym(mem_strdup("t", l->e), l->e), tee, l->global, l->e);
+        if(NULL == extend(mksym(mem_strdup("nil",  l->e),  l->e),  nil,  l->global,  l->e))
+                goto fail;
+        if(NULL == extend(mksym(mem_strdup("t",    l->e),  l->e),  tee,  l->global,  l->e))
+                goto fail;
 
-        extend(s_if, s_if, l->global, l->e);
-        extend(s_lambda, s_lambda, l->global, l->e);
-        extend(s_begin, s_begin, l->global, l->e);
-        extend(s_define, s_define, l->global, l->e);
-        extend(s_set, s_set, l->global, l->e);
-        extend(s_quote, s_quote, l->global, l->e);
+        if(NULL == extend(s_if,      s_if,      l->global,  l->e)) goto fail;
+        if(NULL == extend(s_lambda,  s_lambda,  l->global,  l->e)) goto fail;
+        if(NULL == extend(s_begin,   s_begin,   l->global,  l->e)) goto fail;
+        if(NULL == extend(s_define,  s_define,  l->global,  l->e)) goto fail;
+        if(NULL == extend(s_set,     s_set,     l->global,  l->e)) goto fail;
+        if(NULL == extend(s_quote,   s_quote,   l->global,  l->e)) goto fail;
 
         /* normal forms, kind of  */
-        extendprimop("+", primop_add, l->global, l->e);
-        extendprimop("-", primop_sub, l->global, l->e);
-        extendprimop("*", primop_prod, l->global, l->e);
-        extendprimop("/", primop_div, l->global, l->e);
-        extendprimop("mod", primop_mod, l->global, l->e);
-        extendprimop("car", primop_car, l->global, l->e);
-        extendprimop("cdr", primop_cdr, l->global, l->e);
-        extendprimop("cons", primop_cons, l->global, l->e);
-        extendprimop("nth", primop_nth, l->global, l->e);
-        extendprimop("length", primop_len, l->global, l->e);
-        extendprimop("=", primop_numeq, l->global, l->e);
-        extendprimop("print", primop_printexpr, l->global, l->e);
-        extendprimop("scar", primop_scar, l->global, l->e);
-        extendprimop("scdr", primop_scdr, l->global, l->e);
-        extendprimop("scons", primop_scons, l->global, l->e);
-        extendprimop("eqt", primop_typeeq, l->global, l->e);
-        extendprimop("reverse", primop_reverse, l->global, l->e);
-        extendprimop("system", primop_system, l->global, l->e);
+        for(i = 0; (NULL != primops[i].s) && (NULL != primops[i].func) ; i++){
+                if(NULL == extendprimop(primops[i].s, primops[i].func, l)){
+                        goto fail;
+                }
+        }
 
         return l;
+fail:
+        fputs("allocation failed during init", stderr);
+        exit(EXIT_FAILURE);
+        return NULL; 
 }
 
 /** 
@@ -152,7 +173,7 @@ lisp lisp_init(void)
  *  @return     int     Error code, 0 = Ok, >0 is a failure.
  */
 int lisp_register_function(char *name, expr(*func) (expr args, lisp l), lisp l){
-        if(NULL == extendprimop(name, func, l->global, l->e))
+        if(NULL == extendprimop(name, func, l))
                 return -1;
         else
                 return 0;
@@ -240,7 +261,7 @@ void lisp_print(expr x, io * o, io * e)
  **/
 expr lisp_eval(expr x, expr env, lisp l)
 {
-        unsigned int i;
+        size_t i;
 
         if (NULL == x) {
                 sexpr_perror(NULL, "passed nul", l->e);
@@ -268,7 +289,7 @@ expr lisp_eval(expr x, expr env, lisp l)
                                         return nil;
                                 }
                                 for (i = 1; i < x->len - 1; i++) {
-                                        lisp_eval(NTH(x, i), env, l);
+                                        (void)lisp_eval(NTH(x, i), env, l);
                                 }
                                 return lisp_eval(NTH(x, i), env, l);
                         } else if (foundx == s_quote) { /* (quote exp) */
@@ -293,7 +314,7 @@ expr lisp_eval(expr x, expr env, lisp l)
                         } else if (foundx == s_define) {
                                 {
                                         expr nx;
-                                        /*@todo if already defined, or is an internal symbol, report error */
+                                        /* @todo if already defined, or is an internal symbol, report error */
                                         if (!TSTLEN(x, 3)) {
                                                 sexpr_perror(x, "define: argc != 2", l->e);
                                                 return nil;
@@ -373,7 +394,7 @@ static expr find(expr env, expr x, lisp l)
 static expr dofind(expr env, expr x)
 {
   /** @todo make this function more robust **/
-        unsigned int i;
+        size_t i;
         char *s;
         if (S_LIST != env->type || S_SYMBOL != x->type) {
                 return nil;
@@ -405,9 +426,10 @@ static expr extend(expr sym, expr val, expr env, io * e)
 }
 
 /** extend the lisp environment with a primitive operator **/
-static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), expr env, io * e)
+static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), lisp l)
 {
-        return extend(mksym(mem_strdup(s, e), e), mkprimop(func, e), env, e);
+        io *e = l->e;
+        return extend(mksym(mem_strdup(s, e), e), mkprimop(func, e), l->global, e);
 }
 
 /** make new object **/
@@ -462,7 +484,7 @@ static expr mkproc(expr args, expr code, expr env, io * e)
 /** lisp_evaluate a list **/
 static expr evlis(expr x, expr env, lisp l)
 {
-        unsigned int i;
+        size_t i;
         expr nx;
         nx = mkobj(S_LIST, l->e);
         for (i = 1 /*skip 0! */ ; i < x->len; i++) {
@@ -474,12 +496,15 @@ static expr evlis(expr x, expr env, lisp l)
 /** extend a enviroment with symbol/value pairs **/
 static expr extensions(expr env, expr syms, expr vals, io * e)
 {
-        unsigned int i;
+        size_t i;
         if (0 == vals->len)
                 return nil;
 
         for (i = 0; i < syms->len; i++) {
-                extend(NTH(syms, i), NTH(vals, i), env, e);
+                if(NULL == extend(NTH(syms, i), NTH(vals, i), env, e)){
+                        fputs("allocation failed", stderr);
+                        exit(EXIT_FAILURE);
+                }
         }
         return env;
 }
@@ -517,7 +542,7 @@ static expr apply(expr proc, expr args, lisp l)
 /**add a list of numbers**/
 static expr primop_add(expr args, lisp l)
 {
-        unsigned int i;
+        size_t i;
         expr nx = mkobj(S_INTEGER, l->e);
         if (0 == args->len)
                 return nil;
@@ -531,7 +556,7 @@ static expr primop_add(expr args, lisp l)
 /**subtract a list of numbers from the 1 st arg**/
 static expr primop_sub(expr args, lisp l)
 {
-        unsigned int i;
+        size_t i;
         expr nx = mkobj(S_INTEGER, l->e);
         if (0 == args->len)
                 return nil;
@@ -547,7 +572,7 @@ static expr primop_sub(expr args, lisp l)
 /**multiply a list of numbers together**/
 static expr primop_prod(expr args, lisp l)
 {
-        unsigned int i;
+        size_t i;
         expr nx = mkobj(S_INTEGER, l->e);
         if (0 == args->len)
                 return nil;
@@ -563,7 +588,7 @@ static expr primop_prod(expr args, lisp l)
 /**divide the first argument by a list of numbers**/
 static expr primop_div(expr args, lisp l)
 {
-        unsigned int i, tmp;
+        size_t i, tmp;
         expr nx = mkobj(S_INTEGER, l->e);
         if (0 == args->len)
                 return nil;
@@ -585,7 +610,7 @@ static expr primop_div(expr args, lisp l)
 /**arg_1 modulo arg_2**/
 static expr primop_mod(expr args, lisp l)
 {
-        unsigned int tmp;
+        int32_t tmp;
         expr nx = mkobj(S_INTEGER, l->e);
         if (2 != args->len) {
                 sexpr_perror(args, "mod: argc != 2", l->e);
@@ -691,7 +716,7 @@ static expr primop_nth(expr args, lisp l)
                 i = a2->len + i;
         }
 
-        if ((unsigned)i > a2->len) {
+        if ((size_t)i > a2->len) {
                 return nil;
         }
 
@@ -729,7 +754,7 @@ static expr primop_len(expr args, lisp l)
 /**test equality of the 1st arg against a list of numbers**/
 static expr primop_numeq(expr args, lisp l)
 {
-        unsigned int i;
+        size_t i;
         expr nx;
         if (0 == args->len)
                 return nil;
@@ -818,7 +843,7 @@ static expr primop_scons(expr args, lisp l)
 /**type equality**/
 static expr primop_typeeq(expr args, lisp l)
 {
-        unsigned int i;
+        size_t i;
         expr nx;
         if (args == NULL) {     /*here to supress warning */
                 sexpr_perror(args, "eqt: passed NULL", l->e);
@@ -839,7 +864,7 @@ static expr primop_typeeq(expr args, lisp l)
 /**reverse a list or a string**/
 static expr primop_reverse(expr args, lisp l)
 {
-        unsigned int i;
+        size_t i;
         expr nx, carg;
         sexpr_e type;
         if (1 != args->len) {
@@ -871,7 +896,7 @@ static expr primop_reverse(expr args, lisp l)
 }
 
 static expr primop_system(expr args, lisp l){
-        int i;
+        int32_t i;
         expr nx, carg;
 
         if (1 != args->len) {
@@ -883,7 +908,7 @@ static expr primop_system(expr args, lisp l){
                 sexpr_perror(args, "system: arg != string", l->e);
                 return nil;
         }
-        i = system(carg->data.string);
+        i = (int32_t)system(carg->data.string);
         if(0 > i)
                 return nil;
 
