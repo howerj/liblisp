@@ -69,6 +69,12 @@ its items.
   "if", "begin", ...
   but do so *optionally*
 
+* Write specifications for each of the modules. This along
+  with Unit tests would *help* in rooting out bugs and *help*
+  making the project more formal. Some modules should be easier
+  than others like the "regex" modules, "eval" within the lisp
+  interpreter and the "bignum" module (when complete).
+
 * Change the directory structure.
   - Once the regex and hash libraries have been included into the
   project their directories can be removed and the test programs
