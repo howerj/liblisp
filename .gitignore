@@ -25,3 +25,5 @@ doc/rtf/
 doc/man/
 doc/man/*
 *.out
+*.diff
+*.patch
