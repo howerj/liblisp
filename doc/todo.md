@@ -97,6 +97,10 @@ its items.
   becomes
   io\_putc(char c, io * o);
 
+* io should use stdarg.h
+
+* Do I need to handle any signals?
+
 * Rethink special forms;
   - Use "cond" instead of (or in addition to) "if".
   - Add "loop"

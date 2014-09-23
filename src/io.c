@@ -50,6 +50,8 @@ struct io {
         char c;                 /* character store for io_ungetc() */
 };
 
+static int io_itoa(int32_t d, char *s); /* I *may* want to export this later */
+
 /**** I/O functions **********************************************************/
 
 /**
@@ -256,41 +258,10 @@ int io_ungetc(char c, io * i, io * e)
  **/
 int io_printd(int32_t d, io * o, io * e)
 {
-  /**@todo rewrite so it does not use sprintf/fprintf**/
+        char dstr[16];
         NULLCHK(o, e);
-        if (IO_FILE_OUT == o->type) {
-                return fprintf(o->ptr.file, "%d", d);
-        } else if (IO_STRING_OUT == o->type) {
-                return sprintf(o->ptr.string + o->position, "%d", d);
-        } else {
-                /*programmer error; some kind of error reporting would be nice */
-                exit(EXIT_FAILURE);
-        }
-        return -1;              /* returns negative like printf would on failure */
-}
-
-/**
- *  @brief          wrapper to print out a pointer; this should be rewritten
- *                  to avoid using fprintf and sprintf 
- *  @param          p pointer to print out
- *  @param          o output stream to print to
- *  @param          e error output stream
- *  @return         negative number if operation failed, otherwise the
- *                  total number of characters written
- **/
-int io_printp(void *p, io * o, io * e)
-{
-  /**@todo rewrite so it does not use sprintf/fprintf**/
-        NULLCHK(o, e);
-        if (IO_FILE_OUT == o->type) {
-                return fprintf(o->ptr.file, "%p", p);
-        } else if (IO_STRING_OUT == o->type) {
-                return sprintf(o->ptr.string + o->position, "%p", p);
-        } else {
-                /*programmer error; some kind of error reporting would be nice */
-                exit(EXIT_FAILURE);
-        }
-        return -1; /* returns negative like printf would on failure */
+        io_itoa(d, dstr);
+        return io_puts(dstr, o, e);
 }
 
 /**
@@ -351,3 +322,42 @@ void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e)
         }
         return;
 }
+
+/**** Internal functions *****************************************************/
+
+/**
+ *  @brief          Convert and integer to a string, base-10 only, the
+ *                  casts are there for splint -weak checking.
+ *  @param          d   integer to convert
+ *  @param          s   string containing the integer
+ *  @return         int size of the converted string
+ **/
+static int io_itoa(int32_t d, char *s){
+        int32_t sign, len;
+        uint32_t v, i;
+        char tb[sizeof(int32_t)*3+2];
+        char *tbp = tb;
+        assert(NULL != s);
+
+        sign = (int32_t)(d < 0 ? -1 : 0);
+        v = (uint32_t)(sign == 0 ? d : -d);
+
+        do{
+                i = v % 10;
+                v /= 10;
+                *tbp++ =(char) i + ((i<10)? '0' : 'a' - 10);
+        } while(v);
+
+        len = tbp - tb;
+        if(-1 == sign){
+                *s++ = '-';
+                len++;
+        }
+
+        while(tbp > tb)
+                *s++ = *--tbp;
+        *s='\0';
+
+        return (int)len;
+}
+
