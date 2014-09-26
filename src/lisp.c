@@ -355,8 +355,11 @@ expr lisp_eval(expr x, expr env, lisp l)
         case S_INTEGER:
         case S_PRIMITIVE:
                 return x;
+        case S_ERROR: /*fall through*/
+        case S_QUOTE: /*fall through*/
+        case S_LAST_TYPE: /*fall through*/
         default:
-                sexpr_perror(NULL, "fatal: unknown type", l->e);
+                sexpr_perror(NULL, "fatal: unknown or unimplemented type", l->e);
                 abort();
         }
 

@@ -13,6 +13,10 @@
 #include "io.h"
 #include "type.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**** macros ******************************************************************/
 #define sexpr_perror(EXP,MSG,E)  dosexpr_perror((EXP),(MSG),__FILE__,__LINE__,(E))
 /******************************************************************************/
@@ -27,5 +31,7 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e);
 void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io * e);
 void append(expr list, expr ele, io * e);
 /******************************************************************************/
-
+#ifdef __cplusplus
+}
+#endif
 #endif

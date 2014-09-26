@@ -146,6 +146,11 @@ static int vi_mode = 0;         /* is vi mode on? */
 static int vi_escape = 0;       /* are we in command or insert mode?*/
 static char **history = NULL;
 
+typedef struct linenoise_completions {
+        size_t len;
+        char **cvec;
+} linenoise_completions;
+
 /* The linenoise_state structure represents the state during line editing.
  * We pass this state to functions implementing specific editing
  * functionalities. */

@@ -15,6 +15,10 @@
 #include "io.h"
 #include "type.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void mem_set_debug(bool flag);
 
 void *mem_malloc(size_t size, io * e);
@@ -23,5 +27,7 @@ void *mem_realloc(void *ptr, size_t size, io * e);
 void mem_free(void *ptr, io * e);
 char *mem_strdup(const char *s, io * e);
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif

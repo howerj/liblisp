@@ -95,7 +95,9 @@ int gc_mark(expr root, io * e)
         case S_INTEGER:
         case S_ERROR:
         case S_FILE:
+        case S_QUOTE:
                 break;
+        case S_LAST_TYPE:
         default:
                 fprintf(stderr, "unmarkable type\n");
                 exit(EXIT_FAILURE);
@@ -183,6 +185,10 @@ static void gcinner(expr x, io * e)
                /** @todo implement file support **/
                 report("UNIMPLEMENTED (TODO)", e);
                 break;
+        case S_QUOTE:
+                report("UNIMPLEMENTED (TODO)", e);
+                break;
+        case S_LAST_TYPE:
         default:               /* should never get here */
                 report("free: not a known 'free-able' type", e);
                 exit(EXIT_FAILURE);

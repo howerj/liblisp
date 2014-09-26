@@ -241,6 +241,8 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
                 color_on(ANSI_COLOR_RED, o, e);
                 report("File/Error printing not supported!", e);
                 break;
+        case S_QUOTE: /*unimplemented, fallthrough...*/
+        case S_LAST_TYPE: /*unimplemented, fallthrough...*/
         default:               /* should never get here */
                 color_on(ANSI_COLOR_RED, o, e);
                 report("print: not a known printable type", e);

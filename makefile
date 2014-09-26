@@ -15,7 +15,7 @@ REPORT_DIR=doc/log
 CC=gcc
 INPUTF=lsp/lib.lsp /dev/stdin
 INDENT=-linux -nut -l 150
-CFLAGS= -Wall -Wextra -ansi -pedantic -Os -g
+CFLAGS= -Wall -Wextra -ansi -pedantic -Wswitch-enum -Os -g
 OBJFILES=bin/io.o bin/mem.o bin/gc.o bin/sexpr.o bin/lisp.o bin/main.o
 
 ## building ###################################################################

@@ -13,9 +13,16 @@
 #include "io.h"
 #include "type.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 expr gc_malloc(io * e);
 expr gc_calloc(io * e);
 int  gc_mark(expr root, io * e);
 void gc_sweep(io * e);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

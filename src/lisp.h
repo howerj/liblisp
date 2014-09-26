@@ -13,6 +13,10 @@
 #include "io.h"
 #include "type.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 lisp lisp_init(void);
 lisp lisp_repl(lisp l);
 void lisp_end(lisp l);
@@ -23,5 +27,7 @@ void lisp_print(expr x, io * o, io * e);
 int  lisp_register_function(char *name, expr(*func) (expr args, lisp l), lisp l);
 /*void lisp_doperror(expr x, io *o, io *e);*/
 void lisp_clean(lisp l);
-
+#ifdef __cplusplus
+}
+#endif
 #endif

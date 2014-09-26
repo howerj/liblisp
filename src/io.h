@@ -13,6 +13,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct io;
 typedef struct io io;
 
@@ -41,4 +45,7 @@ int io_printp(void *p, io * o, io * e);
 int io_puts(const char *s, io * o, io * e);/** error code?*/
 void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e);
 /******************************************************************************/
+#ifdef __cplusplus
+}
+#endif
 #endif

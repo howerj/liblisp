@@ -6,12 +6,16 @@
  *              line editing lib needs to be 20,000 lines of C code, header only
  * @author      Salvatore Sanfilippo
  * @author      Pieter Noordhuis
+ * @author      Richard Howe
  * @license     BSD (included as comment)
- *
- *
  *
  * See linenoise.c for more information.
  *
+ * <ADDED COPYRIGHT>
+ *
+ * Copyright (c) 2014, Richard Howe <howe.r.j.89@gmail.com>   
+ *
+ * <ORIGINAL LICENSE>
  * ------------------------------------------------------------------------
  *
  * Copyright (c) 2010, Salvatore Sanfilippo <antirez at gmail dot com>
@@ -43,35 +47,33 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __LINENOISE_H
-#define __LINENOISE_H
+#ifndef LINENOISE_H
+#define LINENOISE_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-        #include <stddef.h>
 
-        typedef struct linenoise_completions {
-                size_t len;
-                char **cvec;
-        } linenoise_completions;
+#include <stddef.h>
 
-        typedef void (linenoise_completion_callback) (const char *, linenoise_completions *);
-        void linenoise_set_completion_callback(linenoise_completion_callback *);
-        void linenoise_add_completion(linenoise_completions *, const char *);
+typedef struct linenoise_completions linenoise_completions;
 
-        char *linenoise(const char *prompt);
-        int linenoise_history_add(const char *line);
-        int linenoise_history_set_maxlen(int len);
-        int linenoise_history_save(const char *filename);
-        int linenoise_history_load(const char *filename);
-        void linenoise_clearscreen(void);
-        void linenoise_set_multiline(int ml);
-        void linenoise_print_keycodes(void);
+typedef void (linenoise_completion_callback) (const char *, linenoise_completions *);
+void linenoise_set_completion_callback(linenoise_completion_callback *);
+void linenoise_add_completion(linenoise_completions *, const char *);
 
-        void linenoise_vi_mode(int on);
+char *linenoise(const char *prompt);
+int linenoise_history_add(const char *line);
+int linenoise_history_set_maxlen(int len);
+int linenoise_history_save(const char *filename);
+int linenoise_history_load(const char *filename);
+void linenoise_clearscreen(void);
+void linenoise_set_multiline(int ml);
+void linenoise_print_keycodes(void);
+
+void linenoise_vi_mode(int on);
 
 #ifdef __cplusplus
 }
-#endif
-#endif                          /* __LINENOISE_H */
+#endif 
+#endif /* LINENOISE_H */
