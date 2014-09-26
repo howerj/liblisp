@@ -4,7 +4,7 @@
  *  @author         Richard James Howe 
  *  @email          howe.r.j.89@gmail.com
  *
- *  See "regex.md" and "regex.h" for documentation.
+ *  See "regex.md" and "regex.c" for documentation.
  *
  **/
 
@@ -13,7 +13,7 @@
 #include <string.h>
 #include "regex.h"
 
-#define BUFSZ (4096u)
+#define BUFSZ (4096)
 
 typedef enum {
         GETOPT_SWITCH,          /* 0: switch statement, eg. sets some internal bool */
