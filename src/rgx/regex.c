@@ -61,7 +61,7 @@ int regex_match(char *regexp, char *text)
  *  @param          depth       Current recursion depth
  *  @return         int         -1 == Error, 0 == No match, 1 == Match
  **/
-int matchhere(char *regexp, char *text, unsigned int depth)
+static int matchhere(char *regexp, char *text, unsigned int depth)
 {
         if (REGEX_MAX_DEPTH < depth)
                 return -1;
@@ -109,7 +109,7 @@ int matchhere(char *regexp, char *text, unsigned int depth)
  *  @param          depth       Current recursion depth
  *  @return         int         -1 == Error, 0 == No match, 1 == Match
  **/
-int matchstar(bool literal, int c, char *regexp, char *text, unsigned int depth)
+static int matchstar(bool literal, int c, char *regexp, char *text, unsigned int depth)
 {
         if (REGEX_MAX_DEPTH < depth)
                 return -1;
