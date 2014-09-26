@@ -146,10 +146,10 @@ static int vi_mode = 0;         /* is vi mode on? */
 static int vi_escape = 0;       /* are we in command or insert mode?*/
 static char **history = NULL;
 
-typedef struct linenoise_completions {
+struct linenoise_completions {
         size_t len;
         char **cvec;
-} linenoise_completions;
+};
 
 /* The linenoise_state structure represents the state during line editing.
  * We pass this state to functions implementing specific editing
@@ -527,7 +527,7 @@ static void ab_init(struct abuf *ab)
 /**
  * @brief Append a string to an abuf struct
  **/
-static void ab_append(struct abuf *ab, const char *s, int len)
+static void ab_append(struct abuf *ab, const char *s, size_t len)
 {
         char *new = realloc(ab->b, ab->len + len);
 
@@ -1191,7 +1191,7 @@ void linenoise_print_keycodes(void)
                 if (memcmp(quit, "quit", sizeof(quit)) == 0)
                         break;
 
-                printf("'%c' %02x (%d) (type quit to exit)\n", isprint(c) ? c : '?', (int)c, (int)c);
+                printf("'%c' %02x (%d) (type quit to exit)\n", isprint(c) ? c : '?', (unsigned int)c, (int)c);
                 printf("\x1b[0G");      /* Go left edge manually, we are in raw mode. */
                 fflush(stdout);
         }
