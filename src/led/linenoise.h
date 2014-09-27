@@ -57,8 +57,8 @@ extern "C" {
 #include <stddef.h>
 
 typedef struct linenoise_completions linenoise_completions;
-
 typedef void (linenoise_completion_callback) (const char *, linenoise_completions *);
+
 void linenoise_set_completion_callback(linenoise_completion_callback *);
 void linenoise_add_completion(linenoise_completions *, const char *);
 

@@ -131,6 +131,7 @@
 #define LINENOISE_MAX_LINE                (4096)
 #define LINENOISE_HISTORY_NEXT            (0)
 #define LINENOISE_HISTORY_PREV            (1)
+#define SEQ_BUF_LEN                       (64)
 
 static char *unsupported_term[] = { "dumb", "cons25", "emacs", NULL };
 
@@ -301,7 +302,7 @@ static void disable_raw_mode(int fd)
  *        cursor position and return it. On error -1 is returned, 
  *        on success the position of the cursor. 
  **/
-static int getCursorPosition(int ifd, int ofd)
+static int get_cursor_position(int ifd, int ofd)
 {
         char buf[32];
         int cols, rows;
@@ -333,7 +334,7 @@ static int getCursorPosition(int ifd, int ofd)
  * @brief Try to get the number of columns in the current terminal, or 
  *        assume 80 if it fails. 
  **/
-static int getColumns(int ifd, int ofd)
+static int get_columns(int ifd, int ofd)
 {
         struct winsize ws;
 
@@ -342,14 +343,14 @@ static int getColumns(int ifd, int ofd)
                 int start, cols;
 
                 /* Get the initial position so we can restore it later. */
-                start = getCursorPosition(ifd, ofd);
+                start = get_cursor_position(ifd, ofd);
                 if (start == -1)
                         goto failed;
 
                 /* Go to right margin and get position. */
                 if (write(ofd, "\x1b[999C", 6) != 6)
                         goto failed;
-                cols = getCursorPosition(ifd, ofd);
+                cols = get_cursor_position(ifd, ofd);
                 if (cols == -1)
                         goto failed;
 
@@ -414,7 +415,8 @@ static void free_completions(linenoise_completions * lc)
 static int complete_line(struct linenoise_state *ls)
 {
         linenoise_completions lc = { 0, NULL };
-        int nread, nwritten;
+        ssize_t nread;
+        int nwritten;
         char c = 0;
 
         completion_callback(ls->buf, &lc);
@@ -460,7 +462,7 @@ static int complete_line(struct linenoise_state *ls)
                                 /* Update buffer and return */
                                 if (i < lc.len) {
                                         nwritten = snprintf(ls->buf, ls->buflen, "%s", lc.cvec[i]);
-                                        ls->len = ls->pos = nwritten;
+                                        ls->len = ls->pos = (size_t)nwritten;
                                 }
                                 stop = 1;
                                 break;
@@ -555,7 +557,7 @@ static void ab_free(struct abuf *ab)
  **/
 static void refresh_single_line(struct linenoise_state *l)
 {
-        char seq[64];
+        char seq[SEQ_BUF_LEN];
         size_t plen = strlen(l->prompt);
         int fd = l->ofd;
         char *buf = l->buf;
@@ -574,16 +576,16 @@ static void refresh_single_line(struct linenoise_state *l)
 
         ab_init(&ab);
         /* Cursor to left edge */
-        snprintf(seq, 64, "\x1b[0G");
+        snprintf(seq, SEQ_BUF_LEN, "\x1b[0G");
         ab_append(&ab, seq, strlen(seq));
         /* Write the prompt and the current buffer content */
         ab_append(&ab, l->prompt, strlen(l->prompt));
         ab_append(&ab, buf, len);
         /* Erase to right */
-        snprintf(seq, 64, "\x1b[0K");
+        snprintf(seq, SEQ_BUF_LEN, "\x1b[0K");
         ab_append(&ab, seq, strlen(seq));
         /* Move cursor to original position. */
-        snprintf(seq, 64, "\x1b[0G\x1b[%dC", (int)(pos + plen));
+        snprintf(seq, SEQ_BUF_LEN, "\x1b[0G\x1b[%dC", (int)(pos + plen));
         ab_append(&ab, seq, strlen(seq));
         if (write(fd, ab.b, ab.len) == -1) {
         }                       /* Can't recover from write error. */
@@ -596,7 +598,7 @@ static void refresh_single_line(struct linenoise_state *l)
  * cursor position, and number of columns of the terminal. */
 static void refresh_multi_line(struct linenoise_state *l)
 {
-        char seq[64];
+        char seq[SEQ_BUF_LEN];
         int plen = strlen(l->prompt);
         int rows = (plen + l->len + l->cols - 1) / l->cols;     /* rows used by current buf. */
         int rpos = (plen + l->oldpos + l->cols) / l->cols;      /* cursor relative row. */
@@ -614,20 +616,20 @@ static void refresh_multi_line(struct linenoise_state *l)
         ab_init(&ab);
         if (old_rows - rpos > 0) {
                 LNDEBUG("go down %d", old_rows - rpos);
-                snprintf(seq, 64, "\x1b[%dB", old_rows - rpos);
+                snprintf(seq, SEQ_BUF_LEN, "\x1b[%dB", old_rows - rpos);
                 ab_append(&ab, seq, strlen(seq));
         }
 
         /* Now for every row clear it, go up. */
         for (j = 0; j < old_rows - 1; j++) {
                 LNDEBUG("clear+up");
-                snprintf(seq, 64, "\x1b[0G\x1b[0K\x1b[1A");
+                snprintf(seq, SEQ_BUF_LEN, "\x1b[0G\x1b[0K\x1b[1A");
                 ab_append(&ab, seq, strlen(seq));
         }
 
         /* Clean the top line. */
         LNDEBUG("clear");
-        snprintf(seq, 64, "\x1b[0G\x1b[0K");
+        snprintf(seq, SEQ_BUF_LEN, "\x1b[0G\x1b[0K");
         ab_append(&ab, seq, strlen(seq));
 
         /* Write the prompt and the current buffer content */
@@ -639,7 +641,7 @@ static void refresh_multi_line(struct linenoise_state *l)
         if (l->pos && l->pos == l->len && (l->pos + plen) % l->cols == 0) {
                 LNDEBUG("<newline>");
                 ab_append(&ab, "\n", 1);
-                snprintf(seq, 64, "\x1b[0G");
+                snprintf(seq, SEQ_BUF_LEN, "\x1b[0G");
                 ab_append(&ab, seq, strlen(seq));
                 rows++;
                 if (rows > (int)l->maxrows)
@@ -653,13 +655,13 @@ static void refresh_multi_line(struct linenoise_state *l)
         /* Go up till we reach the expected position. */
         if (rows - rpos2 > 0) {
                 LNDEBUG("go-up %d", rows - rpos2);
-                snprintf(seq, 64, "\x1b[%dA", rows - rpos2);
+                snprintf(seq, SEQ_BUF_LEN, "\x1b[%dA", rows - rpos2);
                 ab_append(&ab, seq, strlen(seq));
         }
 
         /* Set column. */
         LNDEBUG("set col %d", 1 + ((plen + (int)l->pos) % (int)l->cols));
-        snprintf(seq, 64, "\x1b[%dG", 1 + ((plen + (int)l->pos) % (int)l->cols));
+        snprintf(seq, SEQ_BUF_LEN, "\x1b[%dG", 1 + ((plen + (int)l->pos) % (int)l->cols));
         ab_append(&ab, seq, strlen(seq));
 
         LNDEBUG("\n");
@@ -859,7 +861,7 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
         l.plen = strlen(prompt);
         l.oldpos = l.pos = 0;
         l.len = 0;
-        l.cols = getColumns(stdin_fd, stdout_fd);
+        l.cols = get_columns(stdin_fd, stdout_fd);
         l.maxrows = 0;
         l.history_index = 0;
 
@@ -1181,7 +1183,7 @@ void linenoise_print_keycodes(void)
         memset(quit, ' ', 4);
         while (1) {
                 char c;
-                int nread;
+                ssize_t nread;
 
                 nread = read(STDIN_FILENO, &c, 1);
                 if (nread <= 0)
