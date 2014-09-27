@@ -865,9 +865,9 @@ void linenoise_edit_delete_prev_word(struct linenoise_state *l)
         size_t old_pos = l->pos;
         size_t diff;
 
-        while (l->pos > 0 && l->buf[l->pos - 1] == ' ')
+        while ((l->pos > 0) && (l->buf[l->pos - 1] == ' '))
                 l->pos--;
-        while (l->pos > 0 && l->buf[l->pos - 1] != ' ')
+        while ((l->pos > 0) && (l->buf[l->pos - 1] != ' '))
                 l->pos--;
         diff = old_pos - l->pos;
         memmove(l->buf + l->pos, l->buf + old_pos, l->len - old_pos + 1);
@@ -891,6 +891,11 @@ static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *bu
                 case 'w': /** @todo vi w, move forward a word**/
                         break;
                 case 'b': /** @todo vi b, move back a word**/
+                        while ((l->pos > 0) && (l->buf[l->pos - 1] == ' '))
+                                l->pos--;
+                        while ((l->pos > 0) && (l->buf[l->pos - 1] != ' '))
+                                l->pos--;
+                        refresh_line(l);
                         break;
                 case 'C': /*Change*/
                         vi_escape = 0;
