@@ -1129,6 +1129,7 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                         if(linenoise_edit_delete_char(&l) < 0)
                                 return -1;
                         break;
+
                 case CTRL_T:  /*  swaps current character with previous. */
                         if (l.pos > 0 && l.pos < l.len) {
                                 int aux = buf[l.pos - 1];
@@ -1183,13 +1184,14 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                         if (read(l.ifd, seq, 1) == -1)
                                 break;
 
-                        if(0 == vi_mode && ('[' == seq[0] || 'O' == seq[0])){
+                        if((0 == vi_mode) || ('[' == seq[0]) || ('O' == seq[0])){
                                 if (read(l.ifd, seq + 1, 1) == -1)
                                         break;
                         } else {
                                 vi_escape = 1;
-                                c = seq[0];
-                                goto PROCESS_VI_COMMAND;
+                                if(linenoise_edit_process_vi(&l, seq[0], buf) < 0){
+                                        return -1;
+                                }
                         }
 
                         /* ESC [ sequences. */
@@ -1238,13 +1240,12 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                                 }
                         } else if(0 != vi_mode){
                                 vi_escape = 1;
-                                c = seq[0];
-                                goto PROCESS_VI_COMMAND;
+                                if(linenoise_edit_process_vi(&l, seq[0], buf) < 0){
+                                        return -1;
+                                }
                         }
                         break;
                 default:
-                        PROCESS_VI_COMMAND:
-
                         if(0 == vi_mode || 0 == vi_escape){
                                 if (linenoise_edit_insert(&l, c))
                                         return -1;
