@@ -9,7 +9,7 @@ OBJFILES=llsp.o linenoise.o io.o mem.o sexpr.o lisp.o gc.o
 #TARGET=example
 TARGET=llsp
 
-.PHONY: all indent run splint clean
+.PHONY: all indent run splint valgrind clean
 
 all: $(TARGET)
 
@@ -25,6 +25,9 @@ run: $(TARGET)
 indent:
 	indent $(INDENT) *.c *.h
 	rm *~
+
+valgrind: $(TARGET)
+	valgrind ./$(TARGET)
 
 splint: 
 	-splint -weak +posixlib -preproc *.c *.h &> splint.log

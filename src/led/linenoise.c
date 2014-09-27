@@ -837,6 +837,26 @@ void linenoise_edit_backspace(struct linenoise_state *l)
 }
 
 /**
+ * @brief Delete the next word, maintaining the cursor at the start 
+ *        of the current word. 
+ **/
+void linenoise_edit_delete_next_word(struct linenoise_state *l)
+{
+        size_t old_pos = l->pos;
+        size_t diff;
+
+        while ((l->pos < l->len) && (' ' == l->buf[l->pos + 1]))
+                l->pos++;
+        while ((l->pos < l->len) && (' ' != l->buf[l->pos + 1]))
+                l->pos++;
+        diff = l->pos - old_pos;
+        memmove(l->buf + old_pos, l->buf + l->pos, l->len - old_pos + 1);
+        l->len -= diff;
+        l->pos = old_pos;
+        refresh_line(l);
+}
+
+/**
  * @brief Delete the previous word, maintaining the cursor at the start 
  *        of the current word. 
  **/
@@ -957,7 +977,8 @@ static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *bu
                         if (read(l->ifd, rc, 1) == -1)
                                 break;
                         switch(rc[0]){
-                                case 'w': /** @todo dw **/
+                                case 'w': 
+                                        linenoise_edit_delete_next_word(l);
                                         break;
                                 case 'b':
                                         linenoise_edit_delete_prev_word(l);
