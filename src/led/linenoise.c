@@ -207,8 +207,10 @@ static int get_columns(int ifd, int ofd);
 static int get_cursor_position(int ifd, int ofd);
 static int is_unsupported_term(void);
 static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen, const char *prompt);
+static int linenoise_edit_delete_char(struct linenoise_state *l);
 static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *buf);
 static int linenoise_raw(char *buf, size_t buflen, const char *prompt);
+
 static void ab_append(struct abuf *ab, const char *s, size_t len);
 static void ab_free(struct abuf *ab);
 static void ab_init(struct abuf *ab);
@@ -862,9 +864,13 @@ void linenoise_edit_delete_prev_word(struct linenoise_state *l)
  **/
 static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *buf){
         switch(c){
-                case 'w': /** @todo vi w**/
+                case 'x': /** @todo vi x needs fixing, should move cursor also**/
+                        if(linenoise_edit_delete_char(l) < 0)
+                                return -1;
                         break;
-                case 'b': /** @todo vi b**/
+                case 'w': /** @todo vi w, move forward a word**/
+                        break;
+                case 'b': /** @todo vi b, move back a word**/
                         break;
                 case 'C': /*Change*/
                         vi_escape = 0;
@@ -877,7 +883,7 @@ static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *bu
                 case '0': /*Go to the beginning of the line*/
                         linenoise_edit_move_home(l);
                         break;
-                case '$':
+                case '$': /*move to the end of the line*/
                         linenoise_edit_move_end(l);
                         break;
                 case 'l': /*move right*/
@@ -989,6 +995,22 @@ static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *bu
 }
 
 /**
+ * @brief Remove a character from the current line
+ * @param       l       linenoise state
+ * @return      int     negative on error
+ **/
+static int linenoise_edit_delete_char(struct linenoise_state *l){
+        if (l->len > 0) {
+                linenoise_edit_delete(l);
+        } else {
+                history_len--;
+                free(history[history_len]);
+                return -1;
+        }
+
+        return 0;
+}
+/**
  * @brief The core line editing function, most of the work is done here.
  *
  * This function is the core of the line editing capability of linenoise.
@@ -1063,13 +1085,8 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                         break;
                 case CTRL_D: /* remove char at right of cursor, or of the
                                 line is empty, act as end-of-file. */
-                        if (l.len > 0) {
-                                linenoise_edit_delete(&l);
-                        } else {
-                                history_len--;
-                                free(history[history_len]);
+                        if(linenoise_edit_delete_char(&l) < 0)
                                 return -1;
-                        }
                         break;
                 case CTRL_T:  /*  swaps current character with previous. */
                         if (l.pos > 0 && l.pos < l.len) {
