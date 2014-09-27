@@ -195,6 +195,7 @@ enum KEY_ACTION {
 static void linenoise_at_exit(void);
 int linenoise_history_add(const char *line);
 static void refresh_line(struct linenoise_state *l);
+static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *buf);
 
 /* Debugging macro. */
 #ifdef DEBUG_MACRO_ON
@@ -941,7 +942,31 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                 case CTRL_N:
                         linenoise_edit_history_next(&l, LINENOISE_HISTORY_NEXT);
                         break;
+                case CTRL_U:   /* delete the whole line. */
+                        buf[0] = '\0';
+                        l.pos = l.len = 0;
+                        refresh_line(&l);
+                        break;
+                case CTRL_K:   /* delete from current to end of line. */
+                        buf[l.pos] = '\0';
+                        l.len = l.pos;
+                        refresh_line(&l);
+                        break;
+                case CTRL_A:   /* go to the start of the line */
+                        linenoise_edit_move_home(&l);
+                        break;
+                case CTRL_E:   /* go to the end of the line */
+                        linenoise_edit_move_end(&l);
+                        break;
+                case CTRL_L:   /* clear screen */
+                        linenoise_clearscreen();
+                        refresh_line(&l);
+                        break;
+                case CTRL_W:   /* delete previous word */
+                        linenoise_edit_delete_prev_word(&l);
+                        break;
                 case ESC: /* begin escape sequence */
+
                         /* Read the next two bytes representing the escape sequence.
                          * Use two calls to handle slow terminals returning the two
                          * chars at different times. */
@@ -1015,158 +1040,149 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                                 if (linenoise_edit_insert(&l, c))
                                         return -1;
                         } else { /*in vi command mode*/
-                                switch(c){
-                                        case 'w': /** @todo vi w**/
-                                                break;
-                                        case 'b': /** @todo vi b**/
-                                                break;
-                                        case 'C': /*Change*/
-                                                vi_escape = 0;
-                                                /*fall through*/
-                                        case 'D': /*Delete from cursor to the end of the line*/
-                                                buf[l.pos] = '\0';
-                                                l.len = l.pos;
-                                                refresh_line(&l);
-                                                break;
-                                        case '0': /*Go to the beginning of the line*/
-                                                linenoise_edit_move_home(&l);
-                                                break;
-                                        case '$':
-                                                linenoise_edit_move_end(&l);
-                                                break;
-                                        case 'l': /*move right*/
-                                                linenoise_edit_move_right(&l);
-                                                break;
-                                        case 'h': /*move left*/
-                                                linenoise_edit_move_left(&l);
-                                                break;
-                                        case 'A':/*append at end of line*/
-                                                l.pos = l.len;
-                                                refresh_line(&l);
-                                                /*fall through*/
-                                        case 'a':/*append after the cursor*/
-                                                if(l.pos != l.len){
-                                                        l.pos++;
-                                                        refresh_line(&l);
-                                                }
-                                                /*fall through*/
-                                        case 'i':/*insert text before the cursor*/
-                                                vi_escape = 0;
-                                                break;
-                                        case 'I':/*Insert text before the first non-blank in the line*/
-                                                vi_escape = 0;
-                                                l.pos = 0;
-                                                refresh_line(&l);
-                                                break;
-                                        case 'k': /*move up*/
-                                                linenoise_edit_history_next(&l, LINENOISE_HISTORY_PREV);
-                                                break;
-                                        case 'j': /*move down*/
-                                                linenoise_edit_history_next(&l, LINENOISE_HISTORY_NEXT);
-                                                break;
-                                        case 'f': /*fall through*/
-                                        case 'F': /*fall through*/
-                                        case 't': /*fall through*/
-                                        case 'T': /*fall through*/
-                                        {
-                                                ssize_t dir, lim, cpos;
-                                                int find = 0; 
-
-                                                if (read(l.ifd,&find,1) == -1) 
-                                                        break;
-
-                                                if (islower(c)) {
-                                                    /* forwards */
-                                                    lim = l.len;
-                                                    dir = 1;
-                                                } else {
-                                                    lim = dir = -1;
-                                                }
-
-                                                for (cpos = l.pos + dir; cpos != lim; cpos += dir) {
-                                                    if (buf[cpos] == find) {
-                                                        l.pos = cpos;
-                                                        if (tolower(c) == 't')
-                                                            l.pos -= dir;
-                                                        refresh_line(&l);
-                                                        break;
-                                                    }
-                                                }
-
-                                                if (cpos == lim) 
-                                                        linenoise_beep();
-                                        }
-                                        break;
-                                        case 'c':
-                                                vi_escape = 0;
-                                        case 'd': /*delete*/
-                                                if (read(l.ifd, seq, 1) == -1)
-                                                        break;
-                                                switch(seq[0]){
-                                                        case 'w': /** @todo dw **/
-                                                                break;
-                                                        case 'b':
-                                                                linenoise_edit_delete_prev_word(&l);
-                                                                break;
-                                                        case '0': /** @todo d0 **/
-                                                                break;
-                                                        case '$':
-                                                                buf[l.pos] = '\0';
-                                                                l.len = l.pos;
-                                                                refresh_line(&l);
-                                                                break;
-                                                        case 'l':
-                                                                break;
-                                                        case 'h':
-                                                                break;
-                                                        case 'c':
-                                                        case 'd':
-                                                                buf[0] = '\0';
-                                                                l.pos = l.len = 0;
-                                                                refresh_line(&l);
-                                                                break;
-                                                        default:
-                                                                linenoise_beep();
-                                                                vi_escape = 1;
-                                                                break;
-                                                }
-
-                                        break;
-
-
-                                        default:
-                                                linenoise_beep();
-                                                break;
-
+                                if(linenoise_edit_process_vi(&l, c, buf) < 0){
+                                        return -1;
                                 }
                         }
-                        break;
-                case CTRL_U:   /* delete the whole line. */
-                        buf[0] = '\0';
-                        l.pos = l.len = 0;
-                        refresh_line(&l);
-                        break;
-                case CTRL_K:   /* delete from current to end of line. */
-                        buf[l.pos] = '\0';
-                        l.len = l.pos;
-                        refresh_line(&l);
-                        break;
-                case CTRL_A:   /* go to the start of the line */
-                        linenoise_edit_move_home(&l);
-                        break;
-                case CTRL_E:   /* go to the end of the line */
-                        linenoise_edit_move_end(&l);
-                        break;
-                case CTRL_L:   /* clear screen */
-                        linenoise_clearscreen();
-                        refresh_line(&l);
-                        break;
-                case CTRL_W:   /* delete previous word */
-                        linenoise_edit_delete_prev_word(&l);
                         break;
                 }
         }
         return l.len;
+}
+
+/**
+ * @brief This function processes vi-key commands. 
+ * @param  l    The state of the line editor
+ * @param  c    Current keyboard character we are processing
+ * @param  buf  Input buffer
+ * @return int  -1 on error
+ **/
+static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *buf){
+        switch(c){
+                case 'w': /** @todo vi w**/
+                        break;
+                case 'b': /** @todo vi b**/
+                        break;
+                case 'C': /*Change*/
+                        vi_escape = 0;
+                        /*fall through*/
+                case 'D': /*Delete from cursor to the end of the line*/
+                        buf[l->pos] = '\0';
+                        l->len = l->pos;
+                        refresh_line(l);
+                        break;
+                case '0': /*Go to the beginning of the line*/
+                        linenoise_edit_move_home(l);
+                        break;
+                case '$':
+                        linenoise_edit_move_end(l);
+                        break;
+                case 'l': /*move right*/
+                        linenoise_edit_move_right(l);
+                        break;
+                case 'h': /*move left*/
+                        linenoise_edit_move_left(l);
+                        break;
+                case 'A':/*append at end of line*/
+                        l->pos = l->len;
+                        refresh_line(l);
+                        /*fall through*/
+                case 'a':/*append after the cursor*/
+                        if(l->pos != l->len){
+                                l->pos++;
+                                refresh_line(l);
+                        }
+                        /*fall through*/
+                case 'i':/*insert text before the cursor*/
+                        vi_escape = 0;
+                        break;
+                case 'I':/*Insert text before the first non-blank in the line*/
+                        vi_escape = 0;
+                        l->pos = 0;
+                        refresh_line(l);
+                        break;
+                case 'k': /*move up*/
+                        linenoise_edit_history_next(l, LINENOISE_HISTORY_PREV);
+                        break;
+                case 'j': /*move down*/
+                        linenoise_edit_history_next(l, LINENOISE_HISTORY_NEXT);
+                        break;
+                case 'f': /*fall through*/
+                case 'F': /*fall through*/
+                case 't': /*fall through*/
+                case 'T': /*fall through*/
+                {
+                        ssize_t dir, lim, cpos;
+                        int find = 0; 
+
+                        if (read(l->ifd,&find,1) == -1) 
+                                break;
+
+                        if (islower(c)) {
+                            /* forwards */
+                            lim = l->len;
+                            dir = 1;
+                        } else {
+                            lim = dir = -1;
+                        }
+
+                        for (cpos = l->pos + dir; cpos != lim; cpos += dir) {
+                            if (buf[cpos] == find) {
+                                l->pos = cpos;
+                                if (tolower(c) == 't')
+                                    l->pos -= dir;
+                                refresh_line(l);
+                                break;
+                            }
+                        }
+
+                        if (cpos == lim) 
+                                linenoise_beep();
+                }
+                break;
+                case 'c':
+                        vi_escape = 0;
+                case 'd': /*delete*/
+                {
+                        char rc[1];
+                        if (read(l->ifd, rc, 1) == -1)
+                                break;
+                        switch(rc[0]){
+                                case 'w': /** @todo dw **/
+                                        break;
+                                case 'b':
+                                        linenoise_edit_delete_prev_word(l);
+                                        break;
+                                case '0': /** @todo d0 **/
+                                        break;
+                                case '$':
+                                        buf[l->pos] = '\0';
+                                        l->len = l->pos;
+                                        refresh_line(l);
+                                        break;
+                                case 'l':
+                                        break;
+                                case 'h':
+                                        break;
+                                case 'c':
+                                case 'd':
+                                        buf[0] = '\0';
+                                        l->pos = l->len = 0;
+                                        refresh_line(l);
+                                        break;
+                                default:
+                                        linenoise_beep();
+                                        vi_escape = 1;
+                                        break;
+                        }
+                }
+                break;
+                default:
+                        linenoise_beep();
+                        break;
+
+        }
+        return 0;
 }
 
 /**
