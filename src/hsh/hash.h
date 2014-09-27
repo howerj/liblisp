@@ -8,6 +8,15 @@
  *
  **/
 
+#ifndef HASH_H
+#define HASH_H
+
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct hashentry;
 typedef struct hashtable hashtable_t;
 
@@ -21,3 +30,7 @@ unsigned int hash_get_collisions(hashtable_t * table);
 unsigned int hash_get_uniquekeys(hashtable_t * table);
 unsigned int hash_get_replaced(hashtable_t * table);
 
+#ifdef __cplusplus
+}
+#endif
+#endif

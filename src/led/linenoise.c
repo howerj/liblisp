@@ -1014,10 +1014,6 @@ static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *bu
                                         l->len = l->pos;
                                         refresh_line(l);
                                         break;
-                                case 'l':
-                                        break;
-                                case 'h':
-                                        break;
                                 case 'c':
                                 case 'd':
                                         buf[0] = '\0';
