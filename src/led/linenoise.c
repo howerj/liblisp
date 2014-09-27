@@ -220,6 +220,8 @@ static void free_history(void);
 static void linenoise_at_exit(void);
 static void linenoise_at_exit(void);;
 static void linenoise_beep(void);
+static void linenoise_edit_next_word(struct linenoise_state *l);
+static void linenoise_edit_prev_word(struct linenoise_state *l);
 static void refresh_line(struct linenoise_state *l);;
 static void refresh_multi_line(struct linenoise_state *l);
 static void refresh_single_line(struct linenoise_state *l);
@@ -837,6 +839,18 @@ void linenoise_edit_backspace(struct linenoise_state *l)
 }
 
 /**
+ * @brief Move the cursor to the next word
+ **/
+static void linenoise_edit_next_word(struct linenoise_state *l){
+        while ((l->pos < l->len) && (' ' == l->buf[l->pos + 1]))
+                l->pos++;
+        while ((l->pos < l->len) && (' ' != l->buf[l->pos + 1]))
+                l->pos++;
+        if(l->pos < l->len)
+                l->pos++;
+}
+
+/**
  * @brief Delete the next word, maintaining the cursor at the start 
  *        of the current word. 
  **/
@@ -844,16 +858,24 @@ void linenoise_edit_delete_next_word(struct linenoise_state *l)
 {
         size_t old_pos = l->pos;
         size_t diff;
+        
+        linenoise_edit_next_word(l);
 
-        while ((l->pos < l->len) && (' ' == l->buf[l->pos + 1]))
-                l->pos++;
-        while ((l->pos < l->len) && (' ' != l->buf[l->pos + 1]))
-                l->pos++;
         diff = l->pos - old_pos;
         memmove(l->buf + old_pos, l->buf + l->pos, l->len - old_pos + 1);
         l->len -= diff;
         l->pos = old_pos;
         refresh_line(l);
+}
+
+/**
+ * @brief Move the cursor to the previous word.
+ **/
+static void linenoise_edit_prev_word(struct linenoise_state *l){
+        while ((l->pos > 0) && (l->buf[l->pos - 1] == ' '))
+                l->pos--;
+        while ((l->pos > 0) && (l->buf[l->pos - 1] != ' '))
+                l->pos--;
 }
 
 /**
@@ -865,10 +887,8 @@ void linenoise_edit_delete_prev_word(struct linenoise_state *l)
         size_t old_pos = l->pos;
         size_t diff;
 
-        while ((l->pos > 0) && (l->buf[l->pos - 1] == ' '))
-                l->pos--;
-        while ((l->pos > 0) && (l->buf[l->pos - 1] != ' '))
-                l->pos--;
+        linenoise_edit_prev_word(l);
+
         diff = old_pos - l->pos;
         memmove(l->buf + l->pos, l->buf + old_pos, l->len - old_pos + 1);
         l->len -= diff;
@@ -888,13 +908,12 @@ static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *bu
                         if(linenoise_edit_delete_char(l) < 0)
                                 return -1;
                         break;
-                case 'w': /** @todo vi w, move forward a word**/
+                case 'w': /* move forward a word */
+                        linenoise_edit_next_word(l);
+                        refresh_line(l);
                         break;
-                case 'b': /** @todo vi b, move back a word**/
-                        while ((l->pos > 0) && (l->buf[l->pos - 1] == ' '))
-                                l->pos--;
-                        while ((l->pos > 0) && (l->buf[l->pos - 1] != ' '))
-                                l->pos--;
+                case 'b': /* move back a word */
+                        linenoise_edit_prev_word(l);
                         refresh_line(l);
                         break;
                 case 'C': /*Change*/
