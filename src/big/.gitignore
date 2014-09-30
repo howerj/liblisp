@@ -1,0 +1,5 @@
+bignum
+*~
+*.o
+*.log
+*.txt

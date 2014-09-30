@@ -345,7 +345,7 @@ static int io_itoa(int32_t d, char *s){
         do{
                 i = v % 10;
                 v /= 10;
-                *tbp++ =(char) i + ((i<10)? '0' : 'a' - 10);
+                *tbp++ =(char) i + ((i < 10) ? '0' : 'a' - 10);
         } while(v);
 
         len = tbp - tb;
