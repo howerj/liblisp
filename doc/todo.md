@@ -35,6 +35,17 @@ beforehand.
 Arbitrary precision arithmetic is a must, with rational types instead of floats
 serving for all mathematical operations.
 
+A library has been added but a few things need to be changed, it is terribly
+inefficient on so many fronts -- but it's simple!
+
+5. Improve performance.
+
+Some of the ways the system is designed will be inherently slow even if it was
+easy to do that way; I/O and memory allocation spring to mind. I/O should not be
+done *one byte at a time* where possible. There are far too many memory
+allocations.
+
+
 ### Bugs
 
 1. Garbage collection
