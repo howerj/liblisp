@@ -218,7 +218,7 @@ static void disable_raw_mode(int fd);
 static void free_completions(linenoise_completions * lc);
 static void free_history(void);
 static void linenoise_at_exit(void);
-static void linenoise_at_exit(void);;
+static void linenoise_at_exit(void);
 static void linenoise_beep(void);
 static void linenoise_edit_next_word(struct linenoise_state *l);
 static void linenoise_edit_prev_word(struct linenoise_state *l);
@@ -1001,29 +1001,29 @@ static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *bu
                         if (read(l->ifd, rc, 1) == -1)
                                 break;
                         switch(rc[0]){
-                                case 'w': 
-                                        linenoise_edit_delete_next_word(l);
-                                        break;
-                                case 'b':
-                                        linenoise_edit_delete_prev_word(l);
-                                        break;
-                                case '0': /** @todo d0 **/
-                                        break;
-                                case '$':
-                                        buf[l->pos] = '\0';
-                                        l->len = l->pos;
-                                        refresh_line(l);
-                                        break;
-                                case 'c':
-                                case 'd':
-                                        buf[0] = '\0';
-                                        l->pos = l->len = 0;
-                                        refresh_line(l);
-                                        break;
-                                default:
-                                        linenoise_beep();
-                                        vi_escape = 1;
-                                        break;
+                        case 'w': 
+                                linenoise_edit_delete_next_word(l);
+                                break;
+                        case 'b':
+                                linenoise_edit_delete_prev_word(l);
+                                break;
+                        case '0': /** @todo d0 **/
+                                break;
+                        case '$':
+                                buf[l->pos] = '\0';
+                                l->len = l->pos;
+                                refresh_line(l);
+                                break;
+                        case 'c':
+                        case 'd':
+                                buf[0] = '\0';
+                                l->pos = l->len = 0;
+                                refresh_line(l);
+                                break;
+                        default:
+                                linenoise_beep();
+                                vi_escape = 1;
+                                break;
                         }
                 }
                 break;
@@ -1246,7 +1246,7 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
                         }
                         break;
                 default:
-                        if(0 == vi_mode || 0 == vi_escape){
+                        if((0 == vi_mode) || (0 == vi_escape)){
                                 if (linenoise_edit_insert(&l, c))
                                         return -1;
                         } else { /*in vi command mode*/
@@ -1345,7 +1345,7 @@ char *linenoise(const char *prompt)
                 if (fgets(buf, LINENOISE_MAX_LINE, stdin) == NULL)
                         return NULL;
                 len = strlen(buf);
-                while (len && (buf[len - 1] == '\n' || buf[len - 1] == '\r')) {
+                while (len && ((buf[len - 1] == '\n') || (buf[len - 1] == '\r'))) {
                         len--;
                         buf[len] = '\0';
                 }
