@@ -1,5 +1,5 @@
 CC=gcc
-CCFLAGS=-Wall -Wextra -ansi -pedantic
+CCFLAGS=-Wall -Wextra 
 
 all: hash
 

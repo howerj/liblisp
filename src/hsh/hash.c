@@ -110,9 +110,9 @@ void hash_destroy(hashtable * table)
 void hash_insert(hashtable * ht, const char *key, const char *val)
 {
         uint32_t hash;
-        hashentry_t *current, *newt, *last;
+        hashentry_t *current = NULL, *newt = NULL, *last = NULL;
 
-        assert(NULL != ht);
+        assert((NULL != ht) && (NULL != key) && (NULL != val));
 
         hash = hash_alg(ht, key);
         current = ht->table[hash];
