@@ -327,6 +327,10 @@ expr lisp_eval(expr x, expr env, lisp l)
                                         sexpr_perror(x, "lambda: argc != 2", l->e);
                                         return nil;
                                 }
+                                if(S_LIST != CADR(x)->type){
+                                        sexpr_perror(x, "lambda: arg_2 != list", l->e);
+                                        return nil;
+                                }
                                 return mkproc(CADR(x), CADDR(x), env, l->e);
                         } else {
                                 return apply(foundx, evlis(x, env, l), l);
