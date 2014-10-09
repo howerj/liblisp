@@ -10,6 +10,8 @@
  *        constantly to functions like io_puts
  *  @todo Use stdarg.h where appropriate
  *  @todo Error checking on return values.
+ *  @todo printf and scanf equivalent that deals with fixed width
+ *        types and avoids floating point conversions.
  *
  *  This library allows redirection of input and output to
  *  various different sources. It also would allow me to add in

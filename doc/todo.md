@@ -80,6 +80,17 @@ its items.
   "if", "begin", ...
   but do so *optionally*
 
+* Signal handling plan:
+  - Set up signals handlers for each standard C signals that sets global value
+  to signal number.
+  - Register variables with signal handler names and value of that handler
+  - Check if signal global variable is zero or not, if not zero, set to zero
+  and lookup handler for signal. This should be done in Eval.
+  - The signal handler can be an arbitrary lisp expression
+
+* New printf/scanf for fixed width types and no floating points, for I/O
+  library.
+
 * Write specifications for each of the modules. This along
   with Unit tests would *help* in rooting out bugs and *help*
   making the project more formal. Some modules should be easier
@@ -101,7 +112,6 @@ its items.
   - OpenGL interface (plug in)
 
 * Make the API simpler to use;
-  - Functions to set up internals
   - Do not allow stderr redirect? 
   ie. 
   io\_putc(char c, io * o, io * e);
@@ -109,8 +119,6 @@ its items.
   io\_putc(char c, io * o);
 
 * io should use stdarg.h
-
-* Do I need to handle any signals?
 
 * Rethink special forms;
   - Use "cond" instead of (or in addition to) "if".
