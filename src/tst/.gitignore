@@ -11,3 +11,4 @@ repl
 *.swo
 *~
 *.tmp
+repl.cpp.exe
