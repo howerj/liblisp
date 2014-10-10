@@ -11,6 +11,10 @@
 #ifndef BIGNUM_H
 #define BIGNUM_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 #define MAX_RADIX       (16)
@@ -34,4 +38,7 @@ bignum *bignum_multiply(bignum *a, bignum *b);
 bignum_div_t* bignum_divide(bignum *a, bignum *b);
 void bignum_copy(bignum *dst, bignum *src);
 
+#ifdef __cplusplus
+}
+#endif
 #endif  /* BIGNUM_H */

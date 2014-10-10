@@ -2,22 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <assert.h>
 #include <limits.h>
+#include <stdbool.h>
 #include "bignum.h"
-#include "check.h"
 
 #define MY_RADIX        (10)
 
-#ifdef NDEBUG
-#define assert(s) do { (s); } while(false)
-#endif
-
-typedef enum{
-        false = 0,
-        true  = 1
-}bool;
-
+static void _check(int checkme, char *file, int line);
+#define check(X) _check((X),__FILE__,__LINE__)
 
 void test_compare(char *a, char *b){
         char *sa,*sb;
@@ -89,6 +81,23 @@ perform_division(char *a, char *b){
         free(result);
         free(squotient);
         free(sremainder);
+        return;
+}
+
+/** 
+ *  @brief    Performs roughly the same job as "assert" but will
+ *            not get defined out by NDEBUG. This should be wrapped
+ *            in a macro however so you do not have to type __FILE__
+ *            and __LINE__ out repeatedly 
+ *  @param    n         Operand 'n' 
+ *  @param    d         Operand 'n' 
+ *  @return   void
+ */
+static void _check(int checkme, char *file, int line){
+        if(0 == checkme){
+                fprintf(stderr,"check failed in %s on line %d.\n", file, line);
+                abort();
+        }
         return;
 }
 

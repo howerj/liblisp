@@ -8,8 +8,8 @@ all: bignum
 %.o: %.c *.h makefile
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-bignum: bignum.o check.o main.c
-	$(CC) $(CFLAGS) bignum.o check.o main.c -o bignum
+bignum: bignum.o main.c
+	$(CC) $(CFLAGS) bignum.o main.c -o bignum
 
 indent:
 	indent -linux -nut -l 150 *.c *.h

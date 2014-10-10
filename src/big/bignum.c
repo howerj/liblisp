@@ -25,7 +25,6 @@
 #include <ctype.h>  /* isdigit */
 #include <assert.h> /* assert */
 #include "bignum.h"
-#include "check.h"
 
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
@@ -39,11 +38,14 @@ struct bignum{
         size_t lastdigit; /* last digit of the number */
         size_t allocated; /* current size of digits[] */
         int isnegative;   /* 1 == negative, 0 == positive */
-} ;
+};
 
 static void adjust_last(bignum * n);
 static int leftshift(bignum *n, unsigned int d);
 static uint8_t binlog(size_t v);
+
+static void _check(int checkme, char *file, int line);
+#define check(X) _check((X),__FILE__,__LINE__)
 
 /**** Functions with external linkage ****************************************/
 
@@ -555,5 +557,22 @@ static uint8_t binlog(size_t v){
         while(v >>= 1)
                 r++;
         return r;
+}
+
+/** 
+ *  @brief    Performs roughly the same job as "assert" but will
+ *            not get defined out by NDEBUG. This should be wrapped
+ *            in a macro however so you do not have to type __FILE__
+ *            and __LINE__ out repeatedly 
+ *  @param    n         Operand 'n' 
+ *  @param    d         Operand 'n' 
+ *  @return   void
+ */
+static void _check(int checkme, char *file, int line){
+        if(0 == checkme){
+                fprintf(stderr,"check failed in %s on line %d.\n", file, line);
+                abort();
+        }
+        return;
 }
 

@@ -32,6 +32,7 @@
 #include "sexpr.h"
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 #include "mem.h" 
 #include "gc.h"  
 #include "color.h"
@@ -304,8 +305,7 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io * e
  **/
 void append(expr list, expr ele, io * e)
 {
-        NULLCHK(list, e);
-        NULLCHK(ele, e);
+        assert((NULL != list) && (NULL != ele));
         list->data.list = mem_realloc(list->data.list, sizeof(expr) * ++list->len, e);
         (list->data.list)[list->len - 1] = ele;
 }

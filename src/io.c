@@ -31,6 +31,9 @@
 #include <stdlib.h>  
 #include <stdbool.h> 
 
+#define NULLCHK(X,E)  if(NULL == (X))\
+                      { report("null dereference",(E)); exit(EXIT_FAILURE);}
+
 /**I/O abstraction structure**/
 struct io {
         union {
@@ -54,6 +57,8 @@ struct io {
 };
 
 static int io_itoa(int32_t d, char *s); /* I *may* want to export this later */
+
+static io error_stream = {{NULL}, 0, 0, IO_FILE_OUT, false, '\0'};
 
 /**** I/O functions **********************************************************/
 

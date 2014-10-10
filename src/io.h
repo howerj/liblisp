@@ -23,8 +23,6 @@ typedef struct io io;
 /**** macros ******************************************************************/
 #define BUFLEN        (256u)
 #define report(X,E)   io_doreport((X),__FILE__,__LINE__,(E))
-#define NULLCHK(X,E)  if(NULL == (X))\
-                      { report("null dereference",(E)); exit(EXIT_FAILURE);}
 /******************************************************************************/
 
 /**** function prototypes *****************************************************/
