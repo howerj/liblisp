@@ -6,40 +6,48 @@
 ###############################################################################
 
 MAKEFLAGS+= --no-builtin-rules
-.PHONY: all doxygen indent report tar clean valgrind ltrace 
+.PHONY: all doxygen indent report tar clean valgrind 
 
 ## Variables ##################################################################
 
 SHELL=/bin/sh
 REPORT_DIR=doc/log
+# if using musl-gcc then we can statically link our executable and it will still
+# be small so add -static to CFLAGS
 CC=gcc
 INPUTF=lsp/lib.lsp /dev/stdin
 INDENT=-linux -nut -l 150
-CFLAGS= -Wall -Wextra -ansi -pedantic -Wswitch-enum -Os -g
-OBJFILES=bin/io.o bin/mem.o bin/gc.o bin/sexpr.o bin/lisp.o bin/main.o
+CFLAGS= -Wall -Wextra -ansi -pedantic -Wswitch-enum -Os -g 
+TARGET=lisp
+BUILD_DIR=bin
+SOURCE_DIR=src
+
+OBJFILES=$(BUILD_DIR)/io.o \
+	 $(BUILD_DIR)/mem.o \
+	 $(BUILD_DIR)/gc.o \
+	 $(BUILD_DIR)/sexpr.o \
+	 $(BUILD_DIR)/lisp.o \
+	 $(BUILD_DIR)/main.o
 
 ## building ###################################################################
 # Only a C tool chain is necessary to built the project. Anything else is
 # simply extra fluff.
 
-all: bin/lisp
+all: $(BUILD_DIR)/$(TARGET)
 
-bin/%.o: src/%.c src/*.h makefile
+$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c $(SOURCE_DIR)/*.h makefile
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-bin/lisp: $(OBJFILES)
-	$(CC) $(CFLAGS) $(OBJFILES) -o bin/lisp
+$(BUILD_DIR)/$(TARGET): $(OBJFILES)
+	$(CC) $(CFLAGS) $(OBJFILES) -o $(BUILD_DIR)/$(TARGET)
 
-run: bin/lisp
-	bin/./lisp -c $(INPUTF)
+run: $(BUILD_DIR)/$(TARGET)
+	$(BUILD_DIR)/./$(TARGET) -c $(INPUTF)
 
 ## testing ####################################################################
 
-valgrind: bin/lisp
-	valgrind bin/./lisp -cG $(INPUTF)
-
-ltrace: bin/lisp
-	ltrace bin/./lisp -cG $(INPUTF)
+valgrind: $(BUILD_DIR)/lisp
+	valgrind $(BUILD_DIR)/./$(TARGET) -cG $(INPUTF)
 
 ## documentation ##############################################################
 
@@ -47,13 +55,13 @@ doxygen: doc/doxygen.conf
 	-doxygen doc/doxygen.conf
 
 indent:
-	indent $(INDENT) src/*.c src/*.h
+	indent $(INDENT) $(SOURCE_DIR)/*.c $(SOURCE_DIR)/*.h
 
 report:
 	-echo "Reports generated in $(REPORT_DIR)"
-	-splint -weak src/*.c src/*.h &> $(REPORT_DIR)/splint.log
-	-wc src/*.c src/*.h &> $(REPORT_DIR)/wc.log
-	-readelf -sW bin/*.o &> $(REPORT_DIR)/elf.log
+	-splint -weak $(SOURCE_DIR)/*.c $(SOURCE_DIR)/*.h &> $(REPORT_DIR)/splint.log
+	-wc $(SOURCE_DIR)/*.c $(SOURCE_DIR)/*.h &> $(REPORT_DIR)/wc.log
+	-readelf -sW $(BUILD_DIR)/*.o &> $(REPORT_DIR)/elf.log
 
 tar:
 	make clean
@@ -62,7 +70,7 @@ tar:
 ## cleanup ####################################################################
 
 clean:
-	-rm -rf bin/*.o bin/lisp doc/htm/ doc/man doc/latex src/*~
+	-rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/$(TARGET) doc/htm/ doc/man doc/latex $(SOURCE_DIR)/*~
 	-rm -rf $(REPORT_DIR)/*.i $(REPORT_DIR)/*.s $(REPORT_DIR)/*.log
 	-rm -rf *.log
 

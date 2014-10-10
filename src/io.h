@@ -10,12 +10,12 @@
 #ifndef IO_H
 #define IO_H
 
-#include <stdint.h>
-#include <stdio.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <stdint.h>
+#include <stdio.h>
 
 struct io;
 typedef struct io io;

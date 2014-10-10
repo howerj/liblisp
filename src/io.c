@@ -33,14 +33,6 @@
 
 /**I/O abstraction structure**/
 struct io {
-        enum iotype {
-                IO_INVALID,   /* error on incorrectly set up I/O */
-                IO_FILE_IN,   /* read from file */
-                IO_FILE_OUT,  /* write to file */
-                IO_STRING_IN, /* read from a string */
-                IO_STRING_OUT /* write to a string, if you want */
-        }type;
-
         union {
                 FILE *file;
                 char *string;
@@ -48,7 +40,16 @@ struct io {
 
         size_t position;        /* position in string */
         size_t max;             /* max string length, if known */
-        unsigned int ungetc;    /* true if we have ungetc'ed a character */
+
+        enum iotype {
+                IO_INVALID,   /* error on incorrectly set up I/O */
+                IO_FILE_IN,   /* read from file */
+                IO_FILE_OUT,  /* write to file */
+                IO_STRING_IN, /* read from a string */
+                IO_STRING_OUT /* write to a string, if you want */
+        } type;
+
+        bool ungetc;            /* true if we have ungetc'ed a character */
         char c;                 /* character store for io_ungetc() */
 };
 
@@ -149,7 +150,9 @@ void io_file_out(io *o, FILE* file){
 }
 
 /**
- *  @brief          Flush and close an input or output stream
+ *  @brief          Flush and close an input or output stream, this *will not* close
+ *                  stdin, stdout or stderr, but it will flush them and invalidate
+ *                  the IO wrapper struct passed to it.
  *  @param          ioc         Input or output stream to close
  *  @return         void
  **/
@@ -159,7 +162,8 @@ void io_file_close(io *ioc){
         if((IO_FILE_IN == ioc->type) || (IO_FILE_OUT == ioc->type)){
                 if(NULL != ioc->ptr.file){
                         fflush(ioc->ptr.file);
-                        fclose(ioc->ptr.file);
+                        if((ioc->ptr.file != stdin) && (ioc->ptr.file != stdout) && (ioc->ptr.file != stdin))
+                                fclose(ioc->ptr.file);
                         ioc->ptr.file = NULL;
                 }
         }
@@ -299,13 +303,11 @@ int io_puts(const char *s, io * o, io * e)
  **/
 void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e)
 {
-        io n_e = { IO_FILE_OUT, {NULL}, 0, 0, '\0', false };
+        io n_e = {{NULL}, 0, 0, IO_FILE_OUT, false, '\0'};
         bool critical_failure_f = false;
         n_e.ptr.file = stderr;
 
-        if ((NULL == e) || (NULL == e->ptr.file)
-            || ((IO_FILE_OUT != e->type) && (IO_STRING_OUT != e->type))
-            ) {
+        if ((NULL == e) || (NULL == e->ptr.file) || ((IO_FILE_OUT != e->type) && (IO_STRING_OUT != e->type))) {
                 e = &n_e;
                 critical_failure_f = true;
         }
@@ -337,17 +339,17 @@ void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e)
 static int io_itoa(int32_t d, char *s){
         int32_t sign, len;
         uint32_t v, i;
-        char tb[sizeof(int32_t)*3+2];
+        char tb[sizeof(int32_t)*3+2]; /* maximum bytes num of new string */
         char *tbp = tb;
         assert(NULL != s);
 
-        sign = (int32_t)(d < 0 ? -1 : 0);
+        sign = (int32_t)(d < 0 ? -1 : 0);   
         v = (uint32_t)(sign == 0 ? d : -d);
 
         do{
                 i = v % 10;
                 v /= 10;
-                *tbp++ =(char) i + ((i < 10) ? '0' : 'a' - 10);
+                *tbp++ = (char) i + ((i < 10) ? '0' : 'a' - 10);
         } while(v);
 
         len = tbp - tb;
@@ -358,7 +360,7 @@ static int io_itoa(int32_t d, char *s){
 
         while(tbp > tb)
                 *s++ = *--tbp;
-        *s='\0';
+        *s = '\0';
 
         return (int)len;
 }

@@ -10,12 +10,12 @@
 #ifndef SEXPR_H
 #define SEXPR_H
 
-#include "io.h"
-#include "type.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "io.h"
+#include "type.h"
 
 /**** macros ******************************************************************/
 #define sexpr_perror(EXP,MSG,E)  dosexpr_perror((EXP),(MSG),__FILE__,__LINE__,(E))

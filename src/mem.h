@@ -10,14 +10,14 @@
 #ifndef MEM_H
 #define MEM_H
 
-#define MAX_ALLOCS ((signed int)(1024*1024))
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "io.h"
 #include "type.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define MAX_ALLOCS ((signed int)(1024*1024))
 
 void mem_set_debug(bool flag);
 

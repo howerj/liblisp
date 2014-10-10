@@ -60,8 +60,10 @@ hashtable *hash_create(size_t len)
         if (NULL == (newt = calloc(sizeof(*newt), 1)))
                 return NULL;
 
-        if (NULL == (newt->table = calloc(sizeof(*newt->table), len)))
+        if (NULL == (newt->table = calloc(sizeof(*newt->table), len))){
+                free(newt);
                 return NULL;
+        }
 
         newt->len = len;
 
@@ -102,9 +104,9 @@ void hash_destroy(hashtable * table)
 
 /** 
  *  @brief    Insert a key-value pair into a hash table
- *  @param    ht        The hash table
- *  @param    key       The key
- *  @param    val       The value
+ *  @param    ht        The hash table, should not be NULL
+ *  @param    key       The key, should not be NULL
+ *  @param    val       The value, should not be NULL
  *  @return   void      
  */
 void hash_insert(hashtable * ht, const char *key, const char *val)
@@ -147,7 +149,7 @@ void hash_insert(hashtable * ht, const char *key, const char *val)
 
 /** 
  *  @brief    Print out a hash table
- *  @param    table     The hash table to print out
+ *  @param    table     The hash table to print out, should not be NULL
  *  @return   void      
  */
 void hash_print(hashtable * table)
@@ -168,8 +170,8 @@ void hash_print(hashtable * table)
 
 /** 
  *  @brief    Lookup a key in the hash table
- *  @param    table     The hash table to search in
- *  @param    key       The key to search for
+ *  @param    table     The hash table to search in, should not be NULL
+ *  @param    key       The key to search for, should not be NULL
  *  @return   The key, if found, NULL otherwise
  */
 char *hash_lookup(hashtable * table, const char *key)
@@ -177,7 +179,7 @@ char *hash_lookup(hashtable * table, const char *key)
         uint32_t hash;
         hashentry_t *current;
 
-        assert(NULL != table);
+        assert((NULL != table) && (NULL != key));
 
         hash = hash_alg(table, key);
         current = table->table[hash];
@@ -190,7 +192,7 @@ char *hash_lookup(hashtable * table, const char *key)
 
 /** 
  *  @brief    Get information; number of collisions
- *  @param    table             Hash table containing the information
+ *  @param    table             Hash table containing the information, should not be NULL
  *  @return   unsigned int      Number of collisions
  */
 unsigned int hash_get_collisions(hashtable_t * table){
@@ -200,7 +202,7 @@ unsigned int hash_get_collisions(hashtable_t * table){
 
 /** 
  *  @brief    Get information; Number of unique keys
- *  @param    table             Hash table containing the information
+ *  @param    table             Hash table containing the information, should not be NULL
  *  @return   unsigned int      Number of unique keys
  */
 unsigned int hash_get_uniquekeys(hashtable_t * table){
@@ -210,7 +212,7 @@ unsigned int hash_get_uniquekeys(hashtable_t * table){
 
 /** 
  *  @brief    Get information; number of keys that have had their value replaced
- *  @param    table             Hash table containing the information
+ *  @param    table             Hash table containing the information, should not be NULL
  *  @return   unsigned int      Number of replacements
  */
 unsigned int hash_get_replaced(hashtable_t * table){
@@ -235,13 +237,13 @@ static char *_strdup(const char *s)
 /** 
  *  @brief    A hashing algorithm, see <http://www.cse.yorku.ca/~oz/hash.html>
  *            and any references to "djb2" hash in the literature.
- *  @param    s         The string to hash
+ *  @param    s         The string to hash, can be NULL if 0 == len
  *  @param    len       The strings length
  *  @return   uint32_t  The hashed value
  */
 static uint32_t djb2(const char *s, size_t len)
 {
-        uint32_t hash = 5381;   /*0x1505 */
+        uint32_t hash = 5381;   /*magic number this hash uses, it just is*/
         size_t i = 0;
 
         for (i = 0; i < len; s++, i++)

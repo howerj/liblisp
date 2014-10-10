@@ -9,7 +9,11 @@
 
 #ifndef TYPE_H
 #define TYPE_H
-/*system types*/
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h> 
@@ -60,4 +64,7 @@ struct lispenv_t {/** a lisp environment */
         expr env;
 };
 
+#ifdef __cplusplus
+}
+#endif
 #endif

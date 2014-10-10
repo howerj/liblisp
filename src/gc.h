@@ -10,12 +10,12 @@
 #ifndef GC_H
 #define GC_H
 
-#include "io.h"
-#include "type.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "io.h"
+#include "type.h"
 
 expr gc_malloc(io * e);
 expr gc_calloc(io * e);

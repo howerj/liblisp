@@ -20,22 +20,12 @@
  *  in their own right and might change so they can be accessed externally
  *  later.
  *
- *  A possible addition would be the ability to set what character
- *  demarks comments. Other possible extras are:
+ *  Possible extras are:
  *
  *  @todo Add in syntax for quotes:
  *        '(list ...) become (quote (list ...))
  *        But make it optional
- *  @todo Add in syntax for regexes
- *        (/regex/ list ...)
- *        (/find/substitute/ list ...)
- *        But make it optional
- *  @todo Add in syntax to get a line from a file
- *        <file>
- *  @todo Add in line numbers
- *  @todo Add in comments
- *  @todo Add syntax for executing shell commands directly
- *        (`command $arg_1 $arg_2 ...`)
+ *  @todo Add in syntax to get a line from a file like in perl
  *
  **/
 
