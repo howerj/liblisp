@@ -45,11 +45,11 @@ struct io {
         size_t max;             /* max string length, if known */
 
         enum iotype {
-                IO_INVALID,   /* error on incorrectly set up I/O */
-                IO_FILE_IN,   /* read from file */
-                IO_FILE_OUT,  /* write to file */
-                IO_STRING_IN, /* read from a string */
-                IO_STRING_OUT /* write to a string, if you want */
+                IO_INVALID_E,   /* error on incorrectly set up I/O */
+                IO_FILE_IN_E,   /* read from file */
+                IO_FILE_OUT_E,  /* write to file */
+                IO_STRING_IN_E, /* read from a string */
+                IO_STRING_OUT_E /* write to a string, if you want */
         } type;
 
         bool ungetc;            /* true if we have ungetc'ed a character */
@@ -58,7 +58,7 @@ struct io {
 
 static int io_itoa(int32_t d, char *s); /* I *may* want to export this later */
 
-static io error_stream = {{NULL}, 0, 0, IO_FILE_OUT, false, '\0'};
+static io error_stream = {{NULL}, 0, 0, IO_FILE_OUT_E, false, '\0'};
 
 /**** I/O functions **********************************************************/
 
@@ -71,7 +71,7 @@ static io error_stream = {{NULL}, 0, 0, IO_FILE_OUT, false, '\0'};
 void io_string_in(io *i, char *s){
         assert((NULL != i) && (NULL != s));
         memset(i, 0, sizeof(*i));
-        i->type         = IO_STRING_IN;
+        i->type         = IO_STRING_IN_E;
         i->ptr.string   = s;
         i->max          = strlen(s);
         return;
@@ -86,7 +86,7 @@ void io_string_in(io *i, char *s){
 void io_string_out(io *o, char *s){
         assert((NULL != o) && (NULL != s));
         memset(o, 0, sizeof(*o));
-        o->type         = IO_STRING_OUT;
+        o->type         = IO_STRING_OUT_E;
         o->ptr.string   = s;
         o->max          = strlen(s);
         return;
@@ -103,7 +103,7 @@ void io_string_out(io *o, char *s){
 FILE *io_filename_in(io *i, char *file_name){
         assert((NULL != i)&&(NULL != file_name));
         memset(i, 0, sizeof(*i));
-        i->type         = IO_FILE_IN;
+        i->type         = IO_FILE_IN_E;
         if(NULL == (i->ptr.file = fopen(file_name, "rb")))
                 return NULL;
         return i->ptr.file;
@@ -119,7 +119,7 @@ FILE *io_filename_in(io *i, char *file_name){
 FILE *io_filename_out(io *o, char *file_name){
         assert((NULL != o)&&(NULL != file_name));
         memset(o, 0, sizeof(*o));
-        o->type         = IO_FILE_OUT;
+        o->type         = IO_FILE_OUT_E;
         if(NULL == (o->ptr.file = fopen(file_name, "wb")))
                 return NULL;
         return o->ptr.file;
@@ -134,7 +134,7 @@ FILE *io_filename_out(io *o, char *file_name){
 void io_file_in(io *i, FILE* file){
         assert((NULL != i)&&(NULL != file));
         memset(i, 0, sizeof(*i));
-        i->type         = IO_FILE_IN;
+        i->type         = IO_FILE_IN_E;
         i->ptr.file     = file;
         return;
 }
@@ -149,7 +149,7 @@ void io_file_out(io *o, FILE* file){
         assert((NULL != o));
         assert((NULL != file));
         memset(o, 0, sizeof(*o));
-        o->type         = IO_FILE_OUT;
+        o->type         = IO_FILE_OUT_E;
         o->ptr.file     = file;
         return;
 }
@@ -164,7 +164,7 @@ void io_file_out(io *o, FILE* file){
 void io_file_close(io *ioc){
         assert(NULL != ioc);
 
-        if((IO_FILE_IN == ioc->type) || (IO_FILE_OUT == ioc->type)){
+        if((IO_FILE_IN_E == ioc->type) || (IO_FILE_OUT_E == ioc->type)){
                 if(NULL != ioc->ptr.file){
                         fflush(ioc->ptr.file);
                         if((ioc->ptr.file != stdin) && (ioc->ptr.file != stdout) && (ioc->ptr.file != stdin))
@@ -196,9 +196,9 @@ int io_putc(char c, io * o, io * e)
         NULLCHK(o, e);
         NULLCHK(o->ptr.file, e);
 
-        if (IO_FILE_OUT == o->type) {
+        if (IO_FILE_OUT_E == o->type) {
                 return fputc(c, o->ptr.file);
-        } else if (IO_STRING_OUT == o->type) {
+        } else if (IO_STRING_OUT_E == o->type) {
                 if (o->position < o->max) {
                         o->ptr.string[o->position++] = c;
                         return c;
@@ -228,9 +228,9 @@ int io_getc(io * i, io * e)
                 return i->c;
         }
 
-        if (IO_FILE_IN == i->type) {
+        if (IO_FILE_IN_E == i->type) {
                 return fgetc(i->ptr.file);
-        } else if (IO_STRING_IN == i->type) {
+        } else if (IO_STRING_IN_E == i->type) {
                 return (i->ptr.string[i->position]) ? i->ptr.string[i->position++] : EOF;
         } else {
                 /*programmer error; some kind of error reporting would be nice */
@@ -308,11 +308,11 @@ int io_puts(const char *s, io * o, io * e)
  **/
 void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e)
 {
-        io n_e = {{NULL}, 0, 0, IO_FILE_OUT, false, '\0'};
+        io n_e = {{NULL}, 0, 0, IO_FILE_OUT_E, false, '\0'};
         bool critical_failure_f = false;
         n_e.ptr.file = stderr;
 
-        if ((NULL == e) || (NULL == e->ptr.file) || ((IO_FILE_OUT != e->type) && (IO_STRING_OUT != e->type))) {
+        if ((NULL == e) || (NULL == e->ptr.file) || ((IO_FILE_OUT_E != e->type) && (IO_STRING_OUT_E != e->type))) {
                 e = &n_e;
                 critical_failure_f = true;
         }
