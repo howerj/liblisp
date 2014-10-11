@@ -13,7 +13,7 @@
  *  The three main functions are:
  *    - Parse an S-expression (sexpr_parse)
  *    - Print out an S-expression (sexpr_print)
- *    - Print out an S-expression (sexpr_perror) with possibly
+ *    - Print out an S-expression (SEXPR_PERROR) with possibly
  *      invalid arguments, this should be used for error messages.
  *
  *  There are sub-functions called by the parser that could be useful
@@ -250,7 +250,7 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
 /**
  *  @brief          Print out an error message while trying to handle
  *                  invalid arguments gracefully. A macro called
- *                  sexpr_perror should be defined in the header so you
+ *                  SEXPR_PERROR should be defined in the header so you
  *                  do not have to pass cfile and linenum constantly to it.
  *  @param          x       NULL or expression to print
  *  @param          msg     Error message to print

@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
                         /*try to treat it as an output file */
                         /*printf("(input 'file \"%s\")\n", argv[i]); */
                         if(NULL == io_filename_in(l->i, argv[i])){
-                                sexpr_perror(NULL, "fatal: could not open file for reading", NULL);
+                                SEXPR_PERROR(NULL, "fatal: could not open file for reading", NULL);
                                 exit(EXIT_FAILURE);
                         }
                         /** @todo lisp_repl(l) should return an error expr on failure **/
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
                                 /** @todo lisp_repl(l) should return an error expr on failure **/
                                 (void)lisp_repl(l);
                         } else {
-                                sexpr_perror(NULL, "fatal: expecting arg after -e", NULL);
+                                SEXPR_PERROR(NULL, "fatal: expecting arg after -e", NULL);
                                 exit(EXIT_FAILURE);
                         }
                         nostdin_f = true;
@@ -143,17 +143,17 @@ int main(int argc, char *argv[])
                         if (++i < argc) {
                                 /*printf("(output 'file \"%s\")\n", argv[i]); */
                                 if(NULL == io_filename_out(l->o,argv[i])){
-                                        sexpr_perror(NULL, "fatal: could not open file for writing", NULL);
+                                        SEXPR_PERROR(NULL, "fatal: could not open file for writing", NULL);
                                         exit(EXIT_FAILURE);
                                 }
                         } else {
-                                sexpr_perror(NULL, "fatal: expecting arg after -o", NULL);
+                                SEXPR_PERROR(NULL, "fatal: expecting arg after -o", NULL);
                                 exit(EXIT_FAILURE);
                         }
                         break;
                 case getopt_error:
                 default:
-                        sexpr_perror(NULL, "fatal: invalid command opts", NULL);
+                        SEXPR_PERROR(NULL, "fatal: invalid command opts", NULL);
                         exit(EXIT_FAILURE);
                 }
         }
