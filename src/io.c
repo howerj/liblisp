@@ -32,7 +32,7 @@
 #include <stdbool.h> 
 
 #define NULLCHK(X,E)  if(NULL == (X))\
-                      { report("null dereference",(E)); exit(EXIT_FAILURE);}
+                      { REPORT("null dereference",(E)); exit(EXIT_FAILURE);}
 
 /**I/O abstraction structure**/
 struct io {

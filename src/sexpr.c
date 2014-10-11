@@ -107,7 +107,7 @@ expr sexpr_parse(io * i, io * e)
                 }
                 switch (c) {
                 case ')':
-                        report("unmatched ')'", e);
+                        REPORT("unmatched ')'", e);
                         continue;
                 case '#':
                         if (true == parse_comment(i, e))
@@ -230,13 +230,13 @@ void sexpr_print(expr x, io * o, unsigned int depth, io * e)
         case S_FILE:
                /** @todo implement file support, then printing**/
                 color_on(ANSI_COLOR_RED, o, e);
-                report("File/Error printing not supported!", e);
+                REPORT("File/Error printing not supported!", e);
                 break;
         case S_QUOTE: /*unimplemented, fallthrough...*/
         case S_LAST_TYPE: /*unimplemented, fallthrough...*/
         default:               /* should never get here */
                 color_on(ANSI_COLOR_RED, o, e);
-                report("print: not a known printable type", e);
+                REPORT("print: not a known printable type", e);
                 color_on(ANSI_RESET, o, e);
                 exit(EXIT_FAILURE);
                 break;
@@ -374,8 +374,8 @@ static expr parse_symbol(io * i, io * e)
 
         while (EOF != (c = io_getc(i, e))) {
                 if (BUFLEN <= count) {
-                        report("symbol too long", e);
-                        report(buf, e);
+                        REPORT("symbol too long", e);
+                        REPORT(buf, e);
                         goto fail;
                 }
 
@@ -403,11 +403,11 @@ static expr parse_symbol(io * i, io * e)
                                 buf[count++] = c;
                                 continue;
                         default:
-                                report(buf, e);
+                                REPORT(buf, e);
                                 goto fail;
                         }
                 case '"':
-                        report(buf, e);
+                        REPORT(buf, e);
                         goto success;
                 default:
                         buf[count++] = c;
@@ -448,8 +448,8 @@ static expr parse_string(io * i, io * e)
 
         while (EOF != (c = io_getc(i, e))) {
                 if (BUFLEN <= count) {
-                        report("string too long", e);
-                        report(buf, e); /* check if correct */
+                        REPORT("string too long", e);
+                        REPORT(buf, e); /* check if correct */
                         goto fail;
                 }
                 switch (c) {
@@ -460,8 +460,8 @@ static expr parse_string(io * i, io * e)
                                 buf[count++] = c;
                                 continue;
                         default:
-                                report("invalid escape char", e);
-                                report(buf, e);
+                                REPORT("invalid escape char", e);
+                                REPORT(buf, e);
                                 goto fail;
                         }
                 case '"':
@@ -531,7 +531,7 @@ static expr parse_list(io * i, io * e)
         }
 
  fail:
-        report("list err", e);
+        REPORT("list err", e);
         return NULL;
 
  success:

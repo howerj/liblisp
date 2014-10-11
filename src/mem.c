@@ -46,7 +46,7 @@ void *mem_malloc(size_t size, io * e)
                 return NULL;
 
         if (MAX_ALLOCS < alloccounter++) {
-                report("too many mallocs", e);
+                REPORT("too many mallocs", e);
                 exit(EXIT_FAILURE);
         }
         if (true == debug_f) {
@@ -57,7 +57,7 @@ void *mem_malloc(size_t size, io * e)
 
         v = malloc(size);
         if (NULL == v) {
-                report("malloc failed", e);
+                REPORT("malloc failed", e);
                 exit(EXIT_FAILURE);
         }
         return v;
@@ -75,7 +75,7 @@ void *mem_calloc(size_t num, size_t size, io * e)
 {
         void *v;
         if (MAX_ALLOCS < alloccounter++) {
-                report("too many mallocs", e);
+                REPORT("too many mallocs", e);
                 exit(EXIT_FAILURE);
         }
 
@@ -87,7 +87,7 @@ void *mem_calloc(size_t num, size_t size, io * e)
 
         v = calloc(num, size);
         if (NULL == v) {
-                report("calloc failed", e);
+                REPORT("calloc failed", e);
                 exit(EXIT_FAILURE);
         }
         return v;
@@ -114,7 +114,7 @@ void *mem_realloc(void *ptr, size_t size, io * e)
                 alloccounter++;
         }
         if (NULL == v) {
-                report("realloc failed", e);
+                REPORT("realloc failed", e);
                 exit(EXIT_FAILURE);
         }
         return v;

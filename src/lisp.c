@@ -314,7 +314,7 @@ expr lisp_eval(expr x, expr env, lisp l)
                         } else if (foundx == s_define) {
                                 {
                                         expr nx;
-                                        /* @todo if already defined, or is an internal symbol, report error */
+                                        /* @todo if already defined, or is an internal symbol, REPORT error */
                                         if (!TSTLEN(x, 3)) {
                                                 sexpr_perror(x, "define: argc != 2", l->e);
                                                 return nil;
