@@ -13,6 +13,9 @@ glue logic, prototyping and general hacking around.
 The API, while not stable at the moment, has the goals to be incredibly
 simple to set up and use. I will not document anything here at the moment,
 due to the lack of any standard.
+
+It should be safe to call C functions from C++, everything is wrapped up
+with extern "C" {}; in the headers so you do not have to worry about it.
 .SH SEE ALSO
 lisp(1)
 .SH BUGS

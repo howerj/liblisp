@@ -64,8 +64,8 @@ static io error_stream = {{NULL}, 0, 0, IO_FILE_OUT_E, false, '\0'};
 
 /**
  *  @brief          Set input wrapper to read from a string
- *  @param          i           input stream
- *  @param          s           string to read from
+ *  @param          i           input stream, Do not pass NULL
+ *  @param          s           string to read from, Do not pass NULL
  *  @return         void
  **/
 void io_string_in(io *i, char *s){
@@ -79,8 +79,8 @@ void io_string_in(io *i, char *s){
 
 /**
  *  @brief          Set output stream to point to a string
- *  @param          o           output stream
- *  @param          s           string to write to
+ *  @param          o           output stream, Do not pass NULL
+ *  @param          s           string to write to, Do not pass NULL
  *  @return         void
  **/
 void io_string_out(io *o, char *s){
@@ -96,12 +96,12 @@ void io_string_out(io *o, char *s){
  *  @brief          Attempts to open up a file called file_name for
  *                  reading, setting the input stream wrapper to read
  *                  from it.
- *  @param          i           input stream
- *  @param          file_name   File to open and read from
+ *  @param          i           input stream, Do not pass NULL
+ *  @param          file_name   File to open and read from, Do not pass NULL
  *  @return         FILE*       Initialized FILE*, or NULL on failure
  **/
 FILE *io_filename_in(io *i, char *file_name){
-        assert((NULL != i)&&(NULL != file_name));
+        assert((NULL != i) && (NULL != file_name));
         memset(i, 0, sizeof(*i));
         i->type         = IO_FILE_IN_E;
         if(NULL == (i->ptr.file = fopen(file_name, "rb")))
@@ -112,8 +112,8 @@ FILE *io_filename_in(io *i, char *file_name){
 /**
  *  @brief          Attempt to open file_name for writing, setting the
  *                  output wrapper to use it
- *  @param          o           output stream
- *  @param          file_name   file to open
+ *  @param          o           output stream, Do not pass NULL
+ *  @param          file_name   file to open, Do not pass NULL
  *  @return         FILE*       Initialized file pointer, or NULL on failure
  **/
 FILE *io_filename_out(io *o, char *file_name){
@@ -127,8 +127,8 @@ FILE *io_filename_out(io *o, char *file_name){
 
 /**
  *  @brief          Set input stream wrapper to point to a FILE*
- *  @param          i           input stream
- *  @param          file        file to read from
+ *  @param          i           input stream, Do not pass NULL
+ *  @param          file        file to read from, Do not pass NULL
  *  @return         void
  **/
 void io_file_in(io *i, FILE* file){
@@ -141,8 +141,8 @@ void io_file_in(io *i, FILE* file){
 
 /**
  *  @brief          Set an output stream wrapper to use a FILE*
- *  @param          o           output stream
- *  @param          file        FILE* to write to
+ *  @param          o           output stream, Do not pass NULL
+ *  @param          file        FILE* to write to, Do not pass NULL
  *  @return         void
  **/
 void io_file_out(io *o, FILE* file){
@@ -158,7 +158,7 @@ void io_file_out(io *o, FILE* file){
  *  @brief          Flush and close an input or output stream, this *will not* close
  *                  stdin, stdout or stderr, but it will flush them and invalidate
  *                  the IO wrapper struct passed to it.
- *  @param          ioc         Input or output stream to close
+ *  @param          ioc         Input or output stream to close, Do not pass NULL
  *  @return         void
  **/
 void io_file_close(io *ioc){
@@ -187,8 +187,8 @@ size_t io_sizeof_io(void){
 /**
  *  @brief          wrapper around putc; redirect output to a file or string
  *  @param          c   output this character
- *  @param          o   output stream
- *  @param          e   error output stream
+ *  @param          o   output stream, Do not pass NULL
+ *  @param          e   error output stream, Do not pass NULL
  *  @return         EOF on failure, character to output on success
  **/
 int io_putc(char c, io * o, io * e)
@@ -214,8 +214,8 @@ int io_putc(char c, io * o, io * e)
 
 /**
  *  @brief          wrapper around io_putc; get input from file or string
- *  @param          i input stream
- *  @param          e error output stream
+ *  @param          i input stream, Do not pass NULL
+ *  @param          e error output stream, Do not pass NULL
  *  @return         EOF on failure, character input on success
  **/
 int io_getc(io * i, io * e)
@@ -242,8 +242,8 @@ int io_getc(io * i, io * e)
 /**
  *  @brief          wrapper around ungetc; unget from to file or string
  *  @param          c character to put back
- *  @param          i input stream to put character back into
- *  @param          e error output stream
+ *  @param          i input stream to put character back into, Do not pass NULL
+ *  @param          e error output stream, Do not pass NULL
  *  @return         EOF if failed, character we put back if succeeded.
  **/
 int io_ungetc(char c, io * i, io * e)
@@ -262,8 +262,8 @@ int io_ungetc(char c, io * i, io * e)
  *  @brief          wrapper to print out a number; this should be rewritten
  *                  to avoid using fprintf and sprintf 
  *  @param          d integer to print out
- *  @param          o output stream to print to
- *  @param          e error output stream
+ *  @param          o output stream to print to, Do not pass NULL
+ *  @param          e error output stream, Do not pass NULL
  *  @return         negative number if operation failed, otherwise the
  *                  total number of characters written
  **/
@@ -277,9 +277,9 @@ int io_printd(int32_t d, io * o, io * e)
 
 /**
  *  @brief          wrapper to print out a string, *does not append newline*
- *  @param          s string to output
- *  @param          o output stream to print to
- *  @param          e error output stream
+ *  @param          s string to output, you *CAN* pass NULL
+ *  @param          o output stream to print to, Do not pass NULL
+ *  @param          e error output stream, Do not pass NULL
  *  @return         EOF on failure, number of characters written on success
  *                  
  **/
@@ -289,6 +289,8 @@ int io_puts(const char *s, io * o, io * e)
         int count = 0;
         int c;
         NULLCHK(o, e);
+        if(NULL == s)
+                return;
         while ((c = *(s + (count++))))
                 if (EOF == io_putc((char)c, o, e))
                         return EOF;
@@ -300,7 +302,7 @@ int io_puts(const char *s, io * o, io * e)
  *                  error reporting. It is not used directly but instead
  *                  wrapped in a macro
  *  @param          s       error message to print
- *  @param          cfile   C file the error occurred in (__FILE__)
+ *  @param          cfile   C file the error occurred in (__FILE__), Do not pass NULL
  *  @param          linenum line of C file error occurred (__LINE__)
  *  @param          e       error output stream to print to
  *  @return         void
@@ -338,7 +340,7 @@ void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e)
  *  @brief          Convert and integer to a string, base-10 only, the
  *                  casts are there for splint -weak checking.
  *  @param          d   integer to convert
- *  @param          s   string containing the integer
+ *  @param          s   string containing the integer, Do not pass NULL
  *  @return         int size of the converted string
  **/
 static int io_itoa(int32_t d, char *s){
