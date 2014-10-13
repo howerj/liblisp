@@ -18,7 +18,7 @@ extern "C" {
 #include "type.h"
 
 /**** macros ******************************************************************/
-#define sexpr_perror(EXP,MSG,E)  dosexpr_perror((EXP),(MSG),__FILE__,__LINE__,(E))
+#define SEXPR_PERROR(EXP,MSG,E)  dosexpr_perror((EXP),(MSG),__FILE__,__LINE__,(E))
 /******************************************************************************/
 
 /**** function prototypes *****************************************************/
