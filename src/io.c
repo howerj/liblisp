@@ -290,7 +290,7 @@ int io_puts(const char *s, io * o, io * e)
         int c;
         NULLCHK(o, e);
         if(NULL == s)
-                return;
+                return 0;
         while ((c = *(s + (count++))))
                 if (EOF == io_putc((char)c, o, e))
                         return EOF;
