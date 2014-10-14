@@ -31,8 +31,8 @@
 #include <stdlib.h>  
 #include <stdbool.h> 
 
-#define NULLCHK(X,E)  if(NULL == (X))\
-                      { REPORT("null dereference",(E)); exit(EXIT_FAILURE);}
+#define NULLCHK(X)  if(NULL == (X))\
+                      { REPORT("null dereference"); exit(EXIT_FAILURE);}
 
 /**I/O abstraction structure**/
 struct io {
@@ -58,9 +58,18 @@ struct io {
 
 static int io_itoa(int32_t d, char *s); /* I *may* want to export this later */
 
-static io error_stream = {{NULL}, 0, 0, IO_FILE_OUT_E, false, '\0'};
+static io *e = NULL; /*rename to error_stream*/
 
 /**** I/O functions **********************************************************/
+
+/**
+ * @brief           Set the default error reporting output stream
+ * @param           e
+ * @return          void
+ **/
+void io_set_error_stream(io *es){
+        e = es;
+}
 
 /**
  *  @brief          Set input wrapper to read from a string
@@ -188,13 +197,12 @@ size_t io_sizeof_io(void){
  *  @brief          wrapper around putc; redirect output to a file or string
  *  @param          c   output this character
  *  @param          o   output stream, Do not pass NULL
- *  @param          e   error output stream, Do not pass NULL
  *  @return         EOF on failure, character to output on success
  **/
-int io_putc(char c, io * o, io * e)
+int io_putc(char c, io * o)
 {
-        NULLCHK(o, e);
-        NULLCHK(o->ptr.file, e);
+        NULLCHK(o);
+        NULLCHK(o->ptr.file);
 
         if (IO_FILE_OUT_E == o->type) {
                 return fputc(c, o->ptr.file);
@@ -215,13 +223,12 @@ int io_putc(char c, io * o, io * e)
 /**
  *  @brief          wrapper around io_putc; get input from file or string
  *  @param          i input stream, Do not pass NULL
- *  @param          e error output stream, Do not pass NULL
  *  @return         EOF on failure, character input on success
  **/
-int io_getc(io * i, io * e)
+int io_getc(io * i)
 {
-        NULLCHK(i, e);
-        NULLCHK(i->ptr.file, e);
+        NULLCHK(i);
+        NULLCHK(i->ptr.file);
 
         if (true == i->ungetc) {
                 i->ungetc = false;
@@ -243,13 +250,12 @@ int io_getc(io * i, io * e)
  *  @brief          wrapper around ungetc; unget from to file or string
  *  @param          c character to put back
  *  @param          i input stream to put character back into, Do not pass NULL
- *  @param          e error output stream, Do not pass NULL
  *  @return         EOF if failed, character we put back if succeeded.
  **/
-int io_ungetc(char c, io * i, io * e)
+int io_ungetc(char c, io * i)
 {
-        NULLCHK(i, e);
-        NULLCHK(i->ptr.file, e);
+        NULLCHK(i);
+        NULLCHK(i->ptr.file);
         if (true == i->ungetc) {
                 return EOF;
         }
@@ -263,16 +269,15 @@ int io_ungetc(char c, io * i, io * e)
  *                  to avoid using fprintf and sprintf 
  *  @param          d integer to print out
  *  @param          o output stream to print to, Do not pass NULL
- *  @param          e error output stream, Do not pass NULL
  *  @return         negative number if operation failed, otherwise the
  *                  total number of characters written
  **/
-int io_printd(int32_t d, io * o, io * e)
+int io_printd(int32_t d, io * o)
 {
         char dstr[16];
-        NULLCHK(o, e);
+        NULLCHK(o);
         io_itoa(d, dstr);
-        return io_puts(dstr, o, e);
+        return io_puts(dstr, o);
 }
 
 /**
@@ -283,16 +288,16 @@ int io_printd(int32_t d, io * o, io * e)
  *  @return         EOF on failure, number of characters written on success
  *                  
  **/
-int io_puts(const char *s, io * o, io * e)
+int io_puts(const char *s, io * o)
 {
   /**@warning count can go negative when is should not!**/
         int count = 0;
         int c;
-        NULLCHK(o, e);
+        NULLCHK(o);
         if(NULL == s)
                 return 0;
         while ((c = *(s + (count++))))
-                if (EOF == io_putc((char)c, o, e))
+                if (EOF == io_putc((char)c, o))
                         return EOF;
         return count;
 }
@@ -304,11 +309,10 @@ int io_puts(const char *s, io * o, io * e)
  *  @param          s       error message to print
  *  @param          cfile   C file the error occurred in (__FILE__), Do not pass NULL
  *  @param          linenum line of C file error occurred (__LINE__)
- *  @param          e       error output stream to print to
  *  @return         void
  *                  
  **/
-void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e)
+void io_doreport(const char *s, char *cfile, unsigned int linenum)
 {
         io n_e = {{NULL}, 0, 0, IO_FILE_OUT_E, false, '\0'};
         bool critical_failure_f = false;
@@ -319,16 +323,16 @@ void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e)
                 critical_failure_f = true;
         }
 
-        io_puts("(error \"", e, e);
-        io_puts(s, e, e);
-        io_puts("\" \"", e, e);
-        io_puts(cfile, e, e);
-        io_puts("\" ", e, e);
-        io_printd(linenum, e, e);
-        io_puts(")\n", e, e);
+        io_puts("(error \"", e);
+        io_puts(s, e);
+        io_puts("\" \"", e);
+        io_puts(cfile, e);
+        io_puts("\" ", e);
+        io_printd(linenum, e);
+        io_puts(")\n", e);
 
         if (true == critical_failure_f) {
-                io_puts("(error \"critical failure\")\n", e, e);
+                io_puts("(error \"critical failure\")\n", e);
                 exit(EXIT_FAILURE);
         }
         return;

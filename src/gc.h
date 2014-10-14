@@ -17,10 +17,10 @@ extern "C" {
 #include "io.h"
 #include "type.h"
 
-expr gc_malloc(io * e);
-expr gc_calloc(io * e);
-int  gc_mark(expr root, io * e);
-void gc_sweep(io * e);
+expr gc_malloc(void);
+expr gc_calloc(void);
+int  gc_mark(expr root);
+void gc_sweep(void);
 
 #ifdef __cplusplus
 }

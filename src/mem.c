@@ -35,29 +35,30 @@ void mem_set_debug(bool flag)
 /**
  *  @brief          wrapper around malloc 
  *  @param          size size of desired memory block in bytes
- *  @param          e    error output stream
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
  **/
-void *mem_malloc(size_t size, io * e)
+void *mem_malloc(size_t size)
 {
         void *v;
         if (0 == size)
                 return NULL;
 
         if (MAX_ALLOCS < alloccounter++) {
-                REPORT("too many mallocs", e);
+                REPORT("too many mallocs");
                 exit(EXIT_FAILURE);
         }
         if (true == debug_f) {
+#if 0
                 io_puts("mem_malloc:", e, e);
                 io_printd(alloccounter, e, e);
                 io_putc('\n', e, e);
+#endif
         }
 
         v = malloc(size);
         if (NULL == v) {
-                REPORT("malloc failed", e);
+                REPORT("malloc failed");
                 exit(EXIT_FAILURE);
         }
         return v;
@@ -67,27 +68,28 @@ void *mem_malloc(size_t size, io * e)
  *  @brief          wrapper around calloc
  *  @param          num  number of elements to allocate
  *  @param          size size of elements to allocate
- *  @param          e    error output stream
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-void *mem_calloc(size_t num, size_t size, io * e)
+void *mem_calloc(size_t num, size_t size)
 {
         void *v;
         if (MAX_ALLOCS < alloccounter++) {
-                REPORT("too many mallocs", e);
+                REPORT("too many mallocs");
                 exit(EXIT_FAILURE);
         }
 
         if (true == debug_f) {
+#if 0
                 io_puts("mem_calloc:", e, e);
                 io_printd(alloccounter, e, e);
                 io_putc('\n', e, e);
+#endif
         }
 
         v = calloc(num, size);
         if (NULL == v) {
-                REPORT("calloc failed", e);
+                REPORT("calloc failed");
                 exit(EXIT_FAILURE);
         }
         return v;
@@ -98,11 +100,10 @@ void *mem_calloc(size_t num, size_t size, io * e)
  *  @param          size size of desired memory block in bytes
  *  @param          ptr  existing memory block to resize
  *  @param          size size of desired memory block in bytes
- *  @param          e    error output stream
  *  @return         pointer to newly resized storage on success, 
  *                  exits program on failure!
  **/
-void *mem_realloc(void *ptr, size_t size, io * e)
+void *mem_realloc(void *ptr, size_t size)
 {
         void *v;
         if (0 == size) {        /*acts as free */
@@ -114,7 +115,7 @@ void *mem_realloc(void *ptr, size_t size, io * e)
                 alloccounter++;
         }
         if (NULL == v) {
-                REPORT("realloc failed", e);
+                REPORT("realloc failed");
                 exit(EXIT_FAILURE);
         }
         return v;
@@ -123,18 +124,19 @@ void *mem_realloc(void *ptr, size_t size, io * e)
 /**
  *  @brief          wrapper around free
  *  @param          ptr  pointer to free
- *  @param          e    error output stream
  *  @return         void
  **/
-void mem_free(void *ptr, io * e)
+void mem_free(void *ptr)
 {
         if (NULL != ptr) {
                 alloccounter--;
+#if 0
                 if ((true == debug_f) && (NULL !=e)) {
                         io_puts("mem_free:", e, e);
                         io_printd(alloccounter, e, e);
                         io_putc('\n', e, e);
                 }
+#endif
         }
         free(ptr);
         ptr = NULL;
@@ -143,17 +145,16 @@ void mem_free(void *ptr, io * e)
 /**
  *  @brief          Duplicate a string, allocating memory for it.
  *  @param          s           string to duplicate
- *  @param          e           error stream to print to
  *  @return         char*       duplicate string
  **/
-char *mem_strdup(const char *s, io * e)
+char *mem_strdup(const char *s)
 {
         char *ns;
         if (NULL == s) {
-                io_puts("mem_strdup: passed NULL", e, e);
+                /*io_puts("mem_strdup: passed NULL", e, e);*/
                 abort();
         }
-        ns = mem_malloc(sizeof(char) * (strlen(s) + 1), e);
+        ns = mem_malloc(sizeof(char) * (strlen(s) + 1));
         strcpy(ns, s);
         return ns;
 }
