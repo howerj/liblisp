@@ -1,13 +1,57 @@
-/* Test bench for a color/standard width printf */
+/* Test bench for a color/fixed width printf */
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include "color.h"
 
-void printc(char *fmt, ...)
+int printc(char *fmt, ...);
+
+/**
+ * @brief       A simple printf replacement that does not handle (nor need to
+ *              handle) any of the advanced formatting features that make
+ *              printf...printf. It handles color formatting codes as well
+ *              and fixed width types (int8_t, int32_t, int64_t) but not
+ *              floating point numbers.
+ * @param       fmt     The formatting string
+ * @param       ...     Variable length number of arguments
+ * @return      int     Number of character written. You can use this to
+ *                      see if ANSI color codes are supported. Negative
+ *                      on error or EOF.
+ *
+ * format
+ * %% -> %
+ * %s -> string
+ * %d -> int
+ * %c -> char
+ *
+ * If enabled and feature is compiled in print the
+ * ANSI escape sequence for:
+ *
+ * %t -> Reset
+ * %z -> Reverse Video
+ * %k -> Black
+ * %r -> Red
+ * %g -> Green
+ * %y -> Yellow
+ * %b -> Blue
+ * %m -> Magenta
+ * %a -> Cyan
+ * %w -> White
+ *
+ * Otherwise map to <nothing>
+ *
+ * %<default> -> <nothing>
+ * %<EOL> -> <nothing>
+ *
+ * <character> -> <character>
+ *
+ * It should return the number of characters written, but
+ * does not at the moment.
+ **/
+int printc(char *fmt, ...)
 {
         va_list ap;
-        int d;
+        int d, count = 0;
         char c, *s;
 
         va_start(ap, fmt);
@@ -15,10 +59,11 @@ void printc(char *fmt, ...)
                 char f;
                 if('%' == (f = *fmt++)){
                         switch (*fmt++) {
-                        case '\0':
-                                return;
+                        case '\0':/*we're done, finish up*/
+                                goto FINISH;
                         case '%':
                                 fputc('%',stdout);
+                                break;
                         case 's':      
                                 s = va_arg(ap, char *);
                                 fputs(s,stdout);
@@ -69,10 +114,13 @@ void printc(char *fmt, ...)
                                 break;
                         }
                 } else {
+                        count++;
                         putchar(f);
                 }
         }
+FINISH:
         va_end(ap);
+        return count;
 }
 
 int main(void)
