@@ -17,6 +17,8 @@ void printc(char *fmt, ...)
                         switch (*fmt++) {
                         case '\0':
                                 return;
+                        case '%':
+                                fputc('%',stdout);
                         case 's':      
                                 s = va_arg(ap, char *);
                                 fputs(s,stdout);
@@ -31,6 +33,38 @@ void printc(char *fmt, ...)
                                 c = (char)va_arg(ap, int);
                                 putchar(c);
                                 break;
+#ifndef NO_ANSI_ESCAPE_SEQUENCES
+                        case 't': /*reset*/
+                                fputs(ANSI_RESET,stdout);
+                                break;
+                        case 'z': /*reverse video*/
+                                fputs(ANSI_REVERSE_VIDEO,stdout);
+                                break;
+                        case 'k': /*blacK*/
+                                fputs(ANSI_COLOR_BLACK,stdout);
+                                break;
+                        case 'r': /*Red*/
+                                fputs(ANSI_COLOR_RED,stdout);
+                                break;
+                        case 'g': /*Green*/
+                                fputs(ANSI_COLOR_GREEN,stdout);
+                                break;
+                        case 'y': /*Yellow*/
+                                fputs(ANSI_COLOR_YELLOW,stdout);
+                                break;
+                        case 'b': /*Blue*/
+                                fputs(ANSI_COLOR_BLUE,stdout);
+                                break;
+                        case 'm': /*Magenta*/
+                                fputs(ANSI_COLOR_MAGENTA,stdout);
+                                break;
+                        case 'a': /*cyAn*/
+                                fputs(ANSI_COLOR_CYAN,stdout);
+                                break;
+                        case 'w': /*White*/
+                                fputs(ANSI_COLOR_WHITE,stdout);
+                                break;
+#endif
                         default:
                                 break;
                         }
@@ -43,6 +77,6 @@ void printc(char *fmt, ...)
 
 int main(void)
 {
-        printc("%s%d%c", "hello", 10, 'c');
+        printc("%r%s%b%d%y%c%t\n", "hello", 10, 'c');
         return 0;
 }
