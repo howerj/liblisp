@@ -26,10 +26,12 @@
  **/
 
 #include "io.h"
+#include "color.h"
 #include <assert.h>  
 #include <string.h>  
 #include <stdlib.h>  
-#include <stdbool.h> 
+#include <stdbool.h>
+#include <stdarg.h>
 
 #define NULLCHK(X)  if(NULL == (X))\
                       { REPORT("null dereference"); exit(EXIT_FAILURE);}
@@ -290,8 +292,7 @@ int io_printd(int32_t d, io * o)
  **/
 int io_puts(const char *s, io * o)
 {
-  /**@warning count can go negative when is should not!**/
-        int count = 0;
+        size_t count = 0;
         int c;
         NULLCHK(o);
         if(NULL == s)
@@ -299,6 +300,124 @@ int io_puts(const char *s, io * o)
         while ((c = *(s + (count++))))
                 if (EOF == io_putc((char)c, o))
                         return EOF;
+        return count;
+}
+
+
+/**
+ * @brief       A simple printf replacement that does not handle (nor need to
+ *              handle) any of the advanced formatting features that make
+ *              printf...printf. It handles color formatting codes as well
+ *              and fixed width types (int8_t, int32_t, int64_t) but not
+ *              floating point numbers.
+ * @param       fmt     The formatting string
+ * @param       ...     Variable length number of arguments
+ * @return      int     Number of character written. You can use this to
+ *                      see if ANSI color codes are supported. Negative
+ *                      on error or EOF.
+ *
+ * format
+ * %% -> %
+ * %s -> string
+ * %d -> int
+ * %c -> char
+ *
+ * If enabled and feature is compiled in print the
+ * ANSI escape sequence for:
+ *
+ * %t -> Reset
+ * %z -> Reverse Video
+ * %k -> Black
+ * %r -> Red
+ * %g -> Green
+ * %y -> Yellow
+ * %b -> Blue
+ * %m -> Magenta
+ * %a -> Cyan
+ * %w -> White
+ *
+ * Otherwise map to <nothing>
+ *
+ * %<default> -> <nothing>
+ * %<EOL> -> <nothing>
+ *
+ * <character> -> <character>
+ *
+ * It should return the number of characters written, but
+ * does not at the moment.
+ **/
+int io_printer(io *o, char *fmt, ...)
+{
+        va_list ap;
+        int d, count = 0;
+        char c, *s;
+
+        va_start(ap, fmt);
+        while (*fmt){
+                char f;
+                if('%' == (f = *fmt++)){
+                        switch (*fmt++) {
+                        case '\0':/*we're done, finish up*/
+                                goto FINISH;
+                        case '%':
+                                io_putc('%',o);
+                                break;
+                        case 's':      
+                                s = va_arg(ap, char *);
+                                io_puts(s,o);
+                                break;
+                        case 'd':      /* int */
+                                d = va_arg(ap, int32_t);
+                                io_printd(d,o);
+                                break;
+                        case 'c':     
+                                /* need a cast here since va_arg only
+                                   takes fully promoted types */
+                                c = (char)va_arg(ap, int);
+                                io_putc(c,o);
+                                break;
+#ifndef NO_ANSI_ESCAPE_SEQUENCES
+                        case 't': /*reset*/
+                                io_puts(ANSI_RESET,o);
+                                break;
+                        case 'z': /*reverse video*/
+                                io_puts(ANSI_REVERSE_VIDEO,o);
+                                break;
+                        case 'k': /*blacK*/
+                                io_puts(ANSI_COLOR_BLACK,o);
+                                break;
+                        case 'r': /*Red*/
+                                io_puts(ANSI_COLOR_RED,o);
+                                break;
+                        case 'g': /*Green*/
+                                io_puts(ANSI_COLOR_GREEN,o);
+                                break;
+                        case 'y': /*Yellow*/
+                                io_puts(ANSI_COLOR_YELLOW,o);
+                                break;
+                        case 'b': /*Blue*/
+                                io_puts(ANSI_COLOR_BLUE,o);
+                                break;
+                        case 'm': /*Magenta*/
+                                io_puts(ANSI_COLOR_MAGENTA,o);
+                                break;
+                        case 'a': /*cyAn*/
+                                io_puts(ANSI_COLOR_CYAN,o);
+                                break;
+                        case 'w': /*White*/
+                                io_puts(ANSI_COLOR_WHITE,o);
+                                break;
+#endif
+                        default:
+                                break;
+                        }
+                } else {
+                        count++;
+                        io_putc(f,o);
+                }
+        }
+FINISH:
+        va_end(ap);
         return count;
 }
 
