@@ -74,6 +74,15 @@ void io_set_error_stream(io *es){
 }
 
 /**
+ * @brief           get the default error reporting output stream
+ * @param           void
+ * @return          io*         The global error reporting stream
+ **/
+io *io_get_error_stream(void){
+        return e;
+}
+
+/**
  *  @brief          Set input wrapper to read from a string
  *  @param          i           input stream, Do not pass NULL
  *  @param          s           string to read from, Do not pass NULL

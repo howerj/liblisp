@@ -27,6 +27,7 @@ typedef struct io io;
 
 /**** function prototypes *****************************************************/
 void io_set_error_stream(io *es);
+io   *io_get_error_stream(void);
 void io_string_in(io *i, char *s);
 void io_string_out(io *o, char *s);
 FILE *io_filename_in(io *i, char *file_name);
