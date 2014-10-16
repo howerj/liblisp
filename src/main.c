@@ -82,7 +82,7 @@ static int getopt(char *arg)
                         mem_set_debug(true);
                         break;
                 case 'c':
-                        sexpr_set_color_on(true);
+                        io_set_color_on(true);
                         break;
                 case 'p':
                         sexpr_set_print_proc(true);

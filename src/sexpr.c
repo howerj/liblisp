@@ -35,13 +35,11 @@
 #include <assert.h>
 #include "mem.h" 
 #include "gc.h"  
-#include "color.h"
 
 static const char *octal_s = "01234567";
 static const char *decimal_s = "0123456789";
 static const char *hexadecimal_s = "0123456789abcdefABCDEF";
 
-static bool color_on_f = false; /*turn color on/off */
 static bool print_proc_f = false;       /*print actual code after #proc */
 static bool parse_numbers_f = true;     /*parse numbers as numbers not symbols */
 
@@ -52,21 +50,7 @@ static expr parse_string(io * i);
 static expr parse_list(io * i);
 static bool parse_comment(io * i);
 
-#define color_on(X,O) if(true==color_on_f){io_puts((X),(O));}
-
 /*** interface functions *****************************************************/
-
-/**
- *  @brief          Set whether to print out colors, *does not check if
- *                  we are printing to a terminal or not, it is either on
- *                  or off*.
- *  @param          flag boolean flag to set color_on_f
- *  @return         void
- **/
-void sexpr_set_color_on(bool flag)
-{
-        color_on_f = flag;
-}
 
 /**
  *  @brief          Set whether we should print "<PROC>" when printing
@@ -254,22 +238,12 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
                 e = fallback;
         }
 
-        color_on(ANSI_BOLD_TXT, e);
-        io_puts("(error \n \"", e);
-        io_puts(msg, e);
-        io_puts("\"\n \"", e);
-        io_puts(cfile, e);
-        io_puts("\"\n ", e);
-        io_printd(linenum, e);
-        if (NULL == x) {
-        } else {
-                io_puts("\n ", e);
-                color_on(ANSI_RESET, e);
+        io_printer(e, "%B(error\n \"%s\"\n \"%s\"\n %d",msg, cfile, linenum);
+        if (NULL != x) {
+                io_printer(e, "\n %t");
                 sexpr_print(x, e, 1);
         }
-        color_on(ANSI_BOLD_TXT, e);
-        io_puts(")\n", e);
-        color_on(ANSI_RESET, e);
+        io_printer(e, "%B)%t\n");
 
         if(fallback == e){
                 free(fallback);

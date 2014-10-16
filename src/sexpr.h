@@ -22,7 +22,6 @@ extern "C" {
 /******************************************************************************/
 
 /**** function prototypes *****************************************************/
-void sexpr_set_color_on(bool flag);
 void sexpr_set_print_proc(bool flag);
 void sexpr_set_parse_numbers(bool flag);
 

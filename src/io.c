@@ -30,7 +30,6 @@
 #include <assert.h>  
 #include <string.h>  
 #include <stdlib.h>  
-#include <stdbool.h>
 #include <stdarg.h>
 
 #define NULLCHK(X)  if(NULL == (X))\
@@ -60,9 +59,22 @@ struct io {
 
 static int io_itoa(int32_t d, char *s); /* I *may* want to export this later */
 
+static bool color_on_f = false; /*turn color on/off */
 static io *e = NULL; /*rename to error_stream*/
 
 /**** I/O functions **********************************************************/
+
+/**
+ *  @brief          Set whether to print out colors, *does not check if
+ *                  we are printing to a terminal or not, it is either on
+ *                  or off*.
+ *  @param          flag boolean flag to set color_on_f
+ *  @return         void
+ **/
+void io_set_color_on(int flag)
+{
+        color_on_f = flag;
+}
 
 /**
  * @brief           Set the default error reporting output stream
