@@ -43,7 +43,6 @@ static const char *hexadecimal_s = "0123456789abcdefABCDEF";
 static bool print_proc_f = false;       /*print actual code after #proc */
 static bool parse_numbers_f = true;     /*parse numbers as numbers not symbols */
 
-static bool indent(unsigned int depth, io * o);
 static bool isnumber(const char *buf, size_t string_l);
 static expr parse_symbol(io * i);  /* and integers (optionally) */
 static expr parse_string(io * i);
@@ -134,19 +133,19 @@ void sexpr_print(expr x, io * o, unsigned int depth)
                 io_printer(o, "%gt");
                 break;
         case S_LIST:
-                io_puts("(", o);
+                io_putc('(', o);
                 for (i = 0; i < x->len; i++) {
                         if (0 != i) {
                                 if (2 == x->len)
                                         io_putc(' ', o);
                                 else
-                                        indent(depth ? depth + 1 : 1, o);
+                                        io_printer(o, "%* ", depth ? depth + 1 : 1);
                         }
                         sexpr_print(x->data.list[i], o, depth + 1);
                         if ((i < x->len - 1) && (2 != x->len))
                                 io_putc('\n', o);
                 }
-                io_puts(")", o);
+                io_putc(')', o);
                 break;
         case S_SYMBOL: /*symbols are yellow, strings are red, escaped chars magenta */
         case S_STRING:
@@ -183,13 +182,9 @@ void sexpr_print(expr x, io * o, unsigned int depth)
                 break;
         case S_PROC:
                 if (true == print_proc_f) {
-                        io_putc('\n', o);
-                        indent(depth, o);
-                        io_printer(o, "(%ylambda%t\n");
-                        indent(depth + 1, o);
+                        io_printer(o, "\n%* (%ylambda%t\n%* ",depth, depth + 1);
                         sexpr_print(x->data.list[0], o, depth + 1);
-                        io_putc('\n', o);
-                        indent(depth + 1, o);
+                        io_printer(o, "\n%* ", depth + 1);
                         sexpr_print(x->data.list[1], o, depth + 1);
                         io_putc(')', o);
                 } else {
@@ -269,21 +264,6 @@ void append(expr list, expr ele)
 }
 
 /*****************************************************************************/
-
-/**
- *  @brief          Indent a line with spaces 'depth' amount of times
- *  @param          depth depth to indent to
- *  @param          o output stream
- *  @return         true on error, false on no error
- **/
-static bool indent(unsigned int depth, io * o)
-{
-        unsigned int i;
-        for (i = 0; i < depth; i++)
-                if (EOF == io_putc(' ', o))
-                        return true;
-        return false;
-}
 
 /**
  *  @brief          Test whether buf is a number or not

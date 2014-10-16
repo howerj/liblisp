@@ -354,6 +354,7 @@ int io_printer(io *o, char *fmt, ...)
 {
         va_list ap;
         int32_t d;
+        uint32_t ud;
         int count = 0;
         char c, *s;
 
@@ -370,7 +371,7 @@ int io_printer(io *o, char *fmt, ...)
                         case '*':
                                 if('\0' == (f = *fmt++))
                                         goto FINISH;
-                                for(d = va_arg(ap, int32_t); d > 0; d--)
+                                for(ud = va_arg(ap, uint32_t); ud > 0; ud--)
                                         io_putc(f,o);
                                 break;
                         case 's':      
