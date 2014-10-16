@@ -331,7 +331,9 @@ int io_puts(const char *s, io * o)
  * @return      int     Number of character written. Negative on error
  *
  * format
- * %% -> %      %s -> string    %d -> int       %c -> char
+ * %% -> %      %s -> string    %d -> int32_t   %c -> char
+ *
+ * %*<char> -> print <char> int32_t times
  *
  * If enabled and feature is compiled in print the
  * ANSI escape sequence for:
@@ -364,6 +366,12 @@ int io_printer(io *o, char *fmt, ...)
                                 goto FINISH;
                         case '%':
                                 io_putc('%',o);
+                                break;
+                        case '*':
+                                if('\0' == (f = *fmt++))
+                                        goto FINISH;
+                                for(d = va_arg(ap, int32_t); d > 0; d--)
+                                        io_putc(f,o);
                                 break;
                         case 's':      
                                 s = va_arg(ap, char *);
