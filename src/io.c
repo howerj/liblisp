@@ -55,7 +55,6 @@ struct io {
 static int io_itoa(int32_t d, char *s); /* I *may* want to export this later */
 
 static bool color_on_f = false; /*turn color on/off */
-
 static io error_stream = {{NULL}, 0, 0, IO_FILE_OUT_E, false, '\0'};
 static io *e = &error_stream; /*rename to error_stream*/
 

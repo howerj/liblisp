@@ -12,3 +12,4 @@ repl
 *~
 *.tmp
 repl.cpp.exe
+*.exe
