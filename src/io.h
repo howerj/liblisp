@@ -27,7 +27,7 @@ typedef struct io io;
 /******************************************************************************/
 
 /**** function prototypes *****************************************************/
-void io_set_color_on(int flag);
+void io_set_color_on(bool flag);
 void io_set_error_stream(io *es);
 io   *io_get_error_stream(void);
 void io_string_in(io *i, char *s);
