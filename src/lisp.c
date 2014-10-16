@@ -541,11 +541,15 @@ static expr apply(expr proc, expr args, lisp l)
     return nil;\
   }
 
+/**Avoid warning in primops**/
+#define UNUSED(X)  (void)(X)
+
 /**add a list of numbers**/
 static expr primop_add(expr args, lisp l)
 {
         size_t i;
         expr nx = mkobj(S_INTEGER);
+        UNUSED(l);
         if (0 == args->len)
                 return nil;
         for (i = 0; i < args->len; i++) {
@@ -560,6 +564,7 @@ static expr primop_sub(expr args, lisp l)
 {
         size_t i;
         expr nx = mkobj(S_INTEGER);
+        UNUSED(l);
         if (0 == args->len)
                 return nil;
         nx = NTH(args, 0);
@@ -576,6 +581,7 @@ static expr primop_prod(expr args, lisp l)
 {
         size_t i;
         expr nx = mkobj(S_INTEGER);
+        UNUSED(l);
         if (0 == args->len)
                 return nil;
         nx = NTH(args, 0);
@@ -592,6 +598,7 @@ static expr primop_div(expr args, lisp l)
 {
         size_t i, tmp;
         expr nx = mkobj(S_INTEGER);
+        UNUSED(l);
         if (0 == args->len)
                 return nil;
         nx = NTH(args, 0);
@@ -614,6 +621,7 @@ static expr primop_mod(expr args, lisp l)
 {
         int32_t tmp;
         expr nx = mkobj(S_INTEGER);
+        UNUSED(l);
         if (2 != args->len) {
                 SEXPR_PERROR(args, "mod: argc != 2");
                 return nil;
@@ -635,6 +643,7 @@ static expr primop_mod(expr args, lisp l)
 static expr primop_car(expr args, lisp l)
 {
         expr a1;
+        UNUSED(l);
         if (1 != args->len) {
                 SEXPR_PERROR(args, "car: argc != 1");
                 return nil;
@@ -652,6 +661,7 @@ static expr primop_car(expr args, lisp l)
 static expr primop_cdr(expr args, lisp l)
 {
         expr nx, carg;
+        UNUSED(l);
         if (0 == args->len) {
                 return nil;
         }
@@ -671,6 +681,7 @@ static expr primop_cdr(expr args, lisp l)
 static expr primop_cons(expr args, lisp l)
 {
         expr nx = mkobj(S_LIST), prepend, list;
+        UNUSED(l);
         if (2 != args->len) {
                 SEXPR_PERROR(args, "cons: argc != 2");
                 return nil;
@@ -698,6 +709,7 @@ static expr primop_nth(expr args, lisp l)
 {
         int32_t i;
         expr a1, a2;
+        UNUSED(l);
         if (2 != args->len) {
                 SEXPR_PERROR(args, "NTH: argc != 2");
                 return nil;
@@ -740,6 +752,7 @@ static expr primop_nth(expr args, lisp l)
 static expr primop_len(expr args, lisp l)
 {
         expr a1, nx = mkobj(S_INTEGER);
+        UNUSED(l);
         if (1 != args->len) {
                 SEXPR_PERROR(args, "len: argc != 1");
                 return nil;
@@ -758,6 +771,7 @@ static expr primop_numeq(expr args, lisp l)
 {
         size_t i;
         expr nx;
+        UNUSED(l);
         if (0 == args->len)
                 return nil;
         nx = NTH(args, 0);
@@ -784,6 +798,7 @@ static expr primop_printexpr(expr args, lisp l)
 static expr primop_scar(expr args, lisp l)
 {
         expr nx, a1;
+        UNUSED(l);
         if (1 != args->len) {
                 SEXPR_PERROR(args, "CAR: argc != 1");
                 return nil;
@@ -804,6 +819,7 @@ static expr primop_scar(expr args, lisp l)
 static expr primop_scdr(expr args, lisp l)
 {
         expr nx, carg;
+        UNUSED(l);
         if (0 == args->len) {
                 return nil;
         }
@@ -823,6 +839,7 @@ static expr primop_scdr(expr args, lisp l)
 static expr primop_scons(expr args, lisp l)
 {
         expr nx = mkobj(S_LIST), prepend, list;
+        UNUSED(l);
         if (2 != args->len) {
                 SEXPR_PERROR(args, "cons: argc != 2");
                 return nil;
@@ -847,6 +864,7 @@ static expr primop_typeeq(expr args, lisp l)
 {
         size_t i;
         expr nx;
+        UNUSED(l);
         if (args == NULL) {     /*here to supress warning */
                 SEXPR_PERROR(args, "eqt: passed NULL");
                 return nil;
@@ -869,6 +887,7 @@ static expr primop_reverse(expr args, lisp l)
         size_t i;
         expr nx, carg;
         sexpr_e type;
+        UNUSED(l);
         if (1 != args->len) {
                 SEXPR_PERROR(args, "reverse: argc != 1");
                 return nil;
@@ -900,7 +919,7 @@ static expr primop_reverse(expr args, lisp l)
 static expr primop_system(expr args, lisp l){
         int32_t i;
         expr nx, carg;
-
+        UNUSED(l);
         if (1 != args->len) {
                 SEXPR_PERROR(args, "system: argc != 1");
                 return nil;
@@ -921,5 +940,6 @@ static expr primop_system(expr args, lisp l){
 }
 
 #undef INTCHK_R
+#undef UNUSED
 
 /*****************************************************************************/
