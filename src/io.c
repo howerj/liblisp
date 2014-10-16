@@ -336,6 +336,7 @@ int io_puts(const char *s, io * o)
  *
  * %t -> Reset
  * %z -> Reverse Video
+ * %B -> Bold
  * %k -> Black
  * %r -> Red
  * %g -> Green
@@ -358,7 +359,8 @@ int io_puts(const char *s, io * o)
 int io_printer(io *o, char *fmt, ...)
 {
         va_list ap;
-        int d, count = 0;
+        int32_t d;
+        int count = 0;
         char c, *s;
 
         va_start(ap, fmt);
@@ -391,6 +393,9 @@ int io_printer(io *o, char *fmt, ...)
                                 break;
                         case 'z': /*reverse video*/
                                 io_puts(ANSI_REVERSE_VIDEO,o);
+                                break;
+                        case 'B': /*bold*/
+                                io_puts(ANSI_BOLD_TXT,o);
                                 break;
                         case 'k': /*blacK*/
                                 io_puts(ANSI_COLOR_BLACK,o);
@@ -451,13 +456,7 @@ void io_doreport(const char *s, char *cfile, unsigned int linenum)
                 critical_failure_f = true;
         }
 
-        io_puts("(error \"", e);
-        io_puts(s, e);
-        io_puts("\" \"", e);
-        io_puts(cfile, e);
-        io_puts("\" ", e);
-        io_printd(linenum, e);
-        io_puts(")\n", e);
+        io_printer(e, "(error \"%s\" \"%s\" %d)\n", s, cfile, linenum);
 
         if (true == critical_failure_f) {
                 io_puts("(error \"critical failure\")\n", e);

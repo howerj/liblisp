@@ -137,18 +137,17 @@ expr sexpr_parse(io * i)
 void sexpr_print(expr x, io * o, unsigned int depth)
 {
         size_t i;
+        io *e = io_get_error_stream();
 
         if (NULL == x)
                 return;
 
         switch (x->type) {
         case S_NIL:
-                color_on(ANSI_COLOR_RED, o);
-                io_puts("()", o);
+                io_printer(o, "%r()");
                 break;
         case S_TEE:
-                color_on(ANSI_COLOR_GREEN, o);
-                io_puts("t", o);
+                io_printer(o, "%gt");
                 break;
         case S_LIST:
                 io_puts("(", o);
@@ -165,11 +164,11 @@ void sexpr_print(expr x, io * o, unsigned int depth)
                 }
                 io_puts(")", o);
                 break;
-        case S_SYMBOL:         /*symbols are yellow, strings are red, escaped chars magenta */
+        case S_SYMBOL: /*symbols are yellow, strings are red, escaped chars magenta */
         case S_STRING:
                 {
                         bool isstring = S_STRING == x->type ? true : false;     /*isnotsymbol */
-                        color_on(true == isstring ? ANSI_COLOR_RED : ANSI_COLOR_YELLOW, o);
+                        io_printer(o, isstring ? "%r" : "%y");
                         if (isstring) {
                                 io_putc('"', o);
                         }
@@ -177,69 +176,58 @@ void sexpr_print(expr x, io * o, unsigned int depth)
                                 switch ((x->data.string)[i]) {
                                 case '"':
                                 case '\\':
-                                        color_on(ANSI_COLOR_MAGENTA, o);
-                                        io_putc('\\', o);
+                                        io_printer(o, "%m\\");
                                         break;
                                 case ')':
                                 case '(':
                                 case '#':
-                                        if (x->type == S_SYMBOL) {
-                                                color_on(ANSI_COLOR_MAGENTA, o);
-                                                io_putc('\\', o);
-                                        }
+                                        if (x->type == S_SYMBOL) 
+                                                io_printer(o, "%m\\");
                                 }
                                 io_putc((x->data.string)[i], o);
-                                color_on(true == isstring ? ANSI_COLOR_RED : ANSI_COLOR_YELLOW, o);
+                                io_printer(o, isstring ? "%r" : "%y");
                         }
                         if (isstring)
                                 io_putc('"', o);
                 }
                 break;
         case S_INTEGER:
-                color_on(ANSI_COLOR_MAGENTA, o);
-                io_printd(x->data.integer, o);
+                io_printer(o,"%m%d",x->data.integer);
                 break;
         case S_PRIMITIVE:
-                color_on(ANSI_COLOR_BLUE, o);
-                io_puts("<PRIMOP>", o);
+                io_printer(o,"%b<PRIMOP>");
                 break;
         case S_PROC:
                 if (true == print_proc_f) {
                         io_putc('\n', o);
                         indent(depth, o);
-                        io_puts("(", o);
-                        color_on(ANSI_COLOR_YELLOW, o);
-                        io_puts("lambda\n", o);
-                        color_on(ANSI_RESET, o);
+                        io_printer(o, "(%ylambda%t\n");
                         indent(depth + 1, o);
                         sexpr_print(x->data.list[0], o, depth + 1);
                         io_putc('\n', o);
                         indent(depth + 1, o);
                         sexpr_print(x->data.list[1], o, depth + 1);
-                        io_puts(")", o);
+                        io_putc(')', o);
                 } else {
-                        color_on(ANSI_COLOR_BLUE, o);
-                        io_puts("<PROC>", o);
-                        color_on(ANSI_RESET, o);
+                        io_printer(o,"%b<PROC>%t");
                 }
                 break;
-        case S_ERROR:
-                /** @todo implement error support **/
-        case S_FILE:
-               /** @todo implement file support, then printing**/
-                color_on(ANSI_COLOR_RED, o);
-                REPORT("File/Error printing not supported!");
-                break;
+        case S_ERROR: /*unimplemented, fallthrough...*/
         case S_QUOTE: /*unimplemented, fallthrough...*/
         case S_LAST_TYPE: /*unimplemented, fallthrough...*/
+        case S_FILE:
+               /** @todo implement file support, then printing**/
+                io_printer(e,"%r");
+                REPORT("Unimplemented!");
+                break;
         default:               /* should never get here */
-                color_on(ANSI_COLOR_RED, o);
+                io_printer(e,"%r");
                 REPORT("print: not a known printable type");
-                color_on(ANSI_RESET, o);
+                io_printer(e,"%t");
                 exit(EXIT_FAILURE);
                 break;
         }
-        color_on(ANSI_RESET, o);
+        io_printer(o,"%t");
         if (0 == depth)
                 io_putc('\n', o);
         return;
