@@ -97,15 +97,6 @@ its items.
   than others like the "regex" modules, "eval" within the lisp
   interpreter and the "bignum" module (when complete).
 
-* Make the IO API simpler to use;
-  - Do not allow stderr redirect? 
-  ie. 
-  io\_putc(char c, io * o, io * e);
-  becomes
-  io\_putc(char c, io * o);
-
-* io should use stdarg.h
-
 * Rethink special forms;
   - Use "cond" instead of (or in addition to) "if".
   - Add "loop"
