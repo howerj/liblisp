@@ -23,35 +23,35 @@ static struct heap heaplist = { NULL, NULL };
 
 static struct heap *heaphead = &heaplist;
 
-static void gcinner(expr x, io * e);
+static void gcinner(expr x);
 
 /*** interface functions *****************************************************/
 
 /**
  *  @brief          wrapper around malloc for garbage collection
- *  @param          e    error output stream
+ *  @param          void
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
  **/
-expr gc_malloc(io * e)
+expr gc_malloc(void)
 {
         void *v;
-        v = mem_malloc(sizeof(struct sexpr_t), e);
+        v = mem_malloc(sizeof(struct sexpr_t));
         return v;
 }
 
 /**
  *  @brief          wrapper around calloc for garbage collection
- *  @param          e    error output stream
+ *  @param          void
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-expr gc_calloc(io * e)
+expr gc_calloc(void)
 {
         expr v;
         struct heap *nextheap;
-        v = mem_calloc(1, sizeof(struct sexpr_t), e);
-        nextheap = mem_calloc(1, sizeof(struct heap), e);
+        v = mem_calloc(1, sizeof(struct sexpr_t));
+        nextheap = mem_calloc(1, sizeof(struct heap));
         nextheap->x = v;
         heaphead->next = nextheap;
         heaphead = nextheap;
@@ -63,10 +63,9 @@ expr gc_calloc(io * e)
  *                  objects in the tree so they do not get garbage
  *                  collected
  *  @param          root root tree to mark
- *  @param          e    error output stream
  *  @return         false == root was not marked, and now is
  **/
-int gc_mark(expr root, io * e)
+int gc_mark(expr root)
 {
         if (NULL == root)
                 return false;
@@ -78,14 +77,14 @@ int gc_mark(expr root, io * e)
                 {
                         size_t i;
                         for (i = 0; i < root->len; i++)
-                                gc_mark(root->data.list[i], e);
+                                gc_mark(root->data.list[i]);
                 }
                 return false;
         case S_PROC:
                 /** @todo Put the S_PROC structure into type.h **/
-                gc_mark(root->data.list[0], e);
-                gc_mark(root->data.list[1], e);
-                gc_mark(root->data.list[2], e);
+                gc_mark(root->data.list[0]);
+                gc_mark(root->data.list[1]);
+                gc_mark(root->data.list[2]);
                 return false;
         case S_PRIMITIVE:
         case S_NIL:
@@ -99,7 +98,7 @@ int gc_mark(expr root, io * e)
                 break;
         case S_LAST_TYPE:
         default:
-                fprintf(stderr, "unmarkable type\n");
+                fputs("unmarkable type\n",stderr);
                 exit(EXIT_FAILURE);
         }
         return false;
@@ -107,10 +106,9 @@ int gc_mark(expr root, io * e)
 
 /**
  *  @brief          Sweep all unmarked objects.
- *  @param          e    error output stream
  *  @return         void
  **/
-void gc_sweep(io * e)
+void gc_sweep(void)
 {
   /**@todo this really needs cleaning up**/
         struct heap *ll, *pll;
@@ -122,10 +120,10 @@ void gc_sweep(io * e)
                         pll = ll;
                         ll = ll->next;
                 } else {
-                        gcinner(ll->x, e);
+                        gcinner(ll->x);
                         ll->x = NULL;
                         pll->next = ll->next;
-                        mem_free(ll, e);
+                        mem_free(ll);
                         ll = pll->next;
                 }
         }
@@ -133,9 +131,9 @@ void gc_sweep(io * e)
                 if (true == heaphead->x->gc_mark) {
                         ll->x->gc_mark = false;
                 } else {
-                        gcinner(heaphead->x, e);
+                        gcinner(heaphead->x);
                         heaphead->x = NULL;
-                        mem_free(heaphead, e);
+                        mem_free(heaphead);
                         heaphead = pll;
                 }
         }
@@ -146,10 +144,9 @@ void gc_sweep(io * e)
 /**
  *  @brief          Frees expressions
  *  @param          x     expression to print
- *  @param          e     error output stream
  *  @return         void
  **/
-static void gcinner(expr x, io * e)
+static void gcinner(expr x)
 {
         if (NULL == x)
                 return;
@@ -159,38 +156,38 @@ static void gcinner(expr x, io * e)
         case S_NIL:
         case S_INTEGER:
         case S_PRIMITIVE:
-                mem_free(x, e);
+                mem_free(x);
                 break;
         case S_PROC:
-                mem_free(x->data.list, e);
-                mem_free(x, e);
+                mem_free(x->data.list);
+                mem_free(x);
                 break;
         case S_LIST:
-                mem_free(x->data.list, e);
-                mem_free(x, e);
+                mem_free(x->data.list);
+                mem_free(x);
                 return;
         case S_SYMBOL:
-                mem_free(x->data.symbol, e);
-                mem_free(x, e);
+                mem_free(x->data.symbol);
+                mem_free(x);
                 return;
         case S_STRING:
-                mem_free(x->data.string, e);
-                mem_free(x, e);
+                mem_free(x->data.string);
+                mem_free(x);
                 return;
         case S_ERROR:
                 /** @todo implement error support **/
-                mem_free(x, e);
+                mem_free(x);
                 return;
         case S_FILE:
                /** @todo implement file support **/
-                REPORT("UNIMPLEMENTED (TODO)", e);
+                REPORT("UNIMPLEMENTED (TODO)");
                 break;
         case S_QUOTE:
-                REPORT("UNIMPLEMENTED (TODO)", e);
+                REPORT("UNIMPLEMENTED (TODO)");
                 break;
         case S_LAST_TYPE:
         default:               /* should never get here */
-                REPORT("free: not a known 'free-able' type", e);
+                REPORT("free: not a known 'free-able' type");
                 exit(EXIT_FAILURE);
                 return;
         }

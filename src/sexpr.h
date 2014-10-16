@@ -18,18 +18,17 @@ extern "C" {
 #include "type.h"
 
 /**** macros ******************************************************************/
-#define SEXPR_PERROR(EXP,MSG,E)  dosexpr_perror((EXP),(MSG),__FILE__,__LINE__,(E))
+#define SEXPR_PERROR(EXP,MSG)  dosexpr_perror((EXP),(MSG),__FILE__,__LINE__)
 /******************************************************************************/
 
 /**** function prototypes *****************************************************/
-void sexpr_set_color_on(bool flag);
 void sexpr_set_print_proc(bool flag);
 void sexpr_set_parse_numbers(bool flag);
 
-expr sexpr_parse(io * i, io * e);
-void sexpr_print(expr x, io * o, unsigned int depth, io * e);
-void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum, io * e);
-void append(expr list, expr ele, io * e);
+expr sexpr_parse(io * i);
+void sexpr_print(expr x, io * o, unsigned int depth);
+void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum);
+void append(expr list, expr ele);
 /******************************************************************************/
 #ifdef __cplusplus
 }

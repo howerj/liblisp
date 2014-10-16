@@ -26,13 +26,14 @@
  **/
 
 #include "io.h"
+#include "color.h"
 #include <assert.h>  
 #include <string.h>  
 #include <stdlib.h>  
-#include <stdbool.h> 
+#include <stdarg.h>
 
-#define NULLCHK(X,E)  if(NULL == (X))\
-                      { REPORT("null dereference",(E)); exit(EXIT_FAILURE);}
+#define NULLCHK(X)  if(NULL == (X))\
+                      { REPORT("null dereference"); exit(EXIT_FAILURE);}
 
 /**I/O abstraction structure**/
 struct io {
@@ -58,9 +59,40 @@ struct io {
 
 static int io_itoa(int32_t d, char *s); /* I *may* want to export this later */
 
-static io error_stream = {{NULL}, 0, 0, IO_FILE_OUT_E, false, '\0'};
+static bool color_on_f = false; /*turn color on/off */
+static io *e = NULL; /*rename to error_stream*/
 
 /**** I/O functions **********************************************************/
+
+/**
+ *  @brief          Set whether to print out colors, *does not check if
+ *                  we are printing to a terminal or not, it is either on
+ *                  or off*.
+ *  @param          flag boolean flag to set color_on_f
+ *  @return         void
+ **/
+void io_set_color_on(bool flag)
+{
+        color_on_f = flag;
+}
+
+/**
+ * @brief           Set the default error reporting output stream
+ * @param           e
+ * @return          void
+ **/
+void io_set_error_stream(io *es){
+        e = es;
+}
+
+/**
+ * @brief           get the default error reporting output stream
+ * @param           void
+ * @return          io*         The global error reporting stream
+ **/
+io *io_get_error_stream(void){
+        return e;
+}
 
 /**
  *  @brief          Set input wrapper to read from a string
@@ -188,13 +220,12 @@ size_t io_sizeof_io(void){
  *  @brief          wrapper around putc; redirect output to a file or string
  *  @param          c   output this character
  *  @param          o   output stream, Do not pass NULL
- *  @param          e   error output stream, Do not pass NULL
  *  @return         EOF on failure, character to output on success
  **/
-int io_putc(char c, io * o, io * e)
+int io_putc(char c, io * o)
 {
-        NULLCHK(o, e);
-        NULLCHK(o->ptr.file, e);
+        NULLCHK(o);
+        NULLCHK(o->ptr.file);
 
         if (IO_FILE_OUT_E == o->type) {
                 return fputc(c, o->ptr.file);
@@ -215,13 +246,12 @@ int io_putc(char c, io * o, io * e)
 /**
  *  @brief          wrapper around io_putc; get input from file or string
  *  @param          i input stream, Do not pass NULL
- *  @param          e error output stream, Do not pass NULL
  *  @return         EOF on failure, character input on success
  **/
-int io_getc(io * i, io * e)
+int io_getc(io * i)
 {
-        NULLCHK(i, e);
-        NULLCHK(i->ptr.file, e);
+        NULLCHK(i);
+        NULLCHK(i->ptr.file);
 
         if (true == i->ungetc) {
                 i->ungetc = false;
@@ -243,13 +273,12 @@ int io_getc(io * i, io * e)
  *  @brief          wrapper around ungetc; unget from to file or string
  *  @param          c character to put back
  *  @param          i input stream to put character back into, Do not pass NULL
- *  @param          e error output stream, Do not pass NULL
  *  @return         EOF if failed, character we put back if succeeded.
  **/
-int io_ungetc(char c, io * i, io * e)
+int io_ungetc(char c, io * i)
 {
-        NULLCHK(i, e);
-        NULLCHK(i->ptr.file, e);
+        NULLCHK(i);
+        NULLCHK(i->ptr.file);
         if (true == i->ungetc) {
                 return EOF;
         }
@@ -263,16 +292,15 @@ int io_ungetc(char c, io * i, io * e)
  *                  to avoid using fprintf and sprintf 
  *  @param          d integer to print out
  *  @param          o output stream to print to, Do not pass NULL
- *  @param          e error output stream, Do not pass NULL
  *  @return         negative number if operation failed, otherwise the
  *                  total number of characters written
  **/
-int io_printd(int32_t d, io * o, io * e)
+int io_printd(int32_t d, io * o)
 {
         char dstr[16];
-        NULLCHK(o, e);
+        NULLCHK(o);
         io_itoa(d, dstr);
-        return io_puts(dstr, o, e);
+        return io_puts(dstr, o);
 }
 
 /**
@@ -283,17 +311,146 @@ int io_printd(int32_t d, io * o, io * e)
  *  @return         EOF on failure, number of characters written on success
  *                  
  **/
-int io_puts(const char *s, io * o, io * e)
+int io_puts(const char *s, io * o)
 {
-  /**@warning count can go negative when is should not!**/
-        int count = 0;
-        int c;
-        NULLCHK(o, e);
+        int c, count = 0;
+        NULLCHK(o);
         if(NULL == s)
                 return 0;
         while ((c = *(s + (count++))))
-                if (EOF == io_putc((char)c, o, e))
+                if ((count < 0) || (EOF == io_putc((char)c, o)))
                         return EOF;
+        return count;
+}
+
+
+/**
+ * @brief       A simple printf replacement that does not handle (nor need to
+ *              handle) any of the advanced formatting features that make
+ *              printf...printf. It handles color formatting codes as well
+ *              and fixed width types (int8_t, int32_t, int64_t) but not
+ *              floating point numbers.
+ * @param       fmt     The formatting string
+ * @param       ...     Variable length number of arguments
+ * @return      int     Number of character written. You can use this to
+ *                      see if ANSI color codes are supported. Negative
+ *                      on error or EOF.
+ *
+ * format
+ * %% -> %
+ * %s -> string
+ * %d -> int
+ * %c -> char
+ *
+ * If enabled and feature is compiled in print the
+ * ANSI escape sequence for:
+ *
+ * %t -> Reset
+ * %z -> Reverse Video
+ * %B -> Bold
+ * %k -> Black
+ * %r -> Red
+ * %g -> Green
+ * %y -> Yellow
+ * %b -> Blue
+ * %m -> Magenta
+ * %a -> Cyan
+ * %w -> White
+ *
+ * Otherwise map to <nothing>
+ *
+ * %<default> -> <nothing>
+ * %<EOL> -> <nothing>
+ *
+ * <character> -> <character>
+ *
+ * It should return the number of characters written, but
+ * does not at the moment.
+ **/
+int io_printer(io *o, char *fmt, ...)
+{
+        va_list ap;
+        int32_t d;
+        int count = 0;
+        char c, *s;
+
+        va_start(ap, fmt);
+        while (*fmt){
+                char f;
+                if('%' == (f = *fmt++)){
+                        switch (f = *fmt++) {
+                        case '\0':/*we're done, finish up*/
+                                goto FINISH;
+                        case '%':
+                                io_putc('%',o);
+                                break;
+                        case 's':      
+                                s = va_arg(ap, char *);
+                                io_puts(s,o);
+                                break;
+                        case 'd':      /* int */
+                                d = va_arg(ap, int32_t);
+                                io_printd(d,o);
+                                break;
+                        case 'c':     
+                                /* need a cast here since va_arg only
+                                   takes fully promoted types */
+                                c = (char)va_arg(ap, int);
+                                io_putc(c,o);
+                                break;
+                        default:
+#ifndef NO_ANSI_ESCAPE_SEQUENCES
+                                if(true == color_on_f){
+                                switch(f){
+                                        case 't': /*reset*/
+                                                io_puts(ANSI_RESET,o);
+                                                break;
+                                        case 'z': /*reverse video*/
+                                                io_puts(ANSI_REVERSE_VIDEO,o);
+                                                break;
+                                        case 'B': /*bold*/
+                                                io_puts(ANSI_BOLD_TXT,o);
+                                                break;
+                                        case 'k': /*blacK*/
+                                                io_puts(ANSI_COLOR_BLACK,o);
+                                                break;
+                                        case 'r': /*Red*/
+                                                io_puts(ANSI_COLOR_RED,o);
+                                                break;
+                                        case 'g': /*Green*/
+                                                io_puts(ANSI_COLOR_GREEN,o);
+                                                break;
+                                        case 'y': /*Yellow*/
+                                                io_puts(ANSI_COLOR_YELLOW,o);
+                                                break;
+                                        case 'b': /*Blue*/
+                                                io_puts(ANSI_COLOR_BLUE,o);
+                                                break;
+                                        case 'm': /*Magenta*/
+                                                io_puts(ANSI_COLOR_MAGENTA,o);
+                                                break;
+                                        case 'a': /*cyAn*/
+                                                io_puts(ANSI_COLOR_CYAN,o);
+                                                break;
+                                        case 'w': /*White*/
+                                                io_puts(ANSI_COLOR_WHITE,o);
+                                                break;
+#else
+                                        case '\0':
+#endif
+                                        default:
+                                                break;
+                                }
+                                break;
+                                }
+                        }
+                } else {
+                        count++;
+                        io_putc(f,o);
+                }
+        }
+FINISH:
+        va_end(ap);
         return count;
 }
 
@@ -304,11 +461,10 @@ int io_puts(const char *s, io * o, io * e)
  *  @param          s       error message to print
  *  @param          cfile   C file the error occurred in (__FILE__), Do not pass NULL
  *  @param          linenum line of C file error occurred (__LINE__)
- *  @param          e       error output stream to print to
  *  @return         void
  *                  
  **/
-void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e)
+void io_doreport(const char *s, char *cfile, unsigned int linenum)
 {
         io n_e = {{NULL}, 0, 0, IO_FILE_OUT_E, false, '\0'};
         bool critical_failure_f = false;
@@ -319,16 +475,10 @@ void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e)
                 critical_failure_f = true;
         }
 
-        io_puts("(error \"", e, e);
-        io_puts(s, e, e);
-        io_puts("\" \"", e, e);
-        io_puts(cfile, e, e);
-        io_puts("\" ", e, e);
-        io_printd(linenum, e, e);
-        io_puts(")\n", e, e);
+        io_printer(e, "(error \"%s\" \"%s\" %d)\n", s, cfile, linenum);
 
         if (true == critical_failure_f) {
-                io_puts("(error \"critical failure\")\n", e, e);
+                io_puts("(error \"critical failure\")\n", e);
                 exit(EXIT_FAILURE);
         }
         return;

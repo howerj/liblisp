@@ -16,16 +16,20 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 struct io;
 typedef struct io io;
 
 /**** macros ******************************************************************/
 #define BUFLEN        (256u)
-#define REPORT(X,E)   io_doreport((X),__FILE__,__LINE__,(E))
+#define REPORT(X)     io_doreport((X),__FILE__,__LINE__)
 /******************************************************************************/
 
 /**** function prototypes *****************************************************/
+void io_set_color_on(bool flag);
+void io_set_error_stream(io *es);
+io   *io_get_error_stream(void);
 void io_string_in(io *i, char *s);
 void io_string_out(io *o, char *s);
 FILE *io_filename_in(io *i, char *file_name);
@@ -35,13 +39,14 @@ void io_file_out(io *o, FILE* file);
 void io_file_close(io *ioc);
 size_t io_sizeof_io(void);
 
-int io_putc(char c, io * o, io * e);
-int io_getc(io * i, io * e);
-int io_ungetc(char c, io * i, io * e);
-int io_printd(int32_t d, io * o, io * e);
-int io_printp(void *p, io * o, io * e);
-int io_puts(const char *s, io * o, io * e);/** error code?*/
-void io_doreport(const char *s, char *cfile, unsigned int linenum, io * e);
+int io_putc(char c, io * o);
+int io_getc(io * i);
+int io_ungetc(char c, io * i);
+int io_printd(int32_t d, io * o);
+int io_printp(void *p, io * o);
+int io_puts(const char *s, io * o);/** error code?*/
+int io_printer(io *o, char *fmt, ...);
+void io_doreport(const char *s, char *cfile, unsigned int linenum);
 /******************************************************************************/
 #ifdef __cplusplus
 }
