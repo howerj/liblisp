@@ -55,7 +55,9 @@ struct io {
 static int io_itoa(int32_t d, char *s); /* I *may* want to export this later */
 
 static bool color_on_f = false; /*turn color on/off */
-static io *e = NULL; /*rename to error_stream*/
+
+static io error_stream = {{NULL}, 0, 0, IO_FILE_OUT_E, false, '\0'};
+static io *e = &error_stream; /*rename to error_stream*/
 
 /**** I/O functions **********************************************************/
 
@@ -445,21 +447,14 @@ FINISH:
  **/
 void io_doreport(const char *s, char *cfile, unsigned int linenum)
 {
-        io n_e = {{NULL}, 0, 0, IO_FILE_OUT_E, false, '\0'};
-        bool critical_failure_f = false;
-        n_e.ptr.file = stderr;
-
         if ((NULL == e) || (NULL == e->ptr.file) || ((IO_FILE_OUT_E != e->type) && (IO_STRING_OUT_E != e->type))) {
-                e = &n_e;
-                critical_failure_f = true;
+                error_stream.ptr.file = stderr;
+                error_stream.type = IO_FILE_OUT_E;
+                error_stream.ungetc = false;
+                io_puts("(error \"Error stream changed to default\")\n", e);
         }
 
         io_printer(e, "(error \"%s\" \"%s\" %d)\n", s, cfile, linenum);
-
-        if (true == critical_failure_f) {
-                io_puts("(error \"critical failure\")\n", e);
-                exit(EXIT_FAILURE);
-        }
         return;
 }
 

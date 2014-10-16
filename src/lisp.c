@@ -110,6 +110,7 @@ static primop_initializers primops[] = {
 lisp lisp_init(void)
 {
         size_t i;
+        io *e;
         lisp l;
         l = mem_calloc(1, sizeof(*l));
         l->global = mem_calloc(1, sizeof(sexpr_t));
@@ -117,14 +118,14 @@ lisp lisp_init(void)
 
         l->i = mem_calloc(1, io_sizeof_io());
         l->o = mem_calloc(1, io_sizeof_io());
-        l->e = mem_calloc(1, io_sizeof_io());
 
         /* set up file I/O and pointers */
         io_file_in(l->i, stdin);
         io_file_out(l->o, stdout);
-        io_file_out(l->e, stderr);
 
-        io_set_error_stream(l->e); /*global error stream; @todo set only if not set*/
+
+        e = io_get_error_stream();
+        io_file_out(e, stderr); 
 
         l->global->type = S_LIST;
         l->env->type = S_LIST;
