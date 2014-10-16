@@ -197,7 +197,7 @@ enum KEY_ACTION {
  * write all the escape sequences in a buffer and flush them to the standard
  * output in a single call, to avoid flickering effects. */
 struct abuf {
-        int len;
+        size_t len;
         char *b;
 };
 
@@ -336,7 +336,7 @@ static int get_cursor_position(int ifd, int ofd)
 {
         char buf[32];
         int cols, rows;
-        unsigned int i = 0;
+        size_t i = 0;
 
         /* Report cursor location */
         if (write(ofd, "\x1b[6n", 4) != 4)
@@ -394,7 +394,7 @@ static int get_columns(int ifd, int ofd)
                 }
                 return cols;
         } else {
-                return ws.ws_col;
+                return (int)ws.ws_col;
         }
 
  failed:
@@ -1305,7 +1305,7 @@ static int linenoise_raw(char *buf, size_t buflen, const char *prompt)
         }
         if (!isatty(STDIN_FILENO)) {
                 /* Not a tty: read from file / pipe. */
-                if (fgets(buf, buflen, stdin) == NULL)
+                if (fgets(buf, (int)buflen, stdin) == NULL)
                         return -1;
                 count = strlen(buf);
                 if (count && buf[count - 1] == '\n') {
