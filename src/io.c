@@ -6,12 +6,7 @@
  *  @license        LGPL v2.1 or later version
  *  @email          howe.r.j.89@gmail.com
  *
- *  @todo Implement set_error_stream instead of passing the error
- *        constantly to functions like io_puts
- *  @todo Use stdarg.h where appropriate
  *  @todo Error checking on return values.
- *  @todo printf and scanf equivalent that deals with fixed width
- *        types and avoids floating point conversions.
  *
  *  This library allows redirection of input and output to
  *  various different sources. It also would allow me to add in
@@ -323,7 +318,6 @@ int io_puts(const char *s, io * o)
         return count;
 }
 
-
 /**
  * @brief       A simple printf replacement that does not handle (nor need to
  *              handle) any of the advanced formatting features that make
@@ -332,37 +326,22 @@ int io_puts(const char *s, io * o)
  *              floating point numbers.
  * @param       fmt     The formatting string
  * @param       ...     Variable length number of arguments
- * @return      int     Number of character written. You can use this to
- *                      see if ANSI color codes are supported. Negative
- *                      on error or EOF.
+ * @return      int     Number of character written. Negative on error
  *
  * format
- * %% -> %
- * %s -> string
- * %d -> int
- * %c -> char
+ * %% -> %      %s -> string    %d -> int       %c -> char
  *
  * If enabled and feature is compiled in print the
  * ANSI escape sequence for:
  *
- * %t -> Reset
- * %z -> Reverse Video
- * %B -> Bold
- * %k -> Black
- * %r -> Red
- * %g -> Green
- * %y -> Yellow
- * %b -> Blue
- * %m -> Magenta
- * %a -> Cyan
- * %w -> White
+ * %t -> Reset  %B -> Bold      %k -> Black     %r -> Red
+ * %g -> Green  %y -> Yellow    %b -> Blue      %m -> Magenta
+ * %a -> Cyan   %w -> White     %z -> Reverse V.
  *
  * Otherwise map to <nothing>
  *
- * %<default> -> <nothing>
- * %<EOL> -> <nothing>
- *
- * <character> -> <character>
+ * %<default> -> <nothing>      %<EOL> -> <nothing>
+ * <char> -> <char>
  *
  * It should return the number of characters written, but
  * does not at the moment.
@@ -436,7 +415,7 @@ int io_printer(io *o, char *fmt, ...)
                                                 io_puts(ANSI_COLOR_WHITE,o);
                                                 break;
 #else
-                                        case '\0':
+                                        case '\0': /*stop it whining*/
 #endif
                                         default:
                                                 break;
