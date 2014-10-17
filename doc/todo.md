@@ -76,9 +76,6 @@ its items.
 * The parser should:
   - Handle arbitrary precision numbers
   - Handle arbitrary length strings
-  - Parse special forms into enums such as
-  "if", "begin", ...
-  but do so *optionally*
 
 * Signal handling plan:
   - Set up signals handlers for each standard C signals that sets global value
@@ -123,6 +120,9 @@ its items.
 * Support UTF-8
   UTF-8 is not supported and I do not know of the best way to support
   it yet.
+
+* Better debugging information. Printing allocated/freed memory locations
+  would not go amiss.
 
 * Move primops to a separate file
 

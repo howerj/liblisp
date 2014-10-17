@@ -38,7 +38,7 @@ typedef enum {
 
 static int getopt(char *arg);
 
-static bool printGlobals_f = false;
+static bool main_debug_f = false;
 static char *usage = "./lisp -hdcpeoVG file... '(expr)'...\n";
 static char *version = __DATE__ " : " __TIME__ "\n";
 static char *help = "\
@@ -48,13 +48,12 @@ Author:\n\
   Richard James Howe\n\
 \n\
   -h   This message.\n\
-  -d   Extra debugging information on stderr.\n\
+  -d   Extra debugging information.\n\
   -c   Color on.\n\
   -p   Print out full procedure.\n\
   -e   Next argument is an expression to lisp_evaluate.\n\
   -o   Next argument is a file to write to.\n\
   -V   Version number.\n\
-  -G   Print Globals list on normal exit.\n\
 ";
 
 /** 
@@ -81,6 +80,7 @@ static int getopt(char *arg)
                         break;
                 case 'd':
                         mem_set_debug(true);
+                        main_debug_f = true;
                         break;
                 case 'c':
                         io_set_color_on(true);
@@ -92,9 +92,6 @@ static int getopt(char *arg)
                         return getopt_string_input;
                 case 'o':
                         return getopt_output_file;
-                case 'G':
-                        printGlobals_f = true;
-                        break;
                 default:
                         io_printer(e, "unknown option: '%c'\n%s", c, usage);
                         return getopt_error;
@@ -116,8 +113,10 @@ int main(int argc, char *argv[])
                 case getopt_switch:
                         /*getopt_switch means getopt set some flags or printed something */
                         break;
-                case getopt_input_file:        /* ./lisp file.lsp */
+                case getopt_input_file: /* ./lisp file.lsp */
                         /*try to treat it as an output file */
+                        if(main_debug_f) 
+                                io_printer(l->o,"(input 'file %s)\n",argv[i]);
                         if(NULL == io_filename_in(l->i, argv[i])){
                                 SEXPR_PERROR(NULL, "fatal: could not open file for reading");
                                 exit(EXIT_FAILURE);
@@ -129,6 +128,8 @@ int main(int argc, char *argv[])
                         break;
                 case getopt_string_input:  /* ./lisp -e '(+ 2 2)' */
                         if (++i < argc) {
+                                if(main_debug_f) 
+                                        io_printer(l->o,"(input 'string %s)\n",argv[i]);
                                 io_string_in(l->i, argv[i]);
                                 /** @todo lisp_repl(l) should return an error expr on failure **/
                                 (void)lisp_repl(l);
@@ -140,6 +141,8 @@ int main(int argc, char *argv[])
                         break;
                 case getopt_output_file:
                         if (++i < argc) {
+                                if(main_debug_f) 
+                                        io_printer(l->o,"(output 'file %s)\n",argv[i]);
                                 if(NULL == io_filename_out(l->o,argv[i])){
                                         SEXPR_PERROR(NULL, "fatal: could not open file for writing");
                                         exit(EXIT_FAILURE);
@@ -162,9 +165,8 @@ int main(int argc, char *argv[])
                 (void)lisp_repl(l);
         }
 
-        if (true == printGlobals_f) {
+        if (true == main_debug_f)
                 lisp_print(l->global, l->o);
-        }
 
         lisp_end(l);
 

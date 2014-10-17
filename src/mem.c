@@ -135,7 +135,7 @@ char *mem_strdup(const char *s)
 {
         char *ns;
         if (NULL == s) {
-                io_puts("mem_strdup: passed NULL", io_get_error_stream());
+                REPORT("mem_strdup passed NULL");
                 abort();
         }
         ns = mem_malloc(sizeof(char) * (strlen(s) + 1));

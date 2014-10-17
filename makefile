@@ -6,7 +6,7 @@
 ###############################################################################
 
 MAKEFLAGS+= --no-builtin-rules
-.PHONY: all doxygen indent report tar clean valgrind 
+.PHONY: all doxygen indent report clean valgrind help banner
 
 ## Variables ##################################################################
 
@@ -22,6 +22,11 @@ TARGET=lisp
 BUILD_DIR=bin
 SOURCE_DIR=src
 
+BLUE=\e[1;34m
+GREEN=\e[1;32m
+RED=\e[1;31m
+DEFAULT=\e[0m
+
 OBJFILES=$(BUILD_DIR)/io.o \
 	 $(BUILD_DIR)/mem.o \
 	 $(BUILD_DIR)/gc.o \
@@ -29,11 +34,12 @@ OBJFILES=$(BUILD_DIR)/io.o \
 	 $(BUILD_DIR)/lisp.o \
 	 $(BUILD_DIR)/main.o
 
+
 ## building ###################################################################
 # Only a C tool chain is necessary to built the project. Anything else is
 # simply extra fluff.
 
-all: $(BUILD_DIR)/$(TARGET)
+all: banner $(BUILD_DIR)/$(TARGET)
 
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c $(SOURCE_DIR)/*.h makefile
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -47,7 +53,7 @@ run: $(BUILD_DIR)/$(TARGET)
 ## testing ####################################################################
 
 valgrind: $(BUILD_DIR)/lisp
-	valgrind $(BUILD_DIR)/./$(TARGET) -cG $(INPUTF)
+	valgrind $(BUILD_DIR)/./$(TARGET) -c $(INPUTF)
 
 ## documentation ##############################################################
 
@@ -63,9 +69,31 @@ report:
 	-wc $(SOURCE_DIR)/*.c $(SOURCE_DIR)/*.h &> $(REPORT_DIR)/wc.log
 	-readelf -sW $(BUILD_DIR)/*.o &> $(REPORT_DIR)/elf.log
 
-tar:
-	make clean
-	tar cf /tmp/backup.tar .
+## help and messages ##########################################################
+
+banner:
+	@/bin/echo -e "$(GREEN)LSP, a small lisp interpreter, GNU Makefile.$(DEFAULT)"
+	@/bin/echo -e "Author:    $(BLUE)Richard James Howe$(DEFAULT)."
+	@/bin/echo -e "Copyright: $(BLUE)Copyright 2013 Richard James Howe.$(DEFAULT)."
+	@/bin/echo -e "License:   $(BLUE)LGPL$(DEFAULT)."
+	@/bin/echo -e "Email:     $(BLUE)howe.r.j.89@gmail.com$(DEFAULT)."
+
+help:
+	@/bin/echo "Options:"
+	@/bin/echo "make"
+	@/bin/echo "     Print out banner, this help message and compile program."
+	@/bin/echo "make indent"
+	@/bin/echo "     Pretty print the source."
+	@/bin/echo "make clean"
+	@/bin/echo "     Clean up directory."
+	@/bin/echo "make report"
+	@/bin/echo "     Generate reports in '$(REPORT_DIR)'."
+	@/bin/echo "make doxygen"
+	@/bin/echo "     Run doxygen on the source."
+	@/bin/echo "make run"
+	@/bin/echo "     Make and run the program."
+	@/bin/echo "make valgrind"
+	@/bin/echo "     Run program with valgrind on the compiled program."
 
 ## cleanup ####################################################################
 
