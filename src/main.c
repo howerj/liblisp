@@ -65,6 +65,7 @@ Author:\n\
 static int getopt(char *arg)
 {
         int c;
+        io *e = io_get_error_stream();
 
         if ('-' != *arg++) {
                 return getopt_input_file;
@@ -73,10 +74,10 @@ static int getopt(char *arg)
         while ((c = *arg++)) {
                 switch (c) {
                 case 'h':
-                        printf("%s%s", usage, help);
+                        io_printer(e, "%s%s", usage, help);
                         break;
                 case 'V':
-                        printf("%s", version);
+                        io_puts(version, e);
                         break;
                 case 'd':
                         mem_set_debug(true);
@@ -95,7 +96,7 @@ static int getopt(char *arg)
                         printGlobals_f = true;
                         break;
                 default:
-                        fprintf(stderr, "unknown option: '%c'\n%s", c, usage);
+                        io_printer(e, "unknown option: '%c'\n%s", c, usage);
                         return getopt_error;
                 }
         }
