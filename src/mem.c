@@ -6,8 +6,7 @@
  *  @license        LGPL v2.1 or later version
  *  @email          howe.r.j.89@gmail.com
  *  @details
- *
- */
+ **/
 
 #include "mem.h"
 #include <string.h>
@@ -48,13 +47,8 @@ void *mem_malloc(size_t size)
                 REPORT("too many mallocs");
                 exit(EXIT_FAILURE);
         }
-        if (true == debug_f) {
-#if 0
-                io_puts("mem_malloc:", e, e);
-                io_printd(alloccounter, e, e);
-                io_putc('\n', e, e);
-#endif
-        }
+        if (true == debug_f)
+                io_printer(io_get_error_stream(), "(mem_malloc %d)\n", alloccounter);
 
         v = malloc(size);
         if (NULL == v) {
@@ -79,13 +73,8 @@ void *mem_calloc(size_t num, size_t size)
                 exit(EXIT_FAILURE);
         }
 
-        if (true == debug_f) {
-#if 0
-                io_puts("mem_calloc:", e, e);
-                io_printd(alloccounter, e, e);
-                io_putc('\n', e, e);
-#endif
-        }
+        if (true == debug_f)
+                io_printer(io_get_error_stream(), "(mem_calloc %d)\n", alloccounter);
 
         v = calloc(num, size);
         if (NULL == v) {
@@ -130,13 +119,8 @@ void mem_free(void *ptr)
 {
         if (NULL != ptr) {
                 alloccounter--;
-#if 0
-                if ((true == debug_f) && (NULL !=e)) {
-                        io_puts("mem_free:", e, e);
-                        io_printd(alloccounter, e, e);
-                        io_putc('\n', e, e);
-                }
-#endif
+                if (true == debug_f)
+                        io_printer(io_get_error_stream(), "(mem_free %d)\n", alloccounter);
         }
         free(ptr);
         ptr = NULL;
@@ -151,7 +135,7 @@ char *mem_strdup(const char *s)
 {
         char *ns;
         if (NULL == s) {
-                /*io_puts("mem_strdup: passed NULL", e, e);*/
+                io_puts("mem_strdup: passed NULL", io_get_error_stream());
                 abort();
         }
         ns = mem_malloc(sizeof(char) * (strlen(s) + 1));

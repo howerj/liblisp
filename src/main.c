@@ -118,7 +118,6 @@ int main(int argc, char *argv[])
                         break;
                 case getopt_input_file:        /* ./lisp file.lsp */
                         /*try to treat it as an output file */
-                        /*printf("(input 'file \"%s\")\n", argv[i]); */
                         if(NULL == io_filename_in(l->i, argv[i])){
                                 SEXPR_PERROR(NULL, "fatal: could not open file for reading");
                                 exit(EXIT_FAILURE);
@@ -130,7 +129,6 @@ int main(int argc, char *argv[])
                         break;
                 case getopt_string_input:  /* ./lisp -e '(+ 2 2)' */
                         if (++i < argc) {
-                                /*printf("(input 'string \"%s\")\n", argv[i]); */
                                 io_string_in(l->i, argv[i]);
                                 /** @todo lisp_repl(l) should return an error expr on failure **/
                                 (void)lisp_repl(l);
@@ -142,7 +140,6 @@ int main(int argc, char *argv[])
                         break;
                 case getopt_output_file:
                         if (++i < argc) {
-                                /*printf("(output 'file \"%s\")\n", argv[i]); */
                                 if(NULL == io_filename_out(l->o,argv[i])){
                                         SEXPR_PERROR(NULL, "fatal: could not open file for writing");
                                         exit(EXIT_FAILURE);
