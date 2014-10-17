@@ -392,48 +392,46 @@ int io_printer(io *o, char *fmt, ...)
                         default:
 #ifndef NO_ANSI_ESCAPE_SEQUENCES
                                 if(true == color_on_f){
-                                switch(f){
-                                        case 't': /*reset*/
-                                                count += io_puts(ANSI_RESET,o);
-                                                break;
-                                        case 'z': /*reverse video*/
-                                                count += io_puts(ANSI_REVERSE_VIDEO,o);
-                                                break;
-                                        case 'B': /*bold*/
-                                                count += io_puts(ANSI_BOLD_TXT,o);
-                                                break;
-                                        case 'k': /*blacK*/
-                                                count += io_puts(ANSI_COLOR_BLACK,o);
-                                                break;
-                                        case 'r': /*Red*/
-                                                count += io_puts(ANSI_COLOR_RED,o);
-                                                break;
-                                        case 'g': /*Green*/
-                                                count += io_puts(ANSI_COLOR_GREEN,o);
-                                                break;
-                                        case 'y': /*Yellow*/
-                                                count += io_puts(ANSI_COLOR_YELLOW,o);
-                                                break;
-                                        case 'b': /*Blue*/
-                                                count += io_puts(ANSI_COLOR_BLUE,o);
-                                                break;
-                                        case 'm': /*Magenta*/
-                                                count += io_puts(ANSI_COLOR_MAGENTA,o);
-                                                break;
-                                        case 'a': /*cyAn*/
-                                                count += io_puts(ANSI_COLOR_CYAN,o);
-                                                break;
-                                        case 'w': /*White*/
-                                                count += io_puts(ANSI_COLOR_WHITE,o);
-                                                break;
-#else
-                                        case '\0': /*stop it whining*/
+                                        switch(f){
+                                                case 't': /*reset*/
+                                                        count += io_puts(ANSI_RESET,o);
+                                                        break;
+                                                case 'z': /*reverse video*/
+                                                        count += io_puts(ANSI_REVERSE_VIDEO,o);
+                                                        break;
+                                                case 'B': /*bold*/
+                                                        count += io_puts(ANSI_BOLD_TXT,o);
+                                                        break;
+                                                case 'k': /*blacK*/
+                                                        count += io_puts(ANSI_COLOR_BLACK,o);
+                                                        break;
+                                                case 'r': /*Red*/
+                                                        count += io_puts(ANSI_COLOR_RED,o);
+                                                        break;
+                                                case 'g': /*Green*/
+                                                        count += io_puts(ANSI_COLOR_GREEN,o);
+                                                        break;
+                                                case 'y': /*Yellow*/
+                                                        count += io_puts(ANSI_COLOR_YELLOW,o);
+                                                        break;
+                                                case 'b': /*Blue*/
+                                                        count += io_puts(ANSI_COLOR_BLUE,o);
+                                                        break;
+                                                case 'm': /*Magenta*/
+                                                        count += io_puts(ANSI_COLOR_MAGENTA,o);
+                                                        break;
+                                                case 'a': /*cyAn*/
+                                                        count += io_puts(ANSI_COLOR_CYAN,o);
+                                                        break;
+                                                case 'w': /*White*/
+                                                        count += io_puts(ANSI_COLOR_WHITE,o);
+                                                        break;
+                                                default:
+                                                        break;
+                                        }
+                                }
 #endif
-                                        default:
-                                                break;
-                                }
                                 break;
-                                }
                         }
                 } else {
                         if(EOF != io_putc(f,o))
