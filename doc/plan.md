@@ -16,24 +16,9 @@ Pretty Printing Trees:
 
 <http://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf>
 
-Bignums:
-
-<http://www.cs.sunysb.edu/~skiena/392/programs/bignum.c> 
-
-(from the book *Programming Challenges: The Programming Contest Training
- Manual*)
-
-
 ## Steps
 
 The steps and sections I need to work on are:
-
-### Garbage Collection
-
-**DONE**
-
-Add simple garbage collection so we do not end up taking up all the memory!
-
 
 ### Add config file
 
@@ -50,24 +35,6 @@ Configuration for:
 I would like to make file I/O and text processing easy like they are in perl,
 awk and sed.
 
-### Colorize output and pretty print it
-
-**DONE**
-
-Pretty printing S-expressions should be relatively easy, colorizing the output
-on demand as well could make any output easier to read. 
-
-### Relatively Efficient
-
-By better choice of data structures and algorithms, as well as architectural
-decisions, I can implement a more efficient interpreter. I should move from an
-array based approached to linked lists to help with insertion / deletion and
-processing of environments.
-
-### Bignum support
-
-Support for bignums! The only type of number lisps need! Currently only signed
-integers are supported and this is rather limiting.
 
 ### Easy system command execution, text parsing, text manipulation and file I/O
 

@@ -27,3 +27,6 @@ doc/man/*
 *.out
 *.diff
 *.patch
+CMakeCache.txt
+CMakeFiles
+CMakeFiles/*

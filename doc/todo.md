@@ -47,8 +47,20 @@ done *one byte at a time* where possible. There are far too many memory
 allocations.
 
 6. Suppress return value of library function definitions 
-   This is in the running interpreter. It is just annoying seeing them defined 
-   all the time.
+
+This is in the running interpreter. It is just annoying seeing them defined 
+all the time.
+
+7. Windows Support
+
+Support for Windows would be a big plus which would involve:
+- Implementing color support on Windows
+  <https://stackoverflow.com/questions/9203362/c-color-text-in-terminal-applications-in-windows>
+  <http://msdn.microsoft.com/en-us/library/windows/desktop/ms682088%28v=vs.85%29.aspx#_win32_character_attributes>
+- Coming up with a Windows alternative for the planned dlopen extension
+- Making a Windows Visual Studio project to build the library in.
+- Porting the Linenoise library to Windows, there are forks of the
+  library that do this.
 
 ### Bugs
 
@@ -90,14 +102,38 @@ its items.
   and lookup handler for signal. This should be done in Eval.
   - The signal handler can be an arbitrary lisp expression
 
-* New printf/scanf for fixed width types and no floating points, for I/O
-  library.
-
 * Write specifications for each of the modules. 
-  This along with Unit tests would *help* in rooting out bugs and *help*
-  making the project more formal. Some modules should be easier
-  than others like the "regex" modules, "eval" within the lisp
-  interpreter and the "bignum" module (when complete).
+
+This along with Unit tests would *help* in rooting out bugs and *help*
+making the project more formal. Some modules should be easier
+than others like the "regex" modules, "eval" within the lisp
+interpreter and the "bignum" module (when complete).
+
+For each ".c" file and any lonely ".h" files there should be a specification
+as at the moment each c file represents a single 'unit' that needs
+specifying. The specification should probably be written in markdown and
+converted to whatever format needed (such as man-pages or HTML). The
+source folder would look like this:
+
+file\_1.c
+file\_1.h
+file\_1.md
+file\_2.c
+file\_2.h
+file\_2.md
+...
+file\_N.c
+file\_N.h
+file\_N.md
+
+The sub directories with experiment branches should be removed and the
+test bench / unit tests moved to a folder in the top level directory.
+
+Document conversion links:
+
+<https://rtomayko.github.io/ronn/ronn.1.html>
+<http://serverfault.com/questions/109490/how-do-i-write-man-pages>
+<http://johnmacfarlane.net/pandoc/README.html>
 
 * Rethink special forms;
   - Use "cond" instead of (or in addition to) "if".
@@ -182,3 +218,8 @@ And other behavior:
   <http://www.sonoma.edu/users/l/luvisi/sl5.c>
 * The Lambda Papers
   <http://library.readscheme.org/page1.html>
+* Pretty printing
+  <http://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf>
+* Regex matching
+  <http://www.cs.princeton.edu/courses/archive/spr09/cos333/beautiful.html>
+ 

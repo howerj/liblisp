@@ -99,6 +99,7 @@ help:
 clean:
 	-rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/$(TARGET) doc/htm/ doc/man doc/latex $(SOURCE_DIR)/*~
 	-rm -rf $(REPORT_DIR)/*.i $(REPORT_DIR)/*.s $(REPORT_DIR)/*.log
+	-rm -rf CMakeFiles cmake_install.cmake CMakeCache.txt
 	-rm -rf *.log
 
 ## EOF ########################################################################
