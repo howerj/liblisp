@@ -14,7 +14,7 @@ SHELL=/bin/sh
 REPORT_DIR=doc/log
 # if using musl-gcc then we can statically link our executable and it will still
 # be small so add -static to CFLAGS
-CC=gcc
+CC?=gcc
 INPUTF=lsp/lib.lsp /dev/stdin
 INDENT=-linux -nut -l 150
 CFLAGS+= -Wall -Wextra -ansi -pedantic -Wswitch-enum -Os -g 
@@ -33,7 +33,6 @@ OBJFILES=$(BUILD_DIR)/io.o \
 	 $(BUILD_DIR)/sexpr.o \
 	 $(BUILD_DIR)/lisp.o \
 	 $(BUILD_DIR)/main.o
-
 
 ## building ###################################################################
 # Only a C tool chain is necessary to built the project. Anything else is

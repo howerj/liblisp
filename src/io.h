@@ -31,7 +31,7 @@ void io_set_color_on(bool flag);
 void io_set_error_stream(io *es);
 io   *io_get_error_stream(void);
 void io_string_in(io *i, char *s);
-void io_string_out(io *o, char *s);
+void io_string_out(io *o, char *s, size_t len);
 FILE *io_filename_in(io *i, char *file_name);
 FILE *io_filename_out(io *o, char *file_name);
 void io_file_in(io *i, FILE* file);

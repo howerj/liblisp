@@ -41,11 +41,12 @@ struct io {
         size_t max;             /* max string length, if known */
 
         enum iotype {
-                IO_INVALID_E,   /* error on incorrectly set up I/O */
-                IO_FILE_IN_E,   /* read from file */
-                IO_FILE_OUT_E,  /* write to file */
-                IO_STRING_IN_E, /* read from a string */
-                IO_STRING_OUT_E /* write to a string, if you want */
+                IO_INVALID_E,    /* error on incorrectly set up I/O */
+                IO_FILE_IN_E,    /* read from file */
+                IO_FILE_OUT_E,   /* write to file */
+                IO_STRING_IN_E,  /* read from a string */
+                IO_STRING_OUT_E, /* write to a string, if you want */
+                IO_NULL_OUT_E    /* NULL output, always such*/
         } type;
 
         bool ungetc;            /* true if we have ungetc'ed a character */
@@ -109,14 +110,16 @@ void io_string_in(io *i, char *s){
  *  @brief          Set output stream to point to a string
  *  @param          o           output stream, Do not pass NULL
  *  @param          s           string to write to, Do not pass NULL
+ *  @param          len         maximum length of output string
  *  @return         void
  **/
-void io_string_out(io *o, char *s){
+void io_string_out(io *o, char *s, size_t len){
         assert((NULL != o) && (NULL != s));
         memset(o, 0, sizeof(*o));
+        memset(s, '\0', len);
         o->type         = IO_STRING_OUT_E;
         o->ptr.string   = s;
-        o->max          = strlen(s);
+        o->max          = len - 1;
         return;
 }
 
@@ -232,11 +235,12 @@ int io_putc(char c, io * o)
                 } else {
                         return EOF;
                 }
+        } else if(IO_NULL_OUT_E == o->type){
+                return c;
         } else {
-                /*programmer error; some kind of error reporting would be nice */
-                exit(EXIT_FAILURE);
+                exit(EXIT_FAILURE); /*some kind of error reporting would be nice */
         }
-        return EOF;
+        return EOF; 
 }
 
 /**
@@ -259,8 +263,7 @@ int io_getc(io * i)
         } else if (IO_STRING_IN_E == i->type) {
                 return (i->ptr.string[i->position]) ? i->ptr.string[i->position++] : EOF;
         } else {
-                /*programmer error; some kind of error reporting would be nice */
-                exit(EXIT_FAILURE);
+                exit(EXIT_FAILURE);/*some error message would be nice*/
         }
         return EOF;
 }
@@ -309,14 +312,27 @@ int io_printd(int32_t d, io * o)
  **/
 int io_puts(const char *s, io * o)
 {
-        int c, count = 0;
         NULLCHK(o);
         if(NULL == s)
                 return 0;
-        while ((c = *(s + (count++))))
-                if ((count < 0) || (EOF == io_putc((char)c, o)))
+        if (IO_FILE_OUT_E == o->type) {
+                return fputs(s,o->ptr.file);
+        } else if (IO_STRING_OUT_E == o->type) {
+                size_t len, newpos;
+                if(o->position >= o->max)
                         return EOF;
-        return count;
+                len = strlen(s);
+                newpos = o->position + len;
+                if(newpos >= o->max)
+                        len = newpos - o->max;
+                (void)memmove(o->ptr.string + o->position, s, len);
+                o->position = newpos;
+        } else if(IO_NULL_OUT_E == o->type){
+                return strlen(s);
+        } else {
+                exit(EXIT_FAILURE); /*some error message would be nice*/
+        }
+        return EOF;
 }
 
 /**

@@ -64,6 +64,11 @@ very well.
 The funarg problem is not solved correctly leading to incorrect code! Also
 somethings are not evaluated at the right time.
 
+3. Overflow is not dealt with.
+   It is possible to deal with it in the code, but a compiler flag option
+   would be the quickest, even it is not portable. GCC supports the *-trapv* 
+   flag which could be used but it only works for signed overflow.
+
 ### A more general To-Do section.
 
 This is a more general to-do section, it might as well be treated as a "this
