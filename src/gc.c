@@ -29,7 +29,6 @@ static void gcinner(expr x);
 
 /**
  *  @brief          wrapper around malloc for garbage collection
- *  @param          void
  *  @return         pointer to newly allocated storage on sucess, exits
  *                  program on failure!
  **/
@@ -42,7 +41,6 @@ expr gc_malloc(void)
 
 /**
  *  @brief          wrapper around calloc for garbage collection
- *  @param          void
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/

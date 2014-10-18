@@ -5,6 +5,19 @@
 # License:  LGPL v2.1 or later version                                        #
 ###############################################################################
 
+# If for some reason this make file fails to run, for example you maybe using
+# a version of make other than GNU Make, then:
+## cc src/*.c -o lisp
+# Should work build a working lisp interpreter.
+# Alternatively:
+## # Super minimal CMakeLists.txt
+## cmake_minimum_required (VERSION 3.0) # May work with earlier versions.
+## project (lisp)
+## include_directories(./src/)
+## file(GLOB CFILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
+## add_executable(lisp ${CFILES})
+# Should work with CMake.
+
 MAKEFLAGS+= --no-builtin-rules
 .PHONY: all doxygen indent report clean valgrind help banner
 
@@ -80,11 +93,11 @@ banner:
 help:
 	@/bin/echo "Options:"
 	@/bin/echo "make"
-	@/bin/echo "     Print out banner, this help message and compile program."
+	@/bin/echo "     Print out banner and compile $(TARGET)."
 	@/bin/echo "make indent"
 	@/bin/echo "     Pretty print the source."
 	@/bin/echo "make clean"
-	@/bin/echo "     Clean up directory."
+	@/bin/echo "     Clean up the build."
 	@/bin/echo "make report"
 	@/bin/echo "     Generate reports in '$(REPORT_DIR)'."
 	@/bin/echo "make doxygen"
@@ -99,7 +112,6 @@ help:
 clean:
 	-rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/$(TARGET) doc/htm/ doc/man doc/latex $(SOURCE_DIR)/*~
 	-rm -rf $(REPORT_DIR)/*.i $(REPORT_DIR)/*.s $(REPORT_DIR)/*.log
-	-rm -rf CMakeFiles cmake_install.cmake CMakeCache.txt
 	-rm -rf *.log
 
 ## EOF ########################################################################

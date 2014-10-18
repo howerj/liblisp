@@ -3,6 +3,7 @@
 *.o
 *~
 src/*~
+*.lisp
 *.ascii
 *.log
 lisp

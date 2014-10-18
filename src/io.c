@@ -57,7 +57,7 @@ static int io_itoa(int32_t d, char *s); /* I *may* want to export this later */
 
 static bool color_on_f = false; /*turn color on/off */
 static io error_stream = {{NULL}, 0, 0, IO_FILE_OUT_E, false, '\0'};
-static io *e = &error_stream; /*rename to error_stream*/
+static io *e = &error_stream; 
 
 /**** I/O functions **********************************************************/
 
@@ -75,7 +75,7 @@ void io_set_color_on(bool flag)
 
 /**
  * @brief           Set the default error reporting output stream
- * @param           e
+ * @param           es          Set the global error to this
  * @return          void
  **/
 void io_set_error_stream(io *es){
@@ -84,7 +84,6 @@ void io_set_error_stream(io *es){
 
 /**
  * @brief           get the default error reporting output stream
- * @param           void
  * @return          io*         The global error reporting stream
  **/
 io *io_get_error_stream(void){
@@ -134,7 +133,7 @@ void io_string_out(io *o, char *s, size_t len){
 FILE *io_filename_in(io *i, char *file_name){
         assert((NULL != i) && (NULL != file_name));
         memset(i, 0, sizeof(*i));
-        i->type         = IO_FILE_IN_E;
+        i->type  = IO_FILE_IN_E;
         if(NULL == (i->ptr.file = fopen(file_name, "rb")))
                 return NULL;
         return i->ptr.file;
@@ -148,7 +147,7 @@ FILE *io_filename_in(io *i, char *file_name){
  *  @return         FILE*       Initialized file pointer, or NULL on failure
  **/
 FILE *io_filename_out(io *o, char *file_name){
-        assert((NULL != o)&&(NULL != file_name));
+        assert((NULL != o) && (NULL != file_name));
         memset(o, 0, sizeof(*o));
         o->type         = IO_FILE_OUT_E;
         if(NULL == (o->ptr.file = fopen(file_name, "wb")))
@@ -163,7 +162,7 @@ FILE *io_filename_out(io *o, char *file_name){
  *  @return         void
  **/
 void io_file_in(io *i, FILE* file){
-        assert((NULL != i)&&(NULL != file));
+        assert((NULL != i) && (NULL != file));
         memset(i, 0, sizeof(*i));
         i->type         = IO_FILE_IN_E;
         i->ptr.file     = file;
@@ -177,8 +176,7 @@ void io_file_in(io *i, FILE* file){
  *  @return         void
  **/
 void io_file_out(io *o, FILE* file){
-        assert((NULL != o));
-        assert((NULL != file));
+        assert((NULL != o) && (NULL != file));
         memset(o, 0, sizeof(*o));
         o->type         = IO_FILE_OUT_E;
         o->ptr.file     = file;
@@ -296,7 +294,7 @@ int io_ungetc(char c, io * i)
  **/
 int io_printd(int32_t d, io * o)
 {
-        char dstr[16];
+        char dstr[16]; /* Can hold all values of converted string */
         NULLCHK(o);
         io_itoa(d, dstr);
         return io_puts(dstr, o);
@@ -306,9 +304,7 @@ int io_printd(int32_t d, io * o)
  *  @brief          wrapper to print out a string, *does not append newline*
  *  @param          s string to output, you *CAN* pass NULL
  *  @param          o output stream to print to, Do not pass NULL
- *  @param          e error output stream, Do not pass NULL
  *  @return         EOF on failure, number of characters written on success
- *                  
  **/
 int io_puts(const char *s, io * o)
 {
@@ -328,7 +324,7 @@ int io_puts(const char *s, io * o)
                 (void)memmove(o->ptr.string + o->position, s, len);
                 o->position = newpos;
         } else if(IO_NULL_OUT_E == o->type){
-                return strlen(s);
+                return (int)strlen(s);
         } else {
                 exit(EXIT_FAILURE); /*some error message would be nice*/
         }
@@ -340,6 +336,7 @@ int io_puts(const char *s, io * o)
  *              handle) any of the advanced formatting features that make
  *              printf...printf. It handles color formatting codes as well
  *              and some fixed width types but not floating point numbers.
+ * @param       o       Write the output here
  * @param       fmt     The formatting string
  * @param       ...     Variable length number of arguments
  * @return      int     Number of character written. 
@@ -347,7 +344,7 @@ int io_puts(const char *s, io * o)
  * format
  * %% -> %      %s -> string    %d -> int32_t   %c -> char
  *
- * %*<char> -> print <char> int32_t times
+ * %*(char) -> print (char) int32_t times
  *
  * If enabled and feature is compiled in print the
  * ANSI escape sequence for:
@@ -356,10 +353,10 @@ int io_puts(const char *s, io * o)
  * %g -> Green  %y -> Yellow    %b -> Blue      %m -> Magenta
  * %a -> Cyan   %w -> White     %z -> Reverse V.
  *
- * Otherwise map to <nothing>
+ * Otherwise map to (nothing)
  *
- * %<default> -> <nothing>      %<EOL> -> <nothing>
- * <char> -> <char>
+ * %(default) -> (nothing)      %(EOL) -> (nothing)
+ * (char) -> (char)
  *
  * It should return the number of characters written, but
  * does not at the moment.
@@ -492,8 +489,8 @@ void io_doreport(const char *s, char *cfile, unsigned int linenum)
  *  @return         int size of the converted string
  **/
 static int io_itoa(int32_t d, char *s){
-        int32_t sign, len;
         uint32_t v, i;
+        int8_t sign, len;
         char tb[sizeof(int32_t)*3+2]; /* maximum bytes num of new string */
         char *tbp = tb;
         assert(NULL != s);
