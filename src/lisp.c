@@ -26,6 +26,11 @@
 #include "sexpr.h"
 #include "regex.h"
 
+typedef struct{
+        const char *s;
+        expr(*func) (expr args, lisp l);
+} primop_initializers;
+
 /** 
  * @brief List of primitive operations, used for initialization of structures 
  *        and function declarations. It uses X-Macros to achieve this job.
@@ -161,8 +166,6 @@ void lisp_clean(lisp l)
         gc_sweep();
 }
 
-
-
 /*** primitive operations ****************************************************/
 
 /**macro helpers for primops**/
@@ -180,73 +183,73 @@ static expr primop_add(expr args, lisp l){}
 
 /**subtract a list of numbers from the 1 st arg**/
 static expr primop_sub(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**multiply a list of numbers together**/
 static expr primop_prod(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**divide the first argument by a list of numbers**/
 static expr primop_div(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**arg_1 modulo arg_2**/
 static expr primop_mod(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**car**/
 static expr primop_car(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**cdr**/
 static expr primop_cdr(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**cons**/
 static expr primop_cons(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**NTH element in a list or string**/
 static expr primop_nth(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**length of a list or string**/
 static expr primop_len(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**test equality of the 1st arg against a list of numbers**/
 static expr primop_numeq(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**print**/
 static expr primop_printexpr(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**CAR for strings**/
 static expr primop_scar(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**cdr for strings**/
 static expr primop_scdr(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**cons for strings**/
 static expr primop_scons(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**type equality**/
 static expr primop_typeeq(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**reverse a list or a string**/
 static expr primop_reverse(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 static expr primop_system(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 static expr primop_match(expr args, lisp l)
-{}
+{UNUSED(args); UNUSED(l); return NULL;}
 
 #undef INTCHK_R
 #undef UNUSED
