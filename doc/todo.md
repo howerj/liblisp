@@ -62,6 +62,11 @@ Support for Windows would be a big plus which would involve:
 - Porting the Linenoise library to Windows, there are forks of the
   library that do this.
 
+8. Linenoise
+
+The Linenoise library needs to be split up and reorganized. UTF-8 and Windows
+support would also be good.
+
 ### Bugs
 
 1. Garbage collection
