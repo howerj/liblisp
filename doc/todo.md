@@ -222,4 +222,5 @@ And other behavior:
   <http://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf>
 * Regex matching
   <http://www.cs.princeton.edu/courses/archive/spr09/cos333/beautiful.html>
- 
+* A very small Arc Lisp interpreter:
+  <https://github.com/kimtg/Arcadia>

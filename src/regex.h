@@ -24,7 +24,7 @@ typedef enum {
 
 #define REGEX_MAX_DEPTH (8192u)
 
-int regex_match(char *regexp, char *text);
+regex_e regex_match(char *regexp, char *text);
 
 #ifdef __cplusplus
 }

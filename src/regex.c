@@ -33,25 +33,25 @@
 
 #include "regex.h"
 
-static int matchhere(char *regexp, char *text, unsigned int depth);
-static int matchstar(bool literal, int c, char *regexp, char *text, unsigned int depth);
+static regex_e matchhere(char *regexp, char *text, unsigned int depth);
+static regex_e matchstar(bool literal, int c, char *regexp, char *text, unsigned int depth);
 
 /**
  *  @brief          Search for regexp in text
  *  @param          regexp      The regular expression
  *  @param          text        The text to perform the match on
- *  @return         int         -1 == Error, 0 == No match, 1 == Match
+ *  @return         regex_e     See enum for description
  **/
-int regex_match(char *regexp, char *text)
+regex_e regex_match(char *regexp, char *text)
 {
         unsigned int depth = 0;
         if (regexp[0] == '^')
                 return matchhere(regexp + 1, text, depth + 1);
         do {                    /* must look even if string is empty */
                 if (matchhere(regexp, text, depth + 1))
-                        return 1;
+                        return REGEX_MATCH_E;
         } while (*text++ != '\0');
-        return 0;
+        return REGEX_NOMATCH_E;
 }
 
 /**
@@ -59,22 +59,22 @@ int regex_match(char *regexp, char *text)
  *  @param          regexp      The regular expression
  *  @param          text        The text to perform the match on
  *  @param          depth       Current recursion depth
- *  @return         int         -1 == Error, 0 == No match, 1 == Match
+ *  @return         regex_e     See enum for description
  **/
-static int matchhere(char *regexp, char *text, unsigned int depth)
+static regex_e matchhere(char *regexp, char *text, unsigned int depth)
 {
         if (REGEX_MAX_DEPTH < depth)
-                return -1;
+                return REGEX_FAIL_E;
  BEGIN:
         if (regexp[0] == '\0')
-                return 1;
+                return REGEX_MATCH_E;
         if (regexp[0] == '\\' && regexp[1] == *text) {
                 if (regexp[1] == *text) {
                         regexp += 2;
                         text++;
                         goto BEGIN;
                 } else {
-                        return 0;
+                        return REGEX_FAIL_E;
                 }
         }
         if (regexp[1] == '?') {
@@ -86,7 +86,7 @@ static int matchhere(char *regexp, char *text, unsigned int depth)
                 if (regexp[0] == '.' || regexp[0] == *text) {
                         return matchstar(false, regexp[0], regexp + 2, text, depth + 1);
                 }
-                return 0;
+                return REGEX_NOMATCH_E;
         }
         if (regexp[1] == '*')
                 return matchstar(false, regexp[0], regexp + 2, text, depth + 1);
@@ -97,7 +97,7 @@ static int matchhere(char *regexp, char *text, unsigned int depth)
                 text++;
                 goto BEGIN;
         }
-        return 0;
+        return REGEX_NOMATCH_E;
 }
 
 /**
@@ -107,16 +107,16 @@ static int matchhere(char *regexp, char *text, unsigned int depth)
  *  @param          regexp      The regular expression
  *  @param          text        The text to perform the match on
  *  @param          depth       Current recursion depth
- *  @return         int         -1 == Error, 0 == No match, 1 == Match
+ *  @return         regex_e     See enum for description
  **/
-static int matchstar(bool literal, int c, char *regexp, char *text, unsigned int depth)
+static regex_e matchstar(bool literal, int c, char *regexp, char *text, unsigned int depth)
 {
         if (REGEX_MAX_DEPTH < depth)
-                return -1;
+                return REGEX_FAIL_E;
         do {                    /* a * matches zero or more instances */
                 if (matchhere(regexp, text, depth + 1))
-                        return 1;
+                        return REGEX_MATCH_E;
         } while (*text != '\0' && (*text++ == c || (c == '.' && !literal)));
-        return 0;
+        return REGEX_NOMATCH_E;
 }
 
