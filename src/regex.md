@@ -1,3 +1,10 @@
+# regex.c, regex.h documentation
+
+*regex.c* and *regex.h* implement a small regular expression engine.
+
+The original document that the regex engine was derived from is reproduced
+below.
+
 # A Regular Expression Matcher
 ## Code by Rob Pike
 ## Exegesis by Brian Kernighan

@@ -17,9 +17,9 @@ extern "C" {
 #endif
 
 typedef enum {
-        REGEX_FAIL = -1,
-        REGEX_NOMATCH = 0,
-        REGEX_MATCH = 1
+        REGEX_FAIL_E = -1,
+        REGEX_NOMATCH_E = 0,
+        REGEX_MATCH_E = 1
 } regex_e;
 
 #define REGEX_MAX_DEPTH (8192u)

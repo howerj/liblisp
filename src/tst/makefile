@@ -10,7 +10,7 @@ CC=gcc
 CPPC=g++
 CFLAGS=-Wall -Wextra -ansi -pedantic -O2 -g 
 CPPFLAGS=-Wall -Wextra -O2 -g
-OBJFILES=io.o mem.o gc.o sexpr.o lisp.o
+OBJFILES=io.o mem.o gc.o sexpr.o lisp.o regex.o
 TSTBINARIES=repl sexpr repl.cpp.exe
 
 ## building ###################################################################

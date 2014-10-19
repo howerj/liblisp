@@ -44,6 +44,7 @@ OBJFILES=$(BUILD_DIR)/io.o \
 	 $(BUILD_DIR)/mem.o \
 	 $(BUILD_DIR)/gc.o \
 	 $(BUILD_DIR)/sexpr.o \
+	 $(BUILD_DIR)/regex.o \
 	 $(BUILD_DIR)/lisp.o \
 	 $(BUILD_DIR)/main.o
 

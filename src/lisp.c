@@ -24,6 +24,7 @@
 #include "mem.h"
 #include "gc.h"
 #include "sexpr.h"
+#include "regex.h"
 
 typedef struct{
         const char *s;
@@ -62,10 +63,8 @@ static expr extensions(expr env, expr syms, expr vals);
 /** 
  * @brief List of primitive operations, used for initialization of structures 
  *        and function declarations. It uses X-Macros to achieve this job.
- *
- * See:
- *      <https://en.wikipedia.org/wiki/X_Macro>
- *      <www.drdobbs.com/cpp/the-x-macro/228700289>
+ *        See  <https://en.wikipedia.org/wiki/X_Macro> and
+ *        <http://www.drdobbs.com/cpp/the-x-macro/228700289>
  **/
 #define LIST_OF_PRIMITIVE_OPERATIONS\
         PRIMOP_X("+",        primop_add)\
@@ -85,7 +84,8 @@ static expr extensions(expr env, expr syms, expr vals);
         PRIMOP_X("scons",    primop_scons)\
         PRIMOP_X("eqt",      primop_typeeq)\
         PRIMOP_X("reverse",  primop_reverse)\
-        PRIMOP_X("system",   primop_system)
+        PRIMOP_X("system",   primop_system)\
+        PRIMOP_X("match",    primop_match)
  
 /** @brief built in primitives, static declarations **/
 #define PRIMOP_X(STRING, FUNCTION) static expr FUNCTION(expr args, lisp l);
@@ -938,6 +938,33 @@ static expr primop_system(expr args, lisp l){
         nx->data.integer = i;
 
         return nx;
+}
+
+static expr primop_match(expr args, lisp l){
+        expr regex, matchme;
+        int i;
+        UNUSED(l);
+        if(2 != args->len){
+                SEXPR_PERROR(args, "regex: argc != 2");
+                return nil;
+        }
+        regex = CAR(args);
+        matchme = CADR(args);
+        if(S_STRING != regex->type || S_STRING != matchme->type){
+                SEXPR_PERROR(args, "regex: arg != string");
+                return nil;
+        }
+        i = regex_match(regex->data.string, matchme->data.string);
+        if(REGEX_NOMATCH_E == i){
+                return nil;
+        } else if(REGEX_MATCH_E == i){
+                return tee;
+        } else {
+                SEXPR_PERROR(args, "regex: regex internal failure!");
+                return nil;
+        }
+
+        return nil;
 }
 
 #undef INTCHK_R
