@@ -79,7 +79,22 @@ static primop_initializers primops[] = {
  **/
 lisp lisp_init(void)
 {
+        io *e;
+        lisp l;
+        l = mem_calloc(1, sizeof(*l));
 
+        l->i = mem_calloc(1, io_sizeof_io());
+        l->o = mem_calloc(1, io_sizeof_io());
+
+        /* set up file I/O and pointers */
+        io_file_in(l->i, stdin);
+        io_file_out(l->o, stdout);
+
+
+        e = io_get_error_stream();
+        io_file_out(e, stderr); 
+
+        return l;
 }
 
 /** 
@@ -120,6 +135,15 @@ lisp lisp_repl(lisp l)
  **/
 void lisp_end(lisp l)
 {
+
+        fflush(NULL);
+
+        /*do not call mark before **this** sweep */
+        gc_sweep();
+
+        mem_free(l);
+
+        return;
 }
 
 /**
