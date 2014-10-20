@@ -7,7 +7,7 @@
 #define MAX_AUTO_COMPLETE_STR_LEN (256)
 #define GENERIC_BUF_LEN (256)
 
-static char *hist_file = "history.txt";
+static char *hist_file = "history.lsp";
 
 /**
  * @brief This is an experimental completion callback, it
@@ -130,6 +130,8 @@ int main(void){
         linenoise_vi_mode(1);
 
         l = lisp_init();
+
+        io_set_color_on(true);
 
         statement = calloc(GENERIC_BUF_LEN, sizeof(*statement));
         while ((line = linenoise(line_count?"      ":"llsp> ")) != NULL){

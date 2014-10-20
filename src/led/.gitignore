@@ -5,3 +5,4 @@ llsp
 *.o
 history.txt
 *.log
+history.lsp
