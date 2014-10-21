@@ -1,19 +1,35 @@
 # regex.md 
-### Synopsis
+## Synopsis
 
 A small regular expression engine.
 
-### Files
+## Files
 
 * regex.c
 * regex.h 
 
-### Description
+## Rationale
+
+Most programming languages come with some library for handling regular
+expressions as they make processing text fairly easy. The lisp interpreter it
+was written for is meant to be oriented towards processing text, therefore some
+regular expression handling is necessary.
+
+## Description
 
 *regex.c* and *regex.h* implement a small regular expression engine.
 
 The original document that the regex engine was derived from is reproduced
-below.
+below, in the appendix.
+
+The engine only implements a small subset of what most regular expression
+libraries implement, which is in keeping with making it simple and
+understandable.
+
+## Specification
+## References
+
+## Appendix
 
 # A Regular Expression Matcher
 ## Code by Rob Pike

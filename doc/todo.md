@@ -82,15 +82,21 @@ The funarg problem is not solved correctly leading to incorrect code! Also
 somethings are not evaluated at the right time.
 
 3. Overflow is not dealt with.
-   It is possible to deal with it in the code, but a compiler flag option
-   would be the quickest, even it is not portable. GCC supports the *-trapv* 
-   flag which could be used but it only works for signed overflow.
+
+It is possible to deal with it in the code, but a compiler flag option
+would be the quickest, even it is not portable. GCC supports the *-trapv* 
+flag which could be used but it only works for signed overflow.
+
+4. There is no maximum recursion depth.
+
+As such a valid lisp program can trash the stack. This is not a good thing.
 
 ### A more general To-Do section.
 
 This is a more general to-do section, it might as well be treated as a "this
 might be nice to have section" and it might duplicate that priority section in
 its items.
+
 
 * Orient the lisp towards processing text à la mode de awk/sed/tr 
   - Perhaps these could be implemented as a macro package?
