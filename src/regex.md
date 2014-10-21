@@ -1,4 +1,14 @@
-# regex.c, regex.h documentation
+# regex.md 
+### Synopsis
+
+A small regular expression engine.
+
+### Files
+
+* regex.c
+* regex.h 
+
+### Description
 
 *regex.c* and *regex.h* implement a small regular expression engine.
 
