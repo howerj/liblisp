@@ -559,8 +559,8 @@ static void refresh_line(struct linenoise_state *l)
                 pos--;
         }
 
-        while (plen + len > l->cols) 
-                len--;
+        if(plen + len > l->cols)
+                len = l->cols - plen;
 
         ab_init(&ab);
         /* Cursor to left edge */
@@ -779,132 +779,131 @@ void linenoise_edit_delete_prev_word(struct linenoise_state *l)
  **/
 static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *buf){
         switch(c){
-                case 'x': /** @todo vi x needs fixing, should move cursor also**/
-                        if(linenoise_edit_delete_char(l) < 0)
-                                return -1;
+        case 'x': /** @todo vi x needs fixing, should move cursor also**/
+                (void)linenoise_edit_delete_char(l);
+                break;
+        case 'w': /* move forward a word */
+                linenoise_edit_next_word(l);
+                refresh_line(l);
+                break;
+        case 'b': /* move back a word */
+                linenoise_edit_prev_word(l);
+                refresh_line(l);
+                break;
+        case 'C': /*Change*/
+                vi_escape = 0;
+                /*fall through*/
+        case 'D': /*Delete from cursor to the end of the line*/
+                buf[l->pos] = '\0';
+                l->len = l->pos;
+                refresh_line(l);
+                break;
+        case '0': /*Go to the beginning of the line*/
+                linenoise_edit_move_home(l);
+                break;
+        case '$': /*move to the end of the line*/
+                linenoise_edit_move_end(l);
+                break;
+        case 'l': /*move right*/
+                linenoise_edit_move_right(l);
+                break;
+        case 'h': /*move left*/
+                linenoise_edit_move_left(l);
+                break;
+        case 'A':/*append at end of line*/
+                l->pos = l->len;
+                refresh_line(l);
+                /*fall through*/
+        case 'a':/*append after the cursor*/
+                if(l->pos != l->len){
+                        l->pos++;
+                        refresh_line(l);
+                }
+                /*fall through*/
+        case 'i':/*insert text before the cursor*/
+                vi_escape = 0;
+                break;
+        case 'I':/*Insert text before the first non-blank in the line*/
+                vi_escape = 0;
+                l->pos = 0;
+                refresh_line(l);
+                break;
+        case 'k': /*move up*/
+                linenoise_edit_history_next(l, LINENOISE_HISTORY_PREV);
+                break;
+        case 'j': /*move down*/
+                linenoise_edit_history_next(l, LINENOISE_HISTORY_NEXT);
+                break;
+        case 'f': /*fall through*/
+        case 'F': /*fall through*/
+        case 't': /*fall through*/
+        case 'T': /*fall through*/
+        {
+                ssize_t dir, lim, cpos;
+                int find = 0; 
+
+                if (read(l->ifd,&find,1) == -1) 
                         break;
-                case 'w': /* move forward a word */
-                        linenoise_edit_next_word(l);
+
+                if (islower(c)) {
+                    /* forwards */
+                    lim = l->len;
+                    dir = 1;
+                } else {
+                    lim = dir = -1;
+                }
+
+                for (cpos = l->pos + dir; (cpos < lim) && (cpos > 0); cpos += dir) {
+                    if (buf[cpos] == find) {
+                        l->pos = cpos;
+                        if (tolower(c) == 't')
+                            l->pos -= dir;
                         refresh_line(l);
                         break;
-                case 'b': /* move back a word */
-                        linenoise_edit_prev_word(l);
-                        refresh_line(l);
+                    }
+                }
+
+                if (cpos == lim) 
+                        linenoise_beep();
+        }
+        break;
+        case 'c':
+                vi_escape = 0;
+        case 'd': /*delete*/
+        {
+                char rc[1];
+                if (read(l->ifd, rc, 1) == -1)
                         break;
-                case 'C': /*Change*/
-                        vi_escape = 0;
-                        /*fall through*/
-                case 'D': /*Delete from cursor to the end of the line*/
+                switch(rc[0]){
+                case 'w': 
+                        linenoise_edit_delete_next_word(l);
+                        break;
+                case 'b':
+                        linenoise_edit_delete_prev_word(l);
+                        break;
+                case '0': /** @todo d0 **/
+                        break;
+                case '$':
                         buf[l->pos] = '\0';
                         l->len = l->pos;
                         refresh_line(l);
                         break;
-                case '0': /*Go to the beginning of the line*/
-                        linenoise_edit_move_home(l);
-                        break;
-                case '$': /*move to the end of the line*/
-                        linenoise_edit_move_end(l);
-                        break;
-                case 'l': /*move right*/
-                        linenoise_edit_move_right(l);
-                        break;
-                case 'h': /*move left*/
-                        linenoise_edit_move_left(l);
-                        break;
-                case 'A':/*append at end of line*/
-                        l->pos = l->len;
-                        refresh_line(l);
-                        /*fall through*/
-                case 'a':/*append after the cursor*/
-                        if(l->pos != l->len){
-                                l->pos++;
-                                refresh_line(l);
-                        }
-                        /*fall through*/
-                case 'i':/*insert text before the cursor*/
-                        vi_escape = 0;
-                        break;
-                case 'I':/*Insert text before the first non-blank in the line*/
-                        vi_escape = 0;
-                        l->pos = 0;
-                        refresh_line(l);
-                        break;
-                case 'k': /*move up*/
-                        linenoise_edit_history_next(l, LINENOISE_HISTORY_PREV);
-                        break;
-                case 'j': /*move down*/
-                        linenoise_edit_history_next(l, LINENOISE_HISTORY_NEXT);
-                        break;
-                case 'f': /*fall through*/
-                case 'F': /*fall through*/
-                case 't': /*fall through*/
-                case 'T': /*fall through*/
-                {
-                        ssize_t dir, lim, cpos;
-                        int find = 0; 
-
-                        if (read(l->ifd,&find,1) == -1) 
-                                break;
-
-                        if (islower(c)) {
-                            /* forwards */
-                            lim = l->len;
-                            dir = 1;
-                        } else {
-                            lim = dir = -1;
-                        }
-
-                        for (cpos = l->pos + dir; cpos != lim; cpos += dir) {
-                            if (buf[cpos] == find) {
-                                l->pos = cpos;
-                                if (tolower(c) == 't')
-                                    l->pos -= dir;
-                                refresh_line(l);
-                                break;
-                            }
-                        }
-
-                        if (cpos == lim) 
-                                linenoise_beep();
-                }
-                break;
                 case 'c':
-                        vi_escape = 0;
-                case 'd': /*delete*/
-                {
-                        char rc[1];
-                        if (read(l->ifd, rc, 1) == -1)
-                                break;
-                        switch(rc[0]){
-                        case 'w': 
-                                linenoise_edit_delete_next_word(l);
-                                break;
-                        case 'b':
-                                linenoise_edit_delete_prev_word(l);
-                                break;
-                        case '0': /** @todo d0 **/
-                                break;
-                        case '$':
-                                buf[l->pos] = '\0';
-                                l->len = l->pos;
-                                refresh_line(l);
-                                break;
-                        case 'c':
-                        case 'd':
-                                buf[0] = '\0';
-                                l->pos = l->len = 0;
-                                refresh_line(l);
-                                break;
-                        default:
-                                linenoise_beep();
-                                vi_escape = 1;
-                                break;
-                        }
-                }
-                break;
+                case 'd':
+                        buf[0] = '\0';
+                        l->pos = l->len = 0;
+                        refresh_line(l);
+                        break;
                 default:
                         linenoise_beep();
+                        vi_escape = 1;
                         break;
+                }
+        }
+        break;
+        default:
+                linenoise_beep();
+                break;
 
         }
         return 0;
