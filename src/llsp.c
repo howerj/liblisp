@@ -130,8 +130,8 @@ int count_parens(char *line){
 }
 
 int main(void){
-        char *line = NULL, *statement = NULL;;
-        int paren_count = 0, line_count = 0;;
+        char *line = NULL, *statement = NULL;
+        int paren_count = 0, line_count = 0;
         lisp l;
 
         linenoise_set_completion_callback(completion);

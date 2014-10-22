@@ -66,6 +66,9 @@ run: $(BUILD_DIR)/$(TARGET)
 
 linenoise: $(BUILD_DIR)/lisp.linenoise
 
+$(BUILD_DIR)/linenoise.o: $(SOURCE_DIR)/linenoise.c $(SOURCE_DIR)/linenoise.h makefile
+	$(CC) -Wall -Wextra -std=gnu99 -c $< -o $@
+
 $(BUILD_DIR)/lisp.linenoise: $(OBJFILES) $(BUILD_DIR)/linenoise.o $(BUILD_DIR)/llsp.o
 	$(CC) -std=c99 -o $@ $(OBJFILES) $(BUILD_DIR)/linenoise.o $(BUILD_DIR)/llsp.o
 
