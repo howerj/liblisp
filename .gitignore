@@ -33,3 +33,4 @@ CMakeFiles
 CMakeFiles/*
 history.lsp
 bin/history.lsp
+bin/lisp.linenoise
