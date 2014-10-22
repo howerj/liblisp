@@ -2,6 +2,7 @@ linenoise
 linenoise_example
 example
 llsp
+lisp.linenoise
 *.o
 history.txt
 *.log

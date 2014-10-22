@@ -7,7 +7,7 @@ INDENT=-linux -nut -l 150
 OBJFILES=llsp.o linenoise.o io.o mem.o sexpr.o lisp.o gc.o regex.o
 
 #TARGET=example
-TARGET=llsp
+TARGET=lisp.linenoise
 
 .PHONY: all indent run splint valgrind clean
 

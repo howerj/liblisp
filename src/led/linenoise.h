@@ -68,7 +68,6 @@ int linenoise_history_set_maxlen(int len);
 int linenoise_history_save(const char *filename);
 int linenoise_history_load(const char *filename);
 void linenoise_clearscreen(void);
-void linenoise_set_multiline(int ml);
 void linenoise_print_keycodes(void);
 
 void linenoise_vi_mode(int on);

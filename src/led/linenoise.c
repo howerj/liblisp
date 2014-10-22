@@ -139,7 +139,6 @@ static linenoise_completion_callback *completion_callback = NULL;
 
 static struct termios orig_termios;     /* In order to restore at exit. */
 static int rawmode = 0;         /* For atexit() function to check if restore is needed */
-static int mlmode = 0;          /* Multi line mode. Default is single line. */
 static int atexit_registered = 0;       /* Register atexit just 1 time. */
 static int history_max_len = LINENOISE_DEFAULT_HISTORY_MAX_LEN;
 static int history_len = 0;
@@ -218,44 +217,12 @@ static void disable_raw_mode(int fd);
 static void free_completions(linenoise_completions * lc);
 static void free_history(void);
 static void linenoise_at_exit(void);
-static void linenoise_at_exit(void);
 static void linenoise_beep(void);
 static void linenoise_edit_next_word(struct linenoise_state *l);
 static void linenoise_edit_prev_word(struct linenoise_state *l);
 static void refresh_line(struct linenoise_state *l);;
-static void refresh_multi_line(struct linenoise_state *l);
-static void refresh_single_line(struct linenoise_state *l);
-
-/* Debugging macro. */
-#ifdef DEBUG_MACRO_ON
-FILE *LNDEBUG_fp = NULL;
-#define LNDEBUG(...) \
-    do { \
-        if (LNDEBUG_fp == NULL) { \
-            LNDEBUG_fp = fopen("/tmp/LNDEBUG.txt","a"); \
-            fprintf(LNDEBUG_fp, \
-            "[%d %d %d] p: %d, rows: %d, rpos: %d, max: %d, oldmax: %d\n", \
-            (int)l->len,(int)l->pos,(int)l->oldpos,plen,rows,rpos, \
-            (int)l->maxrows,old_rows); \
-        } \
-        fprintf(LNDEBUG_fp, ", " __VA_ARGS__); \
-        fflush(LNDEBUG_fp); \
-    } while (0)
-#else
-#define LNDEBUG(fmt, ...)
-#endif
 
 /************************* Low level terminal handling ***********************/
-
-/**
- *  @brief          Set whether to use the multi line mode or not
- *  @param          flag boolean flag to set color_on_f
- *  @return         void
- **/
-void linenoise_set_multiline(int ml)
-{
-        mlmode = ml;
-}
 
 /**
  * @brief Return true if the terminal name is in the list of terminals 
@@ -570,13 +537,13 @@ static void ab_free(struct abuf *ab)
         ab->b = NULL;
 }
 
-/** 
+/**
  * @brief Single line low level line refresh.
  *
  * Rewrite the currently edited line accordingly to the buffer content,
  * cursor position, and number of columns of the terminal. 
  **/
-static void refresh_single_line(struct linenoise_state *l)
+static void refresh_line(struct linenoise_state *l)
 {
         char seq[SEQ_BUF_LEN];
         size_t plen = strlen(l->prompt);
@@ -591,9 +558,9 @@ static void refresh_single_line(struct linenoise_state *l)
                 len--;
                 pos--;
         }
-        while (plen + len > l->cols) {
+
+        while (plen + len > l->cols) 
                 len--;
-        }
 
         ab_init(&ab);
         /* Cursor to left edge */
@@ -613,98 +580,6 @@ static void refresh_single_line(struct linenoise_state *l)
         ab_free(&ab);
 }
 
-/* Multi line low level line refresh.
- *
- * Rewrite the currently edited line accordingly to the buffer content,
- * cursor position, and number of columns of the terminal. */
-static void refresh_multi_line(struct linenoise_state *l)
-{
-        char seq[SEQ_BUF_LEN];
-        int plen = strlen(l->prompt);
-        int rows = (plen + l->len + l->cols - 1) / l->cols;     /* rows used by current buf. */
-        int rpos = (plen + l->oldpos + l->cols) / l->cols;      /* cursor relative row. */
-        int rpos2;              /* rpos after refresh. */
-        int old_rows = l->maxrows;
-        int fd = l->ofd, j;
-        struct abuf ab;
-
-        /* Update maxrows if needed. */
-        if (rows > (int)l->maxrows)
-                l->maxrows = rows;
-
-        /* First step: clear all the lines used before. To do so start by
-         * going to the last row. */
-        ab_init(&ab);
-        if (old_rows - rpos > 0) {
-                LNDEBUG("go down %d", old_rows - rpos);
-                snprintf(seq, SEQ_BUF_LEN, "\x1b[%dB", old_rows - rpos);
-                ab_append(&ab, seq, strlen(seq));
-        }
-
-        /* Now for every row clear it, go up. */
-        for (j = 0; j < old_rows - 1; j++) {
-                LNDEBUG("clear+up");
-                snprintf(seq, SEQ_BUF_LEN, "\x1b[0G\x1b[0K\x1b[1A");
-                ab_append(&ab, seq, strlen(seq));
-        }
-
-        /* Clean the top line. */
-        LNDEBUG("clear");
-        snprintf(seq, SEQ_BUF_LEN, "\x1b[0G\x1b[0K");
-        ab_append(&ab, seq, strlen(seq));
-
-        /* Write the prompt and the current buffer content */
-        ab_append(&ab, l->prompt, strlen(l->prompt));
-        ab_append(&ab, l->buf, l->len);
-
-        /* If we are at the very end of the screen with our prompt, we need to
-         * emit a newline and move the prompt to the first column. */
-        if (l->pos && l->pos == l->len && (l->pos + plen) % l->cols == 0) {
-                LNDEBUG("<newline>");
-                ab_append(&ab, "\n", 1);
-                snprintf(seq, SEQ_BUF_LEN, "\x1b[0G");
-                ab_append(&ab, seq, strlen(seq));
-                rows++;
-                if (rows > (int)l->maxrows)
-                        l->maxrows = rows;
-        }
-
-        /* Move cursor to right position. */
-        rpos2 = (plen + l->pos + l->cols) / l->cols; /* current cursor relative row. */
-        LNDEBUG("rpos2 %d", rpos2);
-
-        /* Go up till we reach the expected position. */
-        if (rows - rpos2 > 0) {
-                LNDEBUG("go-up %d", rows - rpos2);
-                snprintf(seq, SEQ_BUF_LEN, "\x1b[%dA", rows - rpos2);
-                ab_append(&ab, seq, strlen(seq));
-        }
-
-        /* Set column. */
-        LNDEBUG("set col %d", 1 + ((plen + (int)l->pos) % (int)l->cols));
-        snprintf(seq, SEQ_BUF_LEN, "\x1b[%dG", 1 + ((plen + (int)l->pos) % (int)l->cols));
-        ab_append(&ab, seq, strlen(seq));
-
-        LNDEBUG("\n");
-        l->oldpos = l->pos;
-
-        if (write(fd, ab.b, ab.len) == -1) {
-        }                       /* Can't recover from write error. */
-        ab_free(&ab);
-}
-
-/**
- * @brief Calls the two low level functions refresh_single_line() or
- *        refresh_multi_line() according to the selected mode. 
- **/
-static void refresh_line(struct linenoise_state *l)
-{
-        if (mlmode)
-                refresh_multi_line(l);
-        else
-                refresh_single_line(l);
-}
-
 /**
  * @brief Insert the character 'c' at cursor current position.
  *
@@ -718,7 +593,7 @@ int linenoise_edit_insert(struct linenoise_state *l, char c)
                         l->pos++;
                         l->len++;
                         l->buf[l->len] = '\0';
-                        if ((!mlmode && l->plen + l->len < l->cols) /* || mlmode */ ) {
+                        if ((l->plen + l->len) < l->cols) {
                                 /* Avoid a full update of the line in the
                                  * trivial case. */
                                 if (write(l->ofd, &c, 1) == -1)

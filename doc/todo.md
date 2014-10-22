@@ -67,6 +67,14 @@ Support for Windows would be a big plus which would involve:
 The Linenoise library needs to be split up and reorganized. UTF-8 and Windows
 support would also be good.
 
+9. Calls to exit()
+
+Being that this is primarily meant to be a library it should handle
+Out-Of-Memory and other conditions more gracefully, instead of giving up and
+calling exit(), which is the wrong thing to do.
+
+The assert()s that call abort() are a different matter however.
+
 ### Bugs
 
 1. Garbage collection
