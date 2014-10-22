@@ -553,10 +553,11 @@ static void refresh_line(struct linenoise_state *l)
         size_t pos = l->pos;
         struct abuf ab;
 
-        while ((plen + pos) >= l->cols) {
-                buf++;
-                len--;
-                pos--;
+        if((plen + pos) >= l->cols){
+                size_t take = (plen + pos) - l->cols;
+                len -= take;
+                pos -= take;
+                buf += take;
         }
 
         if(plen + len > l->cols)
@@ -779,7 +780,9 @@ void linenoise_edit_delete_prev_word(struct linenoise_state *l)
  **/
 static int linenoise_edit_process_vi(struct linenoise_state *l, char c, char *buf){
         switch(c){
-        case 'x': /** @todo vi x needs fixing, should move cursor also**/
+        case 'x': 
+                if(l->pos && (l->pos == l->len))
+                        l->pos--;
                 (void)linenoise_edit_delete_char(l);
                 break;
         case 'w': /* move forward a word */
