@@ -178,14 +178,14 @@ static void gcinner(expr x)
                 return;
         case S_FILE:
                /** @todo implement file support **/
-                REPORT("UNIMPLEMENTED (TODO)");
+                IO_REPORT("UNIMPLEMENTED (TODO)");
                 break;
         case S_QUOTE:
-                REPORT("UNIMPLEMENTED (TODO)");
+                IO_REPORT("UNIMPLEMENTED (TODO)");
                 break;
         case S_LAST_TYPE:
         default:               /* should never get here */
-                REPORT("free: not a known 'free-able' type");
+                IO_REPORT("free: not a known 'free-able' type");
                 exit(EXIT_FAILURE);
                 return;
         }

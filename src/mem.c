@@ -45,7 +45,7 @@ void *mem_malloc(size_t size)
                 return NULL;
 
         if (MAX_ALLOCS < mem_alloc_counter++) {
-                REPORT("too many mallocs");
+                IO_REPORT("too many mallocs");
                 exit(EXIT_FAILURE);
         }
         if (true == mem_debug_f)
@@ -53,7 +53,7 @@ void *mem_malloc(size_t size)
 
         v = malloc(size);
         if (NULL == v) {
-                REPORT("malloc failed");
+                IO_REPORT("malloc failed");
                 exit(EXIT_FAILURE);
         }
         return v;
@@ -70,7 +70,7 @@ void *mem_calloc(size_t num, size_t size)
 {
         void *v;
         if (MAX_ALLOCS < mem_alloc_counter++) {
-                REPORT("too many mallocs");
+                IO_REPORT("too many mallocs");
                 exit(EXIT_FAILURE);
         }
 
@@ -79,7 +79,7 @@ void *mem_calloc(size_t num, size_t size)
 
         v = calloc(num, size);
         if (NULL == v) {
-                REPORT("calloc failed");
+                IO_REPORT("calloc failed");
                 exit(EXIT_FAILURE);
         }
         return v;
@@ -105,7 +105,7 @@ void *mem_realloc(void *ptr, size_t size)
                 mem_alloc_counter++;
 
         if (NULL == v) {
-                REPORT("realloc failed");
+                IO_REPORT("realloc failed");
                 exit(EXIT_FAILURE);
         }
         return v;
@@ -133,7 +133,7 @@ char *mem_strdup(const char *s)
 {
         char *ns;
         if (NULL == s) {
-                REPORT("mem_strdup passed NULL");
+                IO_REPORT("mem_strdup passed NULL");
                 abort();
         }
         ns = mem_malloc(sizeof(char) * (strlen(s) + 1));

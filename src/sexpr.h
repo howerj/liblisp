@@ -18,6 +18,8 @@ extern "C" {
 #include "type.h"
 
 /**** macros ******************************************************************/
+/*SEXPR_BUFLEN is the maximum string/symbol length a parser will accept*/
+#define SEXPR_BUFLEN  (256u)
 #define SEXPR_PERROR(EXP,MSG)  dosexpr_perror((EXP),(MSG),__FILE__,__LINE__)
 /******************************************************************************/
 
