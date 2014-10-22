@@ -1,6 +1,15 @@
+/**
+ *  @file llsp.c
+ *  @brief          Alternate driver for the lisp interpreter with linenoise, 
+ *                  contains main();
+ *  @author         Richard James Howe.
+ *  @copyright      Copyright 2013 Richard James Howe.
+ *  @license        LGPL v2.1 or later version
+ *  @email          howe.r.j.89@gmail.com
 
-#include <ctype.h> /*isspace*/
-#include <string.h> /*strlen*/
+ **/
+#include <ctype.h> 
+#include <string.h>
 #include "lisp.h"
 #include "linenoise.h"
 

@@ -31,3 +31,5 @@ doc/man/*
 CMakeCache.txt
 CMakeFiles
 CMakeFiles/*
+history.lsp
+bin/history.lsp

@@ -1,5 +1,5 @@
 /**
- *  @file           grep.c
+ *  @file           tb_regex.c
  *  @brief          Test bench for regex engine, implements grep.
  *  @author         Richard James Howe 
  *  @email          howe.r.j.89@gmail.com

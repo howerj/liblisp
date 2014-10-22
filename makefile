@@ -46,7 +46,6 @@ OBJFILES=$(BUILD_DIR)/io.o \
 	 $(BUILD_DIR)/sexpr.o \
 	 $(BUILD_DIR)/regex.o \
 	 $(BUILD_DIR)/lisp.o \
-	 $(BUILD_DIR)/main.o
 
 ## building ###################################################################
 # Only a C tool chain is necessary to built the project. Anything else is
@@ -57,11 +56,18 @@ all: banner $(BUILD_DIR)/$(TARGET)
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c $(SOURCE_DIR)/*.h makefile
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-$(BUILD_DIR)/$(TARGET): $(OBJFILES)
-	$(CC) $(CFLAGS) $(OBJFILES) -o $(BUILD_DIR)/$(TARGET)
+$(BUILD_DIR)/$(TARGET): $(OBJFILES) $(BUILD_DIR)/main.o
+	$(CC) $(CFLAGS) $(OBJFILES) $(BUILD_DIR)/main.o -o $@
 
 run: $(BUILD_DIR)/$(TARGET)
 	$(BUILD_DIR)/./$(TARGET) -c $(INPUTF)
+
+## linenoise experimental lisp ##
+
+linenoise: $(BUILD_DIR)/lisp.linenoise
+
+$(BUILD_DIR)/lisp.linenoise: $(OBJFILES) $(BUILD_DIR)/linenoise.o $(BUILD_DIR)/llsp.o
+	$(CC) -std=c99 -o $@ $(OBJFILES) $(BUILD_DIR)/linenoise.o $(BUILD_DIR)/llsp.o
 
 ## testing ####################################################################
 
