@@ -75,6 +75,19 @@ calling exit(), which is the wrong thing to do.
 
 The assert()s that call abort() are a different matter however.
 
+10. Primop API
+
+The internal API for primitive operations if fairly simple, each function
+accepts an expression argument lisp and a pointer to the lisp environment it is
+running in. This could be made simpler by making the later one of the possible
+forms it can take, such a nil, tee, an integer, a list, and now a pointer to the
+lisp environment it runs it. 
+
+A partial reason for this is that it would make the internal API simpler, you
+would not have to worry about it as a programmer unless you needed to, and
+secondly it would allow more powerful manipulations of the environment from
+within it.
+
 ### Bugs
 
 1. Garbage collection

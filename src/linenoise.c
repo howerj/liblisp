@@ -384,7 +384,7 @@ void linenoise_clearscreen(void)
  **/
 static void linenoise_beep(void)
 {
-        fprintf(stderr, "\x7");
+        fputs("\x7",stderr);
         fflush(stderr);
 }
 
@@ -1138,37 +1138,6 @@ static int linenoise_edit(int stdin_fd, int stdout_fd, char *buf, size_t buflen,
 }
 
 /**
- * @brief This special mode is used by linenoise in order to print scan codes
- *        on screen for debugging / development purposes. 
- **/
-void linenoise_print_keycodes(void)
-{
-        char quit[4];
-
-        printf("Linenoise key codes debugging mode.\n" "Press keys to see scan codes. Type 'quit' at any time to exit.\n");
-        if (enable_raw_mode(STDIN_FILENO) == -1)
-                return;
-        memset(quit, ' ', 4);
-        while (1) {
-                char c;
-                ssize_t nread;
-
-                nread = read(STDIN_FILENO, &c, 1);
-                if (nread <= 0)
-                        continue;
-                memmove(quit, quit + 1, sizeof(quit) - 1);      /* shift string to left. */
-                quit[sizeof(quit) - 1] = c;     /* Insert current char on the right. */
-                if (memcmp(quit, "quit", sizeof(quit)) == 0)
-                        break;
-
-                printf("'%c' %02x (%d) (type quit to exit)\n", isprint(c) ? c : '?', (unsigned int)c, (int)c);
-                printf("\x1b[0G");      /* Go left edge manually, we are in raw mode. */
-                fflush(stdout);
-        }
-        disable_raw_mode(STDIN_FILENO);
-}
-
-/**
  * @brief This function calls the line editing function linenoise_edit() using
  *        the STDIN file descriptor set in raw mode. 
  **/
@@ -1195,7 +1164,7 @@ static int linenoise_raw(char *buf, size_t buflen, const char *prompt)
                         return -1;
                 count = linenoise_edit(STDIN_FILENO, STDOUT_FILENO, buf, buflen, prompt);
                 disable_raw_mode(STDIN_FILENO);
-                printf("\n");
+                putchar('\n');
         }
         return count;
 }
@@ -1217,7 +1186,7 @@ char *linenoise(const char *prompt)
         if (is_unsupported_term()) {
                 size_t len;
 
-                printf("%s", prompt);
+                fputs(prompt,stdout);
                 fflush(stdout);
                 if (fgets(buf, LINENOISE_MAX_LINE, stdin) == NULL)
                         return NULL;
@@ -1358,7 +1327,7 @@ int linenoise_history_save(const char *filename)
         if (fp == NULL)
                 return -1;
         for (j = 0; j < history_len; j++)
-                fprintf(fp, "%s\n", history[j]);
+                fputs(history[j], fp);
         fclose(fp);
         return 0;
 }
