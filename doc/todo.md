@@ -112,6 +112,10 @@ flag which could be used but it only works for signed overflow.
 
 As such a valid lisp program can trash the stack. This is not a good thing.
 
+5. ((lambda (x) (+ x 2)) 4) does not work.
+
+You can't do this at the moment, you should be able to.
+
 ### A more general To-Do section.
 
 This is a more general to-do section, it might as well be treated as a "this

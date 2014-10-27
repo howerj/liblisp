@@ -22,7 +22,7 @@ REGEX_O=$(BIN_DIR)/regex.o
 
 OBJFILES=$(IO_O) $(MEM_O) $(GC_O) $(SEXPR_O) $(LISP_O) $(REGEX_O)
 
-TEST_BINARIES=tb_repl tb_repl.cpp.exe tb_sexpr
+TEST_BINARIES=tb_repl tb_repl.cpp.exe tb_sexpr tb_io
 
 ## building ###################################################################
 
@@ -35,6 +35,9 @@ tb_repl: $(OBJFILES) tb_repl.o dat/repl.in dat/repl.out
 	cat  dat/repl.in | ./tb_repl > repl.tmp
 	diff dat/repl.out repl.tmp
 	@echo "tb_repl: pass";
+
+tb_io: tb_io.o $(OBJFILES) 
+	$(CC) $(CFLAGS) $< $(OBJFILES)  -o $@
 
 tb_repl.cpp.exe: $(OBJFILES) tb_repl.cpp.o
 	$(CPPC) $(CPPFLAGS) $(OBJFILES) tb_repl.cpp.o -o tb_repl.cpp.exe

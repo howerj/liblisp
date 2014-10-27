@@ -159,13 +159,14 @@ int main(void){
 
                         /*more core for the extra line*/
                         allocate = strlen(line) + 1;
-                        allocate += (NULL==statement)? 0 : strlen(statement);
+                        allocate += (NULL==statement)? 0 : strlen(statement) + 1;
                         if(NULL == (statement = realloc(statement,allocate))){
                                 fprintf(stderr,"realloc failed\n");
                                 return EXIT_FAILURE;
                         }
 
                         strcat(statement,line);
+                        strcat(statement,"\n");
 
                         /*need a new line because we do not have a complete
                          *statement*/

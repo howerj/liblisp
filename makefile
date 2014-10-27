@@ -19,7 +19,7 @@
 # Should work with CMake.
 
 MAKEFLAGS+= --no-builtin-rules
-.PHONY: all doxygen indent report clean valgrind help banner
+.PHONY: all doxygen indent report clean valgrind help banner linenoise
 
 ## Variables ##################################################################
 
@@ -96,7 +96,7 @@ report:
 banner:
 	@/bin/echo -e "$(GREEN)LSP, a small lisp interpreter, GNU Makefile.$(DEFAULT)"
 	@/bin/echo -e "Author:    $(BLUE)Richard James Howe$(DEFAULT)."
-	@/bin/echo -e "Copyright: $(BLUE)Copyright 2013 Richard James Howe.$(DEFAULT)."
+	@/bin/echo -e "Copyright: $(BLUE)Copyright 2013 Richard James Howe$(DEFAULT)."
 	@/bin/echo -e "License:   $(BLUE)LGPL$(DEFAULT)."
 	@/bin/echo -e "Email:     $(BLUE)howe.r.j.89@gmail.com$(DEFAULT)."
 
@@ -120,8 +120,9 @@ help:
 ## cleanup ####################################################################
 
 clean:
-	-rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/$(TARGET) doc/htm/ doc/man doc/latex $(SOURCE_DIR)/*~
+	-rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/$(TARGET) 
+	-rm -rf doc/htm/ doc/man doc/latex $(SOURCE_DIR)/*~
 	-rm -rf $(REPORT_DIR)/*.i $(REPORT_DIR)/*.s $(REPORT_DIR)/*.log
-	-rm -rf *.log
+	-rm -rf *.log $(BUILD_DIR)/lisp.linenoise
 
 ## EOF ########################################################################

@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -ansi -pedantic -g
+CFLAGS=-Wall -Wextra -ansi -pedantic -g -O3
 
 all: tb_bignum
 

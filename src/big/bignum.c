@@ -261,7 +261,7 @@ bignum *bignum_add(bignum *a, bignum *b){
         uint16_t carry = 0;
         size_t i = 0, allocate;
         bignum *result;
-        int isnegative;
+        int isnegative = 0;
 
         assert((NULL != a) && (NULL != b));
 
