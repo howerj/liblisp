@@ -84,6 +84,52 @@ void gc_sweep(void)
  **/
 static void gcinner(expr x)
 {
+<<<<<<< HEAD
+=======
+        if (NULL == x)
+                return;
+
+        switch (x->type) {
+        case S_TEE:
+        case S_NIL:
+        case S_INTEGER:
+        case S_PRIMITIVE:
+                mem_free(x);
+                break;
+        case S_PROC:
+                mem_free(x->data.list);
+                mem_free(x);
+                break;
+        case S_LIST:
+                mem_free(x->data.list);
+                mem_free(x);
+                return;
+        case S_SYMBOL:
+                mem_free(x->data.symbol);
+                mem_free(x);
+                return;
+        case S_STRING:
+                mem_free(x->data.string);
+                mem_free(x);
+                return;
+        case S_ERROR:
+                /** @todo implement error support **/
+                mem_free(x);
+                return;
+        case S_FILE:
+               /** @todo implement file support **/
+                IO_REPORT("UNIMPLEMENTED (TODO)");
+                break;
+        case S_QUOTE:
+                IO_REPORT("UNIMPLEMENTED (TODO)");
+                break;
+        case S_LAST_TYPE:
+        default:               /* should never get here */
+                IO_REPORT("free: not a known 'free-able' type");
+                exit(EXIT_FAILURE);
+                return;
+        }
+>>>>>>> master
 }
 
 /*****************************************************************************/
