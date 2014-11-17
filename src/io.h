@@ -22,8 +22,7 @@ struct io;
 typedef struct io io;
 
 /**** macros ******************************************************************/
-#define BUFLEN        (256u)
-#define REPORT(X)     io_doreport((X),__FILE__,__LINE__)
+#define IO_REPORT(X)     io_doreport((X),__FILE__,__LINE__)
 /******************************************************************************/
 
 /**** function prototypes *****************************************************/

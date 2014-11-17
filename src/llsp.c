@@ -1,13 +1,22 @@
+/**
+ *  @file llsp.c
+ *  @brief          Alternate driver for the lisp interpreter with linenoise, 
+ *                  contains main();
+ *  @author         Richard James Howe.
+ *  @copyright      Copyright 2013 Richard James Howe.
+ *  @license        LGPL v2.1 or later version
+ *  @email          howe.r.j.89@gmail.com
 
-#include <ctype.h> /*isspace*/
-#include <string.h> /*strlen*/
+ **/
+#include <ctype.h> 
+#include <string.h>
 #include "lisp.h"
 #include "linenoise.h"
 
 #define MAX_AUTO_COMPLETE_STR_LEN (256)
 #define GENERIC_BUF_LEN (256)
 
-static char *hist_file = "history.txt";
+static char *hist_file = "history.lsp";
 
 /**
  * @brief This is an experimental completion callback, it
@@ -121,8 +130,8 @@ int count_parens(char *line){
 }
 
 int main(void){
-        char *line = NULL, *statement = NULL;;
-        int paren_count = 0, line_count = 0;;
+        char *line = NULL, *statement = NULL;
+        int paren_count = 0, line_count = 0;
         lisp l;
 
         linenoise_set_completion_callback(completion);
@@ -130,6 +139,8 @@ int main(void){
         linenoise_vi_mode(1);
 
         l = lisp_init();
+
+        io_set_color_on(true);
 
         statement = calloc(GENERIC_BUF_LEN, sizeof(*statement));
         while ((line = linenoise(line_count?"      ":"llsp> ")) != NULL){
@@ -148,13 +159,14 @@ int main(void){
 
                         /*more core for the extra line*/
                         allocate = strlen(line) + 1;
-                        allocate += (NULL==statement)? 0 : strlen(statement);
+                        allocate += (NULL==statement)? 0 : strlen(statement) + 1;
                         if(NULL == (statement = realloc(statement,allocate))){
                                 fprintf(stderr,"realloc failed\n");
                                 return EXIT_FAILURE;
                         }
 
                         strcat(statement,line);
+                        strcat(statement,"\n");
 
                         /*need a new line because we do not have a complete
                          *statement*/

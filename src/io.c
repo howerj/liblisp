@@ -28,7 +28,7 @@
 #include <stdarg.h>
 
 #define NULLCHK(X)  if(NULL == (X))\
-                      { REPORT("null dereference"); exit(EXIT_FAILURE);}
+                      { IO_REPORT("null dereference"); exit(EXIT_FAILURE);}
 
 /**I/O abstraction structure**/
 struct io {

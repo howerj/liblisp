@@ -1,10 +1,10 @@
 CC=gcc
 CCFLAGS=-Wall -Wextra 
 
-all: hash
+all: tb_hash
 
-hash: test.c hash.o hash.h
-	$(CC) $(CCFLAGS) hash.o test.c -o hash
+tb_hash: tb_hash.c hash.o hash.h
+	$(CC) $(CCFLAGS) hash.o tb_hash.c -o tb_hash
 
 hash.o: hash.c hash.h
 	$(CC) $(CCFLAGS) hash.c -c -o hash.o
@@ -14,4 +14,4 @@ indent:
 	rm *~
 
 clean:
-	rm -f hash *.o *~
+	rm -f tb_hash *.o *~

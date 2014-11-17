@@ -10,21 +10,24 @@
  *
  *  Knuth The Art of Computer Programming. Vol. II, Chap. 4.3-4.4, 2ed.
  * 
- *  @todo Use 256 as internal base
+ *  @todo Use 256 as internal base, or greater power of two.
  *  @todo Rewrite API to be consistent with my Lisp implementation.
+ *        This means it should use my I/O library when it can.
+ *  @todo Rethink API, it needs more adding to it, the current
+ *        set of functions is inadequate 
  *  @todo Handle bases other than 10 in conversions and internally
  *  @todo This library is horrendously inefficient, but simple, it
  *        needs reworking so it is still readable but it is faster.
  *
  **/
 
-#include <stdio.h>  /* printf - debugging only */
-#include <stdlib.h> /* abs, abort */
-#include <stdint.h> /* uintX_t */
-#include <string.h> /* strlen */
-#include <ctype.h>  /* isdigit */
-#include <assert.h> /* assert */
 #include "bignum.h"
+#include <stdio.h>  
+#include <stdlib.h> 
+#include <stdint.h> 
+#include <string.h> 
+#include <ctype.h>  
+#include <assert.h> 
 
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
@@ -258,7 +261,7 @@ bignum *bignum_add(bignum *a, bignum *b){
         uint16_t carry = 0;
         size_t i = 0, allocate;
         bignum *result;
-        int isnegative;
+        int isnegative = 0;
 
         assert((NULL != a) && (NULL != b));
 

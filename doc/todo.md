@@ -62,6 +62,32 @@ Support for Windows would be a big plus which would involve:
 - Porting the Linenoise library to Windows, there are forks of the
   library that do this.
 
+8. Linenoise
+
+The Linenoise library needs to be split up and reorganized. UTF-8 and Windows
+support would also be good.
+
+9. Calls to exit()
+
+Being that this is primarily meant to be a library it should handle
+Out-Of-Memory and other conditions more gracefully, instead of giving up and
+calling exit(), which is the wrong thing to do.
+
+The assert()s that call abort() are a different matter however.
+
+10. Primop API
+
+The internal API for primitive operations if fairly simple, each function
+accepts an expression argument lisp and a pointer to the lisp environment it is
+running in. This could be made simpler by making the later one of the possible
+forms it can take, such a nil, tee, an integer, a list, and now a pointer to the
+lisp environment it runs it. 
+
+A partial reason for this is that it would make the internal API simpler, you
+would not have to worry about it as a programmer unless you needed to, and
+secondly it would allow more powerful manipulations of the environment from
+within it.
+
 ### Bugs
 
 1. Garbage collection
@@ -77,15 +103,25 @@ The funarg problem is not solved correctly leading to incorrect code! Also
 somethings are not evaluated at the right time.
 
 3. Overflow is not dealt with.
-   It is possible to deal with it in the code, but a compiler flag option
-   would be the quickest, even it is not portable. GCC supports the *-trapv* 
-   flag which could be used but it only works for signed overflow.
+
+It is possible to deal with it in the code, but a compiler flag option
+would be the quickest, even it is not portable. GCC supports the *-trapv* 
+flag which could be used but it only works for signed overflow.
+
+4. There is no maximum recursion depth.
+
+As such a valid lisp program can trash the stack. This is not a good thing.
+
+5. ((lambda (x) (+ x 2)) 4) does not work.
+
+You can't do this at the moment, you should be able to.
 
 ### A more general To-Do section.
 
 This is a more general to-do section, it might as well be treated as a "this
 might be nice to have section" and it might duplicate that priority section in
 its items.
+
 
 * Orient the lisp towards processing text à la mode de awk/sed/tr 
   - Perhaps these could be implemented as a macro package?

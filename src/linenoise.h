@@ -59,6 +59,7 @@ extern "C" {
 typedef struct linenoise_completions linenoise_completions;
 typedef void (linenoise_completion_callback) (const char *, linenoise_completions *);
 
+void linenoise_vi_mode(int on);
 void linenoise_set_completion_callback(linenoise_completion_callback *);
 void linenoise_add_completion(linenoise_completions *, const char *);
 
@@ -68,10 +69,6 @@ int linenoise_history_set_maxlen(int len);
 int linenoise_history_save(const char *filename);
 int linenoise_history_load(const char *filename);
 void linenoise_clearscreen(void);
-void linenoise_set_multiline(int ml);
-void linenoise_print_keycodes(void);
-
-void linenoise_vi_mode(int on);
 
 #ifdef __cplusplus
 }

@@ -177,6 +177,117 @@ void lisp_print(expr x, io * o)
  **/
 expr lisp_eval(expr x, expr env, lisp l)
 {
+<<<<<<< HEAD
+=======
+        size_t i;
+
+        if (NULL == x) {
+                SEXPR_PERROR(NULL, "passed nul");
+                abort();
+        }
+
+        switch (x->type) {
+        case S_LIST:
+                if (TSTLEN(x, 0))       /* () */
+                        return nil;
+                if (S_SYMBOL == CAR(x)->type) {
+                        const expr foundx = lisp_eval(CAR(x), env, l);
+                        if (foundx == s_if) {   /* (if test conseq alt) */
+                                if (!TSTLEN(x, 4)) {
+                                        SEXPR_PERROR(x, "if: argc != 4");
+                                        return nil;
+                                }
+                                if (nil == lisp_eval(CADR(x), env, l)) {
+                                        return lisp_eval(CADDDR(x), env, l);
+                                } else {
+                                        return lisp_eval(CADDR(x), env, l);
+                                }
+                        } else if (foundx == s_begin) { /* (begin exp ... ) */
+                                if (TSTLEN(x, 1)) {
+                                        return nil;
+                                }
+                                for (i = 1; i < x->len - 1; i++) {
+                                        (void)lisp_eval(NTH(x, i), env, l);
+                                }
+                                return lisp_eval(NTH(x, i), env, l);
+                        } else if (foundx == s_quote) { /* (quote exp) */
+                                if (!TSTLEN(x, 2)) {
+                                        SEXPR_PERROR(x, "quote: argc != 1");
+                                        return nil;
+                                }
+                                return CADR(x);
+                        } else if (foundx == s_set) {
+                                expr nx;
+                                if (!TSTLEN(x, 3)) {
+                                        SEXPR_PERROR(x, "set: argc != 2");
+                                        return nil;
+                                }
+                                nx = find(env, CADR(x), l);
+                                if (nil == nx) {
+                                        SEXPR_PERROR(CADR(x), "unbound symbol");
+                                        return nil;
+                                }
+                                nx->data.list[1] = lisp_eval(CADDR(x), env, l);
+                                return CADR(nx);
+                        } else if (foundx == s_define) {
+                                {
+                                        expr nx;
+                                        /* @todo if already defined, or is an internal symbol, IO_REPORT error */
+                                        if (!TSTLEN(x, 3)) {
+                                                SEXPR_PERROR(x, "define: argc != 2");
+                                                return nil;
+                                        }
+                                        nx = extend(CADR(x), lisp_eval(CADDR(x), env, l), l->global);
+                                        return nx;
+                                }
+                        } else if (foundx == s_lambda) {
+                                if (!TSTLEN(x, 3)) {
+                                        SEXPR_PERROR(x, "lambda: argc != 2");
+                                        return nil;
+                                }
+                                if(S_LIST != CADR(x)->type){
+                                        SEXPR_PERROR(x, "lambda: arg_2 != list");
+                                        return nil;
+                                }
+                                return mkproc(CADR(x), CADDR(x), env);
+                        } else {
+                                return apply(foundx, evlis(x, env, l), l);
+                        }
+                } else {
+                        SEXPR_PERROR(CAR(x), "cannot apply");
+                        return nil;
+                }
+                break;
+        case S_SYMBOL:         /*if symbol found, return it, else error; unbound symbol */
+                {
+                        expr nx = find(env, x, l);
+                        if (nil == nx) {
+                                SEXPR_PERROR(x, "unbound symbol");
+                                return nil;
+                        }
+                        return CADR(nx);
+                }
+        case S_FILE:           /* to implement */
+                SEXPR_PERROR(NULL, "file type unimplemented");
+                return nil;
+        case S_NIL:
+        case S_TEE:
+        case S_STRING:
+        case S_PROC:
+        case S_INTEGER:
+        case S_PRIMITIVE:
+                return x;
+        case S_ERROR: /*fall through*/
+        case S_QUOTE: /*fall through*/
+        case S_LAST_TYPE: /*fall through*/
+        default:
+                SEXPR_PERROR(NULL, "fatal: unknown or unimplemented type");
+                abort();
+        }
+
+        SEXPR_PERROR(NULL, "should never get here");
+        return x;
+>>>>>>> master
 }
 
 /**

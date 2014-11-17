@@ -15,7 +15,6 @@ extern "C" {
 #endif
 
 #include "io.h"
-#include "type.h"
 
 #define MAX_ALLOCS ((signed int)(1024*1024))
 

@@ -89,7 +89,7 @@ expr sexpr_parse(io * i)
                 }
                 switch (c) {
                 case ')':
-                        REPORT("unmatched ')'");
+                        IO_REPORT("unmatched ')'");
                         continue;
                 case '#':
                         if (true == parse_comment(i))
@@ -119,6 +119,100 @@ expr sexpr_parse(io * i)
  **/
 void sexpr_print(expr x, io * o, unsigned int depth)
 {
+<<<<<<< HEAD
+=======
+        size_t i;
+        io *e = io_get_error_stream();
+
+        if (NULL == x)
+                return;
+
+        switch (x->type) {
+        case S_NIL:
+                io_printer(o, "%r()");
+                break;
+        case S_TEE:
+                io_printer(o, "%gt");
+                break;
+        case S_LIST:
+                io_putc('(', o);
+                for (i = 0; i < x->len; i++) {
+                        if (0 != i) {
+                                if (2 == x->len)
+                                        io_putc(' ', o);
+                                else
+                                        io_printer(o, "%* ", depth ? depth + 1 : 1);
+                        }
+                        sexpr_print(x->data.list[i], o, depth + 1);
+                        if ((i < x->len - 1) && (2 != x->len))
+                                io_putc('\n', o);
+                }
+                io_putc(')', o);
+                break;
+        case S_SYMBOL: /*symbols are yellow, strings are red, escaped chars magenta */
+        case S_STRING:
+                {
+                        bool isstring = S_STRING == x->type ? true : false;     /*isnotsymbol */
+                        io_printer(o, isstring ? "%r" : "%y");
+                        if (isstring) {
+                                io_putc('"', o);
+                        }
+                        for (i = 0; i < x->len; i++) {
+                                switch ((x->data.string)[i]) {
+                                case '"':
+                                case '\\':
+                                        io_printer(o, "%m\\");
+                                        break;
+                                case ')':
+                                case '(':
+                                case '#':
+                                        if (x->type == S_SYMBOL) 
+                                                io_printer(o, "%m\\");
+                                }
+                                io_putc((x->data.string)[i], o);
+                                io_printer(o, isstring ? "%r" : "%y");
+                        }
+                        if (isstring)
+                                io_putc('"', o);
+                }
+                break;
+        case S_INTEGER:
+                io_printer(o,"%m%d",x->data.integer);
+                break;
+        case S_PRIMITIVE:
+                io_printer(o,"%b<PRIMOP>");
+                break;
+        case S_PROC:
+                if (true == print_proc_f) {
+                        io_printer(o, "\n%* (%ylambda%t\n%* ",depth, depth + 1);
+                        sexpr_print(x->data.list[0], o, depth + 1);
+                        io_printer(o, "\n%* ", depth + 1);
+                        sexpr_print(x->data.list[1], o, depth + 1);
+                        io_putc(')', o);
+                } else {
+                        io_printer(o,"%b<PROC>%t");
+                }
+                break;
+        case S_ERROR: /*unimplemented, fallthrough...*/
+        case S_QUOTE: /*unimplemented, fallthrough...*/
+        case S_LAST_TYPE: /*unimplemented, fallthrough...*/
+        case S_FILE:
+               /** @todo implement file support, then printing**/
+                io_printer(e,"%r");
+                IO_REPORT("Unimplemented!");
+                break;
+        default:               /* should never get here */
+                io_printer(e,"%r");
+                IO_REPORT("print: not a known printable type");
+                io_printer(e,"%t");
+                exit(EXIT_FAILURE);
+                break;
+        }
+        io_printer(o,"%t");
+        if (0 == depth)
+                io_putc('\n', o);
+        return;
+>>>>>>> master
 }
 
 /**
@@ -205,7 +299,75 @@ static bool isnumber(const char *buf, size_t string_l)
  *  @return         NULL or parsed symbol / integer
  **/
 static expr parse_symbol(io * i)
+<<<<<<< HEAD
 {
+=======
+{                               /* and integers! */
+        expr ex = NULL;
+        unsigned int count = 0;
+        int c;
+        char buf[SEXPR_BUFLEN];
+        ex = gc_calloc();
+
+        memset(buf, '\0', SEXPR_BUFLEN);
+
+        while (EOF != (c = io_getc(i))) {
+                if (SEXPR_BUFLEN <= count) {
+                        IO_REPORT("symbol too long");
+                        IO_REPORT(buf);
+                        goto fail;
+                }
+
+                if (isspace(c))
+                        goto success;
+
+                if ((c == '(') || (c == ')')) {
+                        io_ungetc(c, i);
+                        goto success;
+                }
+
+                if (c == '#') {
+                        parse_comment(i);
+                        goto success;
+                }
+
+                switch (c) {
+                case '\\':
+                        switch (c = io_getc(i)) {
+                        case '\\':
+                        case '"':
+                        case '(':
+                        case ')':
+                        case '#':
+                                buf[count++] = c;
+                                continue;
+                        default:
+                                IO_REPORT(buf);
+                                goto fail;
+                        }
+                case '"':
+                        IO_REPORT(buf);
+                        goto success;
+                default:
+                        buf[count++] = c;
+                }
+        }
+ fail:
+        return NULL;
+
+ success:
+        ex->len = strlen(buf);
+
+        if ((true == parse_numbers_f) && isnumber(buf, ex->len)) {
+                ex->type = S_INTEGER;
+                ex->data.integer = (int32_t)strtol(buf, NULL, 0);
+        } else {
+                ex->type = S_SYMBOL;
+                ex->data.symbol = mem_malloc(ex->len + 1);
+                strcpy(ex->data.symbol, buf);
+        }
+        return ex;
+>>>>>>> master
 }
 
 /**
@@ -215,7 +377,51 @@ static expr parse_symbol(io * i)
  **/
 static expr parse_string(io * i)
 {
+<<<<<<< HEAD
 
+=======
+        expr ex = NULL;
+        unsigned int count = 0;
+        int c;
+        char buf[SEXPR_BUFLEN];
+
+        ex = gc_calloc();
+        memset(buf, '\0', SEXPR_BUFLEN);
+
+        while (EOF != (c = io_getc(i))) {
+                if (SEXPR_BUFLEN <= count) {
+                        IO_REPORT("string too long");
+                        IO_REPORT(buf); /* check if correct */
+                        goto fail;
+                }
+                switch (c) {
+                case '\\':
+                        switch (c = io_getc(i)) {
+                        case '\\':
+                        case '"':
+                                buf[count++] = c;
+                                continue;
+                        default:
+                                IO_REPORT("invalid escape char");
+                                IO_REPORT(buf);
+                                goto fail;
+                        }
+                case '"':
+                        goto success;
+                default:
+                        buf[count++] = c;
+                }
+        }
+ fail:
+        return NULL;
+
+ success:
+        ex->type = S_STRING;
+        ex->len = strlen(buf);
+        ex->data.string = mem_malloc(ex->len + 1);
+        strcpy(ex->data.string, buf);
+        return ex;
+>>>>>>> master
 }
 
 /**
@@ -226,6 +432,52 @@ static expr parse_string(io * i)
  **/
 static expr parse_list(io * i)
 {
+<<<<<<< HEAD
+=======
+        expr ex = NULL, chld;
+        int c;
+
+        ex = gc_calloc();
+        ex->len = 0;
+
+        while (EOF != (c = io_getc(i))) {
+                if (isspace(c))
+                        continue;
+
+                switch (c) {
+                case '#':
+                        if (true == parse_comment(i))
+                                goto fail;
+                        break;
+                case '"':
+                        chld = parse_string(i);
+                        if (!chld)
+                                goto fail;
+                        append(ex, chld);
+                        continue;
+                case '(':
+                        chld = parse_list(i);
+                        if (!chld)
+                                goto fail;
+                        append(ex, chld);
+                        continue;
+                case ')':
+                        goto success;
+
+                default:
+                        io_ungetc(c, i);
+                        chld = parse_symbol(i);
+                        if (!chld)
+                                goto fail;
+                        append(ex, chld);
+                        continue;
+                }
+        }
+
+ fail:
+        IO_REPORT("list err");
+        return NULL;
+>>>>>>> master
 
 }
 

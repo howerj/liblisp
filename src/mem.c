@@ -10,14 +10,15 @@
 
 #include "mem.h"
 #include <string.h>
+#include <stdlib.h>
 
 /* 
- * alloccounter is used to implement a crude way of making sure the program
+ * mem_alloc_counter is used to implement a crude way of making sure the program
  * fails instead of trying allocating everything when we do something wrong,
  * instead of just exiting, perhaps we should restart gracefully?
  */
-static int32_t alloccounter = 0;
-static bool debug_f = false;
+static int32_t mem_alloc_counter = 0;
+static bool mem_debug_f = false;
 
 /*** interface functions *****************************************************/
 
@@ -28,7 +29,7 @@ static bool debug_f = false;
  **/
 void mem_set_debug(bool flag)
 {
-        debug_f = flag;
+        mem_debug_f = flag;
 }
 
 /**
@@ -43,16 +44,16 @@ void *mem_malloc(size_t size)
         if (0 == size)
                 return NULL;
 
-        if (MAX_ALLOCS < alloccounter++) {
-                REPORT("too many mallocs");
+        if (MAX_ALLOCS < mem_alloc_counter++) {
+                IO_REPORT("too many mallocs");
                 exit(EXIT_FAILURE);
         }
-        if (true == debug_f)
-                io_printer(io_get_error_stream(), "(mem_malloc %d)\n", alloccounter);
+        if (true == mem_debug_f)
+                io_printer(io_get_error_stream(), "(mem_malloc %d)\n", mem_alloc_counter);
 
         v = malloc(size);
         if (NULL == v) {
-                REPORT("malloc failed");
+                IO_REPORT("malloc failed");
                 exit(EXIT_FAILURE);
         }
         return v;
@@ -68,17 +69,17 @@ void *mem_malloc(size_t size)
 void *mem_calloc(size_t num, size_t size)
 {
         void *v;
-        if (MAX_ALLOCS < alloccounter++) {
-                REPORT("too many mallocs");
+        if (MAX_ALLOCS < mem_alloc_counter++) {
+                IO_REPORT("too many mallocs");
                 exit(EXIT_FAILURE);
         }
 
-        if (true == debug_f)
-                io_printer(io_get_error_stream(), "(mem_calloc %d)\n", alloccounter);
+        if (true == mem_debug_f)
+                io_printer(io_get_error_stream(), "(mem_calloc %d)\n", mem_alloc_counter);
 
         v = calloc(num, size);
         if (NULL == v) {
-                REPORT("calloc failed");
+                IO_REPORT("calloc failed");
                 exit(EXIT_FAILURE);
         }
         return v;
@@ -96,15 +97,15 @@ void *mem_realloc(void *ptr, size_t size)
 {
         void *v;
         if (0 == size) {        /*acts as free */
-                alloccounter--;
+                mem_alloc_counter--;
                 free(ptr);
         }
         v = realloc(ptr, size);
-        if (NULL == ptr) {      /*acts as malloc */
-                alloccounter++;
-        }
+        if (NULL == ptr)        /*acts as malloc */
+                mem_alloc_counter++;
+
         if (NULL == v) {
-                REPORT("realloc failed");
+                IO_REPORT("realloc failed");
                 exit(EXIT_FAILURE);
         }
         return v;
@@ -117,11 +118,8 @@ void *mem_realloc(void *ptr, size_t size)
  **/
 void mem_free(void *ptr)
 {
-        if (NULL != ptr) {
-                alloccounter--;
-                if (true == debug_f)
-                        io_printer(io_get_error_stream(), "(mem_free %d)\n", alloccounter);
-        }
+        if ((NULL != ptr) && (true == mem_debug_f))
+                io_printer(io_get_error_stream(), "(mem_free %d)\n", mem_alloc_counter--);
         free(ptr);
         ptr = NULL;
 }
@@ -135,7 +133,7 @@ char *mem_strdup(const char *s)
 {
         char *ns;
         if (NULL == s) {
-                REPORT("mem_strdup passed NULL");
+                IO_REPORT("mem_strdup passed NULL");
                 abort();
         }
         ns = mem_malloc(sizeof(char) * (strlen(s) + 1));

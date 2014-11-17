@@ -91,7 +91,7 @@ static regex_e matchhere(char *regexp, char *text, unsigned int depth)
         if (regexp[1] == '*')
                 return matchstar(false, regexp[0], regexp + 2, text, depth + 1);
         if (regexp[0] == '$' && regexp[1] == '\0')
-                return *text == '\0';
+                return *text == '\0' ? REGEX_MATCH_E: REGEX_NOMATCH_E;
         if (*text != '\0' && (regexp[0] == '.' || regexp[0] == *text)) {
                 regexp++;
                 text++;
@@ -113,7 +113,7 @@ static regex_e matchstar(bool literal, int c, char *regexp, char *text, unsigned
 {
         if (REGEX_MAX_DEPTH < depth)
                 return REGEX_FAIL_E;
-        do {                    /* a * matches zero or more instances */
+        do { /* a* matches zero or more instances */
                 if (matchhere(regexp, text, depth + 1))
                         return REGEX_MATCH_E;
         } while (*text != '\0' && (*text++ == c || (c == '.' && !literal)));
