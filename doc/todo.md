@@ -125,7 +125,18 @@ its items.
 
 * Orient the lisp towards processing text à la mode de awk/sed/tr 
   - Perhaps these could be implemented as a macro package?
+
+* Make a library out of the tr/sed/ed routines for inclusion elsewhere.
  
+* Bignum should round towards zero and not negative infinity.
+
+* Add support for 'errno' in a portable way.
+
+* Rethink parser, perhaps special routines for escaping and un-escaping
+  strings, for dealing with buffers that could have NULL in them.
+
+* Time/Date functions
+
 * The parser should:
   - Handle arbitrary precision numbers
   - Handle arbitrary length strings
