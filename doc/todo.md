@@ -126,9 +126,15 @@ its items.
 * Orient the lisp towards processing text à la mode de awk/sed/tr 
   - Perhaps these could be implemented as a macro package?
 
-* Make a library out of the tr/sed/ed routines for inclusion elsewhere.
+* Make a library out of the grep/tr/sed/ed routines for inclusion elsewhere.
  
 * Bignum should round towards zero and not negative infinity.
+
+* Look into pattern matching on full S-expressions and replacing, set operations
+  on S-expressions as well.
+
+* Add a maximum recursion depth in Eval which there is not at the moment.
+  This makes a stack overflow possible currently.
 
 * Add support for 'errno' in a portable way.
 
