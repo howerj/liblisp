@@ -1,0 +1,3 @@
+[submodule "doc/external/Arcadia"]
+	path = doc/external/Arcadia
+	url = https://github.com/kimtg/Arcadia
