@@ -18,6 +18,9 @@
  *  @todo Handle bases other than 10 in conversions and internally
  *  @todo This library is horrendously inefficient, but simple, it
  *        needs reworking so it is still readable but it is faster.
+ *  @todo The rounding of numbers should either be adjustable or
+ *        round to zero and not negative infinity - perhaps. It should
+ *        at least be documented.
  *
  **/
 
