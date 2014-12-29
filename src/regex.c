@@ -77,7 +77,7 @@ static regex_e matchhere(char *regexp, char *text, unsigned int depth)
                         return REGEX_FAIL_E;
                 }
         }
-        if (regexp[1] == '?') {
+        if (regexp[1] == '?') { /* does not cope with c?c like egrep does */
                 text = text + (regexp[0] == *text ? 1 : 0);
                 regexp = regexp + 2;
                 goto BEGIN;

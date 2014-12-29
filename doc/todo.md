@@ -136,7 +136,18 @@ its items.
 * Add a maximum recursion depth in Eval which there is not at the moment.
   This makes a stack overflow possible currently.
 
-* Add support for 'errno' in a portable way.
+* Add support for 'errno' in a portable way. I need a way of reporting system
+  errors so I can capture them and use them in the rest of the system.
+
+* Include code from other projects for error handling and the like such as:
+  - fail\_if();
+        Fail if a test fails, printing the errno if set.
+  - malloc\_or\_fail()
+        Fail if an allocation fails, printing the errno.
+  - calloc\_or\_fail()
+        Fail if a allocation fails, printing the errno.
+  - fopen\_or\_fail()
+        Fail if an open fails, print the errno.
 
 * Rethink parser, perhaps special routines for escaping and un-escaping
   strings, for dealing with buffers that could have NULL in them.
