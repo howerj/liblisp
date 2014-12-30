@@ -13,6 +13,8 @@
  *  @todo When the bignum and hash libraries are finished, add support for
  *        them, perhaps, or some generic way of adding new types to the
  *        formatted printing function (will require research).
+ *  @todo Create an equivalent to the printer function, a scanner,
+ *        that handles color as well.
  *
  *  This library allows redirection of input and output to
  *  various different sources. It also would allow me to add in
