@@ -7,16 +7,17 @@
  *  @email          howe.r.j.89@gmail.com
  *
  *  @todo Error checking on return values.
+ *  @todo Set color on a per stream basis
+ *  @todo Add allocation
+ *  @todo Rethink API to act more like fopen
+ *  @todo When the bignum and hash libraries are finished, add support for
+ *        them, perhaps, or some generic way of adding new types to the
+ *        formatted printing function (will require research).
  *
  *  This library allows redirection of input and output to
  *  various different sources. It also would allow me to add in
  *  a new arbitrary source later on, for example reading and
  *  writing to and from sockets.
- *
- *  It is possible to implement something similar using 'setbuf' and
- *  family from <stdio.h> and perhaps more cleanly and efficiently as
- *  well. However it would not *quite* replicate what I want and such
- *  functionality would have to be wrapped up anyway.
  *
  **/
 
