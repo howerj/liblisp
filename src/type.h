@@ -28,29 +28,29 @@ typedef lispenv_t *lisp;
 typedef enum {
         S_NIL,                  /* 0:  () */
         S_TEE,                  /* 1:  t */
-        S_LIST,                 /* 2:  list */
+        S_CONS,                 /* 2:  cons list */
         S_STRING,               /* 3:  string */
         S_SYMBOL,               /* 4:  symbol */
         S_INTEGER,              /* 5:  integer */
         S_PRIMITIVE,            /* 6:  a primitive function */
-        S_FILE,                 /* 7:  for file I/O */
+        S_FILE,                 /* 7:  file I/O object */
         S_PROC,                 /* 8:  lambda procedure */
         S_QUOTE,                /* 9:  quoted expression */
         S_ERROR,                /* 10: error return and handling */
-        S_LAST_TYPE             /* 11: not a type, just the last enum*/
+        S_LAST_TYPE             /* 11: not a type, just the last enum */
 } sexpr_e;
 
 /**sexpr module**/
 struct sexpr_t { /** base type for our expressions */
-        size_t len;
         union {
                 int32_t integer;
                 char *string;
                 char *symbol;
-                struct sexpr_t **list;
+                struct sexpr_t *cons[2];
                 io *io;
-                 expr(*func) (expr args, lisp l);       /*primitive operations */
+                expr(*func) (expr args, lisp l);       /* primitive operations */
         } data;
+        size_t len; /*for string/symbol types*/
         sexpr_e type;
         unsigned int gc_mark:1;  /*the mark of the garbage collector */
 };

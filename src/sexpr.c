@@ -44,6 +44,7 @@ static bool print_proc_f = false;       /*print actual code after #proc */
 static bool parse_numbers_f = true;     /*parse numbers as numbers not symbols */
 
 static bool isnumber(const char *buf, size_t string_l);
+static expr parse_quote(io * i); 
 static expr parse_symbol(io * i);  /* and integers (optionally) */
 static expr parse_string(io * i);
 static expr parse_list(io * i);
@@ -95,13 +96,11 @@ expr sexpr_parse(io * i)
                         if (true == parse_comment(i))
                                 return NULL;
                         continue;
-                case '(':
-                        return parse_list(i);
-                case '"':
-                        return parse_string(i);
-                /*case '/': return parse_regex(i,e);*/
-                /*case '<': return parse_file(i,e);*/
-                /*case '\'': return parse_quote(i,e);*/
+                case '(':  return parse_list(i);
+                case '"':  return parse_string(i);
+                case '\'': return parse_quote(i);
+                /*case '/': return parse_regex(i);*/
+                /*case '<': return parse_file(i);*/
                 default:
                         io_ungetc(c, i);
                         return parse_symbol(i);
@@ -117,8 +116,59 @@ expr sexpr_parse(io * i)
  *  @param          depth current depth of expression
  *  @return         void
  **/
-void sexpr_print(expr x, io * o, unsigned int depth)
+void sexpr_print(expr x, io * o, unsigned depth)
 {
+        size_t i;
+        if(NULL == x)
+                return;
+        assert(o);
+        switch(x->type){
+        case S_NIL:             io_printer(o,"%r()"); break;
+        case S_TEE:             io_printer(o,"%gt");  break;
+        case S_CONS: /*not implemented yet*/ break;
+        case S_STRING: /*fall through*/
+        case S_SYMBOL: 
+        {
+                bool isstring = S_STRING == x->type ? true : false;     /*isnotsymbol */
+                io_printer(o, isstring ? "%r" : "%y");
+                if (isstring)
+                        io_putc('"', o);
+                for (i = 0; i < x->len; i++) {
+                        switch ((x->data.string)[i]) {
+                        case '"':
+                        case '\\':
+                                io_printer(o, "%m\\");
+                                break;
+                        case ')':
+                        case '(':
+                        case '#':
+                                if (x->type == S_SYMBOL) 
+                                        io_printer(o, "%m\\");
+                        }
+                        io_putc((x->data.string)[i], o);
+                        io_printer(o, isstring ? "%r" : "%y");
+                }
+                if (isstring)
+                        io_putc('"', o);
+        }
+        break;
+        case S_INTEGER:         io_printer(o,"%m%d",x->data.integer); break;
+        case S_PRIMITIVE:       io_printer(o,"%b<prim>"); break;
+        case S_FILE: /*not implemented yet*/ break;
+        case S_PROC:            io_printer(o,"%b<proc>"); break;
+        case S_QUOTE: /*not implemented yet*/ break;
+        case S_ERROR: /*not implemented yet*/ break;
+        case S_LAST_TYPE: /*fall through, not a type*/
+        default: 
+               io_printer(e,"%r");
+               IO_REPORT("print: not a known printable type");
+               io_printer(e,"%t");
+               exit(EXIT_FAILURE);
+               break;
+        }
+        io_printer(o,"%t");
+        if (0 == depth)
+                io_putc('\n', o);
 }
 
 /**
@@ -196,6 +246,15 @@ static bool isnumber(const char *buf, size_t string_l)
 
         }
         return strspn(buf, decimal_s) == string_l;
+}
+
+/**
+ *  @brief          parse a quoted expressions
+ *  @param          i     input stream
+ *  @return         NULL or parsed quote
+ **/
+expr parse_quote(io * i){
+        return NULL;
 }
 
 /**
