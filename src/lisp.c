@@ -37,8 +37,15 @@ typedef struct{
         expr(*func) (expr args, lisp l);
 } primop_initializers;
 
-size_t list_len(expr x);
-expr mknil(void);
+static size_t list_len(expr x);
+static expr mknil(void);
+static expr find(expr env, expr x, lisp l);
+static expr extend(expr sym, expr val, expr env);
+static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), lisp l);
+static expr mkobj(sexpr_e type);
+static expr mksym(char *s);
+static expr mkprimop(expr(*func) (expr args, lisp l));
+
 
 /** 
  * @brief List of primitive operations, used for initialization of structures 
@@ -96,6 +103,7 @@ lisp lisp_init(void)
 {
         io *e;
         lisp l;
+        size_t i;
         l = mem_calloc(1, sizeof(*l));
         l->global = mem_calloc(1, sizeof(sexpr_t));
         l->env = mem_calloc(1, sizeof(sexpr_t));
@@ -117,7 +125,15 @@ lisp lisp_init(void)
         e = io_get_error_stream();
         io_file_out(e, stderr); 
 
+        /* normal forms, kind of  */
+        for(i = 0; (NULL != primops[i].s) && (NULL != primops[i].func) ; i++)
+                if(NULL == extendprimop(primops[i].s, primops[i].func, l))
+                        goto fail;
+
         return l;
+fail:
+        IO_REPORT("initilization failed");
+        return NULL; 
 }
 
 /** 
@@ -269,16 +285,60 @@ void lisp_clean(lisp l)
 
 /*** internal helper functions ***********************************************/
 
-size_t list_len(expr x){
+static size_t list_len(expr x){
         size_t i = 0;
         while((x=CDR(x))) i++;
         return i;
 }
 
-expr mknil(void){
-        expr x = gc_calloc();
-        x->type = S_NIL;
-        return x;
+/** find a symbol in an environment **/
+static expr find(expr env, expr x, lisp l){
+        return mknil();
+}
+
+/** extend the lisp environment **/
+static expr extend(expr sym, expr val, expr env){
+        return mknil();
+}
+
+/** extend the lisp environment with a primitive operator **/
+static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), lisp l)
+{
+        return extend(mksym(mem_strdup(s)), mkprimop(func), l->global);
+}
+
+/** make new object **/
+static expr mkobj(sexpr_e type)
+{
+        expr nx;
+        nx = gc_calloc();
+        nx->len = 0;
+        nx->type = type;
+        return nx;
+}
+
+/** make a nil **/
+static expr mknil(void){
+        return mkobj(S_NIL);
+}
+
+/** make a new symbol **/
+static expr mksym(char *s)
+{
+        expr nx;
+        nx = mkobj(S_SYMBOL);
+        nx->len = strlen(s);
+        nx->data.symbol = s;
+        return nx;
+}
+
+/** make a new primitive **/
+static expr mkprimop(expr(*func) (expr args, lisp l))
+{
+        expr nx;
+        nx = mkobj(S_PRIMITIVE);
+        nx->data.func = func;
+        return nx;
 }
 
 /*** primitive operations ****************************************************/
