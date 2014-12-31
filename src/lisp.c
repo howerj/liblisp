@@ -16,6 +16,9 @@
  *  args:   a list of *lisp_evaluated* arguments
  *  nx:     a newly created expression
  *
+ *  At a minimum I should define; quote, atom, eq, car, cdr, cons, cond, define (or
+ *  label) and lambda.
+ *
  **/
 
 #include "lisp.h"

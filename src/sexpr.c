@@ -125,9 +125,17 @@ void sexpr_print(expr x, io * o, unsigned depth)
         switch(x->type){
         case S_NIL:             io_printer(o,"%r()"); break;
         case S_TEE:             io_printer(o,"%gt");  break;
-        case S_CONS: /*not implemented yet*/ break;
+        case S_CONS:
+                io_putc('(', o);
+                do{
+                        if(x->data.cons[0])
+                                sexpr_print(x->data.cons[0],o,depth+1);
+                        io_putc(' ',o);
+                } while(x && (x=x->data.cons[1]));
+                io_putc(')', o);
+                break;
         case S_STRING: /*fall through*/
-        case S_SYMBOL: 
+        case S_SYMBOL: /*symbols are yellow, strings are red, escaped chars magenta */
         {
                 bool isstring = S_STRING == x->type ? true : false;     /*isnotsymbol */
                 io_printer(o, isstring ? "%r" : "%y");
@@ -208,13 +216,26 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
 }
 
 /**
- *  @brief          Takes an already existing list and appends an atom to it
- *  @param          list a list to append an atom to
+ *  @brief          Takes an already existing cons cell and appends an atom to it
+ *                      - New cons (nil, NULL)
+ *                      - Old cons (ele, new cons)
+ *                      - Return New cons
+ *  @param          cons a list to append an atom to
  *  @param          ele  the atom to append to the list
- *  @return         void
+ *  @return         New cons cell
  **/
-void append(expr list, expr ele)
+expr append(expr cons, expr ele)
 {
+        expr nc = NULL;
+        assert(cons && ele);
+        nc = gc_calloc();
+        cons->data.cons[0] = ele;
+        cons->data.cons[1] = nc;
+        nc->type = S_CONS;
+        nc->data.cons[0] = gc_calloc(); /*I should have a global NIL*/
+        nc->data.cons[0]->type = S_NIL;
+        nc->data.cons[1] = NULL;
+        return nc;
 }
 
 /*****************************************************************************/
@@ -255,7 +276,8 @@ static bool isnumber(const char *buf, size_t string_l)
 expr parse_quote(io * i){
         expr ex = NULL;
         assert(i);
-FAIL:
+success:
+fail:
         return NULL;
 }
 
@@ -384,18 +406,19 @@ static expr parse_string(io * i)
 
 /**
  *  @brief          Parses a list, consisting of strings, symbols,
- *                  integers, quotes, or other lists.
+ *                  integers, quotes, or other lists into a list of
+ *                  cons cells
  *  @param          i input stream
  *  @return         NULL or parsed list
  **/
 static expr parse_list(io * i)
 {
-        expr ex = NULL, chld;
+        expr ex = NULL, head = NULL, chld;
         int c;
         assert(i);
 
-        ex = gc_calloc();
-        ex->len = 0;
+        head = ex = gc_calloc();
+        head->type = S_CONS;
 
         while (EOF != (c = io_getc(i))) {
                 if (isspace(c))
@@ -408,30 +431,26 @@ static expr parse_list(io * i)
                         break;
                 case '"':
                         chld = parse_string(i);
-                        if (!chld)
+                        if (!chld || !(ex = append(ex,chld)))
                                 goto fail;
-                        append(ex, chld);
                         continue;
                 case '\'':
                         chld = parse_quote(i);
-                        if (!chld)
+                        if (!chld || !(ex = append(ex,chld)))
                                 goto fail;
-                        append(ex, chld);
                         continue;
                 case '(':
                         chld = parse_list(i);
-                        if (!chld)
+                        if (!chld || !(ex = append(ex,chld)))
                                 goto fail;
-                        append(ex, chld);
                         continue;
                 case ')':
                         goto success;
                 default:
                         io_ungetc(c, i);
                         chld = parse_symbol(i);
-                        if (!chld)
+                        if (!chld || !(ex = append(ex,chld)))
                                 goto fail;
-                        append(ex, chld);
                         continue;
                 }
         }
@@ -439,8 +458,7 @@ static expr parse_list(io * i)
         IO_REPORT("list err");
         return NULL;
  success:
-        ex->type = S_CONS;
-        return ex;
+        return head;
 }
 
 /**
