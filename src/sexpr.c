@@ -20,8 +20,8 @@
  *  in their own right and might change so they can be accessed externally
  *  later.
  *
- *  Possible extras are:
- *  @todo Add in syntax to get a line from a file like in perl
+ *  @todo The parser should be able to handle arbitrary length strings, symbols
+ *        and numbers
  *
  **/
 
@@ -335,6 +335,46 @@ static expr parse_symbol(io * i)
  **/
 static expr parse_string(io * i)
 {
+        expr ex = NULL;
+        unsigned int count = 0;
+        int c;
+        char buf[SEXPR_BUFLEN];
+
+        ex = gc_calloc();
+        memset(buf, '\0', SEXPR_BUFLEN);
+
+        while (EOF != (c = io_getc(i))) {
+                if (SEXPR_BUFLEN <= count) {
+                        IO_REPORT("string too long");
+                        IO_REPORT(buf); /* check if correct */
+                        goto fail;
+                }
+                switch (c) {
+                case '\\':
+                        switch (c = io_getc(i)) {
+                        case '\\':
+                        case '"':
+                                buf[count++] = c;
+                                continue;
+                        default:
+                                IO_REPORT("invalid escape char");
+                                IO_REPORT(buf);
+                                goto fail;
+                        }
+                case '"':
+                        goto success;
+                default:
+                        buf[count++] = c;
+                }
+        }
+ fail:
+        return NULL;
+ success:
+        ex->type = S_STRING;
+        ex->len = strlen(buf);
+        ex->data.string = mem_malloc(ex->len + 1);
+        strcpy(ex->data.string, buf);
+        return ex;
 }
 
 /**
@@ -356,10 +396,8 @@ static expr parse_list(io * i)
 static bool parse_comment(io * i)
 {
         int c;
-        while (EOF != (c = io_getc(i))) {
-                if ('\n' == c) {
+        while (EOF != (c = io_getc(i))) 
+                if ('\n' == c) 
                         return false;
-                }
-        }
         return true;
 }
