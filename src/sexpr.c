@@ -123,8 +123,13 @@ void sexpr_print(expr x, io * o, unsigned depth)
         if(NULL == x)
                 return;
         switch(x->type){
-        case S_NIL:             io_printer(o,"%r()"); break;
-        case S_TEE:             io_printer(o,"%gt");  break;
+        case S_NIL:       io_printer(o,"%r()"); break;
+        case S_TEE:       io_printer(o,"%gt");  break;
+        case S_INTEGER:   io_printer(o,"%m%d", x->data.integer); break;
+        case S_PRIMITIVE: io_printer(o,"%b<prim>"); break;
+        case S_PROC:      io_printer(o,"%b<proc>"); break;
+        case S_FILE:      /*not implemented yet*/ break;
+        case S_ERROR:     /*not implemented yet*/ break;
         case S_CONS:
                 io_putc('(', o);
                 do{
@@ -144,15 +149,14 @@ void sexpr_print(expr x, io * o, unsigned depth)
                         io_putc('"', o);
                 for (i = 0; i < x->len; i++) {
                         switch ((x->data.string)[i]) {
-                        case '"':
-                        case '\\':
+                        case '"': case '\\':
                                 io_printer(o, "%m\\");
                                 break;
-                        case ')':
-                        case '(':
-                        case '#':
+                        case ')': case '(': case '#':
                                 if (x->type == S_SYMBOL) 
                                         io_printer(o, "%m\\");
+                        default:
+                                break;
                         }
                         io_putc((x->data.string)[i], o);
                         io_printer(o, isstring ? "%r" : "%y");
@@ -161,18 +165,10 @@ void sexpr_print(expr x, io * o, unsigned depth)
                         io_putc('"', o);
         }
         break;
-        case S_INTEGER:
-                io_printer(o,"%m%d",x->data.integer); break;
-        case S_PRIMITIVE:
-                io_printer(o,"%b<prim>"); break;
-        case S_FILE: /*not implemented yet*/ break;
-        case S_PROC:
-                io_printer(o,"%b<proc>"); break;
         case S_QUOTE: 
                 io_putc('\'',o);
                 sexpr_print(x->data.quoted,o,depth);
                 break;
-        case S_ERROR: /*not implemented yet*/ break;
         case S_LAST_TYPE: /*fall through, not a type*/
         default:
                 e = io_get_error_stream();
@@ -239,8 +235,7 @@ expr append(expr cons, expr ele)
         cons->data.cons[0] = ele;
         cons->data.cons[1] = nc;
         nc->type = S_CONS;
-        nc->data.cons[0] = NULL; 
-        nc->data.cons[1] = NULL;
+        nc->data.cons[0] = nc->data.cons[1] = NULL;
         return nc;
 }
 
@@ -489,3 +484,4 @@ static bool parse_comment(io * i)
                         return false;
         return true;
 }
+
