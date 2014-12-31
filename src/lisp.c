@@ -154,6 +154,8 @@ void lisp_end(lisp l)
         io_file_close(l->i);
         free(l->o);
         free(l->i);
+        free(l->global);
+        free(l->env);
         mem_free(l);
         return;
 }

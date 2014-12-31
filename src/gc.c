@@ -14,14 +14,9 @@
 #include "gc.h"
 #include "mem.h"
 
-struct heap {
-        expr x;
-        struct heap *next;
-};
-
-static struct heap heaplist = { NULL, NULL };
+struct heap { expr x; struct heap *next; };  /* struct of all allocated objs */
+static struct heap heaplist = {NULL,NULL};   /* initial element of alloc list */
 static struct heap *heaphead = &heaplist;
-
 static void gcinner(expr x);
 
 /*** interface functions *****************************************************/
@@ -98,7 +93,9 @@ void gc_sweep(void)
         struct heap *ll, *pll;
         if (NULL == heaplist.next)      /*pass first element, do not collect element */
                 return;
-        for (ll = heaplist.next, pll = &heaplist; ll != heaphead;) {
+        for (ll = heaplist.next, pll = &heaplist; ll && (ll != heaphead);) {
+                if(NULL == ll->x)
+                        return;
                 if (true == ll->x->gc_mark) {
                         ll->x->gc_mark = false;
                         pll = ll;
@@ -126,7 +123,8 @@ void gc_sweep(void)
 /*****************************************************************************/
 
 /**
- *  @brief          Frees expressions
+ *  @brief          Frees expressions and deals with each type of atoms
+ *                  destruction.
  *  @param          x     expression to print
  *  @return         void
  **/
@@ -134,16 +132,15 @@ static void gcinner(expr x)
 {
         if(NULL == x)
                 return;
-
         switch(x->type){
-        case S_NIL: case S_TEE: case S_INTEGER: case S_PRIMITIVE: mem_free(x);break;
+        case S_NIL: case S_TEE: case S_INTEGER: 
+        case S_PRIMITIVE: case S_QUOTE: case S_CONS:
+                mem_free(x); break;
         case S_STRING: mem_free(x->data.string); mem_free(x); break;
         case S_SYMBOL: mem_free(x->data.symbol); mem_free(x); break;
         case S_FILE: break;
         case S_PROC: break;
-        case S_QUOTE: break;
         case S_ERROR: break;
-        case S_CONS: mem_free(x); break;
         case S_LAST_TYPE: /*fall through, not a type*/
         default:
                 IO_REPORT("Not a valid type");
