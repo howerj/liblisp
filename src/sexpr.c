@@ -460,6 +460,8 @@ static expr parse_list(io * i)
         IO_REPORT("list err");
         return NULL;
  success:
+        if(ex == head)
+                head->type = S_NIL;
         return head;
 }
 
