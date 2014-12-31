@@ -45,7 +45,7 @@ static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), lisp l)
 static expr mkobj(sexpr_e type);
 static expr mksym(char *s);
 static expr mkprimop(expr(*func) (expr args, lisp l));
-
+static expr mkproc(expr args, expr code, expr env);
 
 /** 
  * @brief List of primitive operations, used for initialization of structures 
@@ -244,6 +244,15 @@ expr lisp_eval(expr x, expr env, lisp l)
                                         return lisp_eval(CAR(CDR(CDR(CDR(x)))),env,l);
                                 }
                         } else if (CMPSYM(x,"lambda")){
+                                if(list_len(x) != 3){
+                                        SEXPR_PERROR(x,"lambda: argc != 3");
+                                        return mknil();
+                                }
+                                if(S_CONS != CAR(CDR(x))->type){
+                                        SEXPR_PERROR(x,"lambda; expected argument list");
+                                        return mknil();
+                                }
+                                return mkproc(CAR(CDR(x)),CDR(CDR(x)), env);
                         } else if (CMPSYM(x,"quote")){
                                 if(list_len(x) != 2){
                                         SEXPR_PERROR(x,"quote: argc != 2");
@@ -340,6 +349,12 @@ static expr mkprimop(expr(*func) (expr args, lisp l))
         nx->data.func = func;
         return nx;
 }
+
+/** make a new procedure **/
+static expr mkproc(expr args, expr code, expr env){
+        return mknil();
+}
+
 
 /*** primitive operations ****************************************************/
 
