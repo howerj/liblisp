@@ -264,11 +264,15 @@ expr lisp_eval(expr x, expr env, lisp l)
 
                         }
                 }
-                SEXPR_PERROR(x,"Cannot apply");
+                SEXPR_PERROR(x,"cannot apply");
                 return mknil();
         case S_SYMBOL:
-                return x;
-                break;
+                nx = find(env, x, l);
+                if(S_NIL == nx->type){
+                        SEXPR_PERROR(x, "unbound symbol");
+                        return nx;
+                }
+                return CDR(nx);
         case S_FILE:      IO_REPORT("Not implemented");
         case S_ERROR:     IO_REPORT("Not implemented");
         case S_LAST_TYPE: /*fall through, not a type*/
@@ -307,7 +311,12 @@ static expr find(expr env, expr x, lisp l){
 
 /** extend the lisp environment **/
 static expr extend(expr sym, expr val, expr env){
-        return mknil();
+        expr nx = mkobj(S_CONS);
+        nx->data.cons[0] = sym;
+        nx->data.cons[1] = mkobj(S_CONS);
+        nx->data.cons[1]->data.cons[0] = val;
+        nx->data.cons[1]->data.cons[1] = env;
+        return nx;
 }
 
 /** extend the lisp environment with a primitive operator **/
