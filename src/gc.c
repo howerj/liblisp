@@ -136,17 +136,14 @@ static void gcinner(expr x)
                 return;
 
         switch(x->type){
-        case S_NIL: break;
-        case S_TEE: break;
-        case S_STRING: break;
-        case S_SYMBOL: break;
-        case S_INTEGER: break;
-        case S_PRIMITIVE: break;
+        case S_NIL: case S_TEE: case S_INTEGER: case S_PRIMITIVE: mem_free(x);break;
+        case S_STRING: mem_free(x->data.string); mem_free(x); break;
+        case S_SYMBOL: mem_free(x->data.symbol); mem_free(x); break;
         case S_FILE: break;
         case S_PROC: break;
         case S_QUOTE: break;
         case S_ERROR: break;
-        case S_CONS: break;
+        case S_CONS: mem_free(x); break;
         case S_LAST_TYPE: /*fall through, not a type*/
         default:
                 IO_REPORT("Not a valid type");

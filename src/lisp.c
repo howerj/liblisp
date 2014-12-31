@@ -29,6 +29,9 @@
 #include "sexpr.h"
 #include "regex.h"
 
+/**Avoid warning in primops**/
+#define UNUSED(X)  (void)(X)
+
 typedef struct{
         const char *s;
         expr(*func) (expr args, lisp l);
@@ -85,22 +88,23 @@ lisp lisp_init(void)
         io *e;
         lisp l;
         l = mem_calloc(1, sizeof(*l));
+        l->global = mem_calloc(1, sizeof(sexpr_t));
+        l->env = mem_calloc(1, sizeof(sexpr_t));
 
         l->i = mem_calloc(1, io_sizeof_io());
         l->o = mem_calloc(1, io_sizeof_io());
+
+        l->global->type = S_CONS;
+        l->env->type = S_CONS;
 
         /* set up file I/O and pointers */
         io_file_in(l->i, stdin);
         io_file_out(l->o, stdout);
 
-
         e = io_get_error_stream();
         io_file_out(e, stderr); 
 
         return l;
-fail:
-        IO_REPORT("Allocation failed during init");
-        return NULL;
 }
 
 /** 
@@ -111,6 +115,8 @@ fail:
  *  @return     int     Error code, 0 = Ok, >0 is a failure.
  */
 int lisp_register_function(char *name, expr(*func) (expr args, lisp l), lisp l){
+        UNUSED(name); UNUSED(func); UNUSED(l);
+        return 1;
 }
 
 /** 
@@ -143,7 +149,6 @@ void lisp_end(lisp l)
 {
 
         fflush(NULL);
- 
         gc_sweep(); /*do not call mark before **this** sweep */ 
         io_file_close(l->o);
         io_file_close(l->i);
@@ -177,6 +182,7 @@ void lisp_print(expr x, io * o) { sexpr_print(x, o, 0); }
  **/
 expr lisp_eval(expr x, expr env, lisp l)
 {
+        UNUSED(env); UNUSED(l);
         return x;
 }
 
@@ -200,11 +206,9 @@ void lisp_clean(lisp l)
     return nil;\
   }
 
-/**Avoid warning in primops**/
-#define UNUSED(X)  (void)(X)
-
 /**add a list of numbers**/
-static expr primop_add(expr args, lisp l){}
+static expr primop_add(expr args, lisp l)
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**subtract a list of numbers from the 1 st arg**/
 static expr primop_sub(expr args, lisp l)

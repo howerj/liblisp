@@ -26,6 +26,7 @@ typedef struct lispenv_t lispenv_t;
 typedef lispenv_t *lisp;
 
 typedef enum {
+        /*S_INVALID, // zero should be an invalid type for calloc */
         S_NIL,                  /* 0:  () */
         S_TEE,                  /* 1:  t */
         S_CONS,                 /* 2:  cons list */
