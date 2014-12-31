@@ -20,7 +20,6 @@ struct heap {
 };
 
 static struct heap heaplist = { NULL, NULL };
-
 static struct heap *heaphead = &heaplist;
 
 static void gcinner(expr x);
@@ -65,6 +64,28 @@ expr gc_calloc(void)
  **/
 int gc_mark(expr root)
 {
+        if(NULL == root)
+                return false;
+        root->gc_mark = true;
+
+        switch(root->type){
+        case S_NIL:     case S_TEE:     case S_STRING:  
+        case S_SYMBOL:  case S_INTEGER: case S_PRIMITIVE: 
+        case S_FILE:    case S_ERROR: 
+                break;
+        case S_PROC: /*needs special handling*/ break;
+        case S_QUOTE: gc_mark(root->data.quoted); break;
+        case S_CONS: 
+                      do{
+                              gc_mark(root->data.cons[0]);
+                      } while((root = root->data.cons[1]));
+                      break;
+        case S_LAST_TYPE: /*fall through, not a type*/
+        default:
+                IO_REPORT("Not a valid type");
+                exit(EXIT_FAILURE);
+        }
+        return false;
 }
 
 /**
@@ -73,6 +94,33 @@ int gc_mark(expr root)
  **/
 void gc_sweep(void)
 {
+        /**@todo this really needs cleaning up**/
+        struct heap *ll, *pll;
+        if (NULL == heaplist.next)      /*pass first element, do not collect element */
+                return;
+        for (ll = heaplist.next, pll = &heaplist; ll != heaphead;) {
+                if (true == ll->x->gc_mark) {
+                        ll->x->gc_mark = false;
+                        pll = ll;
+                        ll = ll->next;
+                } else {
+                        gcinner(ll->x);
+                        ll->x = NULL;
+                        pll->next = ll->next;
+                        mem_free(ll);
+                        ll = pll->next;
+                }
+        }
+        if ((heaphead != &heaplist) && (NULL != heaphead->x)) {
+                if (true == heaphead->x->gc_mark) {
+                        ll->x->gc_mark = false;
+                } else {
+                        gcinner(heaphead->x);
+                        heaphead->x = NULL;
+                        mem_free(heaphead);
+                        heaphead = pll;
+                }
+        }
 }
 
 /*****************************************************************************/
@@ -84,6 +132,26 @@ void gc_sweep(void)
  **/
 static void gcinner(expr x)
 {
+        if(NULL == x)
+                return;
+
+        switch(x->type){
+        case S_NIL: break;
+        case S_TEE: break;
+        case S_STRING: break;
+        case S_SYMBOL: break;
+        case S_INTEGER: break;
+        case S_PRIMITIVE: break;
+        case S_FILE: break;
+        case S_PROC: break;
+        case S_QUOTE: break;
+        case S_ERROR: break;
+        case S_CONS: break;
+        case S_LAST_TYPE: /*fall through, not a type*/
+        default:
+                IO_REPORT("Not a valid type");
+                exit(EXIT_FAILURE);
+        }
 }
 
 /*****************************************************************************/

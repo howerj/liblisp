@@ -98,6 +98,9 @@ lisp lisp_init(void)
         io_file_out(e, stderr); 
 
         return l;
+fail:
+        IO_REPORT("Allocation failed during init");
+        return NULL;
 }
 
 /** 
@@ -140,24 +143,22 @@ void lisp_end(lisp l)
 {
 
         fflush(NULL);
-
-        /*do not call mark before **this** sweep */
-        gc_sweep();
-
+ 
+        gc_sweep(); /*do not call mark before **this** sweep */ 
+        io_file_close(l->o);
+        io_file_close(l->i);
+        free(l->o);
+        free(l->i);
         mem_free(l);
-
         return;
 }
 
 /**
  *  @brief          Read in an s-expression 
  *  @param          i   Read input from...
- *  @return         A valid s-expression, which might be an error!
+ *  @return         A valid s-expression (or NULL), which might be an error!
  **/
-expr lisp_read(io * i)
-{
-        return sexpr_parse(i);
-}
+expr lisp_read(io * i) { return sexpr_parse(i); }
 
 /**
  *  @brief          Print out an s-expression
@@ -165,11 +166,7 @@ expr lisp_read(io * i)
  *  @param          o   Output stream
  *  @return         void
  **/
-void lisp_print(expr x, io * o)
-{
-        sexpr_print(x, o, 0);
-        return;
-}
+void lisp_print(expr x, io * o) { sexpr_print(x, o, 0); }
 
 /**
  *  @brief          Evaluate an already parsed lisp expression

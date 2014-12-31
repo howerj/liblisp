@@ -86,9 +86,8 @@ expr sexpr_parse(io * i)
         if(NULL == i)
                 return NULL; /*@todo return error instead*/
         while (EOF != (c = io_getc(i))) {
-                if (isspace(c)) {
+                if (isspace(c))
                         continue;
-                }
                 switch (c) {
                 case ')':
                         IO_REPORT("unmatched ')'");
@@ -162,11 +161,16 @@ void sexpr_print(expr x, io * o, unsigned depth)
                         io_putc('"', o);
         }
         break;
-        case S_INTEGER:         io_printer(o,"%m%d",x->data.integer); break;
-        case S_PRIMITIVE:       io_printer(o,"%b<prim>"); break;
+        case S_INTEGER:
+                io_printer(o,"%m%d",x->data.integer); break;
+        case S_PRIMITIVE:
+                io_printer(o,"%b<prim>"); break;
         case S_FILE: /*not implemented yet*/ break;
-        case S_PROC:            io_printer(o,"%b<proc>"); break;
-        case S_QUOTE:           sexpr_print(x->data.quoted,o,depth); break;
+        case S_PROC:
+                io_printer(o,"%b<proc>"); break;
+        case S_QUOTE: 
+                sexpr_print(x->data.quoted,o,depth);
+                break;
         case S_ERROR: /*not implemented yet*/ break;
         case S_LAST_TYPE: /*fall through, not a type*/
         default:
