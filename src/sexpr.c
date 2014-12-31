@@ -132,7 +132,7 @@ void sexpr_print(expr x, io * o, unsigned depth)
                                 sexpr_print(x->data.cons[0],o,depth+1);
                         if(x->data.cons[1] && x->data.cons[1]->data.cons[1])
                                 io_putc(' ',o);
-                } while(x && (x = x->data.cons[1]));
+                } while((NULL != x) && (NULL != (x = x->data.cons[1])));
                 io_putc(')', o);
                 break;
         case S_STRING: /*fall through*/
@@ -169,6 +169,7 @@ void sexpr_print(expr x, io * o, unsigned depth)
         case S_PROC:
                 io_printer(o,"%b<proc>"); break;
         case S_QUOTE: 
+                io_putc('\'',o);
                 sexpr_print(x->data.quoted,o,depth);
                 break;
         case S_ERROR: /*not implemented yet*/ break;

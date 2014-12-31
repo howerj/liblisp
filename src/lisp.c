@@ -208,8 +208,9 @@ expr lisp_eval(expr x, expr env, lisp l)
         case S_STRING:
         case S_PRIMITIVE: 
         case S_PROC: 
-        case S_QUOTE:
                 return x; 
+        case S_QUOTE:
+                return x->data.quoted;
         case S_CONS: 
                 if(S_SYMBOL == CAR(x)->type){
                         if (CMPSYM(x,"begin")){
