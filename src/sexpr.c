@@ -24,6 +24,7 @@
  *        and numbers
  *  @todo Make sure arbitrary binary data is handled correctly, but that's
  *        throughout the code.
+ *  @todo Add reference to the code this is based on
  *
  **/
 
@@ -232,8 +233,7 @@ expr append(expr cons, expr ele)
         cons->data.cons[0] = ele;
         cons->data.cons[1] = nc;
         nc->type = S_CONS;
-        nc->data.cons[0] = gc_calloc(); /*I should have a global NIL*/
-        nc->data.cons[0]->type = S_NIL;
+        nc->data.cons[0] = NULL; 
         nc->data.cons[1] = NULL;
         return nc;
 }
