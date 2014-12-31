@@ -47,10 +47,12 @@ struct sexpr_t { /** base type for our expressions */
                 char *string;
                 char *symbol;
                 struct sexpr_t *cons[2];
+                struct sexpr_t *quoted;
                 io *io;
                 expr(*func) (expr args, lisp l);       /* primitive operations */
         } data;
-        size_t len; /*for string/symbol types*/
+        size_t len; /*for string/symbol types, perhaps this should be move
+                      into a string/symbol type*/
         sexpr_e type;
         unsigned int gc_mark:1;  /*the mark of the garbage collector */
 };

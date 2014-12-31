@@ -164,7 +164,7 @@ void sexpr_print(expr x, io * o, unsigned depth)
         case S_PRIMITIVE:       io_printer(o,"%b<prim>"); break;
         case S_FILE: /*not implemented yet*/ break;
         case S_PROC:            io_printer(o,"%b<proc>"); break;
-        case S_QUOTE: /*not implemented yet*/ break;
+        case S_QUOTE:           sexpr_print(x->data.quoted,o,depth); break;
         case S_ERROR: /*not implemented yet*/ break;
         case S_LAST_TYPE: /*fall through, not a type*/
         default:
@@ -276,9 +276,11 @@ static bool isnumber(const char *buf, size_t string_l)
 expr parse_quote(io * i){
         expr ex = NULL;
         assert(i);
-success:
-fail:
-        return NULL;
+        ex = gc_calloc();
+        ex->type = S_QUOTE;
+        if(NULL == (ex->data.quoted = sexpr_parse(i)))
+                return NULL;
+        return ex;
 }
 
 /**
@@ -290,7 +292,7 @@ fail:
 static expr parse_symbol(io * i)
 {
         expr ex = NULL;
-        unsigned int count = 0;
+        unsigned count = 0;
         int c;
         char buf[SEXPR_BUFLEN];
         ex = gc_calloc();
