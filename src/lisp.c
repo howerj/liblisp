@@ -50,7 +50,9 @@ expr mknil(void);
         PRIMOP_X("-",        primop_sub)\
         PRIMOP_X("*",        primop_prod)\
         PRIMOP_X("/",        primop_div)\
+        PRIMOP_X("atom",     primop_atom)\
         PRIMOP_X("mod",      primop_mod)\
+        PRIMOP_X("eq",       primop_eq)\
         PRIMOP_X("car",      primop_car)\
         PRIMOP_X("cdr",      primop_cdr)\
         PRIMOP_X("cons",     primop_cons)\
@@ -204,16 +206,24 @@ expr lisp_eval(expr x, expr env, lisp l)
         case S_PRIMITIVE: 
         case S_PROC: 
         case S_QUOTE:
-               return x; 
+                return x; 
         case S_CONS: 
-               if(S_SYMBOL == CAR(x)->type){
-                       return mknil();
-               }
-               SEXPR_PERROR(x,"Cannot apply");
-               return mknil();
+                if(S_SYMBOL == CAR(x)->type){
+                        if (!strcmp("begin",CAR(x)->data.symbol)){
+                        } else if (!strcmp("cond",CAR(x)->data.symbol)){
+                        } else if (!strcmp("define",CAR(x)->data.symbol)){
+                        } else if (!strcmp("if",CAR(x)->data.symbol)){
+                        } else if (!strcmp("lambda",CAR(x)->data.symbol)){
+                        } else if (!strcmp("quote",CAR(x)->data.symbol)){
+                        } else if (!strcmp("set",CAR(x)->data.symbol)){
+                        } else {
+                        }
+                }
+                SEXPR_PERROR(x,"Cannot apply");
+                return mknil();
         case S_SYMBOL:
-               return x;
-               break;
+                return x;
+                break;
         case S_FILE:      IO_REPORT("Not implemented");
         case S_ERROR:     IO_REPORT("Not implemented");
         case S_LAST_TYPE: /*fall through, not a type*/
@@ -253,6 +263,10 @@ expr mknil(void){
     SEXPR_PERROR((EXP),"arg != integer");\
     return nil;\
   }
+
+/**true if arg is an atom, nil otherwise**/
+static expr primop_atom(expr args, lisp l)
+{UNUSED(args); UNUSED(l); return NULL;}
 
 /**add a list of numbers**/
 static expr primop_add(expr args, lisp l)
@@ -312,6 +326,10 @@ static expr primop_scdr(expr args, lisp l)
 
 /**cons for strings**/
 static expr primop_scons(expr args, lisp l)
+{UNUSED(args); UNUSED(l); return NULL;}
+
+/**strict equality**/
+static expr primop_eq(expr args, lisp l)
 {UNUSED(args); UNUSED(l); return NULL;}
 
 /**type equality**/
