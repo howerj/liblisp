@@ -37,6 +37,8 @@ typedef struct{
         expr(*func) (expr args, lisp l);
 } primop_initializers;
 
+expr mknil(void);
+
 /** 
  * @brief List of primitive operations, used for initialization of structures 
  *        and function declarations. It uses X-Macros to achieve this job.
@@ -76,6 +78,9 @@ static primop_initializers primops[] = {
         {NULL,       NULL} /* this *has* to be the last entry */
 };
 #undef PRIMOP_X
+
+#define CAR(X)  ((X)->data.cons[0])
+#define CDR(X)  ((X)->data.cons[1])
 
 /*** interface functions *****************************************************/
 
@@ -187,7 +192,37 @@ void lisp_print(expr x, io * o) { sexpr_print(x, o, 0); }
  **/
 expr lisp_eval(expr x, expr env, lisp l)
 {
-        UNUSED(env); UNUSED(l);
+        if(NULL == x){
+                SEXPR_PERROR(NULL,"lisp_eval passed NULL");
+                exit(EXIT_FAILURE);
+        }
+        switch(x->type){
+        case S_NIL: 
+        case S_TEE: 
+        case S_INTEGER: 
+        case S_STRING:
+        case S_PRIMITIVE: 
+        case S_PROC: 
+        case S_QUOTE:
+               return x; 
+        case S_CONS: 
+               if(S_SYMBOL == CAR(x)->type){
+                       return mknil();
+               }
+               SEXPR_PERROR(x,"Cannot apply");
+               return mknil();
+        case S_SYMBOL:
+               return x;
+               break;
+        case S_FILE:      IO_REPORT("Not implemented");
+        case S_ERROR:     IO_REPORT("Not implemented");
+        case S_LAST_TYPE: /*fall through, not a type*/
+        default:
+                IO_REPORT("Not a valid type");
+                exit(EXIT_FAILURE);
+        }
+
+        SEXPR_PERROR(NULL,"Should never get here.");
         return x;
 }
 
@@ -200,6 +235,14 @@ void lisp_clean(lisp l)
 {
         gc_mark(l->global);
         gc_sweep();
+}
+
+/*** internal helper functions ***********************************************/
+
+expr mknil(void){
+        expr x = gc_calloc();
+        x->type = S_NIL;
+        return x;
 }
 
 /*** primitive operations ****************************************************/
