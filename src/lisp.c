@@ -101,6 +101,10 @@ lisp lisp_init(void)
         io_file_in(l->i, stdin);
         io_file_out(l->o, stdout);
 
+        l->global->data.cons[0] = gc_calloc();
+        l->global->data.cons[0]->type = S_NIL;
+        l->global->data.cons[1] = NULL;
+
         e = io_get_error_stream();
         io_file_out(e, stderr); 
 
@@ -147,7 +151,6 @@ lisp lisp_repl(lisp l)
  **/
 void lisp_end(lisp l)
 {
-
         fflush(NULL);
         gc_sweep(); /*do not call mark before **this** sweep */ 
         io_file_close(l->o);
