@@ -466,7 +466,7 @@ FINISH:
  *  @return         void
  *                  
  **/
-void io_doreport(const char *s, char *cfile, unsigned int linenum)
+void io_doreport(const char *s, char *cfile, unsigned linenum)
 {
         if ((NULL == e) || (NULL == e->ptr.file) || ((IO_FILE_OUT_E != e->type) && (IO_STRING_OUT_E != e->type))) {
                 error_stream.ptr.file = stderr;

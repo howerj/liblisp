@@ -22,6 +22,8 @@
  *
  *  @todo The parser should be able to handle arbitrary length strings, symbols
  *        and numbers
+ *  @todo Make sure arbitrary binary data is handled correctly, but that's
+ *        throughout the code.
  *
  **/
 
@@ -251,6 +253,9 @@ static bool isnumber(const char *buf, size_t string_l)
  *  @return         NULL or parsed quote
  **/
 expr parse_quote(io * i){
+        expr ex = NULL;
+        assert(i);
+FAIL:
         return NULL;
 }
 
@@ -281,7 +286,7 @@ static expr parse_symbol(io * i)
                 if (isspace(c))
                         goto success;
 
-                if ((c == '(') || (c == ')')) {
+                if ((c == '(') || (c == ')') || (c == '\'')) {
                         io_ungetc(c, i);
                         goto success;
                 }
@@ -294,11 +299,10 @@ static expr parse_symbol(io * i)
                 switch (c) {
                 case '\\':
                         switch (c = io_getc(i)) {
-                        case '\\':
-                        case '"':
-                        case '(':
-                        case ')':
-                        case '#':
+                        /*should do other isspace chars as well*/
+                        case '\\': case ' ': case '"':
+                        case '(':  case ')': case '#':
+                        case '\t': case '\'':
                                 buf[count++] = c;
                                 continue;
                         default:
@@ -306,6 +310,7 @@ static expr parse_symbol(io * i)
                                 goto fail;
                         }
                 case '"':
+                        IO_REPORT("You should separate symbols and strings!");
                         IO_REPORT(buf);
                         goto success;
                 default:
@@ -379,14 +384,63 @@ static expr parse_string(io * i)
 
 /**
  *  @brief          Parses a list, consisting of strings, symbols,
- *                  integers, or other lists.
+ *                  integers, quotes, or other lists.
  *  @param          i input stream
  *  @return         NULL or parsed list
  **/
 static expr parse_list(io * i)
 {
+        expr ex = NULL, chld;
+        int c;
         assert(i);
+
+        ex = gc_calloc();
+        ex->len = 0;
+
+        while (EOF != (c = io_getc(i))) {
+                if (isspace(c))
+                        continue;
+
+                switch (c) {
+                case '#':
+                        if (true == parse_comment(i))
+                                goto fail;
+                        break;
+                case '"':
+                        chld = parse_string(i);
+                        if (!chld)
+                                goto fail;
+                        append(ex, chld);
+                        continue;
+                case '\'':
+                        chld = parse_quote(i);
+                        if (!chld)
+                                goto fail;
+                        append(ex, chld);
+                        continue;
+                case '(':
+                        chld = parse_list(i);
+                        if (!chld)
+                                goto fail;
+                        append(ex, chld);
+                        continue;
+                case ')':
+                        goto success;
+                default:
+                        io_ungetc(c, i);
+                        chld = parse_symbol(i);
+                        if (!chld)
+                                goto fail;
+                        append(ex, chld);
+                        continue;
+                }
+        }
+ fail:
+        IO_REPORT("list err");
         return NULL;
+ success:
+        ex->type = S_CONS;
+        return ex;
 }
 
 /**
