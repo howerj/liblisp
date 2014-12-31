@@ -131,8 +131,9 @@ void sexpr_print(expr x, io * o, unsigned depth)
                 do{
                         if(x->data.cons[0])
                                 sexpr_print(x->data.cons[0],o,depth+1);
-                        io_putc(' ',o);
-                } while(x && (x=x->data.cons[1]));
+                        if(x->data.cons[1] && x->data.cons[1]->data.cons[1])
+                                io_putc(' ',o);
+                } while(x && (x = x->data.cons[1]));
                 io_putc(')', o);
                 break;
         case S_STRING: /*fall through*/
@@ -415,7 +416,7 @@ static expr parse_string(io * i)
  **/
 static expr parse_list(io * i)
 {
-        expr ex = NULL, head = NULL, chld;
+        expr ex = NULL, head = NULL, prev = NULL, chld;
         int c;
         assert(i);
 
@@ -426,6 +427,7 @@ static expr parse_list(io * i)
                 if (isspace(c))
                         continue;
 
+                prev = ex;
                 switch (c) {
                 case '#':
                         if (true == parse_comment(i))
@@ -462,6 +464,8 @@ static expr parse_list(io * i)
  success:
         if(ex == head)
                 head->type = S_NIL;
+        if(prev->data.cons[1] && !ex->data.cons[0])
+                prev->data.cons[1] = NULL;
         return head;
 }
 
