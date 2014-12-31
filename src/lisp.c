@@ -177,7 +177,7 @@ void lisp_print(expr x, io * o)
  **/
 expr lisp_eval(expr x, expr env, lisp l)
 {
-        return NULL;
+        return x;
 }
 
 /**

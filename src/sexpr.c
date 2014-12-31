@@ -21,10 +21,6 @@
  *  later.
  *
  *  Possible extras are:
- *
- *  @todo Add in syntax for quotes:
- *        '(list ...) become (quote (list ...))
- *        But make it optional
  *  @todo Add in syntax to get a line from a file like in perl
  *
  **/
@@ -119,6 +115,8 @@ expr sexpr_parse(io * i)
 void sexpr_print(expr x, io * o, unsigned depth)
 {
         size_t i;
+        io *e;
+
         if(NULL == x)
                 return;
         assert(o);
@@ -159,12 +157,13 @@ void sexpr_print(expr x, io * o, unsigned depth)
         case S_QUOTE: /*not implemented yet*/ break;
         case S_ERROR: /*not implemented yet*/ break;
         case S_LAST_TYPE: /*fall through, not a type*/
-        default: 
-               io_printer(e,"%r");
-               IO_REPORT("print: not a known printable type");
-               io_printer(e,"%t");
-               exit(EXIT_FAILURE);
-               break;
+        default:
+                e = io_get_error_stream();
+                io_printer(e,"%r");
+                IO_REPORT("print: not a known printable type");
+                io_printer(e,"%t");
+                exit(EXIT_FAILURE);
+                break;
         }
         io_printer(o,"%t");
         if (0 == depth)
@@ -211,9 +210,6 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
  *  @param          list a list to append an atom to
  *  @param          ele  the atom to append to the list
  *  @return         void
- *
- *  @todo           Error handline
- *  @todo           Check for list type OR proc type
  **/
 void append(expr list, expr ele)
 {
@@ -265,6 +261,71 @@ expr parse_quote(io * i){
  **/
 static expr parse_symbol(io * i)
 {
+        expr ex = NULL;
+        unsigned int count = 0;
+        int c;
+        char buf[SEXPR_BUFLEN];
+        ex = gc_calloc();
+
+        memset(buf, '\0', SEXPR_BUFLEN);
+
+        while (EOF != (c = io_getc(i))) {
+                if (SEXPR_BUFLEN <= count) {
+                        IO_REPORT("symbol too long");
+                        IO_REPORT(buf);
+                        goto fail;
+                }
+
+                if (isspace(c))
+                        goto success;
+
+                if ((c == '(') || (c == ')')) {
+                        io_ungetc(c, i);
+                        goto success;
+                }
+
+                if (c == '#') {
+                        parse_comment(i);
+                        goto success;
+                }
+
+                switch (c) {
+                case '\\':
+                        switch (c = io_getc(i)) {
+                        case '\\':
+                        case '"':
+                        case '(':
+                        case ')':
+                        case '#':
+                                buf[count++] = c;
+                                continue;
+                        default:
+                                IO_REPORT(buf);
+                                goto fail;
+                        }
+                case '"':
+                        IO_REPORT(buf);
+                        goto success;
+                default:
+                        buf[count++] = c;
+                }
+        }
+ fail:
+        return NULL;
+
+ success:
+        ex->len = strlen(buf);
+
+        if ((true == parse_numbers_f) && isnumber(buf, ex->len)) {
+                ex->type = S_INTEGER;
+                ex->data.integer = (int32_t)strtol(buf, NULL, 0);
+        } else {
+                ex->type = S_SYMBOL;
+                ex->data.symbol = mem_malloc(ex->len + 1);
+                strcpy(ex->data.symbol, buf);
+        }
+        return ex;
+
 }
 
 /**
