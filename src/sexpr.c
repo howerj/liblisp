@@ -80,6 +80,8 @@ void sexpr_set_parse_numbers(bool flag)
 expr sexpr_parse(io * i)
 {
         int c;
+        if(NULL == i)
+                return NULL; /*@todo return error instead*/
         while (EOF != (c = io_getc(i))) {
                 if (isspace(c)) {
                         continue;
@@ -116,10 +118,8 @@ void sexpr_print(expr x, io * o, unsigned depth)
 {
         size_t i;
         io *e;
-
         if(NULL == x)
                 return;
-        assert(o);
         switch(x->type){
         case S_NIL:             io_printer(o,"%r()"); break;
         case S_TEE:             io_printer(o,"%gt");  break;
@@ -226,6 +226,7 @@ void append(expr list, expr ele)
 
 static bool isnumber(const char *buf, size_t string_l)
 {
+        assert(buf);
         if ('-' == buf[0] || ('+' == buf[0])) {
                 /*don't want negative hex/octal or + - symbols */
                 if ((1 == string_l) || ('0' == buf[1]))
@@ -266,6 +267,7 @@ static expr parse_symbol(io * i)
         int c;
         char buf[SEXPR_BUFLEN];
         ex = gc_calloc();
+        assert(i);
 
         memset(buf, '\0', SEXPR_BUFLEN);
 
@@ -312,10 +314,8 @@ static expr parse_symbol(io * i)
         }
  fail:
         return NULL;
-
  success:
         ex->len = strlen(buf);
-
         if ((true == parse_numbers_f) && isnumber(buf, ex->len)) {
                 ex->type = S_INTEGER;
                 ex->data.integer = (int32_t)strtol(buf, NULL, 0);
@@ -325,7 +325,6 @@ static expr parse_symbol(io * i)
                 strcpy(ex->data.symbol, buf);
         }
         return ex;
-
 }
 
 /**
@@ -339,6 +338,7 @@ static expr parse_string(io * i)
         unsigned int count = 0;
         int c;
         char buf[SEXPR_BUFLEN];
+        assert(i);
 
         ex = gc_calloc();
         memset(buf, '\0', SEXPR_BUFLEN);
@@ -385,6 +385,8 @@ static expr parse_string(io * i)
  **/
 static expr parse_list(io * i)
 {
+        assert(i);
+        return NULL;
 }
 
 /**
@@ -396,6 +398,7 @@ static expr parse_list(io * i)
 static bool parse_comment(io * i)
 {
         int c;
+        assert(i);
         while (EOF != (c = io_getc(i))) 
                 if ('\n' == c) 
                         return false;
