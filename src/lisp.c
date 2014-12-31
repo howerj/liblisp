@@ -37,6 +37,7 @@ typedef struct{
         expr(*func) (expr args, lisp l);
 } primop_initializers;
 
+size_t list_len(expr x);
 expr mknil(void);
 
 /** 
@@ -81,8 +82,9 @@ static primop_initializers primops[] = {
 };
 #undef PRIMOP_X
 
-#define CAR(X)  ((X)->data.cons[0])
-#define CDR(X)  ((X)->data.cons[1])
+#define CAR(X)                  ((X)->data.cons[0])
+#define CDR(X)                  ((X)->data.cons[1])
+#define CMPSYM(EXPR,STR)        (!strcmp(CAR((EXPR))->data.symbol,(STR)))
 
 /*** interface functions *****************************************************/
 
@@ -194,6 +196,7 @@ void lisp_print(expr x, io * o) { sexpr_print(x, o, 0); }
  **/
 expr lisp_eval(expr x, expr env, lisp l)
 {
+        expr nx;
         if(NULL == x){
                 SEXPR_PERROR(NULL,"lisp_eval passed NULL");
                 exit(EXIT_FAILURE);
@@ -209,14 +212,30 @@ expr lisp_eval(expr x, expr env, lisp l)
                 return x; 
         case S_CONS: 
                 if(S_SYMBOL == CAR(x)->type){
-                        if (!strcmp("begin",CAR(x)->data.symbol)){
-                        } else if (!strcmp("cond",CAR(x)->data.symbol)){
-                        } else if (!strcmp("define",CAR(x)->data.symbol)){
-                        } else if (!strcmp("if",CAR(x)->data.symbol)){
-                        } else if (!strcmp("lambda",CAR(x)->data.symbol)){
-                        } else if (!strcmp("quote",CAR(x)->data.symbol)){
-                        } else if (!strcmp("set",CAR(x)->data.symbol)){
+                        if (CMPSYM(x,"begin")){
+                        } else if (CMPSYM(x,"cond")){
+                        } else if (CMPSYM(x,"define")){
+                        } else if (CMPSYM(x,"if")){
+                                if(list_len(x) != 4){
+                                        SEXPR_PERROR(x,"if: argc != 4");
+                                        return mknil();
+                                }
+                                nx = lisp_eval(CAR(CDR(x)),env,l);
+                                if(S_NIL != nx->type){
+                                        return lisp_eval(CAR(CDR(CDR(x))),env,l);
+                                } else {
+                                        return lisp_eval(CAR(CDR(CDR(CDR(x)))),env,l);
+                                }
+                        } else if (CMPSYM(x,"lambda")){
+                        } else if (CMPSYM(x,"quote")){
+                                if(list_len(x) != 2){
+                                        SEXPR_PERROR(x,"quote: argc != 2");
+                                        return mknil();
+                                }
+                                return CAR(CDR(x));
+                        } else if (CMPSYM(x,"set")){
                         } else {
+
                         }
                 }
                 SEXPR_PERROR(x,"Cannot apply");
@@ -248,6 +267,12 @@ void lisp_clean(lisp l)
 }
 
 /*** internal helper functions ***********************************************/
+
+size_t list_len(expr x){
+        size_t i = 0;
+        while((x=CDR(x))) i++;
+        return i;
+}
 
 expr mknil(void){
         expr x = gc_calloc();
