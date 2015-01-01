@@ -230,48 +230,46 @@ expr lisp_eval(expr x, expr env, lisp l)
         case S_QUOTE:
                 return x->data.quoted;
         case S_CONS: 
-                if(S_SYMBOL == CAR(x)->type){
-                        if (CMPSYM(x,"begin")){
-                        } else if (CMPSYM(x,"cond")){
-                        } else if (CMPSYM(x,"define")){
-                        } else if (CMPSYM(x,"if")){
-                                if(list_len(x) != 4){
-                                        SEXPR_PERROR(x,"if: argc != 4");
-                                        return mknil();
-                                }
-                                nx = lisp_eval(CAR(CDR(x)),env,l);
-                                if(S_NIL != nx->type){
-                                        return lisp_eval(CAR(CDR(CDR(x))),env,l);
-                                } else {
-                                        return lisp_eval(CAR(CDR(CDR(CDR(x)))),env,l);
-                                }
-                        } else if (CMPSYM(x,"lambda")){
-                                if(list_len(x) != 3){
-                                        SEXPR_PERROR(x,"lambda: argc != 3");
-                                        return mknil();
-                                }
-                                if(S_CONS != CAR(CDR(x))->type){
-                                        SEXPR_PERROR(x,"lambda; expected argument list");
-                                        return mknil();
-                                }
-                                return mkproc(CAR(CDR(x)),CDR(CDR(x)), env);
-                        } else if (CMPSYM(x,"quote")){
-                                if(list_len(x) != 2){
-                                        SEXPR_PERROR(x,"quote: argc != 2");
-                                        return mknil();
-                                }
-                                return CAR(CDR(x));
-                        } else if (CMPSYM(x,"set")){
-                        } else {
-                                expr foundx = lisp_eval(CAR(x), env, l);
-                                if(S_NIL != foundx)
-                                        return CAR(foundx);
-
-
+        if(S_SYMBOL == CAR(x)->type){
+                if (CMPSYM(x,"begin")){
+                } else if (CMPSYM(x,"cond")){
+                } else if (CMPSYM(x,"define")){
+                } else if (CMPSYM(x,"if")){
+                        if(list_len(x) != 4){
+                                SEXPR_PERROR(x,"if: argc != 4");
+                                return mknil();
                         }
+                        nx = lisp_eval(CAR(CDR(x)),env,l);
+                        if(S_NIL != nx->type){
+                                return lisp_eval(CAR(CDR(CDR(x))),env,l);
+                        } else {
+                                return lisp_eval(CAR(CDR(CDR(CDR(x)))),env,l);
+                        }
+                } else if (CMPSYM(x,"lambda")){
+                        if(list_len(x) != 3){
+                                SEXPR_PERROR(x,"lambda: argc != 3");
+                                return mknil();
+                        }
+                        if(S_CONS != CAR(CDR(x))->type){
+                                SEXPR_PERROR(x,"lambda; expected argument list");
+                                return mknil();
+                        }
+                        return mkproc(CAR(CDR(x)),CDR(CDR(x)), env);
+                } else if (CMPSYM(x,"quote")){
+                        if(list_len(x) != 2){
+                                SEXPR_PERROR(x,"quote: argc != 2");
+                                return mknil();
+                        }
+                        return CAR(CDR(x));
+                } else if (CMPSYM(x,"set")){
+                } else {
+                        expr foundx = lisp_eval(CAR(x), env, l);
+                        if(S_NIL != foundx)
+                                return CAR(foundx);
                 }
-                SEXPR_PERROR(x,"cannot apply");
-                return mknil();
+        }
+        SEXPR_PERROR(x,"cannot apply");
+        return mknil();
         case S_SYMBOL:
                 nx = find(env, x, l);
                 if(S_NIL == nx->type){
@@ -332,8 +330,9 @@ static expr dofind(expr env, expr x){
         expr node, list = env;
         do{ 
                 node = CAR(list);
-                printf("e:%d\n",node->type);
-                if(CMPSYM(CAR(node),x->data.symbol))
+                if(!node || !CAR(node))
+                        continue;
+                if(CMPSYM(node,x->data.symbol))
                         return CDR(node);
         } while((list = CDR(list)));
 
