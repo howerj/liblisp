@@ -121,9 +121,8 @@ lisp lisp_init(void)
         io_file_in(l->i, stdin);
         io_file_out(l->o, stdout);
 
-        l->global->data.cons[0] = gc_calloc();
-        l->global->data.cons[0]->type = S_NIL;
-        l->global->data.cons[1] = NULL;
+        SETCAR(l->global, mknil());
+        SETCDR(l->global, NULL);
 
         e = io_get_error_stream();
         io_file_out(e, stderr); 
@@ -264,6 +263,10 @@ expr lisp_eval(expr x, expr env, lisp l)
                                 return CAR(CDR(x));
                         } else if (CMPSYM(x,"set")){
                         } else {
+                                expr foundx = lisp_eval(CAR(x), env, l);
+                                if(S_NIL != foundx)
+                                        return CAR(foundx);
+
 
                         }
                 }
@@ -310,22 +313,28 @@ static size_t list_len(expr x){
 
 /** find a symbol in an environment **/
 static expr find(expr env, expr x, lisp l){
-        expr nx = dofind(env, x);
+        /*expr nx = dofind(env, x);
         if (S_NIL == nx->type) {printf("HERE\n");
                 nx = dofind(l->global, x);
                 if (S_NIL == nx->type) {
                         return mknil();
                 }
         }
+        return nx;*/
+        expr nx = dofind(l->global, x);
+        if (S_NIL == nx->type) 
+                return mknil();
         return nx;
 }
 
 /** find a symbol in an environment **/
 static expr dofind(expr env, expr x){
-        expr node = CAR(env), list = CDR(env);
+        expr node, list = env;
         do{ 
-                if(CMPSYM(node,CAR(x)->data.symbol))
-                        return CDR(x);
+                node = CAR(list);
+                printf("e:%d\n",node->type);
+                if(CMPSYM(CAR(node),x->data.symbol))
+                        return CDR(node);
         } while((list = CDR(list)));
 
         return mknil();
@@ -388,7 +397,6 @@ static expr mkproc(expr args, expr code, expr env){
         return mknil();
 }
 
-
 /*** primitive operations ****************************************************/
 
 /**macro helpers for primops**/
@@ -400,85 +408,85 @@ static expr mkproc(expr args, expr code, expr env){
 
 /**true if arg is an atom, nil otherwise**/
 static expr primop_atom(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**add a list of numbers**/
 static expr primop_add(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**subtract a list of numbers from the 1 st arg**/
 static expr primop_sub(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**multiply a list of numbers together**/
 static expr primop_prod(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**divide the first argument by a list of numbers**/
 static expr primop_div(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**arg_1 modulo arg_2**/
 static expr primop_mod(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**car**/
 static expr primop_car(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**cdr**/
 static expr primop_cdr(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**cons**/
 static expr primop_cons(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**NTH element in a list or string**/
 static expr primop_nth(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**length of a list or string**/
 static expr primop_len(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**test equality of the 1st arg against a list of numbers**/
 static expr primop_numeq(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**print**/
 static expr primop_printexpr(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**CAR for strings**/
 static expr primop_scar(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**cdr for strings**/
 static expr primop_scdr(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**cons for strings**/
 static expr primop_scons(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**strict equality**/
 static expr primop_eq(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**type equality**/
 static expr primop_typeeq(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 /**reverse a list or a string**/
 static expr primop_reverse(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 static expr primop_system(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 static expr primop_match(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return NULL;}
+{UNUSED(args); UNUSED(l); return mknil();}
 
 #undef INTCHK_R
 #undef UNUSED

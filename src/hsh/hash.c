@@ -31,9 +31,9 @@ typedef struct hashentry {
 typedef struct hashtable {
         size_t len;
         struct hashentry **table;
-        unsigned int collisions;
-        unsigned int uniquekeys;
-        unsigned int replaced;
+        unsigned collisions;
+        unsigned uniquekeys;
+        unsigned replaced;
 } hashtable;
 
 /* internal function prototypes */
@@ -54,10 +54,7 @@ hashtable *hash_create(size_t len)
 {
         hashtable *newt = NULL;
 
-        if (!len)
-                return NULL;
-
-        if (NULL == (newt = calloc(sizeof(*newt), 1)))
+        if (!len || (NULL == (newt = calloc(sizeof(*newt), 1))))
                 return NULL;
 
         if (NULL == (newt->table = calloc(sizeof(*newt->table), len))){
@@ -193,9 +190,9 @@ char *hash_lookup(hashtable * table, const char *key)
 /** 
  *  @brief    Get information; number of collisions
  *  @param    table             Hash table containing the information, should not be NULL
- *  @return   unsigned int      Number of collisions
+ *  @return   unsigned          Number of collisions
  */
-unsigned int hash_get_collisions(hashtable_t * table){
+unsigned hash_get_collisions(hashtable_t * table){
         assert(NULL != table);
         return table->collisions;
 }
@@ -203,9 +200,9 @@ unsigned int hash_get_collisions(hashtable_t * table){
 /** 
  *  @brief    Get information; Number of unique keys
  *  @param    table             Hash table containing the information, should not be NULL
- *  @return   unsigned int      Number of unique keys
+ *  @return   unsigned          Number of unique keys
  */
-unsigned int hash_get_uniquekeys(hashtable_t * table){
+unsigned hash_get_uniquekeys(hashtable_t * table){
         assert(NULL != table);
         return table->uniquekeys;
 }
@@ -213,9 +210,9 @@ unsigned int hash_get_uniquekeys(hashtable_t * table){
 /** 
  *  @brief    Get information; number of keys that have had their value replaced
  *  @param    table             Hash table containing the information, should not be NULL
- *  @return   unsigned int      Number of replacements
+ *  @return   unsigned          Number of replacements
  */
-unsigned int hash_get_replaced(hashtable_t * table){
+unsigned hash_get_replaced(hashtable_t * table){
         assert(NULL != table);
         return table->replaced;
 }
@@ -229,7 +226,9 @@ unsigned int hash_get_replaced(hashtable_t * table){
  */
 static char *_strdup(const char *s)
 {
-        char *str = calloc(sizeof(*s), strlen(s) + 1);
+        char *str;
+        assert(s);
+        str = calloc(sizeof(*s), strlen(s) + 1);
         strcpy(str, s);
         return str;
 }
@@ -245,6 +244,7 @@ static uint32_t djb2(const char *s, size_t len)
 {
         uint32_t hash = 5381;   /*magic number this hash uses, it just is*/
         size_t i = 0;
+        assert(s);
 
         for (i = 0; i < len; s++, i++)
                 hash = ((hash << 5) + hash) + (*s);

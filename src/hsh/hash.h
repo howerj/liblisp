@@ -26,9 +26,9 @@ void hash_insert(hashtable_t * ht, const char *key, const char *val);
 char *hash_lookup(hashtable_t * table, const char *key);
 void hash_print(hashtable_t * table);
 
-unsigned int hash_get_collisions(hashtable_t * table);
-unsigned int hash_get_uniquekeys(hashtable_t * table);
-unsigned int hash_get_replaced(hashtable_t * table);
+unsigned hash_get_collisions(hashtable_t * table);
+unsigned hash_get_uniquekeys(hashtable_t * table);
+unsigned hash_get_replaced(hashtable_t * table);
 
 #ifdef __cplusplus
 }
