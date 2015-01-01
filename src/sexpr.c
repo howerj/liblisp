@@ -39,7 +39,7 @@ static const char *octal_s = "01234567";
 static const char *decimal_s = "0123456789";
 static const char *hexadecimal_s = "0123456789abcdefABCDEF";
 
-static bool print_proc_f = false;       /*print actual code after #proc */
+static bool print_proc_f = false;       /*print actual code after proc */
 static bool parse_numbers_f = true;     /*parse numbers as numbers not symbols */
 
 static bool isnumber(const char *buf, size_t string_l);
@@ -52,7 +52,7 @@ static bool parse_comment(io * i);
 /*** interface functions *****************************************************/
 
 /**
- *  @brief          Set whether we should print "<PROC>" when printing
+ *  @brief          Set whether we should print "{proc}" when printing
  *                  a user defined procedure, or if we should actually
  *                  print the contents of said procedure fully.
  *  @param          flag boolean flag to set print_proc_f
@@ -126,8 +126,8 @@ void sexpr_print(expr x, io * o, unsigned depth)
         case S_NIL:       io_printer(o,"%r()"); break;
         case S_TEE:       io_printer(o,"%gt");  break;
         case S_INTEGER:   io_printer(o,"%m%d", x->data.integer); break;
-        case S_PRIMITIVE: io_printer(o,"%b<prim>"); break;
-        case S_PROC:      io_printer(o,"%b<proc>"); break;
+        case S_PRIMITIVE: io_printer(o,"%b{prim}"); break;
+        case S_PROC:      io_printer(o,"%b{proc}"); break;
         case S_FILE:      /*not implemented yet*/ break;
         case S_ERROR:     /*not implemented yet*/ break;
         case S_CONS:

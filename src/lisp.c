@@ -40,6 +40,7 @@ typedef struct{
 static size_t list_len(expr x);
 static expr mknil(void);
 static expr find(expr env, expr x, lisp l);
+static expr dofind(expr env, expr x);
 static expr extend(expr sym, expr val, expr env);
 static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), lisp l);
 static expr mkobj(sexpr_e type);
@@ -91,6 +92,8 @@ static primop_initializers primops[] = {
 
 #define CAR(X)                  ((X)->data.cons[0])
 #define CDR(X)                  ((X)->data.cons[1])
+#define SETCAR(X,Y)             ((X)->data.cons[0] = (Y))
+#define SETCDR(X,Y)             ((X)->data.cons[1] = (Y))
 #define CMPSYM(EXPR,STR)        (!strcmp(CAR((EXPR))->data.symbol,(STR)))
 
 /*** interface functions *****************************************************/
@@ -298,6 +301,7 @@ void lisp_clean(lisp l)
 
 /*** internal helper functions ***********************************************/
 
+/** calculate length of a list **/
 static size_t list_len(expr x){
         size_t i = 0;
         while((x=CDR(x))) i++;
@@ -306,17 +310,37 @@ static size_t list_len(expr x){
 
 /** find a symbol in an environment **/
 static expr find(expr env, expr x, lisp l){
+        expr nx = dofind(env, x);
+        if (S_NIL == nx->type) {printf("HERE\n");
+                nx = dofind(l->global, x);
+                if (S_NIL == nx->type) {
+                        return mknil();
+                }
+        }
+        return nx;
+}
+
+/** find a symbol in an environment **/
+static expr dofind(expr env, expr x){
+        expr node = CAR(env), list = CDR(env);
+        do{ 
+                if(CMPSYM(node,CAR(x)->data.symbol))
+                        return CDR(x);
+        } while((list = CDR(list)));
+
         return mknil();
 }
 
 /** extend the lisp environment **/
 static expr extend(expr sym, expr val, expr env){
-        expr nx = mkobj(S_CONS);
-        nx->data.cons[0] = sym;
-        nx->data.cons[1] = mkobj(S_CONS);
-        nx->data.cons[1]->data.cons[0] = val;
-        nx->data.cons[1]->data.cons[1] = env;
-        return nx;
+        expr newhead = mkobj(S_CONS), newval = mkobj(S_CONS);
+        SETCAR(newval,sym);
+        SETCDR(newval,mkobj(S_CONS));
+        SETCAR(CDR(newval),env);
+        SETCDR(CDR(newval),NULL);
+        SETCAR(newhead,newval);
+        SETCDR(newhead,env);
+        return newhead;
 }
 
 /** extend the lisp environment with a primitive operator **/
