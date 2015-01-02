@@ -95,6 +95,7 @@ static primop_initializers primops[] = {
 #define SETCAR(X,Y)             ((X)->data.cons[0] = (Y))
 #define SETCDR(X,Y)             ((X)->data.cons[1] = (Y))
 #define CMPSYM(EXPR,STR)        (!strcmp(CAR((EXPR))->data.symbol,(STR)))
+#define ISNIL(X)                (S_NIL == (X)->type)                    
 
 /*** interface functions *****************************************************/
 
@@ -219,6 +220,9 @@ expr lisp_eval(expr x, expr env, lisp l)
                 SEXPR_PERROR(NULL,"lisp_eval passed NULL");
                 exit(EXIT_FAILURE);
         }
+        /**  @todo I should collect garbage here if there are too many objects
+         *         allocated already.
+        **/
         switch(x->type){
         case S_NIL: 
         case S_TEE: 
@@ -240,7 +244,7 @@ expr lisp_eval(expr x, expr env, lisp l)
                                 return mknil();
                         }
                         nx = lisp_eval(CAR(CDR(x)),env,l);
-                        if(S_NIL != nx->type){
+                        if(!ISNIL(nx)){
                                 return lisp_eval(CAR(CDR(CDR(x))),env,l);
                         } else {
                                 return lisp_eval(CAR(CDR(CDR(CDR(x)))),env,l);
@@ -264,7 +268,7 @@ expr lisp_eval(expr x, expr env, lisp l)
                 } else if (CMPSYM(x,"set")){
                 } else {
                         expr foundx = lisp_eval(CAR(x), env, l);
-                        if(S_NIL != foundx)
+                        if(!ISNIL(foundx))
                                 return CAR(foundx);
                 }
         }
@@ -272,7 +276,7 @@ expr lisp_eval(expr x, expr env, lisp l)
         return mknil();
         case S_SYMBOL:
                 nx = find(env, x, l);
-                if(S_NIL == nx->type){
+                if(ISNIL(nx)){
                         SEXPR_PERROR(x, "unbound symbol");
                         return nx;
                 }
@@ -312,15 +316,15 @@ static size_t list_len(expr x){
 /** find a symbol in an environment **/
 static expr find(expr env, expr x, lisp l){
         /*expr nx = dofind(env, x);
-        if (S_NIL == nx->type) {printf("HERE\n");
+        if (ISNIL(nx)) {
                 nx = dofind(l->global, x);
-                if (S_NIL == nx->type) {
+                if (ISNIL(nx)) {
                         return mknil();
                 }
         }
         return nx;*/
         expr nx = dofind(l->global, x);
-        if (S_NIL == nx->type) 
+        if (ISNIL(nx)) 
                 return mknil();
         return nx;
 }
@@ -332,6 +336,8 @@ static expr dofind(expr env, expr x){
                 node = CAR(list);
                 if(!node || !CAR(node))
                         continue;
+                /*printf("e:%d %s\n",node->type, x->data.symbol);
+                printf("p:%p %p\n",node, node->data.symbol);*/
                 if(CMPSYM(node,x->data.symbol))
                         return CDR(node);
         } while((list = CDR(list)));
