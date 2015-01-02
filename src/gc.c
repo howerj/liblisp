@@ -7,8 +7,16 @@
  *  @email          howe.r.j.89@gmail.com
  *  @details
  *
- *  Garabage collection and error handling on
- *  Out-Of-Memory errors should go here.
+ *  Garabage collection and error handling on Out-Of-Memory errors should go here.
+ *
+ *  @todo Implement error handling
+ *  @todo Extensive testing using Valgrind
+ *  @todo This currently will not work if multiple instances of the the library
+ *        are running at the same time, the garbage collector needs to run in its
+ *        own local context.
+ *  @todo Add functions for monitoring the number of allocations there have been
+ *        and for returning that number so the rest of the program can figure out
+ *        when to collect.
  */
 
 #include "gc.h"
