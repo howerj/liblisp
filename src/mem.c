@@ -51,8 +51,7 @@ void *mem_malloc(size_t size)
         if (true == mem_debug_f)
                 io_printer(io_get_error_stream(), "(mem_malloc %d)\n", mem_alloc_counter);
 
-        v = malloc(size);
-        if (NULL == v) {
+        if (NULL == (v = malloc(size))) {
                 IO_REPORT("malloc failed");
                 exit(EXIT_FAILURE);
         }
@@ -74,11 +73,13 @@ void *mem_calloc(size_t num, size_t size)
                 exit(EXIT_FAILURE);
         }
 
+        if((0 == num) || (0 == size))
+                return NULL;
+
         if (true == mem_debug_f)
                 io_printer(io_get_error_stream(), "(mem_calloc %d)\n", mem_alloc_counter);
 
-        v = calloc(num, size);
-        if (NULL == v) {
+        if (NULL == (v = calloc(num, size))) {
                 IO_REPORT("calloc failed");
                 exit(EXIT_FAILURE);
         }
