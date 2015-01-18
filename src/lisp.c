@@ -9,15 +9,8 @@
  *
  *  Experimental, small, lisp interpreter.
  *
- *  Meaning of symbols:
- *  i:      input
- *  o:      output
- *  x:      expression
- *  args:   a list of *lisp_evaluated* arguments
- *  nx:     a newly created expression
- *
- *  At a minimum I should define; quote, atom, eq, car, cdr, cons, cond, define (or
- *  label) and lambda.
+ *  At a minimum I should define; quote, atom, eq, car, cdr, cons, 
+ *  cond, define (or label) and lambda.
  *
  **/
 
@@ -220,6 +213,9 @@ expr lisp_eval(expr x, expr env, lisp l)
                 SEXPR_PERROR(NULL,"lisp_eval passed NULL");
                 exit(EXIT_FAILURE);
         }
+
+START_EVAL:
+
         /**  @todo I should collect garbage here if there are too many objects
          *         allocated already.
         **/
@@ -245,10 +241,11 @@ expr lisp_eval(expr x, expr env, lisp l)
                         }
                         nx = lisp_eval(CAR(CDR(x)),env,l);
                         if(!ISNIL(nx)){
-                                return lisp_eval(CAR(CDR(CDR(x))),env,l);
+                                x = CAR(CDR(CDR(x)));
                         } else {
-                                return lisp_eval(CAR(CDR(CDR(CDR(x)))),env,l);
+                                x = CAR(CDR(CDR(CDR(x))));
                         }
+                        goto START_EVAL;
                 } else if (CMPSYM(x,"lambda")){
                         if(list_len(x) != 3){
                                 SEXPR_PERROR(x,"lambda: argc != 3");
