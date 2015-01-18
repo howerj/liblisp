@@ -232,7 +232,17 @@ START_EVAL:
         case S_CONS: 
         if(S_SYMBOL == CAR(x)->type){
                 if (CMPSYM(x,"begin")){
-                } else if (CMPSYM(x,"cond")){
+                        expr y = NULL;
+                        if(1 == list_len(x))
+                                return mknil();
+                        while(1){
+                                x = CDR(x);
+                                if(NULL == CDR(x)){
+                                        x = y;
+                                        goto START_EVAL;
+                                }
+                                y = lisp_eval(CAR(x),env,l);
+                        }
                 } else if (CMPSYM(x,"define")){
                 } else if (CMPSYM(x,"if")){
                         if(list_len(x) != 4){
