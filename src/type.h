@@ -41,21 +41,26 @@ typedef enum {
         S_LAST_TYPE             /* 11: not a type, just the last enum */
 } sexpr_e;
 
+typedef union {
+        int32_t integer;
+        char *string;
+        char *symbol;
+        struct sexpr_t *ptr;
+        io *io;
+        expr(*func) (expr args, lisp l);
+} cell_union_t;
+
+typedef struct atom_t {
+        cell_union_t data;
+        size_t len;
+        sexpr_e type;
+} atom_t;
+
 /**sexpr module**/
 struct sexpr_t { /** base type for our expressions */
-        union {
-                int32_t integer;
-                char *string;
-                char *symbol;
-                struct sexpr_t *cons[2];
-                struct sexpr_t *quoted;
-                io *io;
-                expr(*func) (expr args, lisp l);       /* primitive operations */
-        } data;
-        size_t len; /*for string/symbol types, perhaps this should be move
-                      into a string/symbol type*/
-        sexpr_e type;
-        unsigned int gc_mark:1;  /*the mark of the garbage collector */
+        atom_t car;
+        atom_t cdr;
+        bool gc_mark;  /*the mark of the garbage collector */
 };
 
 /**lisp global environment struct**/

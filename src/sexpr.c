@@ -99,8 +99,8 @@ expr sexpr_parse(io * i)
                 case '(':  return parse_list(i);
                 case '"':  return parse_string(i);
                 case '\'': return parse_quote(i);
-                /*case '/': return parse_regex(i);*/
-                /*case '<': return parse_file(i);*/
+              /*case '/': return parse_regex(i);*/
+              /*case '<': return parse_file(i);*/
                 default:
                         io_ungetc(c, i);
                         return parse_symbol(i);
@@ -118,6 +118,7 @@ expr sexpr_parse(io * i)
  **/
 void sexpr_print(expr x, io * o, unsigned depth)
 {
+#if 0
         size_t i;
         io *e;
         if(NULL == x)
@@ -181,6 +182,7 @@ void sexpr_print(expr x, io * o, unsigned depth)
         io_printer(o,"%t");
         if (0 == depth)
                 io_putc('\n', o);
+#endif
 }
 
 /**
@@ -196,6 +198,7 @@ void sexpr_print(expr x, io * o, unsigned depth)
  **/
 void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
 {
+#if 0
         static io *fallback; 
         io *e = io_get_error_stream();
         if((NULL == e) && (NULL == fallback)){
@@ -216,6 +219,7 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
                 fallback = NULL;
         }
         return;
+#endif
 }
 
 /**
@@ -229,6 +233,7 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
  **/
 expr append(expr cons, expr ele)
 {
+#if 0
         expr nc = NULL;
         assert(cons && ele);
         nc = gc_calloc();
@@ -237,6 +242,7 @@ expr append(expr cons, expr ele)
         nc->type = S_CONS;
         nc->data.cons[0] = nc->data.cons[1] = NULL;
         return nc;
+#endif
 }
 
 /*****************************************************************************/
@@ -275,6 +281,7 @@ static bool isnumber(const char *buf, size_t string_l)
  *  @return         NULL or parsed quote
  **/
 expr parse_quote(io * i){
+#if 0
         expr ex = NULL;
         assert(i);
         ex = gc_calloc();
@@ -282,6 +289,7 @@ expr parse_quote(io * i){
         if(NULL == (ex->data.quoted = sexpr_parse(i)))
                 return NULL;
         return ex;
+#endif
 }
 
 /**
@@ -292,6 +300,7 @@ expr parse_quote(io * i){
  **/
 static expr parse_symbol(io * i)
 {
+#if 0
         expr ex = NULL;
         unsigned count = 0;
         int c;
@@ -355,6 +364,7 @@ static expr parse_symbol(io * i)
                 strcpy(ex->data.symbol, buf);
         }
         return ex;
+#endif
 }
 
 /**
@@ -364,6 +374,7 @@ static expr parse_symbol(io * i)
  **/
 static expr parse_string(io * i)
 {
+#if 0
         expr ex = NULL;
         unsigned int count = 0;
         int c;
@@ -405,6 +416,7 @@ static expr parse_string(io * i)
         ex->data.string = mem_malloc(ex->len + 1);
         strcpy(ex->data.string, buf);
         return ex;
+#endif
 }
 
 /**
@@ -416,6 +428,7 @@ static expr parse_string(io * i)
  **/
 static expr parse_list(io * i)
 {
+#if 0
         expr ex = NULL, head = NULL, prev = NULL, chld;
         int c;
         assert(i);
@@ -467,6 +480,7 @@ static expr parse_list(io * i)
         if(prev->data.cons[1] && !ex->data.cons[0])
                 prev->data.cons[1] = NULL;
         return head;
+#endif
 }
 
 /**
