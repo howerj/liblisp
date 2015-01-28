@@ -120,8 +120,15 @@ void sexpr_print(expr x, io * o, unsigned depth)
 {
         size_t i;
         io *e;
+BEGIN:
         if(NULL == x)
                 return;
+
+        /* printing cons:
+         * if (cdr.type != nil|cons)    print (car . cdr) or (cons car cdr)
+         * if (cdr.type == nil)         print (car)
+         * if (cdr.type == cons)        print (car cdr...)
+         */
 
         switch(x->car.type){
         case S_NIL:       io_printer(o,"%r()"); break;
@@ -132,16 +139,9 @@ void sexpr_print(expr x, io * o, unsigned depth)
         case S_FILE:      /*not implemented yet*/ break;
         case S_ERROR:     /*not implemented yet*/ break;
         case S_CONS:
-#if 0
                 io_putc('(', o);
-                do{
-                        if(x->data.cons[0])
-                                sexpr_print(x->data.cons[0],o,depth+1);
-                        if(x->data.cons[1] && x->data.cons[1]->data.cons[1])
-                                io_putc(' ',o);
-                } while((NULL != x) && (NULL != (x = x->data.cons[1])));
+                sexpr_print(x->car.data.ptr,o,depth+1);
                 io_putc(')', o);
-#endif
                 break;
         case S_STRING: /*fall through*/
         case S_SYMBOL: /*symbols are yellow, strings are red, escaped chars magenta */
@@ -184,6 +184,10 @@ void sexpr_print(expr x, io * o, unsigned depth)
         io_printer(o,"%t");
         if (0 == depth)
                 io_putc('\n', o);
+        if(x->cdr.type == S_CONS){
+                x = x->cdr.data.ptr;
+                goto BEGIN;
+        }
 }
 
 /**
@@ -228,20 +232,15 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
  *                      - Return New cons
  *  @param          cons a list to append an atom to
  *  @param          ele  the atom to append to the list
- *  @return         New cons cell
+ *  @return         ele
  **/
 expr append(expr cons, expr ele)
 {
-#if 0
-        expr nc = NULL;
         assert(cons && ele);
-        nc = gc_calloc();
-        cons->data.cons[0] = ele;
-        cons->data.cons[1] = nc;
-        nc->type = S_CONS;
-        nc->data.cons[0] = nc->data.cons[1] = NULL;
-        return nc;
-#endif
+        cons->cdr.type = S_CONS;
+        cons->cdr.data.ptr = ele;
+        ele->cdr.type = S_NIL;
+        return ele;
 }
 
 /*****************************************************************************/
@@ -421,13 +420,13 @@ static expr parse_string(io * i)
  **/
 static expr parse_list(io * i)
 {
-#if 0
         expr ex = NULL, head = NULL, prev = NULL, chld;
         int c;
         assert(i);
 
         head = ex = gc_calloc();
-        head->type = S_CONS;
+        head->car.type = S_NIL; 
+        head->cdr.type = S_NIL; 
 
         while (EOF != (c = io_getc(i))) {
                 if (isspace(c))
@@ -468,12 +467,13 @@ static expr parse_list(io * i)
         IO_REPORT("list err");
         return NULL;
  success:
+        /*
         if(ex == head)
                 head->type = S_NIL;
         if(prev->data.cons[1] && !ex->data.cons[0])
                 prev->data.cons[1] = NULL;
+                */
         return head;
-#endif
 }
 
 /**
