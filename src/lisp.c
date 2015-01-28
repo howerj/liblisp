@@ -98,7 +98,6 @@ static primop_initializers primops[] = {
  **/
 lisp lisp_init(void)
 {
-#if 0
         io *e;
         lisp l;
         size_t i;
@@ -109,29 +108,23 @@ lisp lisp_init(void)
         l->i = mem_calloc(1, io_sizeof_io());
         l->o = mem_calloc(1, io_sizeof_io());
 
-        l->global->type = S_CONS;
-        l->env->type = S_CONS;
-
         /* set up file I/O and pointers */
         io_file_in(l->i, stdin);
         io_file_out(l->o, stdout);
 
-        SETCAR(l->global, mknil());
-        SETCDR(l->global, NULL);
-
         e = io_get_error_stream();
         io_file_out(e, stderr); 
-
+#if 0
         /* normal forms, kind of  */
         for(i = 0; (NULL != primops[i].s) && (NULL != primops[i].func) ; i++)
                 if(NULL == extendprimop(primops[i].s, primops[i].func, l))
                         goto fail;
+#endif
 
         return l;
 fail:
         IO_REPORT("initilization failed");
         return NULL; 
-#endif
 }
 
 /** 
@@ -210,6 +203,7 @@ void lisp_print(expr x, io * o) { sexpr_print(x, o, 0); }
  **/
 expr lisp_eval(expr x, expr env, lisp l)
 {
+        return x;
 #if 0
         expr nx;
         if(NULL == x){

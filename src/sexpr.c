@@ -118,20 +118,21 @@ expr sexpr_parse(io * i)
  **/
 void sexpr_print(expr x, io * o, unsigned depth)
 {
-#if 0
         size_t i;
         io *e;
         if(NULL == x)
                 return;
-        switch(x->type){
+
+        switch(x->car.type){
         case S_NIL:       io_printer(o,"%r()"); break;
         case S_TEE:       io_printer(o,"%gt");  break;
-        case S_INTEGER:   io_printer(o,"%m%d", x->data.integer); break;
+        case S_INTEGER:   io_printer(o,"%m%d", x->car.data.integer); break;
         case S_PRIMITIVE: io_printer(o,"%b{prim}"); break;
         case S_PROC:      io_printer(o,"%b{proc}"); break;
         case S_FILE:      /*not implemented yet*/ break;
         case S_ERROR:     /*not implemented yet*/ break;
         case S_CONS:
+#if 0
                 io_putc('(', o);
                 do{
                         if(x->data.cons[0])
@@ -140,26 +141,27 @@ void sexpr_print(expr x, io * o, unsigned depth)
                                 io_putc(' ',o);
                 } while((NULL != x) && (NULL != (x = x->data.cons[1])));
                 io_putc(')', o);
+#endif
                 break;
         case S_STRING: /*fall through*/
         case S_SYMBOL: /*symbols are yellow, strings are red, escaped chars magenta */
         {
-                bool isstring = S_STRING == x->type ? true : false;     /*isnotsymbol */
+                bool isstring = S_STRING == x->car.type ? true : false;     /*isnotsymbol */
                 io_printer(o, isstring ? "%r" : "%y");
                 if (isstring)
                         io_putc('"', o);
-                for (i = 0; i < x->len; i++) {
-                        switch ((x->data.string)[i]) {
+                for (i = 0; i < x->car.len; i++) {
+                        switch ((x->car.data.string)[i]) {
                         case '"': case '\\':
                                 io_printer(o, "%m\\");
                                 break;
                         case ')': case '(': case '#':
-                                if (x->type == S_SYMBOL) 
+                                if (x->car.type == S_SYMBOL) 
                                         io_printer(o, "%m\\");
                         default:
                                 break;
                         }
-                        io_putc((x->data.string)[i], o);
+                        io_putc((x->car.data.string)[i], o);
                         io_printer(o, isstring ? "%r" : "%y");
                 }
                 if (isstring)
@@ -168,7 +170,7 @@ void sexpr_print(expr x, io * o, unsigned depth)
         break;
         case S_QUOTE: 
                 io_putc('\'',o);
-                sexpr_print(x->data.quoted,o,depth);
+                sexpr_print(x->car.data.ptr,o,depth);
                 break;
         case S_LAST_TYPE: /*fall through, not a type*/
         default:
@@ -182,7 +184,6 @@ void sexpr_print(expr x, io * o, unsigned depth)
         io_printer(o,"%t");
         if (0 == depth)
                 io_putc('\n', o);
-#endif
 }
 
 /**
@@ -198,7 +199,6 @@ void sexpr_print(expr x, io * o, unsigned depth)
  **/
 void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
 {
-#if 0
         static io *fallback; 
         io *e = io_get_error_stream();
         if((NULL == e) && (NULL == fallback)){
@@ -219,7 +219,6 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
                 fallback = NULL;
         }
         return;
-#endif
 }
 
 /**
@@ -281,15 +280,13 @@ static bool isnumber(const char *buf, size_t string_l)
  *  @return         NULL or parsed quote
  **/
 expr parse_quote(io * i){
-#if 0
         expr ex = NULL;
         assert(i);
         ex = gc_calloc();
-        ex->type = S_QUOTE;
-        if(NULL == (ex->data.quoted = sexpr_parse(i)))
+        ex->car.type = S_QUOTE;
+        if(NULL == (ex->car.data.ptr = sexpr_parse(i)))
                 return NULL;
         return ex;
-#endif
 }
 
 /**
@@ -300,7 +297,6 @@ expr parse_quote(io * i){
  **/
 static expr parse_symbol(io * i)
 {
-#if 0
         expr ex = NULL;
         unsigned count = 0;
         int c;
@@ -354,17 +350,16 @@ static expr parse_symbol(io * i)
  fail:
         return NULL;
  success:
-        ex->len = strlen(buf);
-        if ((true == parse_numbers_f) && isnumber(buf, ex->len)) {
-                ex->type = S_INTEGER;
-                ex->data.integer = (int32_t)strtol(buf, NULL, 0);
+        ex->car.len = strlen(buf);
+        if ((true == parse_numbers_f) && isnumber(buf, ex->car.len)) {
+                ex->car.type = S_INTEGER;
+                ex->car.data.integer = (int32_t)strtol(buf, NULL, 0);
         } else {
-                ex->type = S_SYMBOL;
-                ex->data.symbol = mem_malloc(ex->len + 1);
-                strcpy(ex->data.symbol, buf);
+                ex->car.type = S_SYMBOL;
+                ex->car.data.symbol = mem_malloc(ex->car.len + 1);
+                strcpy(ex->car.data.symbol, buf);
         }
         return ex;
-#endif
 }
 
 /**
@@ -374,7 +369,6 @@ static expr parse_symbol(io * i)
  **/
 static expr parse_string(io * i)
 {
-#if 0
         expr ex = NULL;
         unsigned int count = 0;
         int c;
@@ -411,12 +405,11 @@ static expr parse_string(io * i)
  fail:
         return NULL;
  success:
-        ex->type = S_STRING;
-        ex->len = strlen(buf);
-        ex->data.string = mem_malloc(ex->len + 1);
-        strcpy(ex->data.string, buf);
+        ex->car.type = S_STRING;
+        ex->car.len = strlen(buf);
+        ex->car.data.string = mem_malloc(ex->car.len + 1);
+        strcpy(ex->car.data.string, buf);
         return ex;
-#endif
 }
 
 /**

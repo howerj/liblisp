@@ -29,7 +29,7 @@ typedef enum {
         /*S_INVALID, // zero should be an invalid type for calloc */
         S_NIL,                  /* 0:  () */
         S_TEE,                  /* 1:  t */
-        S_CONS,                 /* 2:  cons list */
+        S_CONS,                 /* 2:  cons list, actually pointer type */
         S_STRING,               /* 3:  string */
         S_SYMBOL,               /* 4:  symbol */
         S_INTEGER,              /* 5:  integer */

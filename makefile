@@ -60,7 +60,7 @@ $(BUILD_DIR)/$(TARGET): $(OBJFILES) $(BUILD_DIR)/main.o
 	$(CC) $(CFLAGS) $(OBJFILES) $(BUILD_DIR)/main.o -o $@
 
 run: $(BUILD_DIR)/$(TARGET)
-	$(BUILD_DIR)/./$(TARGET) -c $(INPUTF)
+	$(BUILD_DIR)/./$(TARGET) -c
 
 ## linenoise experimental lisp ##
 
