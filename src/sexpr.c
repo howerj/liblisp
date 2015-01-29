@@ -453,14 +453,13 @@ static expr parse_list(io * i)
                         chld = parse_list(i);
                         if (!chld)
                                 goto fail;
-                        ex->car.type = S_CONS;
-                        ex->car.data.ptr = chld;
                         ex->cdr.type = S_CONS;
                         ex->cdr.data.ptr = gc_calloc();
                         ex = ex->cdr.data.ptr;
                         if(!ex)
                                 goto fail;
-                        ex->car.type = S_NIL;
+                        ex->car.type = S_CONS;
+                        ex->car.data.ptr = chld;
                         ex->cdr.type = S_NIL;
                         continue;
                 case ')':
