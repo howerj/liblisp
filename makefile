@@ -75,7 +75,7 @@ $(BUILD_DIR)/lisp.linenoise: $(OBJFILES) $(BUILD_DIR)/linenoise.o $(BUILD_DIR)/l
 ## testing ####################################################################
 
 valgrind: $(BUILD_DIR)/lisp
-	valgrind $(BUILD_DIR)/./$(TARGET) -c $(INPUTF)
+	valgrind $(BUILD_DIR)/./$(TARGET) -c 
 
 ## documentation ##############################################################
 

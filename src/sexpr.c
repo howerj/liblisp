@@ -120,10 +120,11 @@ void sexpr_print(expr x, io * o, unsigned depth)
 {
         size_t i;
         io *e;
+        if(0 == depth)
+                io_putc('(', o);
 BEGIN:
         if(NULL == x)
                 return;
-
         /* printing cons:
          * if (cdr.type != nil|cons)    print (car . cdr) or (cons car cdr)
          * if (cdr.type == nil)         print (car)
@@ -187,7 +188,7 @@ BEGIN:
                 goto BEGIN;
         }
         if (0 == depth)
-                io_putc('\n', o);
+                io_printer(o,")\n");
 
 }
 
@@ -451,12 +452,7 @@ static expr parse_list(io * i)
                         continue;
                 case '(':
                         chld = parse_list(i);
-                        if (!chld)
-                                goto fail;
-                        ex->cdr.type = S_CONS;
-                        ex->cdr.data.ptr = gc_calloc();
-                        ex = ex->cdr.data.ptr;
-                        if(!ex)
+                        if (!chld || !(ex = append(ex, gc_calloc())))
                                 goto fail;
                         ex->car.type = S_CONS;
                         ex->car.data.ptr = chld;
