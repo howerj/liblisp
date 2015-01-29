@@ -181,13 +181,14 @@ BEGIN:
                 exit(EXIT_FAILURE);
                 break;
         }
-        io_printer(o,"%t");
-        if (0 == depth)
-                io_putc('\n', o);
+        io_printer(o,"%t ");
         if(x->cdr.type == S_CONS){
                 x = x->cdr.data.ptr;
                 goto BEGIN;
         }
+        if (0 == depth)
+                io_putc('\n', o);
+
 }
 
 /**
@@ -450,8 +451,17 @@ static expr parse_list(io * i)
                         continue;
                 case '(':
                         chld = parse_list(i);
-                        if (!chld || !(ex = append(ex,chld)))
+                        if (!chld)
                                 goto fail;
+                        ex->car.type = S_CONS;
+                        ex->car.data.ptr = chld;
+                        ex->cdr.type = S_CONS;
+                        ex->cdr.data.ptr = gc_calloc();
+                        ex = ex->cdr.data.ptr;
+                        if(!ex)
+                                goto fail;
+                        ex->car.type = S_NIL;
+                        ex->cdr.type = S_NIL;
                         continue;
                 case ')':
                         goto success;
@@ -467,12 +477,8 @@ static expr parse_list(io * i)
         IO_REPORT("list err");
         return NULL;
  success:
-        /*
-        if(ex == head)
-                head->type = S_NIL;
-        if(prev->data.cons[1] && !ex->data.cons[0])
-                prev->data.cons[1] = NULL;
-                */
+        if(S_NIL != head->cdr.type)
+                head = head->cdr.data.ptr;
         return head;
 }
 
