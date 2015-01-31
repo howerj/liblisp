@@ -25,6 +25,7 @@
  *  @todo Make sure arbitrary binary data is handled correctly, but that's
  *        throughout the code.
  *  @todo Add reference to the code this is based on
+ *  @todo Needs to handle cons properly; (x . y) and (x . ()) = (x)
  *
  **/
 
@@ -130,7 +131,7 @@ void sexpr_print(expr x, io * o, unsigned depth)
         case S_PROC:      io_printer(o,"%b{proc}"); break;
         case S_FILE:      /*not implemented yet*/ break;
         case S_ERROR:     /*not implemented yet*/ break;
-        case S_CONS:
+        case S_CONS:      /*does not handle (x . y) yet*/
                 io_putc('(', o);
                 do{
                         if(x->data.cons[0])
