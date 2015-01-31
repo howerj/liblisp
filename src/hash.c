@@ -13,9 +13,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>  /* printf */
 #include <assert.h> /* assert */
-#include "io.h"
 #include "mem.h"
 #include "hash.h"
 
@@ -23,7 +21,7 @@
 
 typedef struct hashentry {
         char *key;
-        expr val;
+        void* val;
         struct hashentry *next;    /*linked list of entries in a bin */
 } hashentry_t;
 
@@ -40,7 +38,7 @@ typedef struct hashtable {
 static char *_strdup(const char *s);
 static uint32_t djb2(const char *s, size_t len);
 static uint32_t hash_alg(hashtable * table, const char *s);
-static hashentry_t *hash_newpair(const char *key, expr val);
+static hashentry_t *hash_newpair(const char *key, void* val);
 
 /*** Function with external linkage ******************************************/
 
@@ -85,7 +83,7 @@ void hash_destroy(hashtable * table)
                         for(current = table->table[i]; current; current = current->next){
                                 free(prev);
                                 free(current->key);
-                                free(current->val);
+                                /*free(current->val); @todo pass in function that frees values*/
                                 prev = current;
                         }
                         free(prev);
@@ -105,7 +103,7 @@ void hash_destroy(hashtable * table)
  *  @param    val       The value, should not be NULL
  *  @return   void      
  */
-void hash_insert(hashtable * ht, const char *key, expr val)
+void hash_insert(hashtable * ht, const char *key, void* val)
 {
         uint32_t hash;
         hashentry_t *current = NULL, *newt = NULL, *last = NULL;
@@ -142,13 +140,12 @@ void hash_insert(hashtable * ht, const char *key, expr val)
         return;
 }
 
-
 /** 
- *  @brief    Print out a hash table
+ *  @brief    Print out a hash table, will be removed!
  *  @param    table     The hash table to print out, should not be NULL
  *  @return   void      
  */
-void hash_print(io * o, hashtable * table)
+void hash_print(hashtable * table)
 {
         size_t i;
         hashentry_t *current;
@@ -159,7 +156,7 @@ void hash_print(io * o, hashtable * table)
         for(i = 0; i < table->len; i++){
                 if(NULL != table->table[i]){
                         for(current = table->table[i]; current; current = current->next)
-                                io_printer(o, "(key \"%s\" val \"%s\")\n", current->key, current->val);
+                                printf("(key \"%s\" val \"%p\")\n", current->key, current->val);
                 }
         }
 }
@@ -170,7 +167,7 @@ void hash_print(io * o, hashtable * table)
  *  @param    key       The key to search for, should not be NULL
  *  @return   The key, if found, NULL otherwise
  */
-expr hash_lookup(hashtable * table, const char *key)
+void* hash_lookup(hashtable * table, const char *key)
 {
         uint32_t hash;
         hashentry_t *current;
@@ -269,7 +266,7 @@ static uint32_t hash_alg(hashtable * table, const char *s)
  *  @param    val       Value to copy
  *  @return   hashentry_t* A new hash table entry that is initialized or NULL
  */
-static hashentry_t *hash_newpair(const char *key, expr val)
+static hashentry_t *hash_newpair(const char *key, void* val)
 {
         hashentry_t *nent = NULL;
 

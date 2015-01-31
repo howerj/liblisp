@@ -19,6 +19,7 @@ extern "C" {
 #include <stdio.h> 
 #include <stdbool.h>            
 #include "io.h"
+#include "hash.h"
 
 typedef struct sexpr_t sexpr_t;
 typedef sexpr_t *expr;
@@ -62,8 +63,7 @@ struct sexpr_t { /** base type for our expressions */
 struct lispenv_t {/** a lisp environment */
         io *i;                  /* input */
         io *o;                  /* output */
-        expr global_head; /*global key-val list*/
-        expr global_tail; /*global key-val list*/
+        hashtable_t *global;
         expr env;
 };
 

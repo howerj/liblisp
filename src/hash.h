@@ -16,17 +16,15 @@ extern "C" {
 #endif
 
 #include <stddef.h>
-#include "type.h"
-#include "io.h"
 
 struct hashentry;
 typedef struct hashtable hashtable_t;
 
 hashtable_t *hash_create(size_t len);
 void hash_destroy(hashtable_t * table);
-void hash_insert(hashtable_t * ht, const char *key, expr val);
-expr hash_lookup(hashtable_t * table, const char *key);
-void hash_print(io *o, hashtable_t * table);
+void hash_insert(hashtable_t * ht, const char *key, void*  val);
+void*  hash_lookup(hashtable_t * table, const char *key);
+void hash_print(hashtable_t * table);
 
 unsigned hash_get_collisions(hashtable_t * table);
 unsigned hash_get_uniquekeys(hashtable_t * table);
