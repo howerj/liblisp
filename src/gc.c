@@ -97,6 +97,7 @@ int gc_mark(expr root)
  **/
 void gc_sweep(void)
 {
+#if 0
         /**@todo this really needs cleaning up**/
         struct heap *ll, *pll;
         if (NULL == heaplist.next)      /*pass first element, do not collect element */
@@ -126,6 +127,7 @@ void gc_sweep(void)
                         heaphead = pll;
                 }
         }
+#endif
 }
 
 /*****************************************************************************/

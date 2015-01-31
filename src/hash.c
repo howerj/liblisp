@@ -9,22 +9,21 @@
  *  @todo Delete entry function
  *  @todo Add foreach, delete
  *  @todo Replace char -> uint8_t, or void*
- *  @todo change hash print function to use the IO wrapper I made
- *  @todo This should use the memory allocation wrappers I made
- *  @todo Integrate with lisp interpreter *OR* make more generic via void*
  **/
 #include <stdint.h>
-#include <stdlib.h> /* free, calloc */
-#include <string.h> /* strcmp, strlen, strcpy */
+#include <stdlib.h>
+#include <string.h>
 #include <stdio.h>  /* printf */
 #include <assert.h> /* assert */
+#include "io.h"
+#include "mem.h"
 #include "hash.h"
 
 /* private types */
 
 typedef struct hashentry {
         char *key;
-        char *val;
+        expr val;
         struct hashentry *next;    /*linked list of entries in a bin */
 } hashentry_t;
 
@@ -41,7 +40,7 @@ typedef struct hashtable {
 static char *_strdup(const char *s);
 static uint32_t djb2(const char *s, size_t len);
 static uint32_t hash_alg(hashtable * table, const char *s);
-static hashentry_t *hash_newpair(const char *key, const char *val);
+static hashentry_t *hash_newpair(const char *key, expr val);
 
 /*** Function with external linkage ******************************************/
 
@@ -54,10 +53,10 @@ hashtable *hash_create(size_t len)
 {
         hashtable *newt = NULL;
 
-        if (!len || (NULL == (newt = calloc(sizeof(*newt), 1))))
+        if (!len || (NULL == (newt = mem_calloc(sizeof(*newt), 1))))
                 return NULL;
 
-        if (NULL == (newt->table = calloc(sizeof(*newt->table), len))){
+        if (NULL == (newt->table = mem_calloc(sizeof(*newt->table), len))){
                 free(newt);
                 return NULL;
         }
@@ -106,7 +105,7 @@ void hash_destroy(hashtable * table)
  *  @param    val       The value, should not be NULL
  *  @return   void      
  */
-void hash_insert(hashtable * ht, const char *key, const char *val)
+void hash_insert(hashtable * ht, const char *key, expr val)
 {
         uint32_t hash;
         hashentry_t *current = NULL, *newt = NULL, *last = NULL;
@@ -123,7 +122,7 @@ void hash_insert(hashtable * ht, const char *key, const char *val)
 
         if (current && current->key && !strcmp(key, current->key)) {
                 free(current->val);
-                current->val = _strdup(val);
+                current->val = val;
                 ht->replaced++;
         } else {
                 newt = hash_newpair(key, val);
@@ -149,7 +148,7 @@ void hash_insert(hashtable * ht, const char *key, const char *val)
  *  @param    table     The hash table to print out, should not be NULL
  *  @return   void      
  */
-void hash_print(hashtable * table)
+void hash_print(io * o, hashtable * table)
 {
         size_t i;
         hashentry_t *current;
@@ -160,7 +159,7 @@ void hash_print(hashtable * table)
         for(i = 0; i < table->len; i++){
                 if(NULL != table->table[i]){
                         for(current = table->table[i]; current; current = current->next)
-                                printf("key '%s' val '%s'\n", current->key, current->val);
+                                io_printer(o, "(key \"%s\" val \"%s\")\n", current->key, current->val);
                 }
         }
 }
@@ -171,7 +170,7 @@ void hash_print(hashtable * table)
  *  @param    key       The key to search for, should not be NULL
  *  @return   The key, if found, NULL otherwise
  */
-char *hash_lookup(hashtable * table, const char *key)
+expr hash_lookup(hashtable * table, const char *key)
 {
         uint32_t hash;
         hashentry_t *current;
@@ -228,7 +227,7 @@ static char *_strdup(const char *s)
 {
         char *str;
         assert(s);
-        str = calloc(sizeof(*s), strlen(s) + 1);
+        str = mem_calloc(sizeof(*s), strlen(s) + 1);
         strcpy(str, s);
         return str;
 }
@@ -270,15 +269,15 @@ static uint32_t hash_alg(hashtable * table, const char *s)
  *  @param    val       Value to copy
  *  @return   hashentry_t* A new hash table entry that is initialized or NULL
  */
-static hashentry_t *hash_newpair(const char *key, const char *val)
+static hashentry_t *hash_newpair(const char *key, expr val)
 {
         hashentry_t *nent = NULL;
 
-        if (NULL == (nent = calloc(sizeof(*nent), 1)))
+        if (NULL == (nent = mem_calloc(sizeof(*nent), 1)))
                 return NULL;
 
         nent->key = _strdup(key);
-        nent->val = _strdup(val);
+        nent->val = val;
 
         if ((NULL == nent->key) || (NULL == nent->val))
                 return NULL;

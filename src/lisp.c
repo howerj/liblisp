@@ -102,21 +102,19 @@ lisp lisp_init(void)
         lisp l;
         size_t i;
         l = mem_calloc(1, sizeof(*l));
-        l->global = mem_calloc(1, sizeof(sexpr_t));
+        l->global_head = mem_calloc(1, sizeof(sexpr_t));
         l->env = mem_calloc(1, sizeof(sexpr_t));
 
         l->i = mem_calloc(1, io_sizeof_io());
         l->o = mem_calloc(1, io_sizeof_io());
 
-        l->global->type = S_CONS;
+        l->global_head->type = S_CONS;
+        l->global_tail = l->global_head;
         l->env->type = S_CONS;
 
         /* set up file I/O and pointers */
         io_file_in(l->i, stdin);
         io_file_out(l->o, stdout);
-
-        SETCAR(l->global, mknil());
-        SETCDR(l->global, NULL);
 
         e = io_get_error_stream();
         io_file_out(e, stderr); 
@@ -160,6 +158,7 @@ lisp lisp_repl(lisp l)
         while (NULL != (x = sexpr_parse(l->i))) {
                 x = lisp_eval(x, l->env, l);
                 sexpr_print(x, l->o, 0);
+                sexpr_print(l->global_head, l->o, 0);
                 lisp_clean(l);
         }
         return l;
@@ -178,7 +177,7 @@ void lisp_end(lisp l)
         io_file_close(l->i);
         free(l->o);
         free(l->i);
-        free(l->global);
+        free(l->global_head);
         free(l->env);
         mem_free(l);
         return;
@@ -244,6 +243,18 @@ START_EVAL:
                                 y = lisp_eval(CAR(x),env,l);
                         }
                 } else if (CMPSYM(x,"define")){
+                        if(list_len(x) != 3){
+                                SEXPR_PERROR(x,"define: argc != 3");
+                                return mknil();
+                        }
+
+                        {
+                                expr nx, xe;
+                                xe = lisp_eval(CAR(CDR(CDR(x))),env, l);
+                                nx = extend(CAR(CDR(x)), xe, l->global_tail);
+                                l->global_tail = nx;
+                                return xe;
+                        }
                 } else if (CMPSYM(x,"if")){
                         if(list_len(x) != 4){
                                 SEXPR_PERROR(x,"if: argc != 4");
@@ -283,11 +294,11 @@ START_EVAL:
         return mknil();
         case S_SYMBOL:
                 nx = find(env, x, l);
-                if(ISNIL(nx)){
+                if(NULL == nx){
                         SEXPR_PERROR(x, "unbound symbol");
-                        return nx;
+                        return mknil();
                 }
-                return CDR(nx);
+                return nx;
         case S_FILE:      IO_REPORT("Not implemented");
         case S_ERROR:     IO_REPORT("Not implemented");
         case S_LAST_TYPE: /*fall through, not a type*/
@@ -307,7 +318,7 @@ START_EVAL:
  **/
 void lisp_clean(lisp l)
 {
-        gc_mark(l->global);
+        gc_mark(l->global_head);
         gc_sweep();
 }
 
@@ -322,52 +333,37 @@ static size_t list_len(expr x){
 
 /** find a symbol in an environment **/
 static expr find(expr env, expr x, lisp l){
-        /*expr nx = dofind(env, x);
-        if (ISNIL(nx)) {
-                nx = dofind(l->global, x);
-                if (ISNIL(nx)) {
-                        return mknil();
-                }
-        }
-        return nx;*/
-        expr nx = dofind(l->global, x);
-        if (ISNIL(nx)) 
-                return mknil();
+        expr nx;
+        if(NULL == (nx = dofind(env, x)))
+                return dofind(l->global_head, x);
         return nx;
 }
 
 /** find a symbol in an environment **/
 static expr dofind(expr env, expr x){
-        expr node, list = env;
+        expr list = env; 
         do{ 
-                node = CAR(list);
-                if(!node || !CAR(node))
-                        continue;
-                /*printf("e:%d %s\n",node->type, x->data.symbol);
-                printf("p:%p %p\n",node, node->data.symbol);*/
-                if(CMPSYM(node,x->data.symbol))
-                        return CDR(node);
-        } while((list = CDR(list)));
+                if(!list || !CAR(list) || !CDR(list))
+                        break;
+                printf("%s <=> %s\n", CAR(list)->data.symbol, x->data.symbol);
+                if(CMPSYM(list,x->data.symbol))
+                        return CAR(CDR(list));
+        } while((list = CDR(CDR(list))));
 
-        return mknil();
+        return NULL;
 }
 
 /** extend the lisp environment **/
 static expr extend(expr sym, expr val, expr env){
-        expr newhead = mkobj(S_CONS), newval = mkobj(S_CONS);
-        SETCAR(newval,sym);
-        SETCDR(newval,mkobj(S_CONS));
-        SETCAR(CDR(newval),env);
-        SETCDR(CDR(newval),NULL);
-        SETCAR(newhead,newval);
-        SETCDR(newhead,env);
-        return newhead;
+        env = append(env, sym);
+        env = append(env, val);
+        return env;
 }
 
 /** extend the lisp environment with a primitive operator **/
 static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), lisp l)
 {
-        return extend(mksym(mem_strdup(s)), mkprimop(func), l->global);
+        return extend(mksym(mem_strdup(s)), mkprimop(func), l->global_head);
 }
 
 /** make new object **/

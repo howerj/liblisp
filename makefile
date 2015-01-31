@@ -46,6 +46,7 @@ OBJFILES=$(BUILD_DIR)/io.o \
 	 $(BUILD_DIR)/sexpr.o \
 	 $(BUILD_DIR)/regex.o \
 	 $(BUILD_DIR)/lisp.o \
+	 $(BUILD_DIR)/hash.o \
 
 ## building ###################################################################
 # Only a C tool chain is necessary to built the project. Anything else is

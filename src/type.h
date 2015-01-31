@@ -62,7 +62,8 @@ struct sexpr_t { /** base type for our expressions */
 struct lispenv_t {/** a lisp environment */
         io *i;                  /* input */
         io *o;                  /* output */
-        expr global; /*global key-val list*/
+        expr global_head; /*global key-val list*/
+        expr global_tail; /*global key-val list*/
         expr env;
 };
 

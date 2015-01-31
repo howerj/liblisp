@@ -11,20 +11,22 @@
 #ifndef HASH_H
 #define HASH_H
 
-#include <stddef.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <stddef.h>
+#include "type.h"
+#include "io.h"
 
 struct hashentry;
 typedef struct hashtable hashtable_t;
 
 hashtable_t *hash_create(size_t len);
 void hash_destroy(hashtable_t * table);
-void hash_insert(hashtable_t * ht, const char *key, const char *val);
-char *hash_lookup(hashtable_t * table, const char *key);
-void hash_print(hashtable_t * table);
+void hash_insert(hashtable_t * ht, const char *key, expr val);
+expr hash_lookup(hashtable_t * table, const char *key);
+void hash_print(io *o, hashtable_t * table);
 
 unsigned hash_get_collisions(hashtable_t * table);
 unsigned hash_get_uniquekeys(hashtable_t * table);
