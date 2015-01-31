@@ -99,8 +99,8 @@ expr sexpr_parse(io * i)
                 case '(':  return parse_list(i);
                 case '"':  return parse_string(i);
                 case '\'': return parse_quote(i);
-              /*case '/': return parse_regex(i);*/
-              /*case '<': return parse_file(i);*/
+                /*case '/': return parse_regex(i);*/
+                /*case '<': return parse_file(i);*/
                 default:
                         io_ungetc(c, i);
                         return parse_symbol(i);
@@ -120,50 +120,45 @@ void sexpr_print(expr x, io * o, unsigned depth)
 {
         size_t i;
         io *e;
-        bool print_rparen = false;
-        if ((0 == depth) && (S_NIL != x->cdr.type))
-                print_rparen = true, io_putc('(', o);
-BEGIN:
         if(NULL == x)
                 return;
-        /* printing cons:
-         * if (cdr.type != nil|cons)    print (car . cdr) or (cons car cdr)
-         * if (cdr.type == nil)         print (car)
-         * if (cdr.type == cons)        print (car cdr...)
-         */
-
-        switch(x->car.type){
+        switch(x->type){
         case S_NIL:       io_printer(o,"%r()"); break;
         case S_TEE:       io_printer(o,"%gt");  break;
-        case S_INTEGER:   io_printer(o,"%m%d", x->car.data.integer); break;
+        case S_INTEGER:   io_printer(o,"%m%d", x->data.integer); break;
         case S_PRIMITIVE: io_printer(o,"%b{prim}"); break;
         case S_PROC:      io_printer(o,"%b{proc}"); break;
         case S_FILE:      /*not implemented yet*/ break;
         case S_ERROR:     /*not implemented yet*/ break;
         case S_CONS:
                 io_putc('(', o);
-                sexpr_print(x->car.data.ptr,o,depth+1);
+                do{
+                        if(x->data.cons[0])
+                                sexpr_print(x->data.cons[0],o,depth+1);
+                        if(x->data.cons[1] && x->data.cons[1]->data.cons[1])
+                                io_putc(' ',o);
+                } while((NULL != x) && (NULL != (x = x->data.cons[1])));
                 io_putc(')', o);
                 break;
         case S_STRING: /*fall through*/
         case S_SYMBOL: /*symbols are yellow, strings are red, escaped chars magenta */
         {
-                bool isstring = S_STRING == x->car.type ? true : false;     /*isnotsymbol */
+                bool isstring = S_STRING == x->type ? true : false;     /*isnotsymbol */
                 io_printer(o, isstring ? "%r" : "%y");
                 if (isstring)
                         io_putc('"', o);
-                for (i = 0; i < x->car.len; i++) {
-                        switch ((x->car.data.string)[i]) {
+                for (i = 0; i < x->len; i++) {
+                        switch ((x->data.string)[i]) {
                         case '"': case '\\':
                                 io_printer(o, "%m\\");
                                 break;
                         case ')': case '(': case '#':
-                                if (x->car.type == S_SYMBOL) 
+                                if (x->type == S_SYMBOL) 
                                         io_printer(o, "%m\\");
                         default:
                                 break;
                         }
-                        io_putc((x->car.data.string)[i], o);
+                        io_putc((x->data.string)[i], o);
                         io_printer(o, isstring ? "%r" : "%y");
                 }
                 if (isstring)
@@ -172,7 +167,7 @@ BEGIN:
         break;
         case S_QUOTE: 
                 io_putc('\'',o);
-                sexpr_print(x->car.data.ptr,o,depth);
+                sexpr_print(x->data.quoted,o,depth);
                 break;
         case S_LAST_TYPE: /*fall through, not a type*/
         default:
@@ -183,16 +178,9 @@ BEGIN:
                 exit(EXIT_FAILURE);
                 break;
         }
-        io_printer(o,"%t ");
-        if(x->cdr.type == S_CONS){
-                x = x->cdr.data.ptr;
-                goto BEGIN;
-        }
-        if ((0 == depth) && true == print_rparen)
-                io_putc(')',o);
-        if(0 == depth)
+        io_printer(o,"%t");
+        if (0 == depth)
                 io_putc('\n', o);
-
 }
 
 /**
@@ -237,15 +225,18 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
  *                      - Return New cons
  *  @param          cons a list to append an atom to
  *  @param          ele  the atom to append to the list
- *  @return         ele
+ *  @return         New cons cell
  **/
 expr append(expr cons, expr ele)
 {
+        expr nc = NULL;
         assert(cons && ele);
-        cons->cdr.type = S_CONS;
-        cons->cdr.data.ptr = ele;
-        ele->cdr.type = S_NIL;
-        return ele;
+        nc = gc_calloc();
+        cons->data.cons[0] = ele;
+        cons->data.cons[1] = nc;
+        nc->type = S_CONS;
+        nc->data.cons[0] = nc->data.cons[1] = NULL;
+        return nc;
 }
 
 /*****************************************************************************/
@@ -287,8 +278,8 @@ expr parse_quote(io * i){
         expr ex = NULL;
         assert(i);
         ex = gc_calloc();
-        ex->car.type = S_QUOTE;
-        if(NULL == (ex->car.data.ptr = sexpr_parse(i)))
+        ex->type = S_QUOTE;
+        if(NULL == (ex->data.quoted = sexpr_parse(i)))
                 return NULL;
         return ex;
 }
@@ -354,14 +345,14 @@ static expr parse_symbol(io * i)
  fail:
         return NULL;
  success:
-        ex->car.len = strlen(buf);
-        if ((true == parse_numbers_f) && isnumber(buf, ex->car.len)) {
-                ex->car.type = S_INTEGER;
-                ex->car.data.integer = (int32_t)strtol(buf, NULL, 0);
+        ex->len = strlen(buf);
+        if ((true == parse_numbers_f) && isnumber(buf, ex->len)) {
+                ex->type = S_INTEGER;
+                ex->data.integer = (int32_t)strtol(buf, NULL, 0);
         } else {
-                ex->car.type = S_SYMBOL;
-                ex->car.data.symbol = mem_malloc(ex->car.len + 1);
-                strcpy(ex->car.data.symbol, buf);
+                ex->type = S_SYMBOL;
+                ex->data.symbol = mem_malloc(ex->len + 1);
+                strcpy(ex->data.symbol, buf);
         }
         return ex;
 }
@@ -409,10 +400,10 @@ static expr parse_string(io * i)
  fail:
         return NULL;
  success:
-        ex->car.type = S_STRING;
-        ex->car.len = strlen(buf);
-        ex->car.data.string = mem_malloc(ex->car.len + 1);
-        strcpy(ex->car.data.string, buf);
+        ex->type = S_STRING;
+        ex->len = strlen(buf);
+        ex->data.string = mem_malloc(ex->len + 1);
+        strcpy(ex->data.string, buf);
         return ex;
 }
 
@@ -425,18 +416,18 @@ static expr parse_string(io * i)
  **/
 static expr parse_list(io * i)
 {
-        expr ex = NULL, head = NULL, chld;
+        expr ex = NULL, head = NULL, prev = NULL, chld;
         int c;
         assert(i);
 
         head = ex = gc_calloc();
-        head->car.type = S_NIL; 
-        head->cdr.type = S_NIL; 
+        head->type = S_CONS;
 
         while (EOF != (c = io_getc(i))) {
                 if (isspace(c))
                         continue;
 
+                prev = ex;
                 switch (c) {
                 case '#':
                         if (true == parse_comment(i))
@@ -454,11 +445,8 @@ static expr parse_list(io * i)
                         continue;
                 case '(':
                         chld = parse_list(i);
-                        if (!chld || !(ex = append(ex, gc_calloc())))
+                        if (!chld || !(ex = append(ex,chld)))
                                 goto fail;
-                        ex->car.type = S_CONS;
-                        ex->car.data.ptr = chld;
-                        ex->cdr.type = S_NIL;
                         continue;
                 case ')':
                         goto success;
@@ -474,8 +462,10 @@ static expr parse_list(io * i)
         IO_REPORT("list err");
         return NULL;
  success:
-        if(S_NIL != head->cdr.type)
-                head = head->cdr.data.ptr;
+        if(ex == head)
+                head->type = S_NIL;
+        if(prev->data.cons[1] && !ex->data.cons[0])
+                prev->data.cons[1] = NULL;
         return head;
 }
 

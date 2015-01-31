@@ -60,7 +60,7 @@ $(BUILD_DIR)/$(TARGET): $(OBJFILES) $(BUILD_DIR)/main.o
 	$(CC) $(CFLAGS) $(OBJFILES) $(BUILD_DIR)/main.o -o $@
 
 run: $(BUILD_DIR)/$(TARGET)
-	$(BUILD_DIR)/./$(TARGET) -c
+	$(BUILD_DIR)/./$(TARGET) -c $(INPUTF)
 
 ## linenoise experimental lisp ##
 
@@ -75,7 +75,7 @@ $(BUILD_DIR)/lisp.linenoise: $(OBJFILES) $(BUILD_DIR)/linenoise.o $(BUILD_DIR)/l
 ## testing ####################################################################
 
 valgrind: $(BUILD_DIR)/lisp
-	valgrind $(BUILD_DIR)/./$(TARGET) -c 
+	valgrind $(BUILD_DIR)/./$(TARGET) -c  $(INPUTF)
 
 ## documentation ##############################################################
 

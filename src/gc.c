@@ -67,7 +67,6 @@ expr gc_calloc(void)
  **/
 int gc_mark(expr root)
 {
-#if 0
         if(NULL == root)
                 return false;
         root->gc_mark = true;
@@ -90,7 +89,6 @@ int gc_mark(expr root)
                 exit(EXIT_FAILURE);
         }
         return false;
-#endif
 }
 
 /**
@@ -99,7 +97,6 @@ int gc_mark(expr root)
  **/
 void gc_sweep(void)
 {
-#if 0
         /**@todo this really needs cleaning up**/
         struct heap *ll, *pll;
         if (NULL == heaplist.next)      /*pass first element, do not collect element */
@@ -129,7 +126,6 @@ void gc_sweep(void)
                         heaphead = pll;
                 }
         }
-#endif
 }
 
 /*****************************************************************************/
@@ -142,7 +138,6 @@ void gc_sweep(void)
  **/
 static void gcinner(expr x)
 {
-#if 0
         if(NULL == x)
                 return;
         switch(x->type){
@@ -159,7 +154,6 @@ static void gcinner(expr x)
                 IO_REPORT("Not a valid type");
                 exit(EXIT_FAILURE);
         }
-#endif
 }
 
 /*****************************************************************************/

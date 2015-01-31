@@ -108,18 +108,23 @@ lisp lisp_init(void)
         l->i = mem_calloc(1, io_sizeof_io());
         l->o = mem_calloc(1, io_sizeof_io());
 
+        l->global->type = S_CONS;
+        l->env->type = S_CONS;
+
         /* set up file I/O and pointers */
         io_file_in(l->i, stdin);
         io_file_out(l->o, stdout);
 
+        SETCAR(l->global, mknil());
+        SETCDR(l->global, NULL);
+
         e = io_get_error_stream();
         io_file_out(e, stderr); 
-#if 0
+
         /* normal forms, kind of  */
         for(i = 0; (NULL != primops[i].s) && (NULL != primops[i].func) ; i++)
                 if(NULL == extendprimop(primops[i].s, primops[i].func, l))
                         goto fail;
-#endif
 
         return l;
 fail:
@@ -203,8 +208,6 @@ void lisp_print(expr x, io * o) { sexpr_print(x, o, 0); }
  **/
 expr lisp_eval(expr x, expr env, lisp l)
 {
-        return x;
-#if 0
         expr nx;
         if(NULL == x){
                 SEXPR_PERROR(NULL,"lisp_eval passed NULL");
@@ -295,7 +298,6 @@ START_EVAL:
 
         SEXPR_PERROR(NULL,"Should never get here.");
         return x;
-#endif
 }
 
 /**
@@ -313,16 +315,13 @@ void lisp_clean(lisp l)
 
 /** calculate length of a list **/
 static size_t list_len(expr x){
-#if 0
         size_t i = 0;
         while((x=CDR(x))) i++;
         return i;
-#endif
 }
 
 /** find a symbol in an environment **/
 static expr find(expr env, expr x, lisp l){
-#if 0
         /*expr nx = dofind(env, x);
         if (ISNIL(nx)) {
                 nx = dofind(l->global, x);
@@ -335,12 +334,10 @@ static expr find(expr env, expr x, lisp l){
         if (ISNIL(nx)) 
                 return mknil();
         return nx;
-#endif
 }
 
 /** find a symbol in an environment **/
 static expr dofind(expr env, expr x){
-#if 0
         expr node, list = env;
         do{ 
                 node = CAR(list);
@@ -353,12 +350,10 @@ static expr dofind(expr env, expr x){
         } while((list = CDR(list)));
 
         return mknil();
-#endif
 }
 
 /** extend the lisp environment **/
 static expr extend(expr sym, expr val, expr env){
-#if 0
         expr newhead = mkobj(S_CONS), newval = mkobj(S_CONS);
         SETCAR(newval,sym);
         SETCDR(newval,mkobj(S_CONS));
@@ -367,7 +362,6 @@ static expr extend(expr sym, expr val, expr env){
         SETCAR(newhead,newval);
         SETCDR(newhead,env);
         return newhead;
-#endif
 }
 
 /** extend the lisp environment with a primitive operator **/
@@ -379,13 +373,11 @@ static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), lisp l)
 /** make new object **/
 static expr mkobj(sexpr_e type)
 {
-#if 0
         expr nx;
         nx = gc_calloc();
         nx->len = 0;
         nx->type = type;
         return nx;
-#endif
 }
 
 /** make a nil **/
@@ -396,24 +388,20 @@ static expr mknil(void){
 /** make a new symbol **/
 static expr mksym(char *s)
 {
-#if 0
         expr nx;
         nx = mkobj(S_SYMBOL);
         nx->len = strlen(s);
         nx->data.symbol = s;
         return nx;
-#endif
 }
 
 /** make a new primitive **/
 static expr mkprimop(expr(*func) (expr args, lisp l))
 {
-#if 0
         expr nx;
         nx = mkobj(S_PRIMITIVE);
         nx->data.func = func;
         return nx;
-#endif
 }
 
 /** make a new procedure **/
