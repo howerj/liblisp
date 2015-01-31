@@ -120,8 +120,9 @@ void sexpr_print(expr x, io * o, unsigned depth)
 {
         size_t i;
         io *e;
-        if(0 == depth)
-                io_putc('(', o);
+        bool print_rparen = false;
+        if ((0 == depth) && (S_NIL != x->cdr.type))
+                print_rparen = true, io_putc('(', o);
 BEGIN:
         if(NULL == x)
                 return;
@@ -187,8 +188,10 @@ BEGIN:
                 x = x->cdr.data.ptr;
                 goto BEGIN;
         }
-        if (0 == depth)
-                io_printer(o,")\n");
+        if ((0 == depth) && true == print_rparen)
+                io_putc(')',o);
+        if(0 == depth)
+                io_putc('\n', o);
 
 }
 
@@ -422,7 +425,7 @@ static expr parse_string(io * i)
  **/
 static expr parse_list(io * i)
 {
-        expr ex = NULL, head = NULL, prev = NULL, chld;
+        expr ex = NULL, head = NULL, chld;
         int c;
         assert(i);
 
@@ -434,7 +437,6 @@ static expr parse_list(io * i)
                 if (isspace(c))
                         continue;
 
-                prev = ex;
                 switch (c) {
                 case '#':
                         if (true == parse_comment(i))

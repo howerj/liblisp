@@ -30,7 +30,6 @@ void sexpr_set_parse_numbers(bool flag);
 expr sexpr_parse(io * i);
 void sexpr_print(expr x, io * o, unsigned depth);
 void dosexpr_perror(expr x, char *msg, char *cfile, unsigned linenum);
-expr append(expr list, expr ele);
 /******************************************************************************/
 #ifdef __cplusplus
 }
