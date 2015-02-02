@@ -98,12 +98,12 @@ lisp lisp_init(void)
         io *e;
         lisp l;
         size_t i;
-        l = mem_calloc(1, sizeof(*l));
+        l = mem_calloc(sizeof(*l));
         l->global = hash_create(128);
-        l->env = mem_calloc(1, sizeof(sexpr_t));
+        l->env = mem_calloc(sizeof(sexpr_t));
 
-        l->i = mem_calloc(1, io_sizeof_io());
-        l->o = mem_calloc(1, io_sizeof_io());
+        l->i = mem_calloc(io_sizeof_io());
+        l->o = mem_calloc(io_sizeof_io());
 
         l->env->type = S_CONS;
 

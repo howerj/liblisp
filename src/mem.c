@@ -60,12 +60,11 @@ void *mem_malloc(size_t size)
 
 /**
  *  @brief          wrapper around calloc
- *  @param          num  number of elements to allocate
  *  @param          size size of elements to allocate
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-void *mem_calloc(size_t num, size_t size)
+void *mem_calloc(size_t size)
 {
         void *v;
         if (MAX_ALLOCS < mem_alloc_counter++) {
@@ -73,13 +72,13 @@ void *mem_calloc(size_t num, size_t size)
                 exit(EXIT_FAILURE);
         }
 
-        if((0 == num) || (0 == size))
+        if(0 == size)
                 return NULL;
 
         if (true == mem_debug_f)
                 io_printer(io_get_error_stream(), "(mem_calloc %d)\n", mem_alloc_counter);
 
-        if (NULL == (v = calloc(num, size))) {
+        if (NULL == (v = calloc(size,1))) {
                 IO_REPORT("calloc failed");
                 exit(EXIT_FAILURE);
         }

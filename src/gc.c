@@ -50,8 +50,8 @@ expr gc_calloc(void)
 {
         expr v;
         struct heap *nextheap;
-        v = mem_calloc(1, sizeof(struct sexpr_t));
-        nextheap = mem_calloc(1, sizeof(struct heap));
+        v = mem_calloc(sizeof(struct sexpr_t));
+        nextheap = mem_calloc(sizeof(struct heap));
         nextheap->x = v;
         heaphead->next = nextheap;
         heaphead = nextheap;

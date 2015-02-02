@@ -51,10 +51,10 @@ hashtable *hash_create(size_t len)
 {
         hashtable *newt = NULL;
 
-        if (!len || (NULL == (newt = mem_calloc(sizeof(*newt), 1))))
+        if (!len || (NULL == (newt = mem_calloc(sizeof(*newt)))))
                 return NULL;
 
-        if (NULL == (newt->table = mem_calloc(sizeof(*newt->table), len))){
+        if (NULL == (newt->table = mem_calloc(sizeof(*newt->table)*len))){
                 free(newt);
                 return NULL;
         }
@@ -224,7 +224,7 @@ static char *_strdup(const char *s)
 {
         char *str;
         assert(s);
-        str = mem_calloc(sizeof(*s), strlen(s) + 1);
+        str = mem_calloc(sizeof(*s)*(strlen(s) + 1));
         strcpy(str, s);
         return str;
 }
@@ -270,7 +270,7 @@ static hashentry_t *hash_newpair(const char *key, void* val)
 {
         hashentry_t *nent = NULL;
 
-        if (NULL == (nent = mem_calloc(sizeof(*nent), 1)))
+        if (NULL == (nent = mem_calloc(sizeof(*nent))))
                 return NULL;
 
         nent->key = _strdup(key);
