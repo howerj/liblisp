@@ -238,17 +238,13 @@ START_EVAL:
                                 y = lisp_eval(CAR(x),env,l);
                         }
                 } else if (CMPSYM(x,"define")){
+                        expr nx;
                         if(list_len(x) != 3){
                                 SEXPR_PERROR(x,"define: argc != 3");
                                 return mknil();
                         }
-
-                        {
-                                expr nx, xe;
-                                xe = lisp_eval(CAR(CDR(CDR(x))),env, l);
-                                nx = extend(CAR(CDR(x)), xe, l);
-                                return xe;
-                        }
+                        (void)extend(CAR(CDR(x)), nx = lisp_eval(CAR(CDR(CDR(x))),env, l), l);
+                        return nx;
                 } else if (CMPSYM(x,"if")){
                         if(list_len(x) != 4){
                                 SEXPR_PERROR(x,"if: argc != 4");

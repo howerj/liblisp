@@ -129,9 +129,9 @@ void sexpr_print(expr x, io * o, unsigned depth)
         case S_INTEGER:   io_printer(o,"%m%d", x->data.integer); break;
         case S_PRIMITIVE: io_printer(o,"%b{prim}"); break;
         case S_PROC:      io_printer(o,"%b{proc}"); break;
-        case S_FILE:      /*not implemented yet*/ break;
-        case S_ERROR:     /*not implemented yet*/ break;
-        case S_HASH:      /*not implemented yet*/ break;
+        case S_FILE:      /*fall through*/
+        case S_ERROR:     /*fall through*/
+        case S_HASH:      assert(!"not implemented yet"); break;
         case S_CONS:      /*does not handle (x . y) yet*/
                 io_putc('(', o);
                 do{
@@ -173,10 +173,7 @@ void sexpr_print(expr x, io * o, unsigned depth)
                 break;
         case S_LAST_TYPE: /*fall through, not a type*/
         default:
-                e = io_get_error_stream();
-                io_printer(e,"%r");
-                IO_REPORT("print: not a known printable type");
-                io_printer(e,"%t");
+                io_printer(io_get_error_stream(),"%r(error \"print: invalid type\" \"%s\" %d)%t",__FILE__,__LINE__);
                 exit(EXIT_FAILURE);
                 break;
         }
