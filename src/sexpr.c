@@ -131,6 +131,7 @@ void sexpr_print(expr x, io * o, unsigned depth)
         case S_PROC:      io_printer(o,"%b{proc}"); break;
         case S_FILE:      /*not implemented yet*/ break;
         case S_ERROR:     /*not implemented yet*/ break;
+        case S_HASH:      /*not implemented yet*/ break;
         case S_CONS:      /*does not handle (x . y) yet*/
                 io_putc('(', o);
                 do{

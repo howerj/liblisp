@@ -39,7 +39,8 @@ typedef enum {
         S_PROC,                 /* 8:  lambda procedure */
         S_QUOTE,                /* 9:  quoted expression */
         S_ERROR,                /* 10: error return and handling */
-        S_LAST_TYPE             /* 11: not a type, just the last enum */
+        S_HASH,                 /* 11: a hash of key-value pairs*/
+        S_LAST_TYPE             /* 12: not a type, just the last enum */
 } sexpr_e;
 
 /**sexpr module**/

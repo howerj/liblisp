@@ -219,6 +219,7 @@ START_EVAL:
         case S_STRING:
         case S_PRIMITIVE: 
         case S_PROC: 
+        case S_HASH: 
                 return x; 
         case S_QUOTE:
                 return x->data.quoted;
