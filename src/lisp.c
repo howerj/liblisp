@@ -275,9 +275,11 @@ START_EVAL:
                         return CAR(CDR(x));
                 } else if (CMPSYM(x,"set")){
                 } else {
-                        expr foundx = lisp_eval(CAR(x), env, l);
-                        if(!ISNIL(foundx))
-                                return CAR(foundx);
+                        expr procedure = lisp_eval(CAR(x), env, l);
+                        if(!ISNIL(procedure))
+                                return procedure;
+                        else
+                                return mknil();
                 }
         }
         SEXPR_PERROR(x,"cannot apply");
