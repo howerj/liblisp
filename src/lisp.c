@@ -291,7 +291,7 @@ START_EVAL:
                         return mknil();
                 }
                 return nx;
-        case S_FILE:      IO_REPORT("Not implemented");
+        case S_FILE:      /*fall through, not a type*/
         case S_ERROR:     IO_REPORT("Not implemented");
         case S_LAST_TYPE: /*fall through, not a type*/
         default:

@@ -193,7 +193,7 @@ void sexpr_print(expr x, io * o, unsigned depth)
  *  @param          linenum Line number error occurred on
  *  @return         void
  **/
-void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
+void sexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
 {
         static io *fallback; 
         io *e = io_get_error_stream();
@@ -226,7 +226,7 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
  *  @param          ele  the atom to append to the list
  *  @return         New cons cell
  **/
-expr append(expr cons, expr ele)
+expr sexpr_append(expr cons, expr ele)
 {
         expr nc = NULL;
         assert(cons && ele);
@@ -434,17 +434,17 @@ static expr parse_list(io * i)
                         break;
                 case '"':
                         chld = parse_string(i);
-                        if (!chld || !(ex = append(ex,chld)))
+                        if (!chld || !(ex = sexpr_append(ex,chld)))
                                 goto fail;
                         continue;
                 case '\'':
                         chld = parse_quote(i);
-                        if (!chld || !(ex = append(ex,chld)))
+                        if (!chld || !(ex = sexpr_append(ex,chld)))
                                 goto fail;
                         continue;
                 case '(':
                         chld = parse_list(i);
-                        if (!chld || !(ex = append(ex,chld)))
+                        if (!chld || !(ex = sexpr_append(ex,chld)))
                                 goto fail;
                         continue;
                 case ')':
@@ -452,7 +452,7 @@ static expr parse_list(io * i)
                 default:
                         io_ungetc(c, i);
                         chld = parse_symbol(i);
-                        if (!chld || !(ex = append(ex,chld)))
+                        if (!chld || !(ex = sexpr_append(ex,chld)))
                                 goto fail;
                         continue;
                 }
