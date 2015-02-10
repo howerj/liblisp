@@ -25,10 +25,10 @@ struct unit_test_list{
 
 int utest(int zero_is_pass, char *msg, char *file, int line){
         if(zero_is_pass || errno){
-                printf("  (check-failed\n    %d \"%s\"\n    ('%s %d)",
+                printf("    (check-failed %d\n    \"%s\"\n    (%s %d)",
                                zero_is_pass, msg, file, line);
                 if(errno)
-                        printf(" (errno %d)", errno);
+                        printf("   (errno %d)", errno);
                 puts(")");
                 errno = 0; /*clear errno for future tests*/
                 return 1;
@@ -38,21 +38,23 @@ int utest(int zero_is_pass, char *msg, char *file, int line){
 
 int main(void){
         unsigned i, modfails = 0;
+        printf("'(module-tests\n");
         for(i = 0; ulist[i].module_name; i++){
                 int status;
-                printf("(module-test\n  '%s \"%s\"\n", 
+                printf("  (%s \"%s\"\n", 
                                 ulist[i].module_name, ulist[i].description);
                 status = (ulist[i].func)();
                 if(status){
                         modfails++;
-                        fputs("  'fail", stdout);
+                        fputs("    fail", stdout);
                 } else {
-                        fputs("  'pass", stdout);
+                        fputs("    pass", stdout);
                 }
                 puts(")");
         }
-        printf("(module-test-summary\n  (modules-tested %u)\n  (failure-count %u)\n  '%s)\n",
-                        i, modfails, modfails?"fail":"pass");
+        printf("  (summary\n    (total %u)\n    (fail %u)\n    (pass %u))",
+                        i, modfails, i - modfails);
+        puts(")");
         return modfails ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
