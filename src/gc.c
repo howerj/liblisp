@@ -74,7 +74,7 @@ int gc_mark(expr root)
         switch(root->type){
         case S_NIL:     case S_TEE:     case S_STRING:  
         case S_SYMBOL:  case S_INTEGER: case S_PRIMITIVE: 
-        case S_FILE:    case S_ERROR: 
+        case S_FILE:    case S_ERROR:   case S_HASH:
                 break;
         case S_PROC: /*needs special handling*/ break;
         case S_QUOTE: gc_mark(root->data.quoted); break;
@@ -151,6 +151,7 @@ static void gcinner(expr x)
         case S_FILE: break;
         case S_PROC: break;
         case S_ERROR: break;
+        case S_HASH: break;
         case S_LAST_TYPE: /*fall through, not a type*/
         default:
                 IO_REPORT("Not a valid type");

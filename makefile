@@ -48,6 +48,16 @@ OBJFILES=$(BUILD_DIR)/io.o \
 	 $(BUILD_DIR)/lisp.o \
 	 $(BUILD_DIR)/hash.o \
 
+# Find a way to combine this with OBJFILES
+TBOBJFILES=$(BUILD_DIR)/tb_io.o \
+	 $(BUILD_DIR)/tb_mem.o \
+	 $(BUILD_DIR)/tb_gc.o \
+	 $(BUILD_DIR)/tb_sexpr.o \
+	 $(BUILD_DIR)/tb_regex.o \
+	 $(BUILD_DIR)/tb_lisp.o \
+	 $(BUILD_DIR)/tb_hash.o \
+	 $(BUILD_DIR)/tb_linenoise.o \
+
 ## building ###################################################################
 # Only a C tool chain is necessary to built the project. Anything else is
 # simply extra fluff.
@@ -59,6 +69,9 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c $(SOURCE_DIR)/*.h makefile
 
 $(BUILD_DIR)/$(TARGET): $(OBJFILES) $(BUILD_DIR)/main.o
 	$(CC) $(CFLAGS) $(OBJFILES) $(BUILD_DIR)/main.o -o $@
+
+$(BUILD_DIR)/test: $(OBJFILES) $(TBOBJFILES) $(BUILD_DIR)/test.o
+	$(CC) $(CFLAGS) $^ -o $@
 
 run: $(BUILD_DIR)/$(TARGET)
 	$(BUILD_DIR)/./$(TARGET) -c $(INPUTF)
