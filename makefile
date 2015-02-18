@@ -134,7 +134,7 @@ help:
 ## cleanup ####################################################################
 
 clean:
-	-rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/$(TARGET) 
+	-rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/$(TARGET) $(BUILD_DIR)/test
 	-rm -rf doc/htm/ doc/man doc/latex $(SOURCE_DIR)/*~
 	-rm -rf $(REPORT_DIR)/*.i $(REPORT_DIR)/*.s $(REPORT_DIR)/*.log
 	-rm -rf *.log $(BUILD_DIR)/lisp.linenoise

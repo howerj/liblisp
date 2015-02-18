@@ -75,6 +75,7 @@ int gc_mark(expr root)
         case S_NIL:     case S_TEE:     case S_STRING:  
         case S_SYMBOL:  case S_INTEGER: case S_PRIMITIVE: 
         case S_FILE:    case S_ERROR:   case S_HASH:
+        case S_LISP_ENV:
                 break;
         case S_PROC: /*needs special handling*/ break;
         case S_QUOTE: gc_mark(root->data.quoted); break;

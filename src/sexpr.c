@@ -120,7 +120,6 @@ expr sexpr_parse(io * i)
 void sexpr_print(expr x, io * o, unsigned depth)
 {
         size_t i;
-        io *e;
         if(NULL == x)
                 return;
         switch(x->type){
@@ -129,6 +128,7 @@ void sexpr_print(expr x, io * o, unsigned depth)
         case S_INTEGER:   io_printer(o,"%m%d", x->data.integer); break;
         case S_PRIMITIVE: io_printer(o,"%b{prim}"); break;
         case S_PROC:      io_printer(o,"%b{proc}"); break;
+        case S_LISP_ENV:  io_printer(o,"%b{lisp}"); break;
         case S_FILE:      /*fall through*/
         case S_ERROR:     /*fall through*/
         case S_HASH:      assert(!"not implemented yet"); break;

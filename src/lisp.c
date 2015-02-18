@@ -28,17 +28,17 @@
 
 typedef struct{
         const char *s;
-        expr(*func) (expr args, lisp l);
+        expr(*func) (expr args);
 } primop_initializers;
 
 static size_t list_len(expr x);
 static expr mknil(void);
 static expr find(expr env, expr x, lisp l);
 static expr extend(expr sym, expr val, lisp l);
-static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), lisp l);
+static expr extendprimop(const char *s, expr(*func) (expr args), lisp l);
 static expr mkobj(sexpr_e type);
 static expr mksym(char *s);
-static expr mkprimop(expr(*func) (expr args, lisp l));
+static expr mkprimop(expr(*func) (expr args));
 static expr mkproc(expr args, expr code, expr env);
 
 /** 
@@ -68,7 +68,7 @@ static expr mkproc(expr args, expr code, expr env);
         PRIMOP_X("match",    primop_match)
  
 /** @brief built in primitives, static declarations **/
-#define PRIMOP_X(STRING, FUNCTION) static expr FUNCTION(expr args, lisp l);
+#define PRIMOP_X(STRING, FUNCTION) static expr FUNCTION(expr args);
 LIST_OF_PRIMITIVE_OPERATIONS
 #undef PRIMOP_X
 
@@ -220,6 +220,7 @@ START_EVAL:
         case S_PRIMITIVE: 
         case S_PROC: 
         case S_HASH: 
+        case S_LISP_ENV: 
                 return x; 
         case S_QUOTE:
                 return x->data.quoted;
@@ -336,7 +337,7 @@ static expr extend(expr sym, expr val, lisp l){
 }
 
 /** extend the lisp environment with a primitive operator **/
-static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), lisp l)
+static expr extendprimop(const char *s, expr(*func) (expr args), lisp l)
 {
         return extend(mksym(mem_strdup(s)), mkprimop(func), l);
 }
@@ -367,7 +368,7 @@ static expr mksym(char *s)
 }
 
 /** make a new primitive **/
-static expr mkprimop(expr(*func) (expr args, lisp l))
+static expr mkprimop(expr(*func) (expr args))
 {
         expr nx;
         nx = mkobj(S_PRIMITIVE);
@@ -390,74 +391,74 @@ static expr mkproc(expr args, expr code, expr env){
   }
 
 /**true if arg is an atom, nil otherwise**/
-static expr primop_atom(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_atom(expr args)
+{UNUSED(args); return mknil();}
 
 /**add a list of numbers**/
-static expr primop_add(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_add(expr args)
+{UNUSED(args); return mknil();}
 
 /**subtract a list of numbers from the 1 st arg**/
-static expr primop_sub(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_sub(expr args)
+{UNUSED(args); return mknil();}
 
 /**multiply a list of numbers together**/
-static expr primop_prod(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_prod(expr args)
+{UNUSED(args); return mknil();}
 
 /**divide the first argument by a list of numbers**/
-static expr primop_div(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_div(expr args)
+{UNUSED(args); return mknil();}
 
 /**arg_1 modulo arg_2**/
-static expr primop_mod(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_mod(expr args)
+{UNUSED(args); return mknil();}
 
 /**car**/
-static expr primop_car(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_car(expr args)
+{UNUSED(args); return mknil();}
 
 /**cdr**/
-static expr primop_cdr(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_cdr(expr args)
+{UNUSED(args); return mknil();}
 
 /**cons**/
-static expr primop_cons(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_cons(expr args)
+{UNUSED(args); return mknil();}
 
 /**NTH element in a list or string**/
-static expr primop_nth(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_nth(expr args)
+{UNUSED(args); return mknil();}
 
 /**length of a list or string**/
-static expr primop_len(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_len(expr args)
+{UNUSED(args); return mknil();}
 
 /**test equality of the 1st arg against a list of numbers**/
-static expr primop_numeq(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_numeq(expr args)
+{UNUSED(args); return mknil();}
 
 /**print**/
-static expr primop_printexpr(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_printexpr(expr args)
+{UNUSED(args); return mknil();}
 
 /**strict equality**/
-static expr primop_eq(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_eq(expr args)
+{UNUSED(args); return mknil();}
 
 /**type equality**/
-static expr primop_typeeq(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_typeeq(expr args)
+{UNUSED(args); return mknil();}
 
 /**reverse a list or a string**/
-static expr primop_reverse(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_reverse(expr args)
+{UNUSED(args); return mknil();}
 
-static expr primop_system(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_system(expr args)
+{UNUSED(args); return mknil();}
 
-static expr primop_match(expr args, lisp l)
-{UNUSED(args); UNUSED(l); return mknil();}
+static expr primop_match(expr args)
+{UNUSED(args); return mknil();}
 
 #undef INTCHK_R
 #undef UNUSED
