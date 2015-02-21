@@ -25,9 +25,10 @@ typedef struct sexpr_t sexpr_t;
 typedef sexpr_t *expr;
 typedef struct lispenv_t lispenv_t;
 typedef lispenv_t *lisp;
+typedef expr (*primitive_f)(expr args);
 
-typedef enum {
-        /*S_INVALID, // zero should be an invalid type for calloc */
+typedef enum { /** Must fit into 4-bits!**/
+        /*S_INVALID, A calloc should return something invalid for debugging */
         S_NIL,                  /* 0:  () */
         S_TEE,                  /* 1:  t */
         S_CONS,                 /* 2:  cons list */
@@ -42,7 +43,7 @@ typedef enum {
         S_LISP_ENV,             /* 11: the entire lisp environment */
         S_HASH,                 /* 12: a hash of key-value pairs*/
         S_LAST_TYPE             /* 13: not a type, just the last enum */
-} sexpr_e;
+} sexpr_e; /*Must fit into 4 bits!*/
 
 /**sexpr module**/
 struct sexpr_t { /** base type for our expressions */
@@ -53,12 +54,12 @@ struct sexpr_t { /** base type for our expressions */
                 struct sexpr_t *cons[2];
                 struct sexpr_t *quoted;
                 io *io;
-                expr(*func) (expr args);  /* primitive operations */
+                primitive_f func;  
         } data;
-        size_t len; /*for string/symbol types, perhaps this should be move
-                      into a string/symbol type*/
-        sexpr_e type;
-        unsigned int gc_mark:1;  /*the mark of the garbage collector */
+        size_t len; /*this should get moved into the union*/
+        unsigned gc_mark:1;      /*the mark of the garbage collector */
+        unsigned gc_nocollect:1; /*do not collect, unless destroying env*/
+        unsigned type:4;         /*this is an enumeration of sexpr_e*/
 };
 
 /**lisp global environment struct**/

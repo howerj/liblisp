@@ -141,19 +141,19 @@ void gc_sweep(void)
  **/
 static void gcinner(expr x)
 {
-        if(NULL == x)
+        if((NULL == x) || x->gc_nocollect)
                 return;
         switch(x->type){
-        case S_NIL: case S_TEE: case S_INTEGER: 
-        case S_PRIMITIVE: case S_QUOTE: case S_CONS:
-                mem_free(x); break;
-        case S_STRING: mem_free(x->data.string); mem_free(x); break;
-        case S_SYMBOL: mem_free(x->data.symbol); mem_free(x); break;
-        case S_FILE: break;
-        case S_PROC: break;
-        case S_ERROR: break;
-        case S_HASH: break;
-        case S_LAST_TYPE: /*fall through, not a type*/
+        case S_NIL:       case S_TEE:   case S_INTEGER: /*fall through*/ 
+        case S_PRIMITIVE: case S_QUOTE: case S_CONS:    /*fall through*/
+        case S_LISP_ENV:  mem_free(x); break;
+        case S_STRING:    mem_free(x->data.string); mem_free(x); break;
+        case S_SYMBOL:    mem_free(x->data.symbol); mem_free(x); break;
+        case S_FILE:      break;
+        case S_PROC:      break;
+        case S_ERROR:     break;
+        case S_HASH:      break;
+        case S_LAST_TYPE: /*fall through, not a valid type*/
         default:
                 IO_REPORT("Not a valid type");
                 exit(EXIT_FAILURE);

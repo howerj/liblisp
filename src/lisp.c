@@ -23,22 +23,22 @@
 #include "regex.h"
 #include "hash.h"
 
-/**Avoid warning in primops**/
 #define UNUSED(X)  (void)(X)
+#define HASH_SIZE  (128u)
 
 typedef struct{
         const char *s;
-        expr(*func) (expr args);
+        primitive_f func;
 } primop_initializers;
 
 static size_t list_len(expr x);
 static expr mknil(void);
 static expr find(expr env, expr x, lisp l);
 static expr extend(expr sym, expr val, lisp l);
-static expr extendprimop(const char *s, expr(*func) (expr args), lisp l);
+static expr extendprimop(const char *s, primitive_f func, lisp l);
 static expr mkobj(sexpr_e type);
 static expr mksym(char *s);
-static expr mkprimop(expr(*func) (expr args));
+static expr mkprimop(primitive_f func);
 static expr mkproc(expr args, expr code, expr env);
 
 /** 
@@ -99,7 +99,7 @@ lisp lisp_init(void)
         lisp l;
         size_t i;
         l = mem_calloc(sizeof(*l));
-        l->global = hash_create(128);
+        l->global = hash_create(HASH_SIZE);
         l->env = mem_calloc(sizeof(sexpr_t));
 
         l->i = mem_calloc(io_sizeof_io());
