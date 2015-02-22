@@ -70,9 +70,6 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c $(SOURCE_DIR)/*.h makefile
 $(BUILD_DIR)/$(TARGET): $(OBJFILES) $(BUILD_DIR)/main.o
 	$(CC) $(CFLAGS) $(OBJFILES) $(BUILD_DIR)/main.o -o $@
 
-$(BUILD_DIR)/test: $(OBJFILES) $(TBOBJFILES) $(BUILD_DIR)/test.o
-	$(CC) $(CFLAGS) $^ -o $@
-
 run: $(BUILD_DIR)/$(TARGET)
 	$(BUILD_DIR)/./$(TARGET) -c $(INPUTF)
 
@@ -90,6 +87,12 @@ $(BUILD_DIR)/lisp.linenoise: $(OBJFILES) $(BUILD_DIR)/linenoise.o $(BUILD_DIR)/l
 
 valgrind: $(BUILD_DIR)/lisp
 	valgrind $(BUILD_DIR)/./$(TARGET) -c  $(INPUTF)
+
+$(BUILD_DIR)/test: $(OBJFILES) $(TBOBJFILES) $(BUILD_DIR)/test.o
+	$(CC) $(CFLAGS) $^ -o $@
+
+test: $(BUILD_DIR)/test
+	$(BUILD_DIR)/./test
 
 ## documentation ##############################################################
 

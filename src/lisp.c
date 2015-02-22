@@ -95,30 +95,25 @@ static primop_initializers primops[] = {
  **/
 lisp lisp_init(void)
 {
-        io *e;
         lisp l;
         size_t i;
-        l = mem_calloc(sizeof(*l));
-        l->global = hash_create(HASH_SIZE);
-        l->env = mem_calloc(sizeof(sexpr_t));
+        if(!(l = mem_calloc(sizeof(*l)))) goto fail;
+        if(!(l->global = hash_create(HASH_SIZE))) goto fail;
+        if(!(l->env = mem_calloc(sizeof(sexpr_t)))) goto fail;
 
-        l->i = mem_calloc(io_sizeof_io());
-        l->o = mem_calloc(io_sizeof_io());
-
+        if(!(l->i = mem_calloc(io_sizeof_io()))) goto fail;
+        if(!(l->o = mem_calloc(io_sizeof_io()))) goto fail;
         l->env->type = S_CONS;
 
-        /* set up file I/O and pointers */
+        /* set up file initial I/O */
         io_file_in(l->i, stdin);
         io_file_out(l->o, stdout);
-
-        e = io_get_error_stream();
-        io_file_out(e, stderr); 
+        io_file_out(io_get_error_stream(), stderr); 
 
         /* normal forms, kind of  */
         for(i = 0; (NULL != primops[i].s) && (NULL != primops[i].func) ; i++)
                 if(NULL == extendprimop(primops[i].s, primops[i].func, l))
                         goto fail;
-
         return l;
 fail:
         IO_REPORT("initilization failed");
@@ -208,19 +203,10 @@ expr lisp_eval(expr x, expr env, lisp l)
         }
 
 START_EVAL:
-
-        /**  @todo I should collect garbage here if there are too many objects
-         *         allocated already.
-        **/
         switch(x->type){
-        case S_NIL: 
-        case S_TEE: 
-        case S_INTEGER: 
-        case S_STRING:
-        case S_PRIMITIVE: 
-        case S_PROC: 
-        case S_HASH: 
-        case S_LISP_ENV: 
+        case S_NIL:    case S_TEE:       case S_INTEGER: 
+        case S_STRING: case S_PRIMITIVE: case S_PROC: 
+        case S_HASH:   case S_LISP_ENV: 
                 return x; 
         case S_QUOTE:
                 return x->data.quoted;
@@ -230,9 +216,10 @@ START_EVAL:
                         expr y = NULL;
                         if(1 == list_len(x))
                                 return mknil();
-                        while(1){
+                        for(;;){
                                 x = CDR(x);
                                 if(NULL == CDR(x)){
+                                /*if(ISNIL(CDR(x))){*/
                                         x = y;
                                         goto START_EVAL;
                                 }
@@ -319,9 +306,10 @@ void lisp_clean(lisp l)
 
 /** calculate length of a list **/
 static size_t list_len(expr x){
-        size_t i = 0;
-        while((x=CDR(x))) i++;
-        return i;
+        size_t i;
+        for(i = 0; (NULL != x) && (S_NIL != x->type); x = CDR(x))
+                i++;
+        return i-1;
 }
 
 /** find a symbol in an environment **/
