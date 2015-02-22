@@ -17,7 +17,6 @@ extern "C" {
 #include "io.h"
 #include "type.h"
 
-expr gc_malloc(void);
 expr gc_calloc(sexpr_e init);
 int  gc_mark(expr root);
 void gc_sweep(void);

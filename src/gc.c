@@ -30,18 +30,6 @@ static void gcinner(expr x);
 /*** interface functions *****************************************************/
 
 /**
- *  @brief          wrapper around malloc for garbage collection
- *  @return         pointer to newly allocated storage on sucess, exits
- *                  program on failure!
- **/
-expr gc_malloc(void)
-{
-        void *v;
-        v = mem_malloc(sizeof(struct sexpr_t));
-        return v;
-}
-
-/**
  *  @brief          wrapper around calloc for garbage collection
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
