@@ -40,6 +40,7 @@ static expr mkobj(sexpr_e type);
 static expr mksym(char *s);
 static expr mkprimop(primitive_f func);
 static expr mkproc(expr args, expr code, expr env);
+static expr evlis(expr x, expr env, lisp l);
 
 /** 
  * @brief List of primitive operations, used for initialization of structures 
@@ -262,10 +263,11 @@ START_EVAL:
                 } else if (CMPSYM(x,"set")){
                 } else {
                         expr procedure = lisp_eval(CAR(x), env, l);
-                        if(!ISNIL(procedure))
-                                return procedure;
-                        else
-                                return mknil();
+                        expr values = evlis(CDR(x), env, l);
+                        if(S_PRIMITIVE == procedure->type)
+                                return (*procedure->data.func)(values);
+                        if(S_PROC == procedure->type)
+                                return mknil(); /*not implement yet*/
                 }
         }
         SEXPR_PERROR(x,"cannot apply");
@@ -366,6 +368,24 @@ static expr mkproc(expr args, expr code, expr env){
         return mknil();
 }
 
+/** evaluate a list **/
+static expr evlis(expr x, expr env, lisp l){
+        expr ex, head, prev;
+        if(NULL == (prev = head = ex = gc_calloc(S_CONS)))
+                return NULL;
+        assert(x && env && l);
+        for(; !ISNIL(x); x = CDR(x)){
+                ex->data.cons[0] = lisp_eval(CAR(x),env,l);
+                ex->data.cons[1] = gc_calloc(S_CONS);
+                prev = ex;
+                if(!(ex = ex->data.cons[1]))
+                        return NULL;
+        }
+        prev->type = S_NIL;
+        prev->data.cons[0] = prev->data.cons[1] = NULL;
+        return head;
+}
+
 /*** primitive operations ****************************************************/
 
 /**macro helpers for primops**/
@@ -381,7 +401,19 @@ static expr primop_atom(expr args)
 
 /**add a list of numbers**/
 static expr primop_add(expr args)
-{UNUSED(args); return mknil();}
+{
+        expr n;
+        int32_t i;
+        for(i = 0; !ISNIL(args) && CAR(args)->type == S_INTEGER; i += CAR(args)->data.integer,args = CDR(args));
+        if(args->type != S_NIL){
+                SEXPR_PERROR(CAR(args), "arg != integer");
+                return mknil();
+        }
+        if(NULL == (n = gc_calloc(S_INTEGER)))
+                return NULL;
+        n->data.integer = i;
+        return n;
+}
 
 /**subtract a list of numbers from the 1 st arg**/
 static expr primop_sub(expr args)

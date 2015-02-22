@@ -27,6 +27,8 @@ static struct heap heaplist = {NULL,NULL};   /* initial element of alloc list */
 static struct heap *heaphead = &heaplist;
 static void gcinner(expr x);
 
+static expr nil, tee;
+
 /*** interface functions *****************************************************/
 
 /**

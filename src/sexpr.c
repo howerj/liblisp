@@ -467,7 +467,7 @@ static expr parse_list(io * i)
         if(prev->data.cons[1] && !ex->data.cons[0]){
                 prev->data.cons[1] = NULL;
         }
-        if(NULL == (prev->data.cons[1] = gc_calloc(S_NIL)))
+        if(NULL == (prev->data.cons[0] = prev->data.cons[1] = gc_calloc(S_NIL)))
                 return NULL;
         return head;
 }
