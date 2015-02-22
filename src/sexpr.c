@@ -139,7 +139,7 @@ void sexpr_print(expr x, io * o, unsigned depth)
                                 sexpr_print(x->data.cons[0],o,depth+1);
                         if(x->data.cons[1] && x->data.cons[1]->data.cons[1])
                                 io_putc(' ',o);
-                } while((NULL != x) && (NULL != (x = x->data.cons[1])));
+                } while((S_NIL != x->type) && (NULL != (x = x->data.cons[1])));
                 io_putc(')', o);
                 break;
         case S_STRING: /*fall through*/
@@ -230,10 +230,10 @@ expr sexpr_append(expr cons, expr ele)
 {
         expr nc = NULL;
         assert(cons && ele);
-        nc = gc_calloc();
+        if(NULL == (nc = gc_calloc(S_CONS)))
+                return NULL;
         cons->data.cons[0] = ele;
         cons->data.cons[1] = nc;
-        nc->type = S_CONS;
         nc->data.cons[0] = nc->data.cons[1] = NULL;
         return nc;
 }
@@ -276,8 +276,8 @@ static bool isnumber(const char *buf, size_t string_l)
 expr parse_quote(io * i){
         expr ex = NULL;
         assert(i);
-        ex = gc_calloc();
-        ex->type = S_QUOTE;
+        if(NULL == (ex = gc_calloc(S_QUOTE)))
+                return NULL;
         if(NULL == (ex->data.quoted = sexpr_parse(i)))
                 return NULL;
         return ex;
@@ -295,7 +295,8 @@ static expr parse_symbol(io * i)
         unsigned count = 0;
         int c;
         char buf[SEXPR_BUFLEN];
-        ex = gc_calloc();
+        if(NULL == (ex = gc_calloc(S_NIL)))
+                return NULL;
         assert(i);
 
         memset(buf, '\0', SEXPR_BUFLEN);
@@ -369,7 +370,8 @@ static expr parse_string(io * i)
         char buf[SEXPR_BUFLEN];
         assert(i);
 
-        ex = gc_calloc();
+        if(NULL == (ex = gc_calloc(S_STRING)))
+                return NULL;
         memset(buf, '\0', SEXPR_BUFLEN);
 
         while (EOF != (c = io_getc(i))) {
@@ -399,7 +401,6 @@ static expr parse_string(io * i)
  fail:
         return NULL;
  success:
-        ex->type = S_STRING;
         ex->len = strlen(buf);
         ex->data.string = mem_malloc(ex->len + 1);
         strcpy(ex->data.string, buf);
@@ -419,8 +420,8 @@ static expr parse_list(io * i)
         int c;
         assert(i);
 
-        head = ex = gc_calloc();
-        head->type = S_CONS;
+        if(NULL == (head = ex = gc_calloc(S_CONS)))
+                return NULL;
 
         while (EOF != (c = io_getc(i))) {
                 if (isspace(c))
@@ -463,8 +464,11 @@ static expr parse_list(io * i)
  success:
         if(ex == head)
                 head->type = S_NIL;
-        if(prev->data.cons[1] && !ex->data.cons[0])
+        if(prev->data.cons[1] && !ex->data.cons[0]){
                 prev->data.cons[1] = NULL;
+        }
+        if(NULL == (prev->data.cons[1] = gc_calloc(S_NIL)))
+                return NULL;
         return head;
 }
 

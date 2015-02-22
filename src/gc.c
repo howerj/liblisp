@@ -46,15 +46,16 @@ expr gc_malloc(void)
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-expr gc_calloc(void)
+expr gc_calloc(sexpr_e init)
 {
         expr v;
         struct heap *nextheap;
-        v = mem_calloc(sizeof(struct sexpr_t));
+        v = mem_calloc(sizeof(*v));
         nextheap = mem_calloc(sizeof(struct heap));
         nextheap->x = v;
         heaphead->next = nextheap;
         heaphead = nextheap;
+        v->type = init;
         return v;
 }
 

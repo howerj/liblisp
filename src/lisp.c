@@ -218,12 +218,10 @@ START_EVAL:
                                 return mknil();
                         for(;;){
                                 x = CDR(x);
-                                if(NULL == CDR(x)){
-                                /*if(ISNIL(CDR(x))){*/
-                                        x = y;
-                                        goto START_EVAL;
+                                if(ISNIL(CDR(x))){
+                                        return y;
                                 }
-                                y = lisp_eval(CAR(x),env,l);
+                                y = lisp_eval(CAR(x),env,l);/*should be checked for errors!*/
                         }
                 } else if (CMPSYM(x,"define")){
                         expr nx;
@@ -334,9 +332,8 @@ static expr extendprimop(const char *s, expr(*func) (expr args), lisp l)
 static expr mkobj(sexpr_e type)
 {
         expr nx;
-        nx = gc_calloc();
+        nx = gc_calloc(type);
         nx->len = 0;
-        nx->type = type;
         return nx;
 }
 
