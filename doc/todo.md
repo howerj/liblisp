@@ -51,23 +51,12 @@ allocations.
 This is in the running interpreter. It is just annoying seeing them defined 
 all the time.
 
-7. Windows Support
-
-Support for Windows would be a big plus which would involve:
-- Implementing color support on Windows
-  <https://stackoverflow.com/questions/9203362/c-color-text-in-terminal-applications-in-windows>
-  <http://msdn.microsoft.com/en-us/library/windows/desktop/ms682088%28v=vs.85%29.aspx#_win32_character_attributes>
-- Coming up with a Windows alternative for the planned dlopen extension
-- Making a Windows Visual Studio project to build the library in.
-- Porting the Linenoise library to Windows, there are forks of the
-  library that do this.
-
-8. Linenoise
+7. Linenoise
 
 The Linenoise library needs to be split up and reorganized. UTF-8 and Windows
 support would also be good.
 
-9. Calls to exit()
+8. Calls to exit()
 
 Being that this is primarily meant to be a library it should handle
 Out-Of-Memory and other conditions more gracefully, instead of giving up and
@@ -75,7 +64,7 @@ calling exit(), which is the wrong thing to do.
 
 The assert()s that call abort() are a different matter however.
 
-10. Primop API
+9. Primop API
 
 The internal API for primitive operations if fairly simple, each function
 accepts an expression argument lisp and a pointer to the lisp environment it is
@@ -136,7 +125,7 @@ its items.
 * Add a maximum recursion depth in Eval which there is not at the moment.
   This makes a stack overflow possible currently.
 
-* Add support for 'errno' in a portable way.
+* Add errno handling in a portable way.
 
 * Rethink parser, perhaps special routines for escaping and un-escaping
   strings, for dealing with buffers that could have NULL in them.
