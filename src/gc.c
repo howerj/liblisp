@@ -17,6 +17,8 @@
  *  @todo Add functions for monitoring the number of allocations there have been
  *        and for returning that number so the rest of the program can figure out
  *        when to collect.
+ *  @todo Change heap into growable array, not linked list. Reimplement garbage
+ *        collection.
  */
 
 #include "gc.h"

@@ -27,9 +27,6 @@
 #include <stdlib.h>  
 #include <stdarg.h>
 
-#define NULLCHK(X)  if(NULL == (X))\
-                      { IO_REPORT("null dereference"); exit(EXIT_FAILURE);}
-
 /**I/O abstraction structure**/
 struct io {
         union {
@@ -221,8 +218,7 @@ size_t io_sizeof_io(void){
  **/
 int io_putc(char c, io * o)
 {
-        NULLCHK(o);
-        NULLCHK(o->ptr.file);
+        assert(o && o->ptr.file);
 
         if (IO_FILE_OUT_E == o->type) {
                 return fputc(c, o->ptr.file);
@@ -248,8 +244,7 @@ int io_putc(char c, io * o)
  **/
 int io_getc(io * i)
 {
-        NULLCHK(i);
-        NULLCHK(i->ptr.file);
+        assert(i && i->ptr.file);
 
         if (true == i->ungetc) {
                 i->ungetc = false;
@@ -274,8 +269,7 @@ int io_getc(io * i)
  **/
 int io_ungetc(char c, io * i)
 {
-        NULLCHK(i);
-        NULLCHK(i->ptr.file);
+        assert(i && i->ptr.file);
         if (true == i->ungetc) {
                 return EOF;
         }
@@ -295,7 +289,7 @@ int io_ungetc(char c, io * i)
 int io_printd(int32_t d, io * o)
 {
         char dstr[16]; /* Can hold all values of converted string */
-        NULLCHK(o);
+        assert(o);
         io_itoa(d, dstr);
         return io_puts(dstr, o);
 }
@@ -308,7 +302,7 @@ int io_printd(int32_t d, io * o)
  **/
 int io_puts(const char *s, io * o)
 {
-        NULLCHK(o);
+        assert(o);
         if(NULL == s)
                 return 0;
         if (IO_FILE_OUT_E == o->type) {
@@ -404,45 +398,45 @@ int io_printer(io *o, char *fmt, ...)
                                 break;
                         default:
 #ifndef NO_ANSI_ESCAPE_SEQUENCES
-                                if(true == color_on_f){
-                                        switch(f){
-                                                case 't': /*reset*/
-                                                        count += io_puts(ANSI_RESET,o);
-                                                        break;
-                                                case 'z': /*reverse video*/
-                                                        count += io_puts(ANSI_REVERSE_VIDEO,o);
-                                                        break;
-                                                case 'B': /*bold*/
-                                                        count += io_puts(ANSI_BOLD_TXT,o);
-                                                        break;
-                                                case 'k': /*blacK*/
-                                                        count += io_puts(ANSI_COLOR_BLACK,o);
-                                                        break;
-                                                case 'r': /*Red*/
-                                                        count += io_puts(ANSI_COLOR_RED,o);
-                                                        break;
-                                                case 'g': /*Green*/
-                                                        count += io_puts(ANSI_COLOR_GREEN,o);
-                                                        break;
-                                                case 'y': /*Yellow*/
-                                                        count += io_puts(ANSI_COLOR_YELLOW,o);
-                                                        break;
-                                                case 'b': /*Blue*/
-                                                        count += io_puts(ANSI_COLOR_BLUE,o);
-                                                        break;
-                                                case 'm': /*Magenta*/
-                                                        count += io_puts(ANSI_COLOR_MAGENTA,o);
-                                                        break;
-                                                case 'a': /*cyAn*/
-                                                        count += io_puts(ANSI_COLOR_CYAN,o);
-                                                        break;
-                                                case 'w': /*White*/
-                                                        count += io_puts(ANSI_COLOR_WHITE,o);
-                                                        break;
-                                                default:
-                                                        break;
-                                        }
+                        if(true == color_on_f){
+                                switch(f){
+                                case 't': /*reset*/
+                                        count += io_puts(ANSI_RESET,o);
+                                        break;
+                                case 'z': /*reverse video*/
+                                        count += io_puts(ANSI_REVERSE_VIDEO,o);
+                                        break;
+                                case 'B': /*bold*/
+                                        count += io_puts(ANSI_BOLD_TXT,o);
+                                        break;
+                                case 'k': /*blacK*/
+                                        count += io_puts(ANSI_COLOR_BLACK,o);
+                                        break;
+                                case 'r': /*Red*/
+                                        count += io_puts(ANSI_COLOR_RED,o);
+                                        break;
+                                case 'g': /*Green*/
+                                        count += io_puts(ANSI_COLOR_GREEN,o);
+                                        break;
+                                case 'y': /*Yellow*/
+                                        count += io_puts(ANSI_COLOR_YELLOW,o);
+                                        break;
+                                case 'b': /*Blue*/
+                                        count += io_puts(ANSI_COLOR_BLUE,o);
+                                        break;
+                                case 'm': /*Magenta*/
+                                        count += io_puts(ANSI_COLOR_MAGENTA,o);
+                                        break;
+                                case 'a': /*cyAn*/
+                                        count += io_puts(ANSI_COLOR_CYAN,o);
+                                        break;
+                                case 'w': /*White*/
+                                        count += io_puts(ANSI_COLOR_WHITE,o);
+                                        break;
+                                default:
+                                        break;
                                 }
+                        }
 #endif
                                 break;
                         }
