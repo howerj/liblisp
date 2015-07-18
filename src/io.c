@@ -317,6 +317,7 @@ int io_puts(const char *s, io * o)
                         len = newpos - o->max;
                 (void)memmove(o->ptr.string + o->position, s, len);
                 o->position = newpos;
+                return len;
         } else if(IO_NULL_OUT_E == o->type){
                 return (int)strlen(s);
         } else {

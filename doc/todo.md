@@ -77,6 +77,17 @@ would not have to worry about it as a programmer unless you needed to, and
 secondly it would allow more powerful manipulations of the environment from
 within it.
 
+10. Move doxygen description to header files.
+
+If the doxygen description is moved to the header files they can serve as man
+pages as well.
+
+11. Reducing allocations for certain objects.
+
+'nil', 't', 'if', 'set!' and other built in primitives should be allocated 
+by the S-Expression parser on start up (or first use) and not release them 
+until the lisp environment has been terminated. 
+
 ### Bugs
 
 1. Garbage collection
