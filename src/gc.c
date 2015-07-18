@@ -7,52 +7,45 @@
  *  @email          howe.r.j.89@gmail.com
  *  @details
  *
- *  Garabage collection and error handling on
- *  Out-Of-Memory errors should go here.
+ *  Garabage collection and error handling on Out-Of-Memory errors should go here.
+ *
+ *  @todo Implement error handling
+ *  @todo Extensive testing using Valgrind
+ *  @todo This currently will not work if multiple instances of the the library
+ *        are running at the same time, the garbage collector needs to run in its
+ *        own local context.
+ *  @todo Add functions for monitoring the number of allocations there have been
+ *        and for returning that number so the rest of the program can figure out
+ *        when to collect.
+ *  @todo Change heap into growable array, not linked list. Reimplement garbage
+ *        collection.
  */
 
 #include "gc.h"
 #include "mem.h"
 
-struct heap {
-        expr x;
-        struct heap *next;
-};
-
-static struct heap heaplist = { NULL, NULL };
-
+struct heap { expr x; struct heap *next; };  /* struct of all allocated objs */
+static struct heap heaplist = {NULL,NULL};   /* initial element of alloc list */
 static struct heap *heaphead = &heaplist;
-
 static void gcinner(expr x);
 
 /*** interface functions *****************************************************/
-
-/**
- *  @brief          wrapper around malloc for garbage collection
- *  @return         pointer to newly allocated storage on sucess, exits
- *                  program on failure!
- **/
-expr gc_malloc(void)
-{
-        void *v;
-        v = mem_malloc(sizeof(struct sexpr_t));
-        return v;
-}
 
 /**
  *  @brief          wrapper around calloc for garbage collection
  *  @return         pointer to newly allocated storage on sucess, which
  *                  is zeroed, exits program on failure!
  **/
-expr gc_calloc(void)
+expr gc_calloc(sexpr_e init)
 {
         expr v;
         struct heap *nextheap;
-        v = mem_calloc(1, sizeof(struct sexpr_t));
-        nextheap = mem_calloc(1, sizeof(struct heap));
+        v = mem_calloc(sizeof(*v));
+        nextheap = mem_calloc(sizeof(struct heap));
         nextheap->x = v;
         heaphead->next = nextheap;
         heaphead = nextheap;
+        v->type = init;
         return v;
 }
 
@@ -65,38 +58,26 @@ expr gc_calloc(void)
  **/
 int gc_mark(expr root)
 {
-        if (NULL == root)
+        if(NULL == root)
                 return false;
-
         root->gc_mark = true;
 
-        switch (root->type) {
-        case S_LIST:
-                {
-                        size_t i;
-                        for (i = 0; i < root->len; i++)
-                                gc_mark(root->data.list[i]);
-                }
-                return false;
-        case S_PROC:
-                /** @todo Put the S_PROC structure into type.h **/
-                gc_mark(root->data.list[0]);
-                gc_mark(root->data.list[1]);
-                gc_mark(root->data.list[2]);
-                return false;
-        case S_PRIMITIVE:
-        case S_NIL:
-        case S_TEE:
-        case S_STRING:
-        case S_SYMBOL:
-        case S_INTEGER:
-        case S_ERROR:
-        case S_FILE:
-        case S_QUOTE:
+        switch(root->type){
+        case S_NIL:     case S_TEE:     case S_STRING:  
+        case S_SYMBOL:  case S_INTEGER: case S_PRIMITIVE: 
+        case S_FILE:    case S_ERROR:   case S_HASH:
+        case S_LISP_ENV:
                 break;
-        case S_LAST_TYPE:
+        case S_PROC: /*needs special handling*/ break;
+        case S_QUOTE: gc_mark(root->data.quoted); break;
+        case S_CONS: 
+                      do{
+                              gc_mark(root->data.cons[0]);
+                      } while((root = root->data.cons[1]));
+                      break;
+        case S_LAST_TYPE: /*fall through, not a type*/
         default:
-                fputs("unmarkable type\n",stderr);
+                IO_REPORT("Not a valid type");
                 exit(EXIT_FAILURE);
         }
         return false;
@@ -108,11 +89,14 @@ int gc_mark(expr root)
  **/
 void gc_sweep(void)
 {
-  /**@todo this really needs cleaning up**/
+#if 0
+        /**@todo this really needs cleaning up**/
         struct heap *ll, *pll;
         if (NULL == heaplist.next)      /*pass first element, do not collect element */
                 return;
-        for (ll = heaplist.next, pll = &heaplist; ll != heaphead;) {
+        for (ll = heaplist.next, pll = &heaplist; ll && (ll != heaphead);) {
+                if(NULL == ll->x)
+                        return;
                 if (true == ll->x->gc_mark) {
                         ll->x->gc_mark = false;
                         pll = ll;
@@ -135,59 +119,35 @@ void gc_sweep(void)
                         heaphead = pll;
                 }
         }
+#endif
 }
 
 /*****************************************************************************/
 
 /**
- *  @brief          Frees expressions
+ *  @brief          Frees expressions and deals with each type of atoms
+ *                  destruction.
  *  @param          x     expression to print
  *  @return         void
  **/
 static void gcinner(expr x)
 {
-        if (NULL == x)
+        if((NULL == x) || x->gc_nocollect)
                 return;
-
-        switch (x->type) {
-        case S_TEE:
-        case S_NIL:
-        case S_INTEGER:
-        case S_PRIMITIVE:
-                mem_free(x);
-                break;
-        case S_PROC:
-                mem_free(x->data.list);
-                mem_free(x);
-                break;
-        case S_LIST:
-                mem_free(x->data.list);
-                mem_free(x);
-                return;
-        case S_SYMBOL:
-                mem_free(x->data.symbol);
-                mem_free(x);
-                return;
-        case S_STRING:
-                mem_free(x->data.string);
-                mem_free(x);
-                return;
-        case S_ERROR:
-                /** @todo implement error support **/
-                mem_free(x);
-                return;
-        case S_FILE:
-               /** @todo implement file support **/
-                IO_REPORT("UNIMPLEMENTED (TODO)");
-                break;
-        case S_QUOTE:
-                IO_REPORT("UNIMPLEMENTED (TODO)");
-                break;
-        case S_LAST_TYPE:
-        default:               /* should never get here */
-                IO_REPORT("free: not a known 'free-able' type");
+        switch(x->type){
+        case S_NIL:       case S_TEE:   case S_INTEGER: /*fall through*/ 
+        case S_PRIMITIVE: case S_QUOTE: case S_CONS:    /*fall through*/
+        case S_LISP_ENV:  mem_free(x); break;
+        case S_STRING:    mem_free(x->data.string); mem_free(x); break;
+        case S_SYMBOL:    mem_free(x->data.symbol); mem_free(x); break;
+        case S_FILE:      break;
+        case S_PROC:      break;
+        case S_ERROR:     break;
+        case S_HASH:      break;
+        case S_LAST_TYPE: /*fall through, not a valid type*/
+        default:
+                IO_REPORT("Not a valid type");
                 exit(EXIT_FAILURE);
-                return;
         }
 }
 

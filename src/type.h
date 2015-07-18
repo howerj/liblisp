@@ -19,47 +19,54 @@ extern "C" {
 #include <stdio.h> 
 #include <stdbool.h>            
 #include "io.h"
+#include "hash.h"
 
 typedef struct sexpr_t sexpr_t;
 typedef sexpr_t *expr;
 typedef struct lispenv_t lispenv_t;
 typedef lispenv_t *lisp;
+typedef expr (*primitive_f)(expr args);
 
-typedef enum {
+typedef enum { /** Must fit into 4-bits!**/
+        /*S_INVALID, A calloc should return something invalid for debugging */
         S_NIL,                  /* 0:  () */
         S_TEE,                  /* 1:  t */
-        S_LIST,                 /* 2:  list */
+        S_CONS,                 /* 2:  cons list */
         S_STRING,               /* 3:  string */
         S_SYMBOL,               /* 4:  symbol */
         S_INTEGER,              /* 5:  integer */
         S_PRIMITIVE,            /* 6:  a primitive function */
-        S_FILE,                 /* 7:  for file I/O */
+        S_FILE,                 /* 7:  file I/O object */
         S_PROC,                 /* 8:  lambda procedure */
         S_QUOTE,                /* 9:  quoted expression */
         S_ERROR,                /* 10: error return and handling */
-        S_LAST_TYPE             /* 11: not a type, just the last enum*/
-} sexpr_e;
+        S_LISP_ENV,             /* 11: the entire lisp environment */
+        S_HASH,                 /* 12: a hash of key-value pairs*/
+        S_LAST_TYPE             /* 13: not a type, just the last enum */
+} sexpr_e; /*Must fit into 4 bits!*/
 
 /**sexpr module**/
 struct sexpr_t { /** base type for our expressions */
-        size_t len;
         union {
                 int32_t integer;
                 char *string;
                 char *symbol;
-                struct sexpr_t **list;
+                struct sexpr_t *cons[2];
+                struct sexpr_t *quoted;
                 io *io;
-                 expr(*func) (expr args, lisp l);       /*primitive operations */
+                primitive_f func;  
         } data;
-        sexpr_e type;
-        unsigned int gc_mark:1;  /*the mark of the garbage collector */
+        size_t len; /*this should get moved into the union*/
+        unsigned gc_mark:1;      /*the mark of the garbage collector */
+        unsigned gc_nocollect:1; /*do not collect, unless destroying env*/
+        unsigned type:4;         /*this is an enumeration of sexpr_e*/
 };
 
 /**lisp global environment struct**/
 struct lispenv_t {/** a lisp environment */
         io *i;                  /* input */
         io *o;                  /* output */
-        expr global; /*global key-val list*/
+        hashtable_t *global;
         expr env;
 };
 

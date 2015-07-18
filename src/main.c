@@ -165,8 +165,9 @@ int main(int argc, char *argv[])
                 (void)lisp_repl(l);
         }
 
+        /*
         if (true == main_debug_f)
-                lisp_print(l->global, l->o);
+                lisp_print(l->global_head, l->o);*/
 
         lisp_end(l);
 

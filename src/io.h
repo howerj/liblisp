@@ -45,7 +45,7 @@ int io_printd(int32_t d, io * o);
 int io_printp(void *p, io * o);
 int io_puts(const char *s, io * o);/** error code?*/
 int io_printer(io *o, char *fmt, ...);
-void io_doreport(const char *s, char *cfile, unsigned int linenum);
+void io_doreport(const char *s, char *cfile, unsigned linenum);
 /******************************************************************************/
 #ifdef __cplusplus
 }

@@ -46,6 +46,17 @@ OBJFILES=$(BUILD_DIR)/io.o \
 	 $(BUILD_DIR)/sexpr.o \
 	 $(BUILD_DIR)/regex.o \
 	 $(BUILD_DIR)/lisp.o \
+	 $(BUILD_DIR)/hash.o \
+
+# Find a way to combine this with OBJFILES
+TBOBJFILES=$(BUILD_DIR)/tb_io.o \
+	 $(BUILD_DIR)/tb_mem.o \
+	 $(BUILD_DIR)/tb_gc.o \
+	 $(BUILD_DIR)/tb_sexpr.o \
+	 $(BUILD_DIR)/tb_regex.o \
+	 $(BUILD_DIR)/tb_lisp.o \
+	 $(BUILD_DIR)/tb_hash.o \
+	 $(BUILD_DIR)/tb_linenoise.o \
 
 ## building ###################################################################
 # Only a C tool chain is necessary to built the project. Anything else is
@@ -75,7 +86,13 @@ $(BUILD_DIR)/lisp.linenoise: $(OBJFILES) $(BUILD_DIR)/linenoise.o $(BUILD_DIR)/l
 ## testing ####################################################################
 
 valgrind: $(BUILD_DIR)/lisp
-	valgrind $(BUILD_DIR)/./$(TARGET) -c $(INPUTF)
+	valgrind $(BUILD_DIR)/./$(TARGET) -c  $(INPUTF)
+
+$(BUILD_DIR)/test: $(OBJFILES) $(TBOBJFILES) $(BUILD_DIR)/test.o
+	$(CC) $(CFLAGS) $^ -o $@
+
+test: $(BUILD_DIR)/test
+	$(BUILD_DIR)/./test
 
 ## documentation ##############################################################
 
@@ -120,7 +137,7 @@ help:
 ## cleanup ####################################################################
 
 clean:
-	-rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/$(TARGET) 
+	-rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/$(TARGET) $(BUILD_DIR)/test
 	-rm -rf doc/htm/ doc/man doc/latex $(SOURCE_DIR)/*~
 	-rm -rf $(REPORT_DIR)/*.i $(REPORT_DIR)/*.s $(REPORT_DIR)/*.log
 	-rm -rf *.log $(BUILD_DIR)/lisp.linenoise

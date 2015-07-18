@@ -50,9 +50,6 @@ static void adjust_last(bignum * n);
 static int leftshift(bignum *n, unsigned int d);
 static uint8_t binlog(size_t v);
 
-static void _check(int checkme, char *file, int line);
-#define check(X) _check((X),__FILE__,__LINE__)
-
 /**** Functions with external linkage ****************************************/
 
 /** 
@@ -177,7 +174,7 @@ bignum *bignum_create(int initialize_to, size_t len){
         if(NULL == n)
                 return NULL;
 
-      /*  assert(16 == INTERNAL_BASE);*/
+        /* assert(16 == INTERNAL_BASE);*/
         n->digits = calloc(len,sizeof(n->digits[0]));
         n->allocated = len;
 
@@ -407,7 +404,7 @@ bignum *bignum_multiply(bignum *a, bignum *b){
  *  @return   void
  */
 void bignum_copy(bignum *dst, bignum *src){
-        check((NULL != dst) && (NULL != src));
+        assert((NULL != dst) && (NULL != src));
 
         if(NULL != dst->digits){
                 free(dst->digits);
@@ -563,22 +560,5 @@ static uint8_t binlog(size_t v){
         while(v >>= 1)
                 r++;
         return r;
-}
-
-/** 
- *  @brief    Performs roughly the same job as "assert" but will
- *            not get defined out by NDEBUG. This should be wrapped
- *            in a macro however so you do not have to type __FILE__
- *            and __LINE__ out repeatedly 
- *  @param    n         Operand 'n' 
- *  @param    d         Operand 'n' 
- *  @return   void
- */
-static void _check(int checkme, char *file, int line){
-        if(0 == checkme){
-                fprintf(stderr,"check failed in %s on line %d.\n", file, line);
-                abort();
-        }
-        return;
 }
 

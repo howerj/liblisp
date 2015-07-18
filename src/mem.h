@@ -21,7 +21,7 @@ extern "C" {
 void mem_set_debug(bool flag);
 
 void *mem_malloc(size_t size);
-void *mem_calloc(size_t num, size_t size);
+void *mem_calloc(size_t size);
 void *mem_realloc(void *ptr, size_t size);
 void mem_free(void *ptr);
 char *mem_strdup(const char *s);

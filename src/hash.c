@@ -9,31 +9,28 @@
  *  @todo Delete entry function
  *  @todo Add foreach, delete
  *  @todo Replace char -> uint8_t, or void*
- *  @todo change hash print function to use the IO wrapper I made
- *  @todo This should use the memory allocation wrappers I made
- *  @todo Integrate with lisp interpreter *OR* make more generic via void*
  **/
 #include <stdint.h>
-#include <stdlib.h> /* free, calloc */
-#include <string.h> /* strcmp, strlen, strcpy */
-#include <stdio.h>  /* printf */
+#include <stdlib.h>
+#include <string.h>
 #include <assert.h> /* assert */
+#include "mem.h"
 #include "hash.h"
 
 /* private types */
 
 typedef struct hashentry {
         char *key;
-        char *val;
+        void* val;
         struct hashentry *next;    /*linked list of entries in a bin */
 } hashentry_t;
 
 typedef struct hashtable {
         size_t len;
         struct hashentry **table;
-        unsigned int collisions;
-        unsigned int uniquekeys;
-        unsigned int replaced;
+        unsigned collisions;
+        unsigned uniquekeys;
+        unsigned replaced;
 } hashtable;
 
 /* internal function prototypes */
@@ -41,7 +38,7 @@ typedef struct hashtable {
 static char *_strdup(const char *s);
 static uint32_t djb2(const char *s, size_t len);
 static uint32_t hash_alg(hashtable * table, const char *s);
-static hashentry_t *hash_newpair(const char *key, const char *val);
+static hashentry_t *hash_newpair(const char *key, void* val);
 
 /*** Function with external linkage ******************************************/
 
@@ -54,13 +51,10 @@ hashtable *hash_create(size_t len)
 {
         hashtable *newt = NULL;
 
-        if (!len)
+        if (!len || (NULL == (newt = mem_calloc(sizeof(*newt)))))
                 return NULL;
 
-        if (NULL == (newt = calloc(sizeof(*newt), 1)))
-                return NULL;
-
-        if (NULL == (newt->table = calloc(sizeof(*newt->table), len))){
+        if (NULL == (newt->table = mem_calloc(sizeof(*newt->table)*len))){
                 free(newt);
                 return NULL;
         }
@@ -89,7 +83,7 @@ void hash_destroy(hashtable * table)
                         for(current = table->table[i]; current; current = current->next){
                                 free(prev);
                                 free(current->key);
-                                free(current->val);
+                                /*free(current->val); @todo pass in function that frees values*/
                                 prev = current;
                         }
                         free(prev);
@@ -109,7 +103,7 @@ void hash_destroy(hashtable * table)
  *  @param    val       The value, should not be NULL
  *  @return   void      
  */
-void hash_insert(hashtable * ht, const char *key, const char *val)
+void hash_insert(hashtable * ht, const char *key, void* val)
 {
         uint32_t hash;
         hashentry_t *current = NULL, *newt = NULL, *last = NULL;
@@ -126,7 +120,7 @@ void hash_insert(hashtable * ht, const char *key, const char *val)
 
         if (current && current->key && !strcmp(key, current->key)) {
                 free(current->val);
-                current->val = _strdup(val);
+                current->val = val;
                 ht->replaced++;
         } else {
                 newt = hash_newpair(key, val);
@@ -146,9 +140,8 @@ void hash_insert(hashtable * ht, const char *key, const char *val)
         return;
 }
 
-
 /** 
- *  @brief    Print out a hash table
+ *  @brief    Print out a hash table, will be removed!
  *  @param    table     The hash table to print out, should not be NULL
  *  @return   void      
  */
@@ -163,7 +156,7 @@ void hash_print(hashtable * table)
         for(i = 0; i < table->len; i++){
                 if(NULL != table->table[i]){
                         for(current = table->table[i]; current; current = current->next)
-                                printf("key '%s' val '%s'\n", current->key, current->val);
+                                printf("(key \"%s\" val \"%p\")\n", current->key, current->val);
                 }
         }
 }
@@ -174,7 +167,7 @@ void hash_print(hashtable * table)
  *  @param    key       The key to search for, should not be NULL
  *  @return   The key, if found, NULL otherwise
  */
-char *hash_lookup(hashtable * table, const char *key)
+void* hash_lookup(hashtable * table, const char *key)
 {
         uint32_t hash;
         hashentry_t *current;
@@ -193,9 +186,9 @@ char *hash_lookup(hashtable * table, const char *key)
 /** 
  *  @brief    Get information; number of collisions
  *  @param    table             Hash table containing the information, should not be NULL
- *  @return   unsigned int      Number of collisions
+ *  @return   unsigned          Number of collisions
  */
-unsigned int hash_get_collisions(hashtable_t * table){
+unsigned hash_get_collisions(hashtable_t * table){
         assert(NULL != table);
         return table->collisions;
 }
@@ -203,9 +196,9 @@ unsigned int hash_get_collisions(hashtable_t * table){
 /** 
  *  @brief    Get information; Number of unique keys
  *  @param    table             Hash table containing the information, should not be NULL
- *  @return   unsigned int      Number of unique keys
+ *  @return   unsigned          Number of unique keys
  */
-unsigned int hash_get_uniquekeys(hashtable_t * table){
+unsigned hash_get_uniquekeys(hashtable_t * table){
         assert(NULL != table);
         return table->uniquekeys;
 }
@@ -213,9 +206,9 @@ unsigned int hash_get_uniquekeys(hashtable_t * table){
 /** 
  *  @brief    Get information; number of keys that have had their value replaced
  *  @param    table             Hash table containing the information, should not be NULL
- *  @return   unsigned int      Number of replacements
+ *  @return   unsigned          Number of replacements
  */
-unsigned int hash_get_replaced(hashtable_t * table){
+unsigned hash_get_replaced(hashtable_t * table){
         assert(NULL != table);
         return table->replaced;
 }
@@ -229,7 +222,9 @@ unsigned int hash_get_replaced(hashtable_t * table){
  */
 static char *_strdup(const char *s)
 {
-        char *str = calloc(sizeof(*s), strlen(s) + 1);
+        char *str;
+        assert(s);
+        str = mem_calloc(sizeof(*s)*(strlen(s) + 1));
         strcpy(str, s);
         return str;
 }
@@ -245,6 +240,7 @@ static uint32_t djb2(const char *s, size_t len)
 {
         uint32_t hash = 5381;   /*magic number this hash uses, it just is*/
         size_t i = 0;
+        assert(s);
 
         for (i = 0; i < len; s++, i++)
                 hash = ((hash << 5) + hash) + (*s);
@@ -270,15 +266,15 @@ static uint32_t hash_alg(hashtable * table, const char *s)
  *  @param    val       Value to copy
  *  @return   hashentry_t* A new hash table entry that is initialized or NULL
  */
-static hashentry_t *hash_newpair(const char *key, const char *val)
+static hashentry_t *hash_newpair(const char *key, void* val)
 {
         hashentry_t *nent = NULL;
 
-        if (NULL == (nent = calloc(sizeof(*nent), 1)))
+        if (NULL == (nent = mem_calloc(sizeof(*nent))))
                 return NULL;
 
         nent->key = _strdup(key);
-        nent->val = _strdup(val);
+        nent->val = val;
 
         if ((NULL == nent->key) || (NULL == nent->val))
                 return NULL;

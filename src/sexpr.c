@@ -20,12 +20,12 @@
  *  in their own right and might change so they can be accessed externally
  *  later.
  *
- *  Possible extras are:
- *
- *  @todo Add in syntax for quotes:
- *        '(list ...) become (quote (list ...))
- *        But make it optional
- *  @todo Add in syntax to get a line from a file like in perl
+ *  @todo The parser should be able to handle arbitrary length strings, symbols
+ *        and numbers
+ *  @todo Make sure arbitrary binary data is handled correctly, but that's
+ *        throughout the code.
+ *  @todo Add reference to the code this is based on
+ *  @todo Needs to handle cons properly; (x . y) and (x . ()) = (x)
  *
  **/
 
@@ -40,10 +40,11 @@ static const char *octal_s = "01234567";
 static const char *decimal_s = "0123456789";
 static const char *hexadecimal_s = "0123456789abcdefABCDEF";
 
-static bool print_proc_f = false;       /*print actual code after #proc */
+static bool print_proc_f = false;       /*print actual code after proc */
 static bool parse_numbers_f = true;     /*parse numbers as numbers not symbols */
 
 static bool isnumber(const char *buf, size_t string_l);
+static expr parse_quote(io * i); 
 static expr parse_symbol(io * i);  /* and integers (optionally) */
 static expr parse_string(io * i);
 static expr parse_list(io * i);
@@ -52,7 +53,7 @@ static bool parse_comment(io * i);
 /*** interface functions *****************************************************/
 
 /**
- *  @brief          Set whether we should print "<PROC>" when printing
+ *  @brief          Set whether we should print "{proc}" when printing
  *                  a user defined procedure, or if we should actually
  *                  print the contents of said procedure fully.
  *  @param          flag boolean flag to set print_proc_f
@@ -83,10 +84,11 @@ void sexpr_set_parse_numbers(bool flag)
 expr sexpr_parse(io * i)
 {
         int c;
+        if(NULL == i)
+                return NULL; /*@todo return error instead*/
         while (EOF != (c = io_getc(i))) {
-                if (isspace(c)) {
+                if (isspace(c))
                         continue;
-                }
                 switch (c) {
                 case ')':
                         IO_REPORT("unmatched ')'");
@@ -95,13 +97,11 @@ expr sexpr_parse(io * i)
                         if (true == parse_comment(i))
                                 return NULL;
                         continue;
-                case '(':
-                        return parse_list(i);
-                case '"':
-                        return parse_string(i);
-                /*case '/': return parse_regex(i,e);*/
-                /*case '<': return parse_file(i,e);*/
-                /*case '\'': return parse_quote(i,e);*/
+                case '(':  return parse_list(i);
+                case '"':  return parse_string(i);
+                case '\'': return parse_quote(i);
+                /*case '/': return parse_regex(i);*/
+                /*case '<': return parse_file(i);*/
                 default:
                         io_ungetc(c, i);
                         return parse_symbol(i);
@@ -117,99 +117,69 @@ expr sexpr_parse(io * i)
  *  @param          depth current depth of expression
  *  @return         void
  **/
-void sexpr_print(expr x, io * o, unsigned int depth)
+void sexpr_print(expr x, io * o, unsigned depth)
 {
         size_t i;
-        io *e = io_get_error_stream();
-
-        if (NULL == x)
+        if(NULL == x)
                 return;
-
-        switch (x->type) {
-        case S_NIL:
-                io_printer(o, "%r()");
-                break;
-        case S_TEE:
-                io_printer(o, "%gt");
-                break;
-        case S_LIST:
+        switch(x->type){
+        case S_NIL:       io_printer(o,"%r()"); break;
+        case S_TEE:       io_printer(o,"%gt");  break;
+        case S_INTEGER:   io_printer(o,"%m%d", x->data.integer); break;
+        case S_PRIMITIVE: io_printer(o,"%b{prim}"); break;
+        case S_PROC:      io_printer(o,"%b{proc}"); break;
+        case S_LISP_ENV:  io_printer(o,"%b{lisp}"); break;
+        case S_FILE:      /*fall through*/
+        case S_ERROR:     /*fall through*/
+        case S_HASH:      assert(!"not implemented yet"); break;
+        case S_CONS:      /*does not handle (x . y) yet*/
                 io_putc('(', o);
-                for (i = 0; i < x->len; i++) {
-                        if (0 != i) {
-                                if (2 == x->len)
-                                        io_putc(' ', o);
-                                else
-                                        io_printer(o, "%* ", depth ? depth + 1 : 1);
-                        }
-                        sexpr_print(x->data.list[i], o, depth + 1);
-                        if ((i < x->len - 1) && (2 != x->len))
-                                io_putc('\n', o);
-                }
+                do{
+                        if(x->data.cons[0])
+                                sexpr_print(x->data.cons[0],o,depth+1);
+                        if(x->data.cons[1] && x->data.cons[1]->data.cons[1])
+                                io_putc(' ',o);
+                } while((S_NIL != x->type) && (NULL != (x = x->data.cons[1])));
                 io_putc(')', o);
                 break;
+        case S_STRING: /*fall through*/
         case S_SYMBOL: /*symbols are yellow, strings are red, escaped chars magenta */
-        case S_STRING:
-                {
-                        bool isstring = S_STRING == x->type ? true : false;     /*isnotsymbol */
-                        io_printer(o, isstring ? "%r" : "%y");
-                        if (isstring) {
-                                io_putc('"', o);
-                        }
-                        for (i = 0; i < x->len; i++) {
-                                switch ((x->data.string)[i]) {
-                                case '"':
-                                case '\\':
+        {
+                bool isstring = S_STRING == x->type ? true : false;     /*isnotsymbol */
+                io_printer(o, isstring ? "%r" : "%y");
+                if (isstring)
+                        io_putc('"', o);
+                for (i = 0; i < x->len; i++) {
+                        switch ((x->data.string)[i]) {
+                        case '"': case '\\':
+                                io_printer(o, "%m\\");
+                                break;
+                        case ')': case '(': case '#':
+                                if (x->type == S_SYMBOL) 
                                         io_printer(o, "%m\\");
-                                        break;
-                                case ')':
-                                case '(':
-                                case '#':
-                                        if (x->type == S_SYMBOL) 
-                                                io_printer(o, "%m\\");
-                                }
-                                io_putc((x->data.string)[i], o);
-                                io_printer(o, isstring ? "%r" : "%y");
+                        default:
+                                break;
                         }
-                        if (isstring)
-                                io_putc('"', o);
+                        io_putc((x->data.string)[i], o);
+                        io_printer(o, isstring ? "%r" : "%y");
                 }
+                if (isstring)
+                        io_putc('"', o);
+        }
+        break;
+        case S_QUOTE: 
+                io_putc('\'',o);
+                sexpr_print(x->data.quoted,o,depth);
                 break;
-        case S_INTEGER:
-                io_printer(o,"%m%d",x->data.integer);
-                break;
-        case S_PRIMITIVE:
-                io_printer(o,"%b<PRIMOP>");
-                break;
-        case S_PROC:
-                if (true == print_proc_f) {
-                        io_printer(o, "\n%* (%ylambda%t\n%* ",depth, depth + 1);
-                        sexpr_print(x->data.list[0], o, depth + 1);
-                        io_printer(o, "\n%* ", depth + 1);
-                        sexpr_print(x->data.list[1], o, depth + 1);
-                        io_putc(')', o);
-                } else {
-                        io_printer(o,"%b<PROC>%t");
-                }
-                break;
-        case S_ERROR: /*unimplemented, fallthrough...*/
-        case S_QUOTE: /*unimplemented, fallthrough...*/
-        case S_LAST_TYPE: /*unimplemented, fallthrough...*/
-        case S_FILE:
-               /** @todo implement file support, then printing**/
-                io_printer(e,"%r");
-                IO_REPORT("Unimplemented!");
-                break;
-        default:               /* should never get here */
-                io_printer(e,"%r");
-                IO_REPORT("print: not a known printable type");
-                io_printer(e,"%t");
+        case S_LAST_TYPE: /*fall through, not a type*/
+        default:
+                io_printer(io_get_error_stream(),"%r(error \"print: invalid type\" \"%s\" %d)%t",__FILE__,__LINE__);
                 exit(EXIT_FAILURE);
                 break;
         }
         io_printer(o,"%t");
         if (0 == depth)
                 io_putc('\n', o);
-        return;
 }
 
 /**
@@ -223,12 +193,12 @@ void sexpr_print(expr x, io * o, unsigned int depth)
  *  @param          linenum Line number error occurred on
  *  @return         void
  **/
-void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
+void sexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
 {
         static io *fallback; 
         io *e = io_get_error_stream();
         if((NULL == e) && (NULL == fallback)){
-                fallback = mem_calloc(1, io_sizeof_io());
+                fallback = mem_calloc(io_sizeof_io());
                 io_file_out(fallback, stderr);
                 e = fallback;
         }
@@ -248,19 +218,24 @@ void dosexpr_perror(expr x, char *msg, char *cfile, unsigned int linenum)
 }
 
 /**
- *  @brief          Takes an already existing list and appends an atom to it
- *  @param          list a list to append an atom to
+ *  @brief          Takes an already existing cons cell and appends an atom to it
+ *                      - New cons (nil, NULL)
+ *                      - Old cons (ele, new cons)
+ *                      - Return New cons
+ *  @param          cons a list to append an atom to
  *  @param          ele  the atom to append to the list
- *  @return         void
- *
- *  @todo           Error handline
- *  @todo           Check for list type OR proc type
+ *  @return         New cons cell
  **/
-void append(expr list, expr ele)
+expr sexpr_append(expr cons, expr ele)
 {
-        assert((NULL != list) && (NULL != ele));
-        list->data.list = mem_realloc(list->data.list, sizeof(expr) * ++list->len);
-        (list->data.list)[list->len - 1] = ele;
+        expr nc = NULL;
+        assert(cons && ele);
+        if(NULL == (nc = gc_calloc(S_CONS)))
+                return NULL;
+        cons->data.cons[0] = ele;
+        cons->data.cons[1] = nc;
+        nc->data.cons[0] = nc->data.cons[1] = NULL;
+        return nc;
 }
 
 /*****************************************************************************/
@@ -274,6 +249,7 @@ void append(expr list, expr ele)
 
 static bool isnumber(const char *buf, size_t string_l)
 {
+        assert(buf);
         if ('-' == buf[0] || ('+' == buf[0])) {
                 /*don't want negative hex/octal or + - symbols */
                 if ((1 == string_l) || ('0' == buf[1]))
@@ -293,18 +269,35 @@ static bool isnumber(const char *buf, size_t string_l)
 }
 
 /**
+ *  @brief          parse a quoted expressions
+ *  @param          i     input stream
+ *  @return         NULL or parsed quote
+ **/
+expr parse_quote(io * i){
+        expr ex = NULL;
+        assert(i);
+        if(NULL == (ex = gc_calloc(S_QUOTE)))
+                return NULL;
+        if(NULL == (ex->data.quoted = sexpr_parse(i)))
+                return NULL;
+        return ex;
+}
+
+/**
  *  @brief          parse a symbol or integer (in decimal or
  *                  octal format, positive or negative)
  *  @param          i input stream
  *  @return         NULL or parsed symbol / integer
  **/
 static expr parse_symbol(io * i)
-{                               /* and integers! */
+{
         expr ex = NULL;
-        unsigned int count = 0;
+        unsigned count = 0;
         int c;
         char buf[SEXPR_BUFLEN];
-        ex = gc_calloc();
+        if(NULL == (ex = gc_calloc(S_NIL)))
+                return NULL;
+        assert(i);
 
         memset(buf, '\0', SEXPR_BUFLEN);
 
@@ -318,7 +311,7 @@ static expr parse_symbol(io * i)
                 if (isspace(c))
                         goto success;
 
-                if ((c == '(') || (c == ')')) {
+                if ((c == '(') || (c == ')') || (c == '\'')) {
                         io_ungetc(c, i);
                         goto success;
                 }
@@ -331,11 +324,10 @@ static expr parse_symbol(io * i)
                 switch (c) {
                 case '\\':
                         switch (c = io_getc(i)) {
-                        case '\\':
-                        case '"':
-                        case '(':
-                        case ')':
-                        case '#':
+                        /*should do other isspace chars as well*/
+                        case '\\': case ' ': case '"':
+                        case '(':  case ')': case '#':
+                        case '\t': case '\'':
                                 buf[count++] = c;
                                 continue;
                         default:
@@ -343,6 +335,7 @@ static expr parse_symbol(io * i)
                                 goto fail;
                         }
                 case '"':
+                        IO_REPORT("You should separate symbols and strings!");
                         IO_REPORT(buf);
                         goto success;
                 default:
@@ -351,10 +344,8 @@ static expr parse_symbol(io * i)
         }
  fail:
         return NULL;
-
  success:
         ex->len = strlen(buf);
-
         if ((true == parse_numbers_f) && isnumber(buf, ex->len)) {
                 ex->type = S_INTEGER;
                 ex->data.integer = (int32_t)strtol(buf, NULL, 0);
@@ -377,8 +368,10 @@ static expr parse_string(io * i)
         unsigned int count = 0;
         int c;
         char buf[SEXPR_BUFLEN];
+        assert(i);
 
-        ex = gc_calloc();
+        if(NULL == (ex = gc_calloc(S_STRING)))
+                return NULL;
         memset(buf, '\0', SEXPR_BUFLEN);
 
         while (EOF != (c = io_getc(i))) {
@@ -407,9 +400,7 @@ static expr parse_string(io * i)
         }
  fail:
         return NULL;
-
  success:
-        ex->type = S_STRING;
         ex->len = strlen(buf);
         ex->data.string = mem_malloc(ex->len + 1);
         strcpy(ex->data.string, buf);
@@ -418,22 +409,25 @@ static expr parse_string(io * i)
 
 /**
  *  @brief          Parses a list, consisting of strings, symbols,
- *                  integers, or other lists.
+ *                  integers, quotes, or other lists into a list of
+ *                  cons cells
  *  @param          i input stream
  *  @return         NULL or parsed list
  **/
 static expr parse_list(io * i)
 {
-        expr ex = NULL, chld;
+        expr ex = NULL, head = NULL, prev = NULL, chld;
         int c;
+        assert(i);
 
-        ex = gc_calloc();
-        ex->len = 0;
+        if(NULL == (head = ex = gc_calloc(S_CONS)))
+                return NULL;
 
         while (EOF != (c = io_getc(i))) {
                 if (isspace(c))
                         continue;
 
+                prev = ex;
                 switch (c) {
                 case '#':
                         if (true == parse_comment(i))
@@ -441,36 +435,41 @@ static expr parse_list(io * i)
                         break;
                 case '"':
                         chld = parse_string(i);
-                        if (!chld)
+                        if (!chld || !(ex = sexpr_append(ex,chld)))
                                 goto fail;
-                        append(ex, chld);
+                        continue;
+                case '\'':
+                        chld = parse_quote(i);
+                        if (!chld || !(ex = sexpr_append(ex,chld)))
+                                goto fail;
                         continue;
                 case '(':
                         chld = parse_list(i);
-                        if (!chld)
+                        if (!chld || !(ex = sexpr_append(ex,chld)))
                                 goto fail;
-                        append(ex, chld);
                         continue;
                 case ')':
                         goto success;
-
                 default:
                         io_ungetc(c, i);
                         chld = parse_symbol(i);
-                        if (!chld)
+                        if (!chld || !(ex = sexpr_append(ex,chld)))
                                 goto fail;
-                        append(ex, chld);
                         continue;
                 }
         }
-
  fail:
         IO_REPORT("list err");
         return NULL;
-
  success:
-        ex->type = S_LIST;
-        return ex;
+        if(ex == head)
+                head->type = S_NIL;
+        if(prev->data.cons[1] && !ex->data.cons[0]){
+                prev->data.cons[1] = NULL;
+        }
+        if(NULL == (prev->data.cons[0] = prev->data.cons[1] = gc_calloc(S_NIL)))
+                return NULL;
+        return head;
 }
 
 /**
@@ -482,10 +481,10 @@ static expr parse_list(io * i)
 static bool parse_comment(io * i)
 {
         int c;
-        while (EOF != (c = io_getc(i))) {
-                if ('\n' == c) {
+        assert(i);
+        while (EOF != (c = io_getc(i))) 
+                if ('\n' == c) 
                         return false;
-                }
-        }
         return true;
 }
+

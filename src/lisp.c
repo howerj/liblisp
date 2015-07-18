@@ -9,12 +9,8 @@
  *
  *  Experimental, small, lisp interpreter.
  *
- *  Meaning of symbols:
- *  i:      input
- *  o:      output
- *  x:      expression
- *  args:   a list of *lisp_evaluated* arguments
- *  nx:     a newly created expression
+ *  At a minimum I should define; quote, atom, eq, car, cdr, cons, 
+ *  cond, define (or label) and lambda.
  *
  **/
 
@@ -25,40 +21,26 @@
 #include "gc.h"
 #include "sexpr.h"
 #include "regex.h"
+#include "hash.h"
+
+#define UNUSED(X)  (void)(X)
+#define HASH_SIZE  (128u)
 
 typedef struct{
         const char *s;
-        expr(*func) (expr args, lisp l);
+        primitive_f func;
 } primop_initializers;
 
-/* helper macros */
-
-#define CAR(X)      ((X)->data.list[0])
-#define CADR(X)     ((X)->data.list[1])
-#define CADDR(X)    ((X)->data.list[2])
-#define CADDDR(X)   ((X)->data.list[3])
-#define NTH(X,Y)    ((X)->data.list[(Y)])
-#define TSTLEN(X,Y) ((Y)==((X)->len))
-
-#define PROCARGS(X) CAR(X)
-#define PROCCODE(X) CADR(X)
-#define PROCENV(X)  CADDR(X)
-
-/* global-to-file special objects */
-static expr nil, tee, s_if, s_lambda, s_define, s_begin, s_set, s_quote;
-
-/* functions necessary for the intepreter */
+static size_t list_len(expr x);
+static expr mknil(void);
+static expr find(expr env, expr x, lisp l);
+static expr extend(expr sym, expr val, lisp l);
+static expr extendprimop(const char *s, primitive_f func, lisp l);
 static expr mkobj(sexpr_e type);
 static expr mksym(char *s);
-static expr mkprimop(expr(*func) (expr args, lisp l));
+static expr mkprimop(primitive_f func);
 static expr mkproc(expr args, expr code, expr env);
 static expr evlis(expr x, expr env, lisp l);
-static expr apply(expr proc, expr args, lisp l);        /*add env for dynamic scope? */
-static expr dofind(expr env, expr x);   /*add error handling? */
-static expr find(expr env, expr x, lisp l);
-static expr extend(expr sym, expr val, expr env);
-static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), lisp l);
-static expr extensions(expr env, expr syms, expr vals);
 
 /** 
  * @brief List of primitive operations, used for initialization of structures 
@@ -71,7 +53,9 @@ static expr extensions(expr env, expr syms, expr vals);
         PRIMOP_X("-",        primop_sub)\
         PRIMOP_X("*",        primop_prod)\
         PRIMOP_X("/",        primop_div)\
+        PRIMOP_X("atom",     primop_atom)\
         PRIMOP_X("mod",      primop_mod)\
+        PRIMOP_X("eq",       primop_eq)\
         PRIMOP_X("car",      primop_car)\
         PRIMOP_X("cdr",      primop_cdr)\
         PRIMOP_X("cons",     primop_cons)\
@@ -79,16 +63,13 @@ static expr extensions(expr env, expr syms, expr vals);
         PRIMOP_X("length",   primop_len)\
         PRIMOP_X("=",        primop_numeq)\
         PRIMOP_X("print",    primop_printexpr)\
-        PRIMOP_X("scar",     primop_scar)\
-        PRIMOP_X("scdr",     primop_scdr)\
-        PRIMOP_X("scons",    primop_scons)\
         PRIMOP_X("eqt",      primop_typeeq)\
         PRIMOP_X("reverse",  primop_reverse)\
         PRIMOP_X("system",   primop_system)\
         PRIMOP_X("match",    primop_match)
  
 /** @brief built in primitives, static declarations **/
-#define PRIMOP_X(STRING, FUNCTION) static expr FUNCTION(expr args, lisp l);
+#define PRIMOP_X(STRING, FUNCTION) static expr FUNCTION(expr args);
 LIST_OF_PRIMITIVE_OPERATIONS
 #undef PRIMOP_X
 
@@ -100,6 +81,12 @@ static primop_initializers primops[] = {
 };
 #undef PRIMOP_X
 
+#define CAR(X)                  ((X)->data.cons[0])
+#define CDR(X)                  ((X)->data.cons[1])
+#define SETCAR(X,Y)             ((X)->data.cons[0] = (Y))
+#define SETCDR(X,Y)             ((X)->data.cons[1] = (Y))
+#define CMPSYM(EXPR,STR)        (!strcmp(CAR((EXPR))->data.symbol,(STR)))
+#define ISNIL(X)                (S_NIL == (X)->type)                    
 
 /*** interface functions *****************************************************/
 
@@ -109,61 +96,28 @@ static primop_initializers primops[] = {
  **/
 lisp lisp_init(void)
 {
-        size_t i;
-        io *e;
         lisp l;
-        l = mem_calloc(1, sizeof(*l));
-        l->global = mem_calloc(1, sizeof(sexpr_t));
-        l->env = mem_calloc(1, sizeof(sexpr_t));
+        size_t i;
+        if(!(l = mem_calloc(sizeof(*l)))) goto fail;
+        if(!(l->global = hash_create(HASH_SIZE))) goto fail;
+        if(!(l->env = mem_calloc(sizeof(sexpr_t)))) goto fail;
 
-        l->i = mem_calloc(1, io_sizeof_io());
-        l->o = mem_calloc(1, io_sizeof_io());
+        if(!(l->i = mem_calloc(io_sizeof_io()))) goto fail;
+        if(!(l->o = mem_calloc(io_sizeof_io()))) goto fail;
+        l->env->type = S_CONS;
 
-        /* set up file I/O and pointers */
+        /* set up file initial I/O */
         io_file_in(l->i, stdin);
         io_file_out(l->o, stdout);
-
-
-        e = io_get_error_stream();
-        io_file_out(e, stderr); 
-
-        l->global->type = S_LIST;
-        l->env->type = S_LIST;
-
-        /* internal symbols */
-        nil = mkobj(S_NIL);
-        tee = mkobj(S_TEE);
-
-        s_if      =  mksym(mem_strdup("if"));
-        s_lambda  =  mksym(mem_strdup("lambda"));
-        s_begin   =  mksym(mem_strdup("begin"));
-        s_define  =  mksym(mem_strdup("define"));
-        s_set     =  mksym(mem_strdup("set"));
-        s_quote   =  mksym(mem_strdup("quote"));
-
-        if(NULL == extend(mksym(mem_strdup("nil")),  nil,  l->global))
-                goto fail;
-        if(NULL == extend(mksym(mem_strdup("t")),  tee,  l->global))
-                goto fail;
-
-        if(NULL == extend(s_if,      s_if,      l->global)) goto fail;
-        if(NULL == extend(s_lambda,  s_lambda,  l->global)) goto fail;
-        if(NULL == extend(s_begin,   s_begin,   l->global)) goto fail;
-        if(NULL == extend(s_define,  s_define,  l->global)) goto fail;
-        if(NULL == extend(s_set,     s_set,     l->global)) goto fail;
-        if(NULL == extend(s_quote,   s_quote,   l->global)) goto fail;
+        io_file_out(io_get_error_stream(), stderr); 
 
         /* normal forms, kind of  */
-        for(i = 0; (NULL != primops[i].s) && (NULL != primops[i].func) ; i++){
-                if(NULL == extendprimop(primops[i].s, primops[i].func, l)){
+        for(i = 0; (NULL != primops[i].s) && (NULL != primops[i].func) ; i++)
+                if(NULL == extendprimop(primops[i].s, primops[i].func, l))
                         goto fail;
-                }
-        }
-
         return l;
 fail:
-        fputs("allocation failed during init", stderr);
-        exit(EXIT_FAILURE);
+        IO_REPORT("initilization failed");
         return NULL; 
 }
 
@@ -175,10 +129,8 @@ fail:
  *  @return     int     Error code, 0 = Ok, >0 is a failure.
  */
 int lisp_register_function(char *name, expr(*func) (expr args, lisp l), lisp l){
-        if(NULL == extendprimop(name, func, l))
-                return -1;
-        else
-                return 0;
+        UNUSED(name); UNUSED(func); UNUSED(l);
+        return 1;
 }
 
 /** 
@@ -209,33 +161,24 @@ lisp lisp_repl(lisp l)
  **/
 void lisp_end(lisp l)
 {
-
         fflush(NULL);
-
-        /*do not call mark before **this** sweep */
-        gc_sweep();
-
-        /*mem_free(l->e);*/
-        mem_free(l->o);
-        mem_free(l->i);
-
-        mem_free(l->env);
-        mem_free(l->global->data.list);
-        mem_free(l->global);
+        gc_sweep(); /*do not call mark before **this** sweep */ 
+        io_file_close(l->o);
+        io_file_close(l->i);
+        free(l->o);
+        free(l->i);
+        free(l->env);
+        hash_destroy(l->global);
         mem_free(l);
-
         return;
 }
 
 /**
  *  @brief          Read in an s-expression 
  *  @param          i   Read input from...
- *  @return         A valid s-expression, which might be an error!
+ *  @return         A valid s-expression (or NULL), which might be an error!
  **/
-expr lisp_read(io * i)
-{
-        return sexpr_parse(i);
-}
+expr lisp_read(io * i) { return sexpr_parse(i); }
 
 /**
  *  @brief          Print out an s-expression
@@ -243,11 +186,7 @@ expr lisp_read(io * i)
  *  @param          o   Output stream
  *  @return         void
  **/
-void lisp_print(expr x, io * o)
-{
-        sexpr_print(x, o, 0);
-        return;
-}
+void lisp_print(expr x, io * o) { sexpr_print(x, o, 0); }
 
 /**
  *  @brief          Evaluate an already parsed lisp expression
@@ -258,113 +197,97 @@ void lisp_print(expr x, io * o)
  **/
 expr lisp_eval(expr x, expr env, lisp l)
 {
-        size_t i;
-
-        if (NULL == x) {
-                SEXPR_PERROR(NULL, "passed nul");
-                abort();
+        expr nx;
+        if(NULL == x){
+                SEXPR_PERROR(NULL,"lisp_eval passed NULL");
+                exit(EXIT_FAILURE);
         }
 
-        switch (x->type) {
-        case S_LIST:
-                if (TSTLEN(x, 0))       /* () */
-                        return nil;
-                if (S_SYMBOL == CAR(x)->type) {
-                        const expr foundx = lisp_eval(CAR(x), env, l);
-                        if (foundx == s_if) {   /* (if test conseq alt) */
-                                if (!TSTLEN(x, 4)) {
-                                        SEXPR_PERROR(x, "if: argc != 4");
-                                        return nil;
+START_EVAL:
+        switch(x->type){
+        case S_NIL:    case S_TEE:       case S_INTEGER: 
+        case S_STRING: case S_PRIMITIVE: case S_PROC: 
+        case S_HASH:   case S_LISP_ENV: 
+                return x; 
+        case S_QUOTE:
+                return x->data.quoted;
+        case S_CONS: 
+        if(S_SYMBOL == CAR(x)->type){
+                if (CMPSYM(x,"begin")){
+                        expr y = NULL;
+                        if(1 == list_len(x))
+                                return mknil();
+                        for(;;){
+                                x = CDR(x);
+                                if(ISNIL(CDR(x))){
+                                        return y;
                                 }
-                                if (nil == lisp_eval(CADR(x), env, l)) {
-                                        return lisp_eval(CADDDR(x), env, l);
-                                } else {
-                                        return lisp_eval(CADDR(x), env, l);
-                                }
-                        } else if (foundx == s_begin) { /* (begin exp ... ) */
-                                if (TSTLEN(x, 1)) {
-                                        return nil;
-                                }
-                                for (i = 1; i < x->len - 1; i++) {
-                                        (void)lisp_eval(NTH(x, i), env, l);
-                                }
-                                return lisp_eval(NTH(x, i), env, l);
-                        } else if (foundx == s_quote) { /* (quote exp) */
-                                if (!TSTLEN(x, 2)) {
-                                        SEXPR_PERROR(x, "quote: argc != 1");
-                                        return nil;
-                                }
-                                return CADR(x);
-                        } else if (foundx == s_set) {
-                                expr nx;
-                                if (!TSTLEN(x, 3)) {
-                                        SEXPR_PERROR(x, "set: argc != 2");
-                                        return nil;
-                                }
-                                nx = find(env, CADR(x), l);
-                                if (nil == nx) {
-                                        SEXPR_PERROR(CADR(x), "unbound symbol");
-                                        return nil;
-                                }
-                                nx->data.list[1] = lisp_eval(CADDR(x), env, l);
-                                return CADR(nx);
-                        } else if (foundx == s_define) {
-                                {
-                                        expr nx;
-                                        /* @todo if already defined, or is an internal symbol, IO_REPORT error */
-                                        if (!TSTLEN(x, 3)) {
-                                                SEXPR_PERROR(x, "define: argc != 2");
-                                                return nil;
-                                        }
-                                        nx = extend(CADR(x), lisp_eval(CADDR(x), env, l), l->global);
-                                        return nx;
-                                }
-                        } else if (foundx == s_lambda) {
-                                if (!TSTLEN(x, 3)) {
-                                        SEXPR_PERROR(x, "lambda: argc != 2");
-                                        return nil;
-                                }
-                                if(S_LIST != CADR(x)->type){
-                                        SEXPR_PERROR(x, "lambda: arg_2 != list");
-                                        return nil;
-                                }
-                                return mkproc(CADR(x), CADDR(x), env);
+                                y = lisp_eval(CAR(x),env,l);/*should be checked for errors!*/
+                        }
+                } else if (CMPSYM(x,"define")){
+                        expr nx;
+                        if(list_len(x) != 3){
+                                SEXPR_PERROR(x,"define: argc != 3");
+                                return mknil();
+                        }
+                        (void)extend(CAR(CDR(x)), nx = lisp_eval(CAR(CDR(CDR(x))),env, l), l);
+                        return nx;
+                } else if (CMPSYM(x,"if")){
+                        if(list_len(x) != 4){
+                                SEXPR_PERROR(x,"if: argc != 4");
+                                return mknil();
+                        }
+                        nx = lisp_eval(CAR(CDR(x)),env,l);
+                        if(!ISNIL(nx)){
+                                x = CAR(CDR(CDR(x)));
                         } else {
-                                return apply(foundx, evlis(x, env, l), l);
+                                x = CAR(CDR(CDR(CDR(x))));
                         }
+                        goto START_EVAL;
+                } else if (CMPSYM(x,"lambda")){
+                        if(list_len(x) != 3){
+                                SEXPR_PERROR(x,"lambda: argc != 3");
+                                return mknil();
+                        }
+                        if(S_CONS != CAR(CDR(x))->type){
+                                SEXPR_PERROR(x,"lambda; expected argument list");
+                                return mknil();
+                        }
+                        return mkproc(CAR(CDR(x)),CDR(CDR(x)), env);
+                } else if (CMPSYM(x,"quote")){
+                        if(list_len(x) != 2){
+                                SEXPR_PERROR(x,"quote: argc != 2");
+                                return mknil();
+                        }
+                        return CAR(CDR(x));
+                } else if (CMPSYM(x,"set")){
                 } else {
-                        SEXPR_PERROR(CAR(x), "cannot apply");
-                        return nil;
+                        expr procedure = lisp_eval(CAR(x), env, l);
+                        expr values = evlis(CDR(x), env, l);
+                        if(S_PRIMITIVE == procedure->type)
+                                return (*procedure->data.func)(values);
+                        if(S_PROC == procedure->type)
+                                return mknil(); /*not implement yet*/
                 }
-                break;
-        case S_SYMBOL:         /*if symbol found, return it, else error; unbound symbol */
-                {
-                        expr nx = find(env, x, l);
-                        if (nil == nx) {
-                                SEXPR_PERROR(x, "unbound symbol");
-                                return nil;
-                        }
-                        return CADR(nx);
+        }
+        SEXPR_PERROR(x,"cannot apply");
+        return mknil();
+        case S_SYMBOL:
+                nx = find(env, x, l);
+                if(NULL == nx){
+                        SEXPR_PERROR(x, "unbound symbol");
+                        return mknil();
                 }
-        case S_FILE:           /* to implement */
-                SEXPR_PERROR(NULL, "file type unimplemented");
-                return nil;
-        case S_NIL:
-        case S_TEE:
-        case S_STRING:
-        case S_PROC:
-        case S_INTEGER:
-        case S_PRIMITIVE:
-                return x;
-        case S_ERROR: /*fall through*/
-        case S_QUOTE: /*fall through*/
-        case S_LAST_TYPE: /*fall through*/
+                return nx;
+        case S_FILE:      /*fall through, not a type*/
+        case S_ERROR:     IO_REPORT("Not implemented");
+        case S_LAST_TYPE: /*fall through, not a type*/
         default:
-                SEXPR_PERROR(NULL, "fatal: unknown or unimplemented type");
-                abort();
+                IO_REPORT("Not a valid type");
+                exit(EXIT_FAILURE);
         }
 
-        SEXPR_PERROR(NULL, "should never get here");
+        SEXPR_PERROR(NULL,"Should never get here.");
         return x;
 }
 
@@ -375,74 +298,50 @@ expr lisp_eval(expr x, expr env, lisp l)
  **/
 void lisp_clean(lisp l)
 {
-        gc_mark(l->global);
+        /*gc_mark(l->global_head);*/
         gc_sweep();
 }
 
-/*** internal functions ******************************************************/
+/*** internal helper functions ***********************************************/
 
-/**find a symbol in an environment and the global list**/
-static expr find(expr env, expr x, lisp l)
-{
-        expr nx = dofind(env, x);
-        if (nil == nx) {
-                nx = dofind(l->global, x);
-                if (nil == nx) {
-                        return nil;
-                }
-        }
-        return nx;
-}
-
-/** find a symbol in a special type of list **/
-static expr dofind(expr env, expr x)
-{
-  /** @todo make this function more robust **/
+/** calculate length of a list **/
+static size_t list_len(expr x){
         size_t i;
-        char *s;
-        if (S_LIST != env->type || S_SYMBOL != x->type) {
-                return nil;
-        }
-        s = x->data.symbol;
-        if (1 > env->len) {
-                return nil;
-        }
-        for (i = env->len - 1; i != 0; i--) {
-                                       /** reverse search order **/
-                if (!strcmp(CAR(NTH(env, i))->data.symbol, s)) {
-                        return NTH(env, i);
-                }
-        }
-        if (!strcmp(CAR(NTH(env, 0))->data.symbol, s)) {
-                return NTH(env, 0);
-        }
-        return nil;
+        for(i = 0; (NULL != x) && (S_NIL != x->type); x = CDR(x))
+                i++;
+        return i-1;
 }
 
-/** extend a lisp environment **/
-static expr extend(expr sym, expr val, expr env)
-{
-        expr nx = mkobj(S_LIST);
-        append(nx, sym);
-        append(nx, val);
-        append(env, nx);
+/** find a symbol in an environment **/
+static expr find(expr env, expr x, lisp l){
+        return hash_lookup(l->global, x->data.symbol);
+}
+
+/** extend the lisp environment **/
+static expr extend(expr sym, expr val, lisp l){
+        /*XXX: check*/
+        hash_insert(l->global, sym->data.symbol, val);
         return val;
 }
 
 /** extend the lisp environment with a primitive operator **/
-static expr extendprimop(const char *s, expr(*func) (expr args, lisp l), lisp l)
+static expr extendprimop(const char *s, expr(*func) (expr args), lisp l)
 {
-        return extend(mksym(mem_strdup(s)), mkprimop(func), l->global);
+        return extend(mksym(mem_strdup(s)), mkprimop(func), l);
 }
 
 /** make new object **/
 static expr mkobj(sexpr_e type)
 {
         expr nx;
-        nx = gc_calloc();
+        nx = gc_calloc(type);
         nx->len = 0;
-        nx->type = type;
         return nx;
+}
+
+/** make a nil **/
+static expr mknil(void){
+        return mkobj(S_NIL);
 }
 
 /** make a new symbol **/
@@ -456,7 +355,7 @@ static expr mksym(char *s)
 }
 
 /** make a new primitive **/
-static expr mkprimop(expr(*func) (expr args, lisp l))
+static expr mkprimop(expr(*func) (expr args))
 {
         expr nx;
         nx = mkobj(S_PRIMITIVE);
@@ -464,73 +363,27 @@ static expr mkprimop(expr(*func) (expr args, lisp l))
         return nx;
 }
 
-/** make a new process **/
-static expr mkproc(expr args, expr code, expr env)
-{
-  /** 
-   *  @todo check all args are symbols, clean this up! 
-   **/
-        expr nx, nenv;
-        nx = mkobj(S_PROC);
-        append(nx, args);
-        append(nx, code);
-  /** @todo turn into mklist **/
-        nenv = mkobj(S_LIST);
-        nenv->data.list = mem_malloc(env->len * sizeof(expr));
-        memcpy(nenv->data.list, env->data.list, (env->len) * sizeof(expr));
-        nenv->len = env->len;
-  /****************************/
-        append(nx, nenv);
-        return nx;
+/** make a new procedure **/
+static expr mkproc(expr args, expr code, expr env){
+        return mknil();
 }
 
-/** lisp_evaluate a list **/
-static expr evlis(expr x, expr env, lisp l)
-{
-        size_t i;
-        expr nx;
-        nx = mkobj(S_LIST);
-        for (i = 1 /*skip 0! */ ; i < x->len; i++) {
-                append(nx, lisp_eval(NTH(x, i), env, l));
+/** evaluate a list **/
+static expr evlis(expr x, expr env, lisp l){
+        expr ex, head, prev;
+        if(NULL == (prev = head = ex = gc_calloc(S_CONS)))
+                return NULL;
+        assert(x && env && l);
+        for(; !ISNIL(x); x = CDR(x)){
+                ex->data.cons[0] = lisp_eval(CAR(x),env,l);
+                ex->data.cons[1] = gc_calloc(S_CONS);
+                prev = ex;
+                if(!(ex = ex->data.cons[1]))
+                        return NULL;
         }
-        return nx;
-}
-
-/** extend a enviroment with symbol/value pairs **/
-static expr extensions(expr env, expr syms, expr vals)
-{
-        size_t i;
-        if (0 == vals->len)
-                return nil;
-
-        for (i = 0; i < syms->len; i++) {
-                if(NULL == extend(NTH(syms, i), NTH(vals, i), env)){
-                        fputs("allocation failed", stderr);
-                        exit(EXIT_FAILURE);
-                }
-        }
-        return env;
-}
-
-/** apply a procedure over arguments given an environment **/
-static expr apply(expr proc, expr args, lisp l)
-{
-        expr nenv;
-        if (S_PRIMITIVE == proc->type) {
-                return (proc->data.func) (args, l);
-        }
-        if (S_PROC == proc->type) {
-                if (args->len != PROCARGS(proc)->len) {
-                        SEXPR_PERROR(args, "expected number of args incorrect");
-                        return nil;
-                }
-                nenv = extensions(PROCENV(proc), PROCARGS(proc), args);
-                /*sexpr_print(nenv,l->o,0);//might be useful to keep in! */
-                return lisp_eval(PROCCODE(proc), nenv, l);
-        }
-
-        SEXPR_PERROR(proc, "apply failed");
-        return nil;
+        prev->type = S_NIL;
+        prev->data.cons[0] = prev->data.cons[1] = NULL;
+        return head;
 }
 
 /*** primitive operations ****************************************************/
@@ -542,430 +395,87 @@ static expr apply(expr proc, expr args, lisp l)
     return nil;\
   }
 
-/**Avoid warning in primops**/
-#define UNUSED(X)  (void)(X)
+/**true if arg is an atom, nil otherwise**/
+static expr primop_atom(expr args)
+{UNUSED(args); return mknil();}
 
 /**add a list of numbers**/
-static expr primop_add(expr args, lisp l)
+static expr primop_add(expr args)
 {
-        size_t i;
-        expr nx = mkobj(S_INTEGER);
-        UNUSED(l);
-        if (0 == args->len)
-                return nil;
-        for (i = 0; i < args->len; i++) {
-                INTCHK_R(NTH(args, i));
-                nx->data.integer += (NTH(args, i)->data.integer);
+        expr n;
+        int32_t i;
+        for(i = 0; !ISNIL(args) && CAR(args)->type == S_INTEGER; i += CAR(args)->data.integer,args = CDR(args));
+        if(args->type != S_NIL){
+                SEXPR_PERROR(CAR(args), "arg != integer");
+                return mknil();
         }
-        return nx;
+        if(NULL == (n = gc_calloc(S_INTEGER)))
+                return NULL;
+        n->data.integer = i;
+        return n;
 }
 
 /**subtract a list of numbers from the 1 st arg**/
-static expr primop_sub(expr args, lisp l)
-{
-        size_t i;
-        expr nx = mkobj(S_INTEGER);
-        UNUSED(l);
-        if (0 == args->len)
-                return nil;
-        nx = NTH(args, 0);
-        INTCHK_R(nx);
-        for (i = 1; i < args->len; i++) {
-                INTCHK_R(NTH(args, i));
-                nx->data.integer -= (NTH(args, i)->data.integer);
-        }
-        return nx;
-}
+static expr primop_sub(expr args)
+{UNUSED(args); return mknil();}
 
 /**multiply a list of numbers together**/
-static expr primop_prod(expr args, lisp l)
-{
-        size_t i;
-        expr nx = mkobj(S_INTEGER);
-        UNUSED(l);
-        if (0 == args->len)
-                return nil;
-        nx = NTH(args, 0);
-        INTCHK_R(nx);
-        for (i = 1; i < args->len; i++) {
-                INTCHK_R(NTH(args, i));
-                nx->data.integer *= (NTH(args, i)->data.integer);
-        }
-        return nx;
-}
+static expr primop_prod(expr args)
+{UNUSED(args); return mknil();}
 
 /**divide the first argument by a list of numbers**/
-static expr primop_div(expr args, lisp l)
-{
-        size_t i, tmp;
-        expr nx = mkobj(S_INTEGER);
-        UNUSED(l);
-        if (0 == args->len)
-                return nil;
-        nx = NTH(args, 0);
-        INTCHK_R(nx);
-        for (i = 1; i < args->len; i++) {
-                INTCHK_R(NTH(args, i));
-                tmp = NTH(args, i)->data.integer;
-                if (tmp) {
-                        nx->data.integer /= tmp;
-                } else {
-                        SEXPR_PERROR(args, "div: 0/");
-                        return nil;
-                }
-        }
-        return nx;
-}
+static expr primop_div(expr args)
+{UNUSED(args); return mknil();}
 
 /**arg_1 modulo arg_2**/
-static expr primop_mod(expr args, lisp l)
-{
-        int32_t tmp;
-        expr nx = mkobj(S_INTEGER);
-        UNUSED(l);
-        if (2 != args->len) {
-                SEXPR_PERROR(args, "mod: argc != 2");
-                return nil;
-        }
-        INTCHK_R(CAR(args));
-        INTCHK_R(CADR(args));
-
-        tmp = CADR(args)->data.integer;
-        if (0 == tmp) {
-                SEXPR_PERROR(args, "mod: 0/");
-                return nil;
-        }
-        nx->data.integer = CAR(args)->data.integer % tmp;
-
-        return nx;
-}
+static expr primop_mod(expr args)
+{UNUSED(args); return mknil();}
 
 /**car**/
-static expr primop_car(expr args, lisp l)
-{
-        expr a1;
-        UNUSED(l);
-        if (1 != args->len) {
-                SEXPR_PERROR(args, "car: argc != 1");
-                return nil;
-        }
-
-        a1 = CAR(args);
-        if (S_LIST != a1->type) {
-                SEXPR_PERROR(args, "args != list");
-                return nil;
-        }
-        return CAR(a1);
-}
+static expr primop_car(expr args)
+{UNUSED(args); return mknil();}
 
 /**cdr**/
-static expr primop_cdr(expr args, lisp l)
-{
-        expr nx, carg;
-        UNUSED(l);
-        if (0 == args->len) {
-                return nil;
-        }
-        nx = mkobj(S_LIST);
-        carg = CAR(args);
-        if ((S_LIST != carg->type) || (1 >= carg->len)) {
-                return nil;
-        }
-
-        nx->data.list = mem_malloc((carg->len - 1) * sizeof(expr));
-        memcpy(nx->data.list, carg->data.list + 1, (carg->len - 1) * sizeof(expr));
-        nx->len = carg->len - 1;
-        return nx;
-}
+static expr primop_cdr(expr args)
+{UNUSED(args); return mknil();}
 
 /**cons**/
-static expr primop_cons(expr args, lisp l)
-{
-        expr nx = mkobj(S_LIST), prepend, list;
-        UNUSED(l);
-        if (2 != args->len) {
-                SEXPR_PERROR(args, "cons: argc != 2");
-                return nil;
-        }
-        prepend = CAR(args);
-        list = CADR(args);
-        if (S_NIL == list->type) {
-                append(nx, prepend);
-        } else if (S_LIST == list->type) {
-    /** @todo turn into mklist **/
-                nx->data.list = mem_malloc((list->len + 1) * sizeof(expr));
-                CAR(nx) = prepend;
-                memcpy(nx->data.list + 1, list->data.list, (list->len) * sizeof(expr));
-                nx->len = list->len + 1;
-    /****************************/
-        } else {
-                append(nx, prepend);
-                append(nx, list);
-        }
-        return nx;
-}
+static expr primop_cons(expr args)
+{UNUSED(args); return mknil();}
 
 /**NTH element in a list or string**/
-static expr primop_nth(expr args, lisp l)
-{
-        int32_t i;
-        expr a1, a2;
-        UNUSED(l);
-        if (2 != args->len) {
-                SEXPR_PERROR(args, "NTH: argc != 2");
-                return nil;
-        }
-        a1 = CAR(args);
-        a2 = CADR(args);
-        if (S_INTEGER != a1->type) {
-                SEXPR_PERROR(args, "NTH: arg 1 != integer");
-                return nil;
-        }
-        if ((S_LIST != a2->type) && (S_STRING != a2->type)) {
-                SEXPR_PERROR(args, "NTH: arg 2 != list || string");
-                return nil;
-        }
-
-        i = CAR(args)->data.integer;
-        if (0 > i) {
-                i = a2->len + i;
-        }
-
-        if ((size_t)i > a2->len) {
-                return nil;
-        }
-
-        if (S_LIST == a2->type) {
-                return NTH(a2, i);
-        } else {                /*must be string */
-                {
-                        expr nx = mkobj(S_STRING);
-                        nx->data.string = mem_calloc(sizeof(char), 2);
-                        nx->data.string[0] = a2->data.string[i];
-                        nx->len = 1;
-                        return nx;
-                }
-        }
-        return nil;
-}
+static expr primop_nth(expr args)
+{UNUSED(args); return mknil();}
 
 /**length of a list or string**/
-static expr primop_len(expr args, lisp l)
-{
-        expr a1, nx = mkobj(S_INTEGER);
-        UNUSED(l);
-        if (1 != args->len) {
-                SEXPR_PERROR(args, "len: argc != 1");
-                return nil;
-        }
-        a1 = CAR(args);
-        if ((S_LIST != a1->type) && (S_STRING != a1->type)) {
-                SEXPR_PERROR(args, "len: arg 2 != list || string");
-                return nil;
-        }
-        nx->data.integer = a1->len;
-        return nx;
-}
+static expr primop_len(expr args)
+{UNUSED(args); return mknil();}
 
 /**test equality of the 1st arg against a list of numbers**/
-static expr primop_numeq(expr args, lisp l)
-{
-        size_t i;
-        expr nx;
-        UNUSED(l);
-        if (0 == args->len)
-                return nil;
-        nx = NTH(args, 0);
-        INTCHK_R(nx);
-        for (i = 1; i < args->len; i++) {
-                INTCHK_R(NTH(args, i));
-                if (nx->data.integer != (NTH(args, i)->data.integer)) {
-                        return nil;
-                }
-                nx->data.integer = (NTH(args, i)->data.integer);
-        }
-        return tee;
-}
+static expr primop_numeq(expr args)
+{UNUSED(args); return mknil();}
 
 /**print**/
-static expr primop_printexpr(expr args, lisp l)
-{
-        /* @todo if arg = 1, treat as Output redirection, else normal out */
-        sexpr_print(args, l->o, 0);
-        return args;
-}
+static expr primop_printexpr(expr args)
+{UNUSED(args); return mknil();}
 
-/**CAR for strings**/
-static expr primop_scar(expr args, lisp l)
-{
-        expr nx, a1;
-        UNUSED(l);
-        if (1 != args->len) {
-                SEXPR_PERROR(args, "CAR: argc != 1");
-                return nil;
-        }
-        a1 = CAR(args);
-        if (S_STRING != a1->type) {
-                SEXPR_PERROR(args, "args != string");
-                return nil;
-        }
-        nx = mkobj(S_STRING);
-        nx->data.string = mem_calloc(sizeof(char), 2);
-        nx->data.string[0] = a1->data.string[0];
-        nx->len = 1;
-        return nx;
-}
-
-/**cdr for strings**/
-static expr primop_scdr(expr args, lisp l)
-{
-        expr nx, carg;
-        UNUSED(l);
-        if (0 == args->len) {
-                return nil;
-        }
-        nx = mkobj(S_STRING);
-        carg = CAR(args);
-        if ((S_STRING != carg->type) || (1 >= carg->len)) {
-                return nil;
-        }
-
-        nx->data.string = mem_calloc(sizeof(char), carg->len);       /*not len + 1 */
-        strcpy(nx->data.string, carg->data.string + 1);
-        nx->len = carg->len - 1;
-        return nx;
-}
-
-/**cons for strings**/
-static expr primop_scons(expr args, lisp l)
-{
-        expr nx = mkobj(S_LIST), prepend, list;
-        UNUSED(l);
-        if (2 != args->len) {
-                SEXPR_PERROR(args, "cons: argc != 2");
-                return nil;
-        }
-        prepend = CAR(args);
-        list = CADR(args);
-        if ((S_STRING == list->type) && (S_STRING == prepend->type)) {
-                nx->type = S_STRING;
-                nx->data.string = mem_calloc(sizeof(char), (list->len) + (prepend->len) + 1);
-                nx->len = list->len + prepend->len;
-                strcpy(nx->data.string, prepend->data.string);
-                strcat(nx->data.string, list->data.string);
-        } else {
-                SEXPR_PERROR(args, "cons: arg != string");
-                return nil;
-        }
-        return nx;
-}
+/**strict equality**/
+static expr primop_eq(expr args)
+{UNUSED(args); return mknil();}
 
 /**type equality**/
-static expr primop_typeeq(expr args, lisp l)
-{
-        size_t i;
-        expr nx;
-        UNUSED(l);
-        if (args == NULL) {     /*here to supress warning */
-                SEXPR_PERROR(args, "eqt: passed NULL");
-                return nil;
-        }
-
-        if (0 == args->len)
-                return nil;
-        nx = NTH(args, 0);
-        for (i = 1; i < args->len; i++) {
-                if (nx->type != (NTH(args, i)->type)) {
-                        return nil;
-                }
-        }
-        return tee;
-}
+static expr primop_typeeq(expr args)
+{UNUSED(args); return mknil();}
 
 /**reverse a list or a string**/
-static expr primop_reverse(expr args, lisp l)
-{
-        size_t i;
-        expr nx, carg;
-        sexpr_e type;
-        UNUSED(l);
-        if (1 != args->len) {
-                SEXPR_PERROR(args, "reverse: argc != 1");
-                return nil;
-        }
-        carg = CAR(args);
-        type = carg->type;
-        if ((S_LIST != type) && (S_STRING != type)) {
-                SEXPR_PERROR(args, "reverse: not a reversible type");
-                return nil;
-        }
-        nx = mkobj(type);
+static expr primop_reverse(expr args)
+{UNUSED(args); return mknil();}
 
-        if (S_LIST == type) {
-                nx->data.list = mem_malloc(carg->len * sizeof(expr));
-                for (i = 0; i < carg->len; i++) {
-                        NTH(nx, carg->len - i - 1) = NTH(carg, i);
-                }
-                nx->len = carg->len;
-        } else {                /*is a string */
-                nx->data.string = mem_calloc(sizeof(char), carg->len * sizeof(expr) + 1);
-                for (i = 0; i < carg->len; i++) {
-                        nx->data.string[carg->len - i - 1] = carg->data.string[i];
-                }
-                nx->len = carg->len;
-        }
-        return nx;
-}
+static expr primop_system(expr args)
+{UNUSED(args); return mknil();}
 
-static expr primop_system(expr args, lisp l){
-        int32_t i;
-        expr nx, carg;
-        UNUSED(l);
-        if (1 != args->len) {
-                SEXPR_PERROR(args, "system: argc != 1");
-                return nil;
-        }
-        carg = CAR(args);
-        if(S_STRING != carg->type){
-                SEXPR_PERROR(args, "system: arg != string");
-                return nil;
-        }
-        i = (int32_t)system(carg->data.string);
-        if(0 > i)
-                return nil;
-
-        nx = mkobj(S_INTEGER);
-        nx->data.integer = i;
-
-        return nx;
-}
-
-static expr primop_match(expr args, lisp l){
-        expr regex, matchme;
-        int i;
-        UNUSED(l);
-        if(2 != args->len){
-                SEXPR_PERROR(args, "regex: argc != 2");
-                return nil;
-        }
-        regex = CAR(args);
-        matchme = CADR(args);
-        if(S_STRING != regex->type || S_STRING != matchme->type){
-                SEXPR_PERROR(args, "regex: arg != string");
-                return nil;
-        }
-        i = regex_match(regex->data.string, matchme->data.string);
-        if(REGEX_NOMATCH_E == i){
-                return nil;
-        } else if(REGEX_MATCH_E == i){
-                return tee;
-        } else {
-                SEXPR_PERROR(args, "regex: regex internal failure!");
-                return nil;
-        }
-
-        return nil;
-}
+static expr primop_match(expr args)
+{UNUSED(args); return mknil();}
 
 #undef INTCHK_R
 #undef UNUSED
