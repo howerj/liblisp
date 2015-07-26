@@ -1,7 +1,12 @@
 *.swp
 *.swo
 *.o
+*.a
+*.so
 *~
+doxygen/
+doxygen/*
+hist.lsp
 src/*~
 *.lisp
 *.ascii

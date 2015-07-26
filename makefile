@@ -1,9 +1,9 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -g -fwrapv -std=c99 -O2 -pedantic
 TARGET=lisp
-.PHONY: all clean documentation valgrind run libline/libline.a
+.PHONY: all clean doc valgrind run libline/libline.a
 all: $(TARGET)
-doc: $(TARGET).htm 
+doc: lib$(TARGET).htm doxygen
 
 lib$(TARGET).a: lib$(TARGET).o
 	ar rcs $@ $<
@@ -24,17 +24,18 @@ $(TARGET): main.o lib$(TARGET).a libline/libline.a
 libline/libline.a:
 	cd libline && make
 
-$(TARGET).htm: $(TARGET).md
+lib$(TARGET).htm: lib$(TARGET).md
 	markdown $^ > $@
+
 run: $(TARGET)
 	./$^ -Epc init.lsp test.lsp -
+
 valgrind: $(TARGET)
 	valgrind --leak-check=full ./$^ -Epc init.lsp test.lsp -
-doxygen: doxygen.conf *.c *.h
+
+doxygen: doxygen.conf *.c *.h *.md
 	doxygen $^
-liblisp.htm: liblisp.md
-	markdown $^ > $@
-documentation: doxygen liblisp.htm
+
 clean:
 	cd libline && make clean
 	rm -rf $(TARGET) *.a *.so *.o *.log *.htm *.html *.out doxygen

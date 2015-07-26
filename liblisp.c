@@ -1704,7 +1704,7 @@ static cell* subr_tell(lisp *l, cell *args) {
         return Error;
 }
 
-static cell* subr_seek(lisp *l, cell *args) {
+static cell* subr_seek(lisp *l, cell *args) { /*XXX: accepts invalid enums*/
         if(cklen(args, 3) && isio(car(args)) 
                 && isint(car(cdr(args))) && isint(car(cdr(cdr(args))))) {
                 return mkint(l,io_seek(ioval(car(args)),intval(car(cdr(args))),
