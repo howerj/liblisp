@@ -1,0 +1,34 @@
+.\" Manpage for liblisp C API
+.\" Contact howe.r.j.89@gmail.com to correct errors or typos.
+.TH man 1 "12 Jun 2015" "1.0.0" "lisp library man page"
+.SH NAME
+lisp \- C API for a small lisp interpreter
+.SH SYNOPSIS
+#include <libforth.h>
+.SH DESCRIPTION
+A library that implements a lisp interpreter. The header "liblisp.h"
+documents all of the C-function calls, so to avoid duplication (and the
+possibility that this is out of sync with the header) only the "main_lisp()" 
+function will be documented here.
+
+If for some reason lisp(1) has not been installed along side with this
+library a simple interpreter can be built using the "main_lisp()" function:
+
+.RS
+#include <liblisp.h>
+.P
+int main(int argc, char **argv)
+.P
+{
+.P
+        return main_lisp(argc, argv);
+.P
+}
+.RE
+
+.SH SEE ALSO
+lisp(1)
+.SH BUGS
+Probably.
+.SH AUTHOR
+Richard James Howe (howe.r.j.89@gmail.com)
