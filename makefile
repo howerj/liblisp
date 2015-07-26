@@ -1,15 +1,9 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -g -fwrapv -std=c99 -O2 -pedantic
 TARGET=lisp
-<<<<<<< HEAD
 .PHONY: all clean doc valgrind run libline/libline.a
 all: $(TARGET)
 doc: lib$(TARGET).htm doxygen
-=======
-.PHONY: all clean documentation valgrind run libline/libline.a
-all: $(TARGET)
-doc: $(TARGET).htm 
->>>>>>> 30296495271b71df431fdebb0c041bbd39e522be
 
 lib$(TARGET).a: lib$(TARGET).o
 	ar rcs $@ $<
@@ -30,7 +24,6 @@ $(TARGET): main.o lib$(TARGET).a libline/libline.a
 libline/libline.a:
 	cd libline && make
 
-<<<<<<< HEAD
 lib$(TARGET).htm: lib$(TARGET).md
 	markdown $^ > $@
 
@@ -40,22 +33,9 @@ run: $(TARGET)
 valgrind: $(TARGET)
 	valgrind --leak-check=full ./$^ -Epc init.lsp test.lsp -
 
-doxygen: doxygen.conf *.c *.h *.md
-	doxygen $^
-
-=======
-$(TARGET).htm: $(TARGET).md
-	markdown $^ > $@
-run: $(TARGET)
-	./$^ -Epc init.lsp test.lsp -
-valgrind: $(TARGET)
-	valgrind --leak-check=full ./$^ -Epc init.lsp test.lsp -
 doxygen: doxygen.conf *.c *.h
 	doxygen $^
-liblisp.htm: liblisp.md
-	markdown $^ > $@
-documentation: doxygen liblisp.htm
->>>>>>> 30296495271b71df431fdebb0c041bbd39e522be
+
 clean:
 	cd libline && make clean
 	rm -rf $(TARGET) *.a *.so *.o *.log *.htm *.html *.out doxygen
