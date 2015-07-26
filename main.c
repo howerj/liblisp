@@ -17,6 +17,7 @@
  *      int main(int argc, char **argv) { return main_lisp(argc, argv); }
  * 
  *  @todo Some level of auto-completion could be added from the libline library
+ *  @todo None of these functions handle errors in the best way
 **/
 
 #include "liblisp.h"
@@ -73,6 +74,15 @@ static char *line_editing_function(const char *prompt) {
         line_history_save(histfile);
         return line;
 }
+
+static cell *subr_line_editor_mode(lisp *l, cell *args) {
+        (void)l;
+        if(cklen(args, 1)) { 
+                line_set_vi_mode(isnil(car(args)) ? 0 : 1);
+                return (cell*)mktee();
+        }
+        return line_get_vi_mode() ? (cell*)mktee(): (cell*)mknil();
+}
 #endif
 
 int main(int argc, char **argv) { 
@@ -89,7 +99,8 @@ MATH_UNARY_LIST
 #ifdef USE_LINE /*add line editor functionality*/
         lisp_set_line_editor(l, line_editing_function);
         line_history_load(histfile);
-        line_vi_mode(1);
+        line_set_vi_mode(1); /*start up in a sane editing mode*/
+        lisp_add_subr(l, subr_line_editor_mode, "line-editor-mode");
 #endif 
         return main_lisp_env(l, argc, argv); 
 }

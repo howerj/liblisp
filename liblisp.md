@@ -407,7 +407,7 @@ There are several special variables used within the interpreter.
 
 * nil
 
-Represents false and the end of a list.
+Represents false and the end of a list. Can also be written as '()'.
 
 * t
 
@@ -435,6 +435,12 @@ manipulated.
 
 * if
 
+The "if" special form expects three expressions, if the first evaluates to true
+(which is any value apart from 'nil') then it returns the second expression
+after evaluation. If that test evaluated to false (that is to 'nil') then it
+returns the third expression after evaluation. Only the test and the expression
+to be returned are evaluated.
+
         (if TEST EXPR EXPR)
         # Examples:
         > (if t 1 2)
@@ -443,6 +449,8 @@ manipulated.
         2
         > (if "hello" 1 2)
         1
+        > (if 0 'a 'b) # 0 is not 'nil', it evaluates to true here!
+        a # return 'a' because 0 is true in this context.
 
 * lambda
 
@@ -497,7 +505,7 @@ that will become the value first.
 
 * set!
 
-Change the value of an already defined variable.
+Change the value of an already defined variable to another value.
 
         (set! EXPR EXPR)
         # Examples:
@@ -583,6 +591,9 @@ representation of an error returned from primitive functions.
 
 #### Built in subroutines
 
+The following is a list of all the built in subroutines that are always
+available.
+
         &                  Perform a bitwise AND on two integers
         |                  Perform a bitwise OR on two integers
         ^                  Perform a bitwise XOR on two integers
@@ -615,7 +626,6 @@ representation of an error returned from primitive functions.
         flush              Flush an output stream
         tell               Get the current file position indicator
         seek               Perform a seek in a file
-        throw              Throw an error
         open               Open an IO object for reading or writing (not both)
         get-char           Get a character
         get-delim          Read in a line delimited by a character
@@ -711,59 +721,104 @@ Test for equality between two expressions.
 
 * >
 
+Test whether the first argument given is greater than the second argument.
+This function works for floats, integers and strings.
+
         (> ARITH ARITH)
         (> STRING STRING)
 
 * <
+
+Test whether the first argument given is less than the second argument.
+This function works for floats, integers and strings.
 
         (< ARITH ARITH)
         (< STRING STRING)
 
 * cons
 
+Create a new cons cell from two expressions.
+
         (cons EXPR EXPR)
 
 * car
+
+Get the first value from a CONS cell.
 
         (car CONS)
 
 * cdr
 
+Get the second value from a CONS cell.
+
         (cdr CONS)
 
 * list
 
-        (lisp EXPR ...)
+Create a list from a series of expressions.
+
+        (list)
+        (list EXPR ...)
 
 * match
+
+A very simple string matching routine. This routine takes a pattern as its
+first argument and a string to match the pattern against as its second
+argument. 
 
         (match STRING STRING)
 
 * scons
 
+Concatenate two strings together.
+
         (scons STRING STRING)
 
 * scar
+
+Make a string from the first character of a string.
 
         (scar STRING)
 
 * scdr
 
+Make a string from a string excluding the first character.
+
         (scdr STRING)
 
 * eval
+
+Evaluate an expression in either the top level environment or with a specially
+craft association list.
 
         (eval EXPR)
         (eval EXPR A-LIST)
 
 * trace-level!
 
-        (trace-level! INT)
+Set the level of "tracing" to be done in the environment, whether tracing is
+off, on only for marked objects or on for all objects evaluated.
+
+        (trace-level! ENUM)
 
 * gc
 
+Control garbage collection. If given no arguments this routine will force the
+collection of garbage now, otherwise an enumeration can be passed in to change
+when garbage is collected, if at all.
+
+The garbage collector is on by default, or in the \*gc-on\* state. Garbage
+collection can be postponed with the \*gc-postpone\* enumeration, in this state
+the collector will not run but cells will still be added to the list of all
+variables to collect, the collector can be turned on at a later date. 
+
+The collector can be turned off completely, *this will leak memory*, after
+references are lost they are lost permanently. The collector cannot be turned
+back on after this, the enumeration to do this is \*gc-off\*.
+
+
         (gc)
-        (gc INT)
+        (gc ENUM)
 
 * length
 
@@ -772,7 +827,7 @@ Test for equality between two expressions.
 
 * type?
 
-        (type? INT EXPR)
+        (type? ENUM EXPR)
 
 * input?
 
@@ -807,19 +862,14 @@ Return the current IO port position indicator.
 Perform a file seek on an IO port. This can be relative to the beginning of the
 file, from the current offset or from the end.
 
-        (seek IO INT INT)
-
-* throw
-
-        (throw)
-        (throw INT)
+        (seek IO INT ENUM)
 
 * open
 
 Open up an IO port for reading or writing. The string can either be the name of
 a file to be read in, or a string that can be opened as an IO port for reading.
 
-        (open INT STRING)
+        (open ENUM STRING)
 
 * get-char
 
@@ -921,7 +971,7 @@ Insert a key-value pair into a hash table.
 
 Coerce one type into another.
 
-        (coerce INT EXPR)
+        (coerce ENUM EXPR)
 
 * time
 
@@ -956,13 +1006,15 @@ Return a list representing the date.
 
 * assoc
 
-        (assoc ATOM A-PAIR)
+Find an atom within an association list.
+
+        (assoc ATOM A-LIST)
 
 * locale!
 
 Set the locale string.
 
-        (locale! INT STRING)
+        (locale! ENUM STRING)
 
 * trace
 
@@ -980,7 +1032,7 @@ Calculate the binary logarithm of an integer.
 
 * close
 
-Close a IO port.
+Close an IO port.
 
         (close IO)
 
@@ -1058,6 +1110,16 @@ Functions added optionally in [main.c][]:
 
         (pow ARITH ARITH)
 
+* line-editor-mode
+
+        (line-editor-mode)
+        (line-editor-mode T-or-Nil)
+
+If the line editing library is used then this function can be used to query the
+state of line editor mode, 't' representing ["Vi"][] like editing mode, 'nil'
+["Emacs"][] mode. The mode can be changed by passing in 't' to set it to 'Vi' 
+mode and 'nil' to Emacs mode.
+
 #### Predefined variables
 
         # integers
@@ -1134,12 +1196,19 @@ Functions added optionally in [main.c][]:
         e                  Euler's number
 
 * pi
+
+Roughly "3.14159...".
+
+The numerical constant ["pi"][], this is a floating point value that does not
+follow the normal naming convention for the predefined variables of enclosing
+the name within asterisks. 
+
 * e
 
+Roughly "2.71828...".
 
-
-#### Functions added in [main.c][]
-
+The numerical constant ["e"][]. It also breaks with the usual variable naming
+convention like ["pi"][] does.
 
 <div id='References'/>
 ## References
@@ -1159,6 +1228,9 @@ structures relating to built in subroutines, special symbols (such as *nil*,
  
 ### Lisp
 
+Here are a list of references on how to implement lisp interpreters and to
+other lisp interpreters people have made.
+
 1. <http://ldc.upenn.edu/myl/llog/jmc.pdf>
 2. <http://c2.com/cgi/wiki?ImplementingLisp>
 3. <http://www.sonoma.edu/users/l/luvisi/sl5.c>
@@ -1171,6 +1243,9 @@ structures relating to built in subroutines, special symbols (such as *nil*,
 10. <https://news.ycombinator.com/item?id=869141>
 
 ### Regex
+
+The matching function provided by the base library "match" is very simple, but
+can be improved upon by several regex implementations shown here.
 
 1. <https://swtch.com/~rsc/regexp/regexp1.html>
 2. <http://www.cs.princeton.edu/courses/archive/spr09/cos333/beautiful.html>
@@ -1188,10 +1263,15 @@ use floating point numbers and integers instead.
 
 ### Hashes
 
+A hashing library is provided along with the interpreter, the interpreter makes
+use of it.
+
 1. <http://www.cse.yorku.ca/~oz/hash.html>
 2. <https://en.wikipedia.org/wiki/Hash_table#Separate_chaining>
 
 ### String handling
+
+Various string handling routines were adapted from the C-FAQ.
 
 1. <http://c-faq.com/varargs/varargs1.html>
 
@@ -1210,6 +1290,7 @@ logarithms was derived from here:
 
 1. <http://bettermotherfuckingwebsite.com/>
 
+<!-- Links used throughout the document -->
 [ANSI C]: <https://en.wikipedia.org/wiki/ANSI_C>
 [c99]: <https://en.wikipedia.org/wiki/C99>
 [Cygwin]: <https://www.cygwin.com/>
@@ -1227,5 +1308,9 @@ logarithms was derived from here:
 [fexpr]: <https://en.wikipedia.org/wiki/Fexpr>
 [tail calls]: <https://en.wikipedia.org/wiki/Tail_call>
 [lambda procedure]: <https://en.wikipedia.org/wiki/Anonymous_function>
+["pi"]: <https://en.wikipedia.org/wiki/Pi>
+["e"]: <https://en.wikipedia.org/wiki/E_%28mathematical_constant%29>
+["Emacs"]: <https://en.wikipedia.org/wiki/Emacs>
 
+<!-- This isn't meant to go here but it is out of the way -->
 <style type="text/css">body{margin:40px auto;max-width:650px;line-height:1.6;font-size:18px;color:#444;padding:0 10px}h1,h2,h3{line-height:1.2}</style>

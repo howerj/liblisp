@@ -1222,7 +1222,13 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 }
                 if(first == Env)   return env;
                 if(first == Quote) return car(exp);
-                if(first == Error) RECOVER(l, "'throw '%S", exp); 
+                if(first == Error) {
+                        if(cklen(exp, 1) && isint(car(exp)))
+                                throwf(l, intval(car(exp)));
+                        if(cklen(exp, 0))
+                                throwf(l, -1);
+                        RECOVER(l, "'throw \"expected () or (int)\" '%S", exp); 
+                }
                 if(first == Define) {
                         if(!cklen(exp, 2))
                                 RECOVER(l, "'define \"argc != 2 in %S\"", exp);
@@ -1276,9 +1282,8 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 }
                 if(isproc(proc) || isfproc(proc)) {
                         if(procargs(proc)->len != vals->len)
-                                RECOVER(l, "'procedure-arg-count \"expected %S:%d, got: %S:%d\"", 
-                                                procargs(proc) , procargs(proc)->len, 
-                                                vals, vals->len);
+                                RECOVER(l, "'proc \"expected\" %S \"got\" '%S", 
+                                                procargs(proc), vals);
                         if(procargs(proc)->len)
                                 env = multiple_extend(l, 
                                         l->dynamic ? env : procenv(proc), 
@@ -1603,13 +1608,6 @@ static cell* subr_inp(lisp *l, cell *args) {
 static cell* subr_outp(lisp *l, cell *args) {
         if(!cklen(args, 1)) RECOVER(l, "\"argument count is not 1\" '%S", args);
         return isout(car(args)) ? Tee : Nil;
-}
-
-static cell* subr_throw(lisp *l, cell *args) {
-        if(cklen(args, 0)) throwf(l, -1);
-        if(cklen(args, 1) && isint(car(args))) throwf(l, intval(car(args)));
-        RECOVER(l, "\"expected () or (integer)\" '%S", args);
-        return Error;
 }
 
 static cell* subr_open(lisp *l, cell *args) {
@@ -1971,7 +1969,7 @@ static cell *subr_close(lisp *l, cell *args) {
         X(subr_inp,     "input?")       X(subr_outp,     "output?")\
         X(subr_eofp,    "eof?")         X(subr_flush,    "flush")\
         X(subr_tell,    "tell")         X(subr_seek,     "seek")\
-        X(subr_throw,   "throw")        X(subr_open,     "open")\
+        X(subr_close,   "close")        X(subr_open,     "open")\
         X(subr_getchar, "get-char")     X(subr_getdelim, "get-delim")\
         X(subr_read,    "read")         X(subr_puts,     "put")\
         X(subr_putchar, "put-char")     X(subr_print,    "print")\
@@ -1983,8 +1981,7 @@ static cell *subr_close(lisp *l, cell *args) {
         X(subr_getenv,  "getenv")       X(subr_rand,     "random")\
         X(subr_seed,    "seed")         X(subr_date,     "date")\
         X(subr_assoc,   "assoc")        X(subr_setlocale, "locale!")\
-        X(subr_trace_cell, "trace")     X(subr_binlog,    "binary-logarithm")\
-        X(subr_close,   "close")
+        X(subr_trace_cell, "trace")     X(subr_binlog,    "binary-logarithm")
 
 #define X(SUBR, NAME) { SUBR, NAME },
 static struct subr_list { subr p; char *name; } primitives[] = {
@@ -2217,6 +2214,8 @@ int lisp_repl(lisp *l, char *prompt, int editor_on) {
         running = 0;
         free(line);
         if(editor_on && l->editor) { /*handle line editing functionality*/
+                /**XXX:when line editor is enabled and (error -1) is thrown
+                 *we get a SEGFAULT*/
                 while((line = l->editor(prompt))) {
                         cell *prn; 
                         if(!line[strspn(line, " \t\r\n")]) { free(line); continue; }

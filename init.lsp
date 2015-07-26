@@ -196,7 +196,7 @@
 
 ##############################################################################
 
-(define exit (lambda () (throw -1)))
+(define exit (lambda () (error -1)))
 
 (define flatten # flatten a tree
   (lambda (l)
