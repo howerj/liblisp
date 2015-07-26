@@ -1284,13 +1284,25 @@ logarithms was derived from here:
 
 ### Line editing library
 
-1. <https://github.com/antirez/linenoise>
+The line editing library used in this document was called "linenoise", which is
+a popular and minimal library for line editing released under a BSD license. I
+have since made (fairly minor) modifications to the library and added support
+for ["Vi"][] like editing and changed the API naming somewhat, the modified
+library has been used in this project.
 
-### CSS For this document
+1. <https://github.com/antirez/linenoise>
+2. <https://github.com/howerj/libline>
+
+### Documentation
+
+The CSS style sheet used in this document and the markdown to HTML converter
+used:
 
 1. <http://bettermotherfuckingwebsite.com/>
+2. <https://daringfireball.net/projects/markdown/>
 
-<!-- Links used throughout the document -->
+<!-- Links used throughout the document. These will not be present in the HTML
+     but only in the markdown document used to generate the HTML -->
 [ANSI C]: <https://en.wikipedia.org/wiki/ANSI_C>
 [c99]: <https://en.wikipedia.org/wiki/C99>
 [Cygwin]: <https://www.cygwin.com/>
