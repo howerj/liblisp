@@ -1,3 +1,6 @@
 [submodule "doc/external/Arcadia"]
 	path = doc/external/Arcadia
 	url = https://github.com/kimtg/Arcadia
+[submodule "libline"]
+	path = libline
+	url = https://github.com/howerj/libline
