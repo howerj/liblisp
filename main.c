@@ -62,6 +62,17 @@ static cell *subr_pow (lisp *l, cell *args) {
         y = isfloat(yo) ? floatval(yo) : intval(yo);
         return mkfloat(l, pow(x, y));
 }
+
+static cell *subr_modf(lisp *l, cell *args) {
+        cell *xo;
+        double x, fracpart, intpart = 0;
+        if(!cklen(args, 1) || !isarith(car(args)))
+                return (cell*)mkerror();
+        xo = car(args);
+        x = isfloat(xo) ? floatval(xo) : intval(xo);
+        fracpart = modf(x, &intpart);
+        return cons(l, mkfloat(l, intpart), mkfloat(l, fracpart));
+}
 #endif
 
 #ifdef USE_LINE
@@ -94,6 +105,7 @@ int main(int argc, char **argv) {
 MATH_UNARY_LIST
 #undef X
         lisp_add_subr(l, subr_pow, "pow");
+        lisp_add_subr(l, subr_modf, "modf");
 #endif
 
 #ifdef USE_LINE /*add line editor functionality*/

@@ -1057,68 +1057,140 @@ Functions added optionally in [main.c][]:
         ceil               Round upwards
         floor              Round downwards
         pow                Computer X raised to the Y
+        modf               Split a value into integer and fractional parts
+        line-editor-mode   Change the line editing mode
+
+For all the mathematical functions imported from the C math library the
+arguments are converted to floating point numbers before, the functions also
+all return floating point values, apart from [modf][] which returns a cons of
+two floating point values.
 
 * log
 
+Calculate the [natural logarithm][] of a floating point value. Integers are
+converted to floating point values before hand.
+
         (log ARITH)
+
 * log10
 
+Calculate a [logarithm][] with base 10. If you need a logarithm of a value 'x' 
+to any other base, base 'b', you can use:
+
+        logb(x) = log10(x) / log10(b)
+        or
+        logb(x) = log(x) / log(b)
+
         (log10 ARITH)
+
 * fabs
 
+Return the [absolute value][] of a floating point number.
+
         (fabs ARITH)
+
 * sin
 
+Calculate the [sine][] of an angle, in radians.
+
         (sin ARITH)
+
 * cos
 
+Calculate the [cosine][] of an angle, in radians.
+
         (cos ARITH)
+
 * tan
 
+Calculate the [tangent][] of an angle, in radians.
+
         (tan ARITH)
+
 * asin
 
+Calculate the [reciprocal of sine][], or the "cosecant".
+
         (asin ARITH)
+
 * acos
 
+Calculate the [reciprocal of cosine][], or the "secant".
+
         (acos ARITH)
+
 * atan
 
+Calculate the [reciprocal of tangent][], or the "cotangent".
+
         (atan ARITH)
+
 * sinh
 
+Calculate the [hyperbolic sine][].
+
         (sinh ARITH)
+
 * cosh
 
+Calculate the [hyperbolic cosine][].
+
         (cosh ARITH)
+
 * tanh
 
+Calculate the [hyperbolic tangent][].
+
         (tanh ARITH)
+
 * exp
 
+Calculate the [exponential function][]. Or Euler's number raised to the
+floating point number provided.
+
         (exp ARITH)
+
 * sqrt
 
+Calculate the [square root][] of a number.
+
         (sqrt ARITH)
+
 * ceil
 
+Calculate the [ceil][] of a float, or round up to the nearest integer, from
+"ceiling".
+
         (ceil ARITH)
+
 * floor
 
+Round down to the "[floor][]", or down to the nearest integer.
+
         (floor ARITH)
+
 * pow
+
+Raise the first value to the power of the second value.
 
         (pow ARITH ARITH)
 
-* line-editor-mode
+* [modf][]
 
-        (line-editor-mode)
-        (line-editor-mode T-or-Nil)
+Split a floating point value (integers are converted to floats first) into
+integer and fractional parts, returning a cons of the two values.
+
+        (modf ARITH)
+
+* line-editor-mode
 
 If the line editing library is used then this function can be used to query the
 state of line editor mode, 't' representing ["Vi"][] like editing mode, 'nil'
 ["Emacs"][] mode. The mode can be changed by passing in 't' to set it to 'Vi' 
 mode and 'nil' to Emacs mode.
+
+        (line-editor-mode)
+        (line-editor-mode T-or-Nil)
 
 #### Predefined variables
 
@@ -1323,6 +1395,22 @@ used:
 ["pi"]: <https://en.wikipedia.org/wiki/Pi>
 ["e"]: <https://en.wikipedia.org/wiki/E_%28mathematical_constant%29>
 ["Emacs"]: <https://en.wikipedia.org/wiki/Emacs>
-
+[natural logarithm]: <https://en.wikipedia.org/wiki/Natural_logarithm>
+[logarithm]: <https://en.wikipedia.org/wiki/Logarithm>
+[absolute value]: <https://en.wikipedia.org/wiki/Absolute_value>
+[sine]: <https://en.wikipedia.org/wiki/Sine>
+[cosine]: <https://en.wikipedia.org/wiki/Trigonometric_functions#Sine.2C_cosine_and_tangent>
+[tangent]:<https://en.wikipedia.org/wiki/Trigonometric_functions#Sine.2C_cosine_and_tangent>
+[reciprocal of sine]: <https://en.wikipedia.org/wiki/Trigonometric_functions#Reciprocal_functions>
+[reciprocal of cosine]: <https://en.wikipedia.org/wiki/Trigonometric_functions#Reciprocal_functions>
+[reciprocal of tangent]: <https://en.wikipedia.org/wiki/Trigonometric_functions#Reciprocal_functions>
+[hyperbolic sine]: <https://en.wikipedia.org/wiki/Hyperbolic_function>
+[hyperbolic cosine]: <https://en.wikipedia.org/wiki/Hyperbolic_function>
+[hyperbolic tangent]: <https://en.wikipedia.org/wiki/Hyperbolic_function>
+[exponential function]: <https://en.wikipedia.org/wiki/Exponential_function>
+[square root]: <https://en.wikipedia.org/wiki/Square_root>
+[ceil]: <http://www.cplusplus.com/reference/cmath/ceil/>
+[floor]: <http://www.cplusplus.com/reference/cmath/floor/>
+[modf]: <http://www.cplusplus.com/reference/cmath/modf/>
 <!-- This isn't meant to go here but it is out of the way -->
 <style type="text/css">body{margin:40px auto;max-width:650px;line-height:1.6;font-size:18px;color:#444;padding:0 10px}h1,h2,h3{line-height:1.2}</style>

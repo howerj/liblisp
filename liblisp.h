@@ -124,11 +124,10 @@ uint8_t binlog(unsigned long long v);
  *  @return A pseudo random number **/
 uint64_t xorshift128plus(uint64_t s[2]);
 
-/* Add? strcat but returns the end of the string
- * char *strcatend(char *dst, const char *src);*/
-/* Add? malloc string, copy first and the rest of the strings into it
- * with the separator inbetween them.
- * char *vstrcatsep(const char *separator, const char *first, ...);*/
+/** @brief return the "balance" of a string of parens
+ *  @param sexpr string to count balance in 
+ *  @return int  positive more '(', negative more ')', zero == balanced**/ 
+int balance(const char *sexpr);
 
 /************************** hash library *************************************/
 

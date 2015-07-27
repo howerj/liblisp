@@ -22,6 +22,8 @@
  *        which is not surprising.
  *  @note Adding a bit to an object to turn tracing for it on/off?
  *  @note Add options for turning off parsing of strings and floats 
+ *  @note There has to be a better way of handling the returns from
+ *        longjmp, there is some macro magic to be had here.
  *
  *  The following functionality would be nice to put in to the core
  *  interpreter; support for matrices and complex numbers (c99 _Complex),
@@ -253,6 +255,14 @@ uint64_t xorshift128plus(uint64_t s[2]) { /*PRNG*/
 	x ^= y ^ (y >> 26); /*c*/
 	s[1] = x;
 	return x + y;
+}
+
+int balance(const char *sexpr) { assert(sexpr);
+        int bal = 0, c;
+        while((c=*sexpr++))
+                if     (c == '(') bal++;
+                else if(c == ')') bal--;
+        return bal;
 }
 
 /************************ small hash library **********************************/
@@ -2091,7 +2101,11 @@ cell *lisp_read(lisp *l, io *i) { assert(l && i);
                 memcpy(restore, l->recover, sizeof(jmp_buf));
                 restore_used = 1;
         }
-        if((r = setjmp(l->recover))) return r > 0 ? Error : NULL;
+        if((r = setjmp(l->recover))) { 
+                if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
+                else             l->recover_init = 0;
+                return r > 0 ? Error : NULL;
+        }
         l->recover_init = 1;
         ret = reader(l, i);
         if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
@@ -2113,7 +2127,11 @@ cell *lisp_eval(lisp *l, cell *exp) { assert(l && exp);
                 memcpy(restore, l->recover, sizeof(jmp_buf));
                 restore_used = 1;
         }
-        if((r = setjmp(l->recover))) return r > 0 ? Error : NULL;
+        if((r = setjmp(l->recover))) {
+                if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
+                else             l->recover_init = 0;
+                return r > 0 ? Error : NULL;
+        }
         l->recover_init = 1;
         ret = eval(l, 0, exp, l->top_env);
         if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
@@ -2122,7 +2140,7 @@ cell *lisp_eval(lisp *l, cell *exp) { assert(l && exp);
 }
 
 cell *lisp_eval_string(lisp *l, char *evalme) { assert(l && evalme);
-        io *in;
+        io *in = NULL;
         cell *ret;
         volatile int restore_used = 0;
         int r;
@@ -2131,7 +2149,12 @@ cell *lisp_eval_string(lisp *l, char *evalme) { assert(l && evalme);
                 memcpy(restore, l->recover, sizeof(jmp_buf));
                 restore_used = 1;
         }
-        if((r = setjmp(l->recover))) return r > 0 ? Error : NULL;
+        if((r = setjmp(l->recover))) {
+                io_close(in);
+                if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
+                else             l->recover_init = 0;
+                return r > 0 ? Error : NULL;
+        }
         l->recover_init = 1;
         if(!(in = io_sin(evalme))) return NULL;
         ret = eval(l, 0, reader(l, in), l->top_env);
@@ -2204,18 +2227,23 @@ static int getoptions(lisp *l, char *arg, char *arg_0)
 }
 
 int lisp_repl(lisp *l, char *prompt, int editor_on) {
+        /**XXX: Leaks memory when an error is encountered in line editor
+         *      mode. This is probably due to some weird longjmp
+         *      interactions**/
         cell *ret;
         char *line = NULL;
         int r = 0;
         l->ofp->pretty = l->efp->pretty = 1; /*pretty print output*/
         l->ofp->color = l->efp->color = l->color_on;
-        if((r = setjmp(l->recover)) < 0) return r; /*catch errors and SIGINT*/
+        if((r = setjmp(l->recover)) < 0) {  /*catch errors and SIGINT*/
+                l->recover_init = 0;
+                running = 0;
+                return r; 
+        }
         l->recover_init = 1;
         running = 0;
         free(line);
         if(editor_on && l->editor) { /*handle line editing functionality*/
-                /**XXX:when line editor is enabled and (error -1) is thrown
-                 *we get a SEGFAULT*/
                 while((line = l->editor(prompt))) {
                         cell *prn; 
                         if(!line[strspn(line, " \t\r\n")]) { free(line); continue; }
