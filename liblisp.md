@@ -757,7 +757,7 @@ Test for equality between two expressions. This is an alias for "eq".
 
 * eq
 
-Test for equality between two expressions. This is an alias for "eq"
+Test for equality between two expressions. This is the same function as "=".
 
         (eq EXPR EXPR)
 
@@ -808,7 +808,9 @@ A very simple string matching routine. This routine takes a pattern as its
 first argument and a string to match the pattern against as its second
 argument. 
 
-        (match STRING STRING)
+        # (match STRING STRING)
+        > (match "hell?" "hello")
+        t
 
 * scons
 

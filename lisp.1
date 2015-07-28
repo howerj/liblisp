@@ -66,15 +66,7 @@ Arguments are read in order and executed as soon as they are encountered.
 liblisp(3)
 .SH BUGS
 There are bound to be many in the interpreter library, comments on known ones
-are in the source code. There are a few with the simple interpreter interface
-that it provides.
-
-The command:
-
- ./lisp -e "valid-symbol"
-
-Does not work as intended, adding a whitespace after the final token to be
-evaluated is a work around.
+are in the source code. 
 
 Files that begin with "-" cannot be read from, they are instead treated as
 options and will most likely be invalid options.
