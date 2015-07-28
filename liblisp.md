@@ -619,7 +619,6 @@ available.
         trace-level!       Set the trace level
         gc                 Control the garbage collector
         length             Get the length of an expression or string
-        type?              Check the type of an object
         input?             Check if an IO object is set up for reading
         output?            Check if an IO object is set up for writing
         eof?               Check if an IO object has its End Of File marker set
@@ -652,42 +651,85 @@ available.
         trace              Control the tracing of an object  
         binary-logarithm   Calculate the binary logarithm of an integer
         close              Close an IO object
+        type-of            Return an integer-enum for the type of an object
 
 * &
 
 Perform the bitwise and of two integers.
 
-        (& INT INT)
+        # (& INT INT)
+        > (& 1 1)
+        1
+        > (& 3 1)
+        1
+        > (& 3 4)
+        0
+
 
 * |
 
 Perform the bitwise or of two integers.
 
-        (| INT INT)
+        # (| INT INT)
+        > (| 0 1)
+        1
+        > (| 1 1)
+        1
+        > (| 2 1)
+        3
+        > (| 4 3)
+        7
+        > (| 2 1.0) # Does not work with floats.
+        (error 'subr_bor "expected (int int)" '(2 1.000000) "liblisp.c" 1332)
+        error
 
 * ^
 
 Perform the bitwise exclusive of two integers.
 
-        (^ INT INT)
+        # (^ INT INT)
+        > (^ 1 1)
+        0
+        > (^ 3 1)
+        2
 
 * ~
 
 Perform the bitwise inversion of an integer.
 
-        (~ INT)
+        # (~ INT)
+        > (~ 0)
+        -1
+        > (~ -1)
+        0
+        > (~ 4)
+        -5
 
 * \+
 
 Add two numbers together.
 
-        (+ ARITH ARITH)
+        # (+ ARITH ARITH)
+        > (+ 2 2)
+        4
+        > (+ 3.2 2)
+        5.2          # Converted to float
+        > (+ 2 3.2)
+        5            # Converted to integer
+        > (+ -2 -1)
+        -3
 
 * \-
 
 Subtract the second argument from the first.
 
-        (- ARITH ARITH)
+        # (- ARITH ARITH)
+        > (- 2 3)
+        -1
+        > (- 2 -3.0)
+        5
+        > (- 1.0 9)
+        -10.0
 
 * *
 
@@ -709,13 +751,13 @@ Calculate the first number divided by the second.
 
 * =
 
-Test for equality between two expressions.
+Test for equality between two expressions. This is an alias for "eq".
 
         (= EXPR EXPR)
 
 * eq
 
-Test for equality between two expressions.
+Test for equality between two expressions. This is an alias for "eq"
 
         (eq EXPR EXPR)
 
@@ -822,18 +864,22 @@ back on after this, the enumeration to do this is \*gc-off\*.
 
 * length
 
+Returns the length of a list or a string.
+
         (length LIST)
         (length STRING)
 
-* type?
-
-        (type? ENUM EXPR)
-
 * input?
+
+Returns 't' if the expression passed to it is an IO port set up for input,
+'nil' otherwise.
 
         (input? EXPR)
 
 * output?
+
+Returns 't' if the expression passed to it is an IO port set up for output,
+'nil' otherwise.
 
         (output? EXPR)
 
@@ -937,13 +983,20 @@ command processor, returning an integer for the return status of the command.
 
 * remove
 
-        (remove STRING STRING)
+Remove a file specified by a string or symbol passed to it.
+
+        (remove STRING)
 
 * rename
+
+Rename a file, the first argument is the source, the second the destination.
 
         (rename STRING STRING)
 
 * all-symbols
+
+This returns a list of all the symbols encountered so far, whether or not they
+have been defined.
 
         (all-symbols)
 
@@ -1035,6 +1088,12 @@ Calculate the binary logarithm of an integer.
 Close an IO port.
 
         (close IO)
+
+* type-of
+
+Return an integer representing the type of an object.
+
+        # (type-of EXPR)
 
 ##### Additional functions
 
@@ -1201,20 +1260,20 @@ mode and 'nil' to Emacs mode.
         *random-max*       Maximum number a random number can be
         *integer-max*      Maximum number an integer can be
         *integer-min*      Minimum number an integer can be
-        *integer*          Integer type option for coerce or type?
-        *symbol*           Symbol  type option for coerce or type?
-        *cons*             Cons    type option for coerce or type?
-        *string*           String  type option for coerce or type?
-        *hash*             Hash    type option for coerce or type?
-        *io*               IO      type option for type?
-        *float*            Float   type option for coerce or type?
-        *procedure*        Procedure type option type?
-        *primitive*        Primitive type option for type?
-        *f-procedure*      Fexpr     type option for type?
-        *user-defined*     User-define type option for type?
-        *file-in*          File input option for open
-        *file-out*         File output option for open
-        *string-in*        String input option for open
+        *integer*          Integer   type option for coerce or type-of
+        *symbol*           Symbol    type option for coerce or type-of
+        *cons*             Cons      type option for coerce or type-of
+        *string*           String    type option for coerce or type-of
+        *hash*             Hash      type option for coerce or type-of
+        *io*               IO        type option for type-of
+        *float*            Float     type option for coerce or type-of
+        *procedure*        Procedure type option type-of
+        *primitive*        Primitive type option for type-of
+        *f-procedure*      Fexpr     type option for type-of
+        *user-defined*     User-define type option for type-of
+        *file-in*          File   input  option for open
+        *file-out*         File   output option for open
+        *string-in*        String input  option for open
         *string-out*       String output option for open
         *lc-all*           Locale all option for locale!
         *lc-collate*       Locale collate option for locale!

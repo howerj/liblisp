@@ -28,17 +28,21 @@
 (define cadar (lambda (x) (car (cdr (car x)))))
 (define caddr (lambda (x) (car (cdr (cdr x)))))
 (define caddar (lambda (x) (car (cdr (cdr (car x))))))
-(define list? (lambda (x) (type? *cons* x)))
-(define atom? (lambda (x) (if (list? x) nil t)))
-(define float? (lambda (x)   (type? *float* x)))
+
+(define type? (lambda (type-enum x) (eq type-enum (type-of x))))
+
+(define list?   (lambda (x)  (type? *cons* x)))
+(define atom?   (lambda (x)  (if (list? x) nil t)))
+(define float?  (lambda (x)  (type? *float* x)))
 (define integer? (lambda (x) (type? *integer* x)))
 (define symbol? (lambda (x)  (type? *symbol* x)))
 (define string? (lambda (x)  (type? *string* x)))
 (define io?     (lambda (x)  (type? *io* x)))
-(define hash? (lambda (x)    (type? *hash* x)))
+(define hash?   (lambda (x)  (type? *hash* x)))
 (define string? (lambda (x)  (type? *string* x)))
 (define procedure? (lambda (x)  (type? *procedure* x)))
 (define primitive? (lambda (x)  (type? *primitive* x)))
+
 
 (define gcd 
  (lambda (x y) 

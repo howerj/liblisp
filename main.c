@@ -17,7 +17,16 @@
  *      int main(int argc, char **argv) { return main_lisp(argc, argv); }
  * 
  *  @todo Some level of auto-completion could be added from the libline library
- *  @todo None of these functions handle errors in the best way
+ *  @todo None of the "subr" functions defined here handle errors in the best way
+ *  @todo Experiment with auto insertion of parenthesis to make the shell
+ *        easier to use, for example if an expression is missing right parens
+ *        the line editing callback could add them in, or if there are more
+ *        than one atoms on a line it could enclose them in parens and see if
+ *        that can be evaluated "+ 2 2" would become "(+ 2 2)". This would only
+ *        be part of the line editor.
+ *  @todo There is an experimental folder, called "exp", which contains
+ *        snippets of code and interfaces to libraries, such as libtcc, that
+ *        functionality should be added in here.
 **/
 
 #include "liblisp.h"

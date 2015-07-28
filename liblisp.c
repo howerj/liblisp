@@ -5,22 +5,16 @@
  *  @email      howe.r.j.89@gmail.com
  *  @brief      A small, extensible lisp interpreter see
  *
- *  @todo Rewrite reader, rename some types
- *  @todo Add more assertions to function, subr_close and more looping
- *        constructs
+ *  @todo Add more assertions to function, subr_close
  *  @todo Env lookup should be split into top level hash and cons
  *        list for efficiency.
- *  @todo apply, map and more looping constructs are needed.
  *  @note struct hack could be applied strings and other types
  *  @todo There is a problem with recursive hashes!
- *  @todo Add docstring to define and to primitive functions, on error it
- *        should be printed out.
  *  @todo User defined type printing function should be used
- *  @todo Add proper constants
  *  @note Generic error handling for primitives before they are called?
  *  @note Profiling showed that the main offender is the assoc function
  *        which is not surprising.
- *  @note Adding a bit to an object to turn tracing for it on/off?
+ *  @todo Rewrite reader
  *  @note Add options for turning off parsing of strings and floats 
  *  @note There has to be a better way of handling the returns from
  *        longjmp, there is some macro magic to be had here.
@@ -28,13 +22,16 @@
  *  The following functionality would be nice to put in to the core
  *  interpreter; support for matrices and complex numbers (c99 _Complex),
  *  UTF-8 support, text processing (diff, tr, grep, sed, à la perl), map
- *  and looping constructs from scheme, doc-strings and a prolog engine. But
- *  this is more of a wish list than anything.
+ *  and looping constructs from scheme, doc-strings, optional parsing of
+ *  strings and float, apply, gensym, proper constant and a prolog engine. 
+ *  But this is more of a wish list than anything.
  *
  *  There are a lot of things that need tidying up and rethinking about,
  *  especially when it comes to the interface of the library and the naming
- *  of functions.
+ *  of functions. More comments are also in order. 
  *
+ *  If you do not like the formatting use the "indent" program from: 
+ *  <https://www.gnu.org/software/indent/>.
 **/
 
 #include "liblisp.h"
@@ -1657,14 +1654,29 @@ static cell* subr_getdelim(lisp *l, cell *args) {
         return Error;
 }
 
-static cell* subr_read(lisp *l, cell *args) { /*XXX: reader can longjmp*/
-        cell *ob;
+static cell* subr_read(lisp *l, cell *args) {
+        cell *ob = NULL;
+        int restore_used, r;
+        jmp_buf restore;
+        if(l->recover_init) {
+                memcpy(restore, l->recover, sizeof(jmp_buf));
+                restore_used = 1;
+        }
+        l->recover_init = 1;
+        if((r = setjmp(l->recover))) { 
+                if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
+                else             l->recover_init = 0;
+                return Error;
+        }
+
         if(cklen(args, 0))
-                return (ob = reader(l, l->ifp)) ? ob : Error;
+                (ob = reader(l, l->ifp)) ? ob : Error;
         if(cklen(args, 1) && isin(car(args)))
-                return (ob = reader(l, ioval(car(args)))) ? ob : Error; 
-        RECOVER(l, "\"expected () or (input)\" '%S", args);
-        return Error;
+                (ob = reader(l, ioval(car(args)))) ? ob : Error;
+        if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
+        else             l->recover_init = 0;
+        if(!ob) RECOVER(l, "\"expected () or (input)\" '%S", args);
+        return ob;
 }
 
 static cell* subr_puts(lisp *l, cell *args) {
@@ -1715,6 +1727,10 @@ static cell* subr_tell(lisp *l, cell *args) {
 static cell* subr_seek(lisp *l, cell *args) { /*XXX: accepts invalid enums*/
         if(cklen(args, 3) && isio(car(args)) 
                 && isint(car(cdr(args))) && isint(car(cdr(cdr(args))))) {
+                switch (intval(car(cdr(args)))) {
+                case SEEK_SET: case SEEK_CUR: case SEEK_END: break;
+                default: RECOVER(l, "\"invalid enum option\" '%S", args);
+                }
                 return mkint(l,io_seek(ioval(car(args)),intval(car(cdr(args))),
                                         intval(car(cdr(cdr(args))))));
         }
@@ -1802,11 +1818,11 @@ static cell* subr_coerce(lisp *l, cell *args) {
         if(intval(car(args)) == convfrom->type) return convfrom;
         switch(intval(car(args))) {
         case INTEGER: 
-                    if(isstr(convfrom)) { 
+                    if(isstr(convfrom)) { /*int to string*/
                             if(!isnumber(strval(convfrom))) goto fail;
                             sscanf(strval(convfrom), "%"SCNiPTR, &d);
                     }
-                    if(isfloat(convfrom))
+                    if(isfloat(convfrom)) /*float to string*/
                            d = (intptr_t) floatval(convfrom);
                     return mkint(l, d);
         case CONS:  if(isstr(convfrom)) { /*string to list of chars*/
@@ -1838,30 +1854,28 @@ static cell* subr_coerce(lisp *l, cell *args) {
                             return cdr(head);
                     }
                     break;
-        case STRING:if(isint(convfrom)) {
+        case STRING:if(isint(convfrom)) { /*int to string*/
                             char s[64] = "";
                             sprintf(s, "%"PRIiPTR, intval(convfrom));
                             return mkstr(l, lstrdup(s));
                     }
-                    if(issym(convfrom))
+                    if(issym(convfrom)) /*symbol to string*/
                            return mkstr(l, lstrdup(strval(convfrom)));
-                    if(isfloat(convfrom)) { 
+                    if(isfloat(convfrom)) { /*float to string*/
                             char s[512] = "";
                             sprintf(s, "%f", floatval(convfrom));
                             return mkstr(l, lstrdup(s));
-                    }
-                    if(iscons(convfrom)) { /**XXX: implement this**/
                     }
                     break;
         case SYMBOL:if(isstr(convfrom) && !strpbrk(strval(convfrom), " \t\n\r'\"\\"))
                             return intern(l, lstrdup(strval(convfrom)));
                     break;
-        case HASH:  if(iscons(convfrom))
+        case HASH:  if(iscons(convfrom)) /*hash from list*/
                             return subr_hcreate(l, convfrom);
                     break;
-        case FLOAT: if(isint(convfrom))
+        case FLOAT: if(isint(convfrom)) /*int to float*/
                           return mkfloat(l, intval(convfrom));
-                    if(isstr(convfrom)) {
+                    if(isstr(convfrom)) { /*string to float*/
                           lfloat d;
                           if(!isfnumber(strval(convfrom))) goto fail;
                           d = strtod(strval(convfrom), &fltend);
@@ -1871,27 +1885,6 @@ static cell* subr_coerce(lisp *l, cell *args) {
         default: break;
         }
 fail:   RECOVER(l, "\"invalid conversion or argument length not 2\" %S", args);
-        return Error;
-}
-
-static cell* subr_typep(lisp *l, cell *args) {
-        if(!cklen(args, 2) || !isint(car(args))) goto fail;
-        switch(intval(car(args))) {
-        case INTEGER: return isint(car(cdr(args)))    ? Tee : Nil; break;
-        case SYMBOL:  return issym(car(cdr(args)))    ? Tee : Nil; break;
-        case CONS:    return iscons(car(cdr(args)))   ? Tee : Nil; break;
-        case PROC:    return isproc(car(cdr(args)))   ? Tee : Nil; break;
-        case SUBR:    return issubr(car(cdr(args)))   ? Tee : Nil; break;
-        case STRING:  return isstr(car(cdr(args)))    ? Tee : Nil; break;
-        case IO:      return isio(car(cdr(args)))     ? Tee : Nil; break;
-        case HASH:    return ishash(car(cdr(args)))   ? Tee : Nil; break;
-        case FPROC:   return isfproc(car(cdr(args)))  ? Tee : Nil; break;
-        case FLOAT:   return isfloat(car(cdr(args)))  ? Tee : Nil; break;
-        case USERDEF: return isuserdef(car(cdr(args))) ? Tee : Nil; break;
-        case INVALID: 
-        default: break;
-        }
-fail:   RECOVER(l, "\"invalid type check or argument length not 2\" %S", args);
         return Error;
 }
 
@@ -1955,6 +1948,12 @@ static cell *subr_setlocale(lisp *l, cell *args) {
         return mkstr(l, lstrdup(ret));
 }
 
+static cell *subr_typeof(lisp *l, cell *args) {
+        if(!cklen(args, 1))
+                RECOVER(l, "\"expected (expr)\" %S", args);
+        return mkint(l, car(args)->type);
+}
+
 static cell *subr_close(lisp *l, cell *args) {
         UNUSED(l); UNUSED(args);
         /**XXX: implement this, close an IO object**/
@@ -1975,7 +1974,7 @@ static cell *subr_close(lisp *l, cell *args) {
         X(subr_scons,   "scons")        X(subr_scar,     "scar")\
         X(subr_scdr,    "scdr")         X(subr_eval,     "eval")\
         X(subr_trace,   "trace-level!") X(subr_gc,       "gc")\
-        X(subr_length,  "length")       X(subr_typep,    "type?")\
+        X(subr_length,  "length")       X(subr_typeof,   "type-of")\
         X(subr_inp,     "input?")       X(subr_outp,     "output?")\
         X(subr_eofp,    "eof?")         X(subr_flush,    "flush")\
         X(subr_tell,    "tell")         X(subr_seek,     "seek")\
@@ -1991,7 +1990,8 @@ static cell *subr_close(lisp *l, cell *args) {
         X(subr_getenv,  "getenv")       X(subr_rand,     "random")\
         X(subr_seed,    "seed")         X(subr_date,     "date")\
         X(subr_assoc,   "assoc")        X(subr_setlocale, "locale!")\
-        X(subr_trace_cell, "trace")     X(subr_binlog,    "binary-logarithm")
+        X(subr_trace_cell, "trace")     X(subr_binlog,    "binary-logarithm")\
+        
 
 #define X(SUBR, NAME) { SUBR, NAME },
 static struct subr_list { subr p; char *name; } primitives[] = {
