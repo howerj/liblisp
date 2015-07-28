@@ -27,6 +27,12 @@
  *  @todo There is an experimental folder, called "exp", which contains
  *        snippets of code and interfaces to libraries, such as libtcc, that
  *        functionality should be added in here.
+ *  @todo Porting linedit to Windows would add functionality to this
+ *        interpreter
+ *  @todo Add standard unix functions, libtcc and regex support from the
+ *        experimental section of the interpreter. Perhaps even OpenGL support.
+ *  @todo A branch for the _Complex data type could be made, even if not
+ *        maintained after the concept has been tested.
 **/
 
 #include "liblisp.h"

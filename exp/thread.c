@@ -7,7 +7,7 @@ pthread_mutex_t mutex_write = PTHREAD_MUTEX_INITIALIZER;
 
 void *lisp_thead_eval(void *ptr) {
         lisp *l;
-        obj *x;
+        cell *x;
         if(!(l = lisp_init())) return NULL;
         x = lisp_eval_string(l, (char*) ptr);
         pthread_mutex_lock(&mutex_write);

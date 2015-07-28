@@ -256,7 +256,7 @@ uint64_t xorshift128plus(uint64_t s[2]) { /*PRNG*/
 
 int balance(const char *sexpr) { assert(sexpr);
         int bal = 0, c;
-        while((c=*sexpr++))
+        while((c = *sexpr++))
                 if     (c == '(') bal++;
                 else if(c == ')') bal--;
         return bal;
