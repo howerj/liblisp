@@ -841,8 +841,10 @@ static cell *assoc(cell *key, cell *alist) {
         /*can use "if(car(car(alist)) == key)" for symbol only comparison*/
         if(!key || !alist) return NULL;
         for(;!isnil(alist); alist = cdr(alist))
-                if(intval(car(car(alist))) == intval(key)) 
-                        return car(alist);
+                if(iscons(car(alist)))
+                        if(intval(car(car(alist))) == intval(key)) 
+                                return car(alist);
+                /*else if(ishash(car(alist)) { ... */
         return Nil;
 }
 
@@ -1545,10 +1547,31 @@ static cell *subr_scdr(lisp *l, cell *args) {
 }
 
 static cell *subr_eval(lisp *l, cell *args) { /**XXX: allows unlimited recursion!**/
-        if(cklen(args, 1)) return eval(l, 0, car(args), l->top_env);
-        if(cklen(args, 2)) return eval(l, 0, car(args), car(cdr(args)));
-        RECOVER(l, "\"expected (expr) or (expr environment)\" '%S", args);
-        return Error;
+        cell *ob = NULL;
+        int restore_used, r;
+        jmp_buf restore;
+        if(l->recover_init) {
+                memcpy(restore, l->recover, sizeof(jmp_buf));
+                restore_used = 1;
+        }
+        l->recover_init = 1;
+        if((r = setjmp(l->recover))) { 
+                if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
+                else             l->recover_init = 0;
+                return Error;
+        }
+
+        if(cklen(args, 1)) ob = eval(l, 0, car(args), l->top_env);
+        if(cklen(args, 2)) {
+                if(!iscons(car(cdr(args))))
+                        RECOVER(l, "\"expected a-list\" '%S", args);
+                ob = eval(l, 0, car(args), car(cdr(args)));
+        }
+
+        if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
+        else             l->recover_init = 0;
+        if(!ob) RECOVER(l, "\"expected (expr) or (expr environment)\" '%S", args);
+        return ob;
 }
 
 static cell *subr_trace(lisp *l, cell *args) {
@@ -1724,10 +1747,10 @@ static cell* subr_tell(lisp *l, cell *args) {
         return Error;
 }
 
-static cell* subr_seek(lisp *l, cell *args) { /*XXX: accepts invalid enums*/
+static cell* subr_seek(lisp *l, cell *args) { 
         if(cklen(args, 3) && isio(car(args)) 
                 && isint(car(cdr(args))) && isint(car(cdr(cdr(args))))) {
-                switch (intval(car(cdr(args)))) {
+                switch (intval(car(cdr(cdr(args))))) {
                 case SEEK_SET: case SEEK_CUR: case SEEK_END: break;
                 default: RECOVER(l, "\"invalid enum option\" '%S", args);
                 }
