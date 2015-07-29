@@ -1214,7 +1214,17 @@ Calculate the [hyperbolic tangent][].
 Calculate the [exponential function][]. Or Euler's number raised to the
 floating point number provided.
 
-        (exp ARITH)
+        # (exp ARITH)
+        > (exp 0)
+        1.0
+        > (exp 1)
+        2.718282
+        > (exp -1)
+        0.367879
+        > (exp 2)
+        7.389056
+        > (exp 0.5)
+        1.648721
 
 * sqrt
 
@@ -1273,7 +1283,10 @@ saves.
 Clear the terminal screen, in interactive mode the return value (always 't') is
 printed and then the prompt if that option is set.
 
-        (clear-screen)
+        # (clear-screen)
+        > (clear-screen)
+        t
+        > 
 
 
 #### Predefined variables

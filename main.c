@@ -47,6 +47,8 @@ static char *histfile = "hist.lsp";
 #endif
 
 #ifdef USE_MATH
+/* Math functions found in the C library*/
+
 #include <math.h>
 /*@note It would be nice to add complex operations here as well, but
  *      that would require changes in the main interpreter*/
@@ -93,6 +95,7 @@ static cell *subr_modf(lisp *l, cell *args) {
 #endif
 
 #ifdef USE_LINE
+/*line editing and history functionality*/
 static char *line_editing_function(const char *prompt) {
         char *line;
         line = line_editor(prompt);
@@ -129,6 +132,21 @@ static cell *subr_clear_screen(lisp *l, cell *args) {
 }
 #endif
 
+#ifdef USE_TCC
+/*on the fly code generation*/
+/* ... To do ... */
+#endif
+
+#ifdef USE_REGEX
+/*regex support*/
+/* ... To do ... */
+#endif
+
+#ifdef USE_UTF8
+/*utf-8 support*/
+/* ... To do ... */
+#endif
+
 int main(int argc, char **argv) { 
         lisp *l = lisp_init();
         if(!l) return PRINT_ERROR("\"%s\"", "initialization failed"), -1;
@@ -149,6 +167,22 @@ MATH_UNARY_LIST
         lisp_add_subr(l, subr_clear_screen,     "clear-screen");
         lisp_add_subr(l, subr_hist_len, "history-length");
 #endif 
+
+#ifdef USE_TCC
+/*on the fly code generation*/
+/* ... To do ... */
+#endif
+
+#ifdef USE_REGEX
+/*regex support*/
+/* ... To do ... */
+#endif
+
+#ifdef USE_UTF8
+/*utf-8 support*/
+/* ... To do ... */
+#endif
+
         return main_lisp_env(l, argc, argv); 
 }
 
