@@ -1101,6 +1101,7 @@ Return an integer representing the type of an object.
 
 Functions added optionally in [main.c][]:
 
+        # math.h
         log                Compute the natural logarithm of a float
         log10              Compute the logarith of a float in base 10
         fabs               Return the absolute
@@ -1119,7 +1120,11 @@ Functions added optionally in [main.c][]:
         floor              Round downwards
         pow                Computer X raised to the Y
         modf               Split a value into integer and fractional parts
+        # line-editor
         line-editor-mode   Change the line editing mode
+        history-length     Change the number of records stored in the
+                                   history file
+        clear-screen       Clear the screen
 
 For all the mathematical functions imported from the C math library the
 arguments are converted to floating point numbers before, the functions also
@@ -1252,6 +1257,24 @@ mode and 'nil' to Emacs mode.
 
         (line-editor-mode)
         (line-editor-mode T-or-Nil)
+
+* history-length
+
+This variable controls the length of the history that the line-editing library
+saves. 
+
+        # (history-length INT)
+        > (history-length 1) # disable history
+        > (history-length 2) # remember one entry
+        > (history-length 200) # remember 199 enteries.
+
+* clear-screen
+
+Clear the terminal screen, in interactive mode the return value (always 't') is
+printed and then the prompt if that option is set.
+
+        (clear-screen)
+
 
 #### Predefined variables
 

@@ -31,6 +31,8 @@
  *        interpreter
  *  @todo Add standard unix functions, libtcc and regex support from the
  *        experimental section of the interpreter. Perhaps even OpenGL support.
+ *        Unix functionality would include dlopen, directory handling, file
+ *        stat, etc. Better still if generic Unix/Windows could be made.
  *  @todo A branch for the _Complex data type could be made, even if not
  *        maintained after the concept has been tested.
 **/
@@ -109,6 +111,22 @@ static cell *subr_line_editor_mode(lisp *l, cell *args) {
         }
         return line_get_vi_mode() ? (cell*)mktee(): (cell*)mknil();
 }
+
+static cell *subr_hist_len(lisp *l, cell *args) {
+        (void)l;
+        if(!cklen(args, 1) || !isint(car(args)))
+                return (cell*)mkerror();
+        if(!line_history_set_maxlen((int)intval(car(args))))
+                return (cell*)mkerror(); /*should really HALT the interpreter*/
+        return (cell*)mktee();
+}
+
+static cell *subr_clear_screen(lisp *l, cell *args) {
+        (void)l; (void)args;
+        if(!cklen(args, 0)) return (cell*)mkerror();
+        line_clearscreen();
+        return (cell*)mktee();
+}
 #endif
 
 int main(int argc, char **argv) { 
@@ -128,6 +146,8 @@ MATH_UNARY_LIST
         line_history_load(histfile);
         line_set_vi_mode(1); /*start up in a sane editing mode*/
         lisp_add_subr(l, subr_line_editor_mode, "line-editor-mode");
+        lisp_add_subr(l, subr_clear_screen,     "clear-screen");
+        lisp_add_subr(l, subr_hist_len, "history-length");
 #endif 
         return main_lisp_env(l, argc, argv); 
 }

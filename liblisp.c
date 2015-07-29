@@ -15,6 +15,9 @@
  *  @note Profiling showed that the main offender is the assoc function
  *        which is not surprising.
  *  @todo Rewrite reader
+ *  @todo File operations on strings could be improved. An append mode should
+ *        be added as well. freopen and/or opening in append mode need to be
+ *        added as well.
  *  @note Add options for turning off parsing of strings and floats 
  *  @note There has to be a better way of handling the returns from
  *        longjmp, there is some macro magic to be had here.
@@ -414,7 +417,7 @@ int io_putc(char c, io *o) { assert(o);
                 return r;
         }
         if(o->type == SOUT) {
-                if(o->position >= o->max)
+                if(o->position >= o->max) /*XXX: grow str instead*/
                         return o->eof = 1, EOF;
                 o->p.str[o->position++] = c;
                 return c;
@@ -434,7 +437,7 @@ int io_puts(const char *s, io *o) { assert(s && o);
         }
         if(o->type == SOUT) {
                 size_t len, newpos;
-                if(o->position >= o->max)
+                if(o->position >= o->max) /*XXX: grow str instead*/
                         return o->eof = 1, EOF;
                 len = strlen(s);
                 newpos = o->position + len;
