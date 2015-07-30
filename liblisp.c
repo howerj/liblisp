@@ -1105,7 +1105,12 @@ static int printer(io *o, cell *op, unsigned depth) { /*write out s-expr*/
         if(!op) return EOF;
         switch(op->type) {
         case INTEGER: printerf(o, depth, "%m%d", intval(op));   break; 
-        case FLOAT:   printerf(o, depth, "%m%f+%fi", creal(floatval(op)), cimag(floatval(op))); break; 
+        case FLOAT:   if(cimag(floatval(op)))
+                        printerf(o, depth, "%m%f+%fi", 
+                                        creal(floatval(op)), cimag(floatval(op))); 
+                      else
+                        printerf(o, depth, "%m%f", creal(floatval(op))); 
+                      break;
         case CONS:    if(depth && o->pretty) io_putc('\n', o);
                       if(o->pretty) printerf(o, depth, "%* ");
                       io_putc('(', o);
@@ -1889,7 +1894,11 @@ static cell* subr_coerce(lisp *l, cell *args) {
                            return mkstr(l, lstrdup(strval(convfrom)));
                     if(isfloat(convfrom)) { /*float to string*/
                             char s[512] = "";
-                            sprintf(s, "%f+%fi", creal(floatval(convfrom)), cimag(floatval(convfrom)));
+                            if(cimag(floatval(convfrom)))
+                                sprintf(s, "%f+%fi", 
+                                        creal(floatval(convfrom)), cimag(floatval(convfrom)));
+                            else
+                                sprintf(s, "%f", creal(floatval(convfrom)));
                             return mkstr(l, lstrdup(s));
                     }
                     break;
