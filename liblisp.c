@@ -874,17 +874,20 @@ int isfnumber(const char *buf) {
         if(!buf[0]) return 0;
         i = strspn(buf, conv);
         if(buf[i] == '\0') return 1;
+        if(buf[i] == 'i' && buf[i+1] == '\0') return 2;
         if(buf[i] == 'e') goto expon; /*got check for valid exponentiation*/
         if(buf[i] != '.') return 0;
         buf = buf + i + 1;
         i = strspn(buf, conv);
         if(buf[i] == '\0') return 1;
+        if(buf[i] == 'i' && buf[i+1] == '\0') return 2;
         if(buf[i] != 'e' && buf[i] != 'E') return 0;
 expon:  buf = buf + i + 1;
         if(buf[0] == '-' || buf[0] == '+') buf++;
         if(!buf[0]) return 0;
         i = strspn(buf, conv);
         if(buf[i] == '\0') return 1;
+        if(buf[i] == 'i' && buf[i+1] == '\0') return 2;
         return 0;
 }
 
@@ -990,6 +993,10 @@ static cell *reader(lisp *l, io *i) { /*read in s-expr*/
                         if(!fltend[0]) {
                                 free(token);
                                 return mkfloat(l, flt);
+                        }
+                        if(fltend[0] == 'i' && fltend[1] == '\0') {
+                                free(token);
+                                return mkfloat(l, flt * I);
                         }
                    }
                    ret = intern(l, token);
@@ -1106,7 +1113,7 @@ static int printer(io *o, cell *op, unsigned depth) { /*write out s-expr*/
         switch(op->type) {
         case INTEGER: printerf(o, depth, "%m%d", intval(op));   break; 
         case FLOAT:   if(cimag(floatval(op)))
-                        printerf(o, depth, "%m%f+%fi", 
+                        printerf(o, depth, "(%y+ %m%f %fi%t)", 
                                         creal(floatval(op)), cimag(floatval(op))); 
                       else
                         printerf(o, depth, "%m%f", creal(floatval(op))); 
@@ -1895,7 +1902,7 @@ static cell* subr_coerce(lisp *l, cell *args) {
                     if(isfloat(convfrom)) { /*float to string*/
                             char s[512] = "";
                             if(cimag(floatval(convfrom)))
-                                sprintf(s, "%f+%fi", 
+                                sprintf(s, "(+ %f %fi)", 
                                         creal(floatval(convfrom)), cimag(floatval(convfrom)));
                             else
                                 sprintf(s, "%f", creal(floatval(convfrom)));

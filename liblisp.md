@@ -1103,13 +1103,134 @@ Functions added optionally in [main.c][]:
 
         # ... complex math functions ...
 
+        clog   
+        cabs  
+        csin  
+        ccos  
+        ctan   
+        conj
+        casin  
+        cacos 
+        catan 
+        csinh 
+        ccosh  
+        ctanh
+        cexp   
+        csqrt 
+        creal 
+        cimag 
+        casinh 
+        cacosh
+        catanh 
+        carg  
+        ceil  
+        floor 
+        cpow
+        modf
+
         # line-editor
         line-editor-mode   Change the line editing mode
         history-length     Change the number of records stored in the
                                    history file
         clear-screen       Clear the screen
 
-To Do; Complex Math functions
+
+* clog   
+
+        (clog FLOAT)
+
+* cabs  
+
+        (cabs FLOAT)
+ 
+* csin  
+
+        (csin FLOAT)
+ 
+* ccos  
+
+        (ccos FLOAT)
+ 
+* ctan   
+
+        (ctan FLOAT)
+ 
+* conj
+
+        (conj FLOAT)
+ 
+* casin  
+
+        (casin FLOAT)
+ 
+* cacos 
+
+        (cacos FLOAT)
+ 
+* catan 
+
+        (catan FLOAT)
+ 
+* csinh 
+
+        (csinh FLOAT)
+
+* ccosh  
+
+        (ccosh FLOAT)
+
+* ctanh
+
+        (ctanh FLOAT)
+
+* cexp   
+
+        (cexp FLOAT)
+
+* csqrt 
+
+        (csqrt FLOAT)
+
+* creal 
+
+        (creal FLOAT)
+
+* cimag 
+
+        (cimag FLOAT)
+
+* casinh 
+
+        (casinh FLOAT)
+
+* cacosh
+
+        (cacosh FLOAT)
+
+* catanh 
+
+        (catanh FLOAT)
+
+* carg  
+
+        (carg FLOAT)
+
+* ceil  
+
+        (ceil FLOAT)
+
+* floor 
+
+        (floor FLOAT)
+
+* cpow
+
+        (cpow FLOAT FLOAT)
+
+* modf
+
+        (modf FLOAT)
+
 
 * line-editor-mode
 

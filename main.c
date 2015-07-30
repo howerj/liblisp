@@ -63,13 +63,13 @@ static cell *subr_ ## NAME (lisp *l, cell *args) {\
         X(clog)   X(cabs)  X(csin)  X(ccos)  X(ctan)   X(conj)\
         X(casin)  X(cacos) X(catan) X(csinh) X(ccosh)  X(ctanh)\
         X(cexp)   X(csqrt) X(creal) X(cimag) X(casinh) X(cacosh)\
-        X(catanh) X(carg)  X(fabs)  X(ceil)  X(floor) 
+        X(catanh) X(carg)  X(ceil)  X(floor) 
 
 #define X(FUNC) SUBR_MATH_UNARY(FUNC)
 MATH_UNARY_LIST
 #undef X
 
-static cell *subr_pow (lisp *l, cell *args) {
+static cell *subr_cpow (lisp *l, cell *args) {
         cell *xo, *yo;
         lfloat x, y;
         if(!cklen(args, 2) || !isarith(car(args)) || !isarith(car(cdr(args)))) 
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
 #define X(FUNC) lisp_add_subr(l, subr_ ## FUNC, # FUNC);
 MATH_UNARY_LIST
 #undef X
-        lisp_add_subr(l, subr_pow, "cpow");
+        lisp_add_subr(l, subr_cpow, "cpow");
         lisp_add_subr(l, subr_modf, "modf");
 
 #ifdef USE_LINE /*add line editor functionality*/
