@@ -19,6 +19,7 @@ extern "C" {
 #include <stdio.h>
 #include <inttypes.h>
 #include <stdint.h>
+#include <complex.h>
 
 /************************* structs and opaque types **************************/
 
@@ -26,7 +27,7 @@ extern "C" {
  *  functions. They should be opaque types if possible to hide the
  *  implementation details. **/
 
-typedef double lfloat;
+typedef float complex lfloat;
 typedef struct io io;                   /*generic I/O to files, strings, ... */
 typedef struct hashtable hashtable;     /*standard hash table implementation */
 typedef struct cell cell;               /*a lisp object, or "cell"*/

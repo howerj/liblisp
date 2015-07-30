@@ -16,7 +16,7 @@ lib$(TARGET).o: lib$(TARGET).c lib$(TARGET).h makefile
 	$(CC) $(CFLAGS) $< -c -o $@
 
 main.o: main.c lib$(TARGET).h makefile
-	$(CC) $(CFLAGS) -DUSE_LINE -DUSE_MATH $< -c -o $@
+	$(CC) $(CFLAGS) -DUSE_LINE $< -c -o $@
 
 $(TARGET): main.o lib$(TARGET).a libline/libline.a 
 	$(CC) $(CFLAGS) -lm $^ -o $@

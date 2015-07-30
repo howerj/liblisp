@@ -706,10 +706,10 @@ static cell *mk(lisp *l, lisp_type type, size_t count, ...)
         if(!(node = calloc(1, sizeof(gc_list))))
                 HALT(l, "%s", "out of memory");
         ret->type = type;
-        for(i = 0; i < count; i++) 
-                if     (FLOAT == type)  ret->p[i].f =    va_arg(ap, double);
-                else if(SUBR == type) ret->p[i].prim = va_arg(ap, subr);
-                else                    ret->p[i].v =    va_arg(ap, void*);
+        for(i = 0; i < count; i++) /*XXX: will this work for complex double and float?*/
+                if     (FLOAT == type) ret->p[i].f =    va_arg(ap, lfloat); 
+                else if(SUBR == type)  ret->p[i].prim = va_arg(ap, subr);
+                else                   ret->p[i].v =    va_arg(ap, void*);
         va_end(ap);
         node->ref = ret;
         node->next = l->gc_head;
@@ -985,7 +985,7 @@ static cell *reader(lisp *l, io *i) { /*read in s-expr*/
                            free(token);
                            return ret;
                    }
-                   if(isfnumber(token)) {
+                   if(isfnumber(token)) { /*XXX: does not work for complex floats*/
                         flt = strtod(token, &fltend);
                         if(!fltend[0]) {
                                 free(token);
@@ -1105,7 +1105,7 @@ static int printer(io *o, cell *op, unsigned depth) { /*write out s-expr*/
         if(!op) return EOF;
         switch(op->type) {
         case INTEGER: printerf(o, depth, "%m%d", intval(op));   break; 
-        case FLOAT:   printerf(o, depth, "%m%f", floatval(op)); break; 
+        case FLOAT:   printerf(o, depth, "%m%f+%fi", creal(floatval(op)), cimag(floatval(op))); break; 
         case CONS:    if(depth && o->pretty) io_putc('\n', o);
                       if(o->pretty) printerf(o, depth, "%* ");
                       io_putc('(', o);
@@ -1445,8 +1445,8 @@ static cell *subr_greater(lisp *l, cell *args) {
         x = car(args);
         y = car(cdr(args));
         if(isarith(x) && isarith(y))
-                return  (isfloat(x) ? floatval(x) : intval(x)) > 
-                        (isfloat(y) ? floatval(y) : intval(y)) ? Tee : Nil;
+                return  (isfloat(x) ? cabs(floatval(x)) : intval(x)) > 
+                        (isfloat(y) ? cabs(floatval(y)) : intval(y)) ? Tee : Nil;
         else if(isasciiz(x) && isasciiz(x))
                 return (strcmp(strval(x), strval(y)) > 0) ? Tee : Nil;
         RECOVER(l, "\"expected (number number) or (string string)\" '%S", args);
@@ -1460,8 +1460,8 @@ static cell *subr_less(lisp *l, cell *args) {
         x = car(args);
         y = car(cdr(args));
         if(isarith(x) && isarith(y))
-                return  (isfloat(x) ? floatval(x) : intval(x)) < 
-                        (isfloat(y) ? floatval(y) : intval(y)) ? Tee : Nil;
+                return  (isfloat(x) ? cabs(floatval(x)) : intval(x)) < 
+                        (isfloat(y) ? cabs(floatval(y)) : intval(y)) ? Tee : Nil;
         else if(isasciiz(x) && isasciiz(x))
                 return (strcmp(strval(x), strval(y)) < 0) ? Tee : Nil;
         RECOVER(l, "\"expected (number number) or (string string)\" '%S", args);
@@ -1889,7 +1889,7 @@ static cell* subr_coerce(lisp *l, cell *args) {
                            return mkstr(l, lstrdup(strval(convfrom)));
                     if(isfloat(convfrom)) { /*float to string*/
                             char s[512] = "";
-                            sprintf(s, "%f", floatval(convfrom));
+                            sprintf(s, "%f+%fi", creal(floatval(convfrom)), cimag(floatval(convfrom)));
                             return mkstr(l, lstrdup(s));
                     }
                     break;
@@ -1902,7 +1902,7 @@ static cell* subr_coerce(lisp *l, cell *args) {
         case FLOAT: if(isint(convfrom)) /*int to float*/
                           return mkfloat(l, intval(convfrom));
                     if(isstr(convfrom)) { /*string to float*/
-                          lfloat d;
+                          lfloat d; /*XXX: does not work for complex floats*/
                           if(!isfnumber(strval(convfrom))) goto fail;
                           d = strtod(strval(convfrom), &fltend);
                           if(!fltend[0]) return mkfloat(l, d);

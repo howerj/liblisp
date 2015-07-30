@@ -33,8 +33,8 @@
 
 # Example code
 
- (define frandom (lambda () (fabs (/ (coerce *float* (random)) *random-max*))))
- (define sum-of-squares (lambda (x y) (+ (pow x 2) (pow y 2))))
+ (define frandom (lambda () (cabs (/ (coerce *float* (random)) *random-max*))))
+ (define sum-of-squares (lambda (x y) (+ (cpow x 2) (cpow y 2))))
  
  (define monte-inner
    (lambda ()

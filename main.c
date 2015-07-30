@@ -46,7 +46,6 @@
 static char *histfile = "hist.lsp";
 #endif
 
-#ifdef USE_MATH
 /* Math functions found in the C library*/
 
 #include <math.h>
@@ -61,10 +60,10 @@ static cell *subr_ ## NAME (lisp *l, cell *args) {\
 }
 
 #define MATH_UNARY_LIST\
-        X(log)    X(log10)   X(fabs)    X(sin)     X(cos)   X(tan)\
-        X(asin)   X(acos)    X(atan)    X(sinh)    X(cosh)  X(tanh)\
-        X(exp)    X(sqrt)    X(ceil)    X(floor) /*X(log2)  X(round)\
-        X(trunc)  X(tgamma)  X(lgamma)  X(erf)     X(erfc)*/
+        X(clog)   X(cabs)  X(csin)  X(ccos)  X(ctan)   X(conj)\
+        X(casin)  X(cacos) X(catan) X(csinh) X(ccosh)  X(ctanh)\
+        X(cexp)   X(csqrt) X(creal) X(cimag) X(casinh) X(cacosh)\
+        X(catanh) X(carg)  X(fabs)  X(ceil)  X(floor) 
 
 #define X(FUNC) SUBR_MATH_UNARY(FUNC)
 MATH_UNARY_LIST
@@ -72,14 +71,14 @@ MATH_UNARY_LIST
 
 static cell *subr_pow (lisp *l, cell *args) {
         cell *xo, *yo;
-        double x, y;
+        lfloat x, y;
         if(!cklen(args, 2) || !isarith(car(args)) || !isarith(car(cdr(args)))) 
                 return (cell*)mkerror();
         xo = car(args);
         yo = car(cdr(args));
         x = isfloat(xo) ? floatval(xo) : intval(xo);
         y = isfloat(yo) ? floatval(yo) : intval(yo);
-        return mkfloat(l, pow(x, y));
+        return mkfloat(l, cpow(x, y));
 }
 
 static cell *subr_modf(lisp *l, cell *args) {
@@ -92,7 +91,6 @@ static cell *subr_modf(lisp *l, cell *args) {
         fracpart = modf(x, &intpart);
         return cons(l, mkfloat(l, intpart), mkfloat(l, fracpart));
 }
-#endif
 
 #ifdef USE_LINE
 /*line editing and history functionality*/
@@ -151,13 +149,11 @@ int main(int argc, char **argv) {
         lisp *l = lisp_init();
         if(!l) return PRINT_ERROR("\"%s\"", "initialization failed"), -1;
 
-#ifdef USE_MATH /*add math functionality from math.h*/
 #define X(FUNC) lisp_add_subr(l, subr_ ## FUNC, # FUNC);
 MATH_UNARY_LIST
 #undef X
-        lisp_add_subr(l, subr_pow, "pow");
+        lisp_add_subr(l, subr_pow, "cpow");
         lisp_add_subr(l, subr_modf, "modf");
-#endif
 
 #ifdef USE_LINE /*add line editor functionality*/
         lisp_set_line_editor(l, line_editing_function);
