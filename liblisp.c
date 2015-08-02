@@ -18,8 +18,6 @@
  *        be added as well. freopen and/or opening in append mode need to be
  *        added as well.
  *  @note Add options for turning off parsing of strings and floats 
- *  @note There has to be a better way of handling the returns from
- *        longjmp, there is some macro magic to be had here.
  *
  *  The following functionality would be nice to put in to the core
  *  interpreter; support for matrices and complex numbers (c99 _Complex),
@@ -56,7 +54,15 @@
 #define UNUSED(X)          ((void)(X))
 #define MAX(X, Y)          ((X) > (Y) ? (X) : (Y))
 #define MIN(X, Y)          ((X) > (Y) ? (Y) : (X))
-#define fatal(X)           warn(NULL, (X), __FILE__, __LINE__)
+
+/**@brief This restores a jmp_buf stored in lisp environment if it
+ *        has been copied out to make way for another jmp_buf.
+ * @param USED is RBUF used?
+ * @param ENV  lisp environment to restore jmp_buf to
+ * @param RBUF jmp_buf to restore**/
+#define RECOVER_RESTORE(USED, ENV, RBUF)\
+        if((USED)) memcpy((ENV)->recover, (RBUF), sizeof(jmp_buf));\
+        else (ENV)->recover_init = 0;
 
 typedef enum lisp_type { INVALID, SYMBOL, INTEGER, CONS, PROC, SUBR, 
 STRING, IO, HASH, FPROC, FLOAT, USERDEF } lisp_type;
@@ -153,29 +159,15 @@ static struct special_cell_list { cell *internal; } special_cells[] = {
 
 /************************ generic helper functions ****************************/
 
-#define FAILPRINTER(LISP, RET, FMT, ...) do{\
-        printerf((LISP)->efp, 0, "(error '%s " FMT " \"%s\" %d)\n",\
-                       __func__, __VA_ARGS__, __FILE__, (intptr_t)__LINE__);\
-        throwf(l, RET);\
-        } while(0)
-
-#define RECOVER(LISP, FMT, ...) FAILPRINTER(LISP,  1, FMT, __VA_ARGS__)
-#define HALT(LISP, FMT, ...)   FAILPRINTER(LISP, -1, FMT, __VA_ARGS__)
-
-static void throwf(lisp *l, int ret) { /**@brief throw an exception**/
-        if(l && l->recover_init) longjmp(l->recover, ret);
-        else exit(ret);
-}
-
-static void warn(lisp *l, char *msg, char *file, long line) {
+void pfatal(char *msg, char *file, long line) {
         fprintf(stderr, "(error \"%s\" \"%s\" %ld)\n", msg, file, line);
-        throwf(l, 1);
+        exit(-1);
 }
 
 char *lstrdup(const char *s) { assert(s);
         char *str;
         if(!(str = malloc(strlen(s) + 1))) 
-                fatal("out of memory"); /*XXX: exit() in library!*/
+                FATAL("out of memory"); /*XXX: exit() in library!*/
         strcpy(str, s);
         return str;
 }
@@ -199,7 +191,7 @@ uint32_t djb2(const char *s, size_t len) { assert(s);
 
 char *getadelim(FILE *in, int delim) { assert(in);
         io io_in;
-        memset(&io_in, 0, sizeof(in));
+        memset(&io_in, 0, sizeof(io_in));
         io_in.p.file = in;
         io_in.type = FIN;
         return io_getdelim(&io_in, delim);
@@ -397,7 +389,7 @@ int io_getc(io *i) { assert(i);
         }
         if(i->type == SIN) 
                 return i->p.str[i->position] ? i->p.str[i->position++] : EOF;
-        fatal("unknown or invalid IO type");
+        FATAL("unknown or invalid IO type");
         return i->eof = 1, EOF;
 }
 
@@ -423,7 +415,7 @@ int io_putc(char c, io *o) { assert(o);
         }
         if(o->type == NULLOUT)
                 return c;
-        fatal("unknown or invalid IO type");
+        FATAL("unknown or invalid IO type");
         return o->eof = 1, EOF;
 }
 
@@ -448,7 +440,7 @@ int io_puts(const char *s, io *o) { assert(s && o);
         }
         if(o->type == NULLOUT)
                 return (int)strlen(s);
-        fatal("unknown or invalid IO type");
+        FATAL("unknown or invalid IO type");
         return EOF;
 }
 
@@ -608,7 +600,7 @@ static void gc_free(lisp *l, cell *ob) { /**< free a lisp cell*/
                       else free(ob);
                       break;
         case INVALID:
-        default: fatal("internal inconsitency"); break;
+        default: FATAL("internal inconsistency"); break;
         }
 }
 
@@ -674,7 +666,7 @@ static void gc_mark(lisp *l, cell* op) { /**<recursively mark reachable cells*/
                              (l->ufuncs[op->userdef].mark)(op);
                       break;
         case INVALID:
-        default:   fatal("internal inconsistency: unknown type");
+        default:   FATAL("internal inconsistency: unknown type");
         }
 }
 
@@ -1155,7 +1147,7 @@ static int printer(io *o, cell *op, unsigned depth) { /*write out s-expr*/
                       printerf(o, depth, "<USER:%d:%d>",
                                 (intptr_t)op->userdef,intval(op)); break;
         case INVALID: 
-        default:      fatal("internal inconsistency");
+        default:      FATAL("internal inconsistency");
         }
         return printerf(o, depth, "%t") == EOF ? EOF : 0;
 }
@@ -1183,7 +1175,7 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
         if(exp == Nil) return Nil;
         if(l->sig) {
                 l->sig = 0;
-                throwf(l, 1);
+                lisp_throw(l, 1);
         }
 
         switch(exp->type) {
@@ -1236,9 +1228,9 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 if(first == Quote) return car(exp);
                 if(first == Error) {
                         if(cklen(exp, 1) && isint(car(exp)))
-                                throwf(l, intval(car(exp)));
+                                lisp_throw(l, intval(car(exp)));
                         if(cklen(exp, 0))
-                                throwf(l, -1);
+                                lisp_throw(l, -1);
                         RECOVER(l, "'throw \"expected () or (int)\" '%S", exp); 
                 }
                 if(first == Define) {
@@ -1558,9 +1550,8 @@ static cell *subr_eval(lisp *l, cell *args) { /**XXX: allows unlimited recursion
                 restore_used = 1;
         }
         l->recover_init = 1;
-        if((r = setjmp(l->recover))) { 
-                if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
-                else             l->recover_init = 0;
+        if((r = setjmp(l->recover))) {
+                RECOVER_RESTORE(restore_used, l, restore); 
                 return Error;
         }
 
@@ -1571,8 +1562,7 @@ static cell *subr_eval(lisp *l, cell *args) { /**XXX: allows unlimited recursion
                 ob = eval(l, 0, car(args), car(cdr(args)));
         }
 
-        if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
-        else             l->recover_init = 0;
+        RECOVER_RESTORE(restore_used, l, restore); 
         if(!ob) RECOVER(l, "\"expected (expr) or (expr environment)\" '%S", args);
         return ob;
 }
@@ -1690,8 +1680,7 @@ static cell* subr_read(lisp *l, cell *args) {
         }
         l->recover_init = 1;
         if((r = setjmp(l->recover))) { 
-                if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
-                else             l->recover_init = 0;
+                RECOVER_RESTORE(restore_used, l, restore); 
                 return Error;
         }
 
@@ -1699,8 +1688,7 @@ static cell* subr_read(lisp *l, cell *args) {
                 (ob = reader(l, l->ifp)) ? ob : Error;
         if(cklen(args, 1) && isin(car(args)))
                 (ob = reader(l, ioval(car(args)))) ? ob : Error;
-        if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
-        else             l->recover_init = 0;
+        RECOVER_RESTORE(restore_used, l, restore); 
         if(!ob) RECOVER(l, "\"expected () or (input)\" '%S", args);
         return ob;
 }
@@ -2054,6 +2042,11 @@ static struct integer_list { char *name; intptr_t val; } integers[] = {
 
 /***************** initialization and lisp interfaces *************************/
 
+void lisp_throw(lisp *l, int ret) { 
+        if(l && l->recover_init) longjmp(l->recover, ret);
+        else exit(ret);
+}
+
 cell *lisp_add_subr(lisp *l, subr func, char *name) { assert(l && func && name);
         return extend_top(l, intern(l, lstrdup(name)), mksubr(l, func));
 }
@@ -2128,14 +2121,12 @@ cell *lisp_read(lisp *l, io *i) { assert(l && i);
                 restore_used = 1;
         }
         if((r = setjmp(l->recover))) { 
-                if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
-                else             l->recover_init = 0;
+                RECOVER_RESTORE(restore_used, l, restore); 
                 return r > 0 ? Error : NULL;
         }
         l->recover_init = 1;
         ret = reader(l, i);
-        if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
-        else             l->recover_init = 0;
+        RECOVER_RESTORE(restore_used, l, restore); 
         return ret;
 }
 
@@ -2154,14 +2145,12 @@ cell *lisp_eval(lisp *l, cell *exp) { assert(l && exp);
                 restore_used = 1;
         }
         if((r = setjmp(l->recover))) {
-                if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
-                else             l->recover_init = 0;
+                RECOVER_RESTORE(restore_used, l, restore); 
                 return r > 0 ? Error : NULL;
         }
         l->recover_init = 1;
         ret = eval(l, 0, exp, l->top_env);
-        if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
-        else             l->recover_init = 0;
+        RECOVER_RESTORE(restore_used, l, restore); 
         return ret;
 }
 
@@ -2177,16 +2166,14 @@ cell *lisp_eval_string(lisp *l, char *evalme) { assert(l && evalme);
         }
         if((r = setjmp(l->recover))) {
                 io_close(in);
-                if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
-                else             l->recover_init = 0;
+                RECOVER_RESTORE(restore_used, l, restore); 
                 return r > 0 ? Error : NULL;
         }
         l->recover_init = 1;
         if(!(in = io_sin(evalme))) return NULL;
         ret = eval(l, 0, reader(l, in), l->top_env);
         io_close(in);
-        if(restore_used) memcpy(l->recover, restore, sizeof(jmp_buf));
-        else             l->recover_init = 0;
+        RECOVER_RESTORE(restore_used, l, restore); 
         return ret;
 }
 
@@ -2275,7 +2262,7 @@ int lisp_repl(lisp *l, char *prompt, int editor_on) {
                         if(!line[strspn(line, " \t\r\n")]) { free(line); continue; }
                         running = 1; /*SIGINT handling on*/
                         if(!(prn = lisp_eval_string(l, line)))
-                                RECOVER(l, "\"invalid or incomplete line\"%s", "");
+                                RECOVER(l, "\"%s\"", "invalid or incomplete line");
                         running = 0; /*SIGINT handling off*/
                         lisp_print(l, prn);
                         free(line);
