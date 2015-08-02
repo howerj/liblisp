@@ -176,7 +176,47 @@ include any initialization code (that is lisp code that has been defined in
 lisp and not in C and then passed to the interpreter on start up), but only
 that language provided by [liblisp.c][] and [main.c][].
 
-### Lisp
+### [Lisp][]
+
+[Lisp][] is the second oldest language after [FORTRAN][] that still has
+descendants still in use. Despite its age it is a very high level language
+built on simple principles; it had features that are now finding their way 
+into newer programming languages such as the [lambda procedure][]. It is a
+multi-paradigm programming language built around a few core concepts:
+
+1. [S-Expressions][]
+2. [Garbage Collection][]
+3. A mostly functional style of programming.
+
+And their are various minor attributes that could also be said about the
+language as well.
+
+The first point however is very important, in [Lisp][] code and data are 
+represented in the same way, by the [S-Expression][]. Naturally any
+programming language is going to have primitives and procedures for handling
+the data types it is built to work with; [MATLAB][] is good at handling matrices,
+[AWK][] with its associative arrays and regular expressions is good with
+strings and records, [Lisp][] is good at handling [S-Expressions][]. 
+
+Given the statements that:
+
+1. In [Lisp][] code and data have the same format, [S-Expressions][].
+2. [Lisp][] is designed to process [S-Expressions][].
+
+It follows that [Lisp][] must be good at, or at least able to; read in,
+manipulate, generate and write out [Lisp][] programs with relative ease. It can
+also evaluate these expressions at run time. To put it another way; it is
+possible to write [Lisp][] programs that write [Lisp][] programs.
+
+The second important point, [Garbage Collection][], means that the programmer
+does not have to worry about how objects are allocated or cleaned up, but it
+does come at a price. The collector used here is a simple stop-the-world
+[mark and sweep][] collector, this may add pauses at seemingly random times
+throughout the programs execution.
+
+The third point mostly is the least important, but means that techniques such
+as [recursion][] (with [tail call][] optimization in this implementation) are
+preferred and functions with [side effects][] are discouraged.
 
 ### Style
 
@@ -203,9 +243,105 @@ the context.
 
 ### An introduction to the interpreter
 
+* Command line interface
+* Command line options
+* C API
+* User defined primitive functions or "subr"s.
+* User defined types
+
 ### An introduction to the language
 
-### Fexprs
+#### CONS cells
+
+The [cons cell][] is the basic data structure from which lists and trees, and
+so most structured data in this lisp apart from [associative arrays][], are 
+built. The *cons* subroutine is used to allocate and build new cons cells and
+lists.
+
+A cons cell consists of two cells, each of which can hold either a pointer to
+other cons cells or data. Each cell will contain a few bits to determine what
+the data is, or whether it is a pointer, as well as for other purposes such as
+garbage collection.
+
+The proper list:
+
+        (1 2 3)
+
+Looks like this in memory:
+
+          CAR   CDR         
+        .-----.-----.     .-----.-----.     .-----.-----.
+        |  1  | PTR |---->|  2  | PTR |---->|  3  | NIL |
+        .-----.-----.     .-----.-----.     .-----.-----.
+
+The first cell in the pair is called the "car" cell and the second the "cdr"
+cell for historical reasons. "PTR" represents a pointer to another cell and
+"NIL" represents the "nil" symbol, which is used to terminate a proper list.
+
+Lists which are not terminated by a "nil" can also be made, they are called 
+[dotted pairs][].
+
+The [dotted pair][]:
+
+        (1 . 2)
+
+Looks like this:
+
+        .-----.-----.
+        |  1  |  2  |
+        .-----.-----.
+
+Lists that end with a [dotted pair][] can also be made:
+
+        (1 2 . 3)
+
+Looks like this:
+
+        .-----.-----.     .-----.-----.
+        |  1  | PTR |---->|  2  |  3  |
+        .-----.-----.     .-----.-----.
+
+
+[Trees][] can also be made, the tree:
+
+        (1 (2 3) 4)
+
+
+Looks like this:
+
+                          .-----.-----.     .-----.-----.
+                          |  2  | PTR |---->|  3  | NIL |
+                          .-----.-----.     .-----.-----.
+                             ^
+                             |
+        .-----.-----.     .-----.-----.     .-----.-----.
+        |  1  | PTR |---->| PTR | PTR |---->|  4  | NIL |
+        .-----.-----.     .-----.-----.     .-----.-----.
+
+Arbitrary lists and trees can be constructed.
+
+#### List Manipulation
+
+The lists shown above can be manipulated and created with built in functions.
+To create new cons cells and list, *cons* is used, it takes to arguments and
+returns a new list.
+
+        > (cons 1 2)
+        (1 . 2)
+        > (cons 1 (cons 2 3))
+        (1 2 . 3)
+        > (cons  1 (cons 2 (cons 3 nil)))
+        (1 2 3)
+        > (cons (cons 1 2) (cons 3 nil))
+        ((1 . 2) 3)
+
+#### S-Expressions
+#### Function definition
+#### Special forms
+#### Control structures and recursion
+#### Association lists
+
+#### Fexprs
 
 An [fexpr][] is a function, user defined or an internal, whose arguments are
 passed into it unevaluated, allowing them to be evaluated or many times or not
@@ -213,7 +349,27 @@ at all within the [fexpr][]. They have fallen out of favor within lisps as they
 defy code optimization techniques which is not a concern in this implementation
 as none are performed (beyond optimizing [tail calls][]).
 
-### User defined types
+#### Example code
+
+Example code and be found in the repository the library is hosted in;
+
+* [init.lsp][]
+
+This contains initialization code to the make the lisp interpreter much more
+friendly, usable even. It contains code that acts as wrappers around
+primitives, functions for manipulating [sets][], basic mathematical functions
+such as [factorial][] and [gcd][], and functions for operating on lists.
+
+* [meta.lsp][]
+
+This contains a [Meta-circular Evaluator][], as defined in 
+[The Roots of Lisp][].
+
+* [test.lsp][]
+
+This contains a test suite, with limited coverage, for [init.lsp][]. It should
+be run after [init.lsp][] is, it will exit the interpreter if any of the tests
+fail.
 
 ### Debugging
 
@@ -375,10 +531,6 @@ The error message format is *usually* as follows:
 The format of what occurs in an error message should not be counted on, it is
 purely for the users benefit.
 
-### Example code
-
-The library has example code in the repository it is hosted in:
-
 ### List of primitives, special forms and predefined symbols
 
 Here follows a complete list of all symbols and primitives used within the
@@ -407,9 +559,19 @@ There are several special variables used within the interpreter.
 
 * nil
 
+        > nil
+        ()
+        > ()
+        ()
+        > (cdr '(a))
+        ()
+
 Represents false and the end of a list. Can also be written as '()'.
 
 * t
+
+        > t
+        t
 
 Represents true, evaluates to itself.
 
@@ -557,9 +719,20 @@ pairs evaluates to true, if none do it will return nil.
 
 Returns an association list of the current environment, the list is quite large
 as it contains every defined symbol and what they evaluated to as well as all
-the symbols defined in the current and encapsulating scopes.
-
+the symbols defined in the current and encapsulating scopes. It returns an
+association list.
+        
+        > (defined square (lambda (x) (* x x)))
+        (lambda (x) (* x x))
         > (environment)
+         ((square . (lambda (x) (* x x))) # Most recently defined top level
+                                          # definition is the first entry
+         ...
+         (*seek-cur* . 1) 
+         (e . 2.718282) 
+         (pi . 3.141593) 
+         (t . t))
+        > (let (x 4) (environment))
         ((x . 4) 
          ...
          (*seek-cur* . 1) 
@@ -588,6 +761,12 @@ representation of an error returned from primitive functions.
 
         (error)
         (error INTEGER)
+
+        > (error 1)
+        error
+        > (error -1) # The error message here does not make much sense.
+        (error 'lisp_repl "invalid or incomplete line" "liblisp.c" 2265)
+        
 
 #### Built in subroutines
 
@@ -1395,7 +1574,7 @@ structures relating to built in subroutines, special symbols (such as *nil*,
 2. <http://www.drdobbs.com/the-new-c-x-macros/184401387>
 3. <http://www.drdobbs.com/cpp/the-x-macro/228700289>
  
-### Lisp
+### [Lisp][]
 
 Here are a list of references on how to implement lisp interpreters and to
 other lisp interpreters people have made.
@@ -1410,6 +1589,14 @@ other lisp interpreters people have made.
 8. <https://news.ycombinator.com/item?id=9121448>
 9. <http://www.schemers.org/Documents/Standards/R5RS/>
 10. <https://news.ycombinator.com/item?id=869141>
+11. <http://shrager.org/llisp/>
+
+### Garbage Collection
+
+Links on garbage collection in general:
+
+1. <http://www.brpreiss.com/books/opus5/html/page424.html>
+2. <http://c2.com/cgi/wiki?MarkAndSweep>
 
 ### Regex
 
@@ -1472,6 +1659,17 @@ used:
 
 <!-- Links used throughout the document. These will not be present in the HTML
      but only in the markdown document used to generate the HTML -->
+[side effects]: <https://en.wikipedia.org/wiki/Side_effect_%28computer_science%29>
+[recursion]: <https://en.wikipedia.org/wiki/Recursion_%28computer_science%29>
+[tail call]: <https://en.wikipedia.org/wiki/Tail_call>
+[mark and sweep]: <http://c2.com/cgi/wiki?MarkAndSweep>
+[MATLAB]: <https://en.wikipedia.org/wiki/MATLAB>
+[AWK]: <https://en.wikipedia.org/wiki/AWK>
+[S-Expressions]: <https://en.wikipedia.org/wiki/S-expression>
+[S-Expression]: <https://en.wikipedia.org/wiki/S-expression>
+[Garbage Collection]: <https://en.wikipedia.org/wiki/Garbage_collection_%28computer_science%29>
+[Lisp]: <https://en.wikipedia.org/wiki/Lisp_%28programming_language%29>
+[FORTRAN]: <https://en.wikipedia.org/wiki/Fortran>
 [ANSI C]: <https://en.wikipedia.org/wiki/ANSI_C>
 [c99]: <https://en.wikipedia.org/wiki/C99>
 [Cygwin]: <https://www.cygwin.com/>
@@ -1484,6 +1682,9 @@ used:
 [liblisp.h]: liblisp.h
 [liblisp.1]: liblisp.1
 [liblisp.3]: liblisp.3
+[init.lsp]:  init.lsp
+[meta.lsp]:  meta.lsp
+[test.lsp]:  test.lsp
 [main.c]: main.c
 [metasyntactic variables]: <http://www.catb.org/jargon/html/M/metasyntactic-variable.html>
 [fexpr]: <https://en.wikipedia.org/wiki/Fexpr>
@@ -1509,5 +1710,15 @@ used:
 [ceil]: <http://www.cplusplus.com/reference/cmath/ceil/>
 [floor]: <http://www.cplusplus.com/reference/cmath/floor/>
 [modf]: <http://www.cplusplus.com/reference/cmath/modf/>
+[sets]: <https://en.wikipedia.org/wiki/Set_theory>
+[factorial]: <https://en.wikipedia.org/wiki/Factorial>
+[gcd]: <https://en.wikipedia.org/wiki/Greatest_common_divisor>
+[Meta-circular Evaluator]: <https://en.wikipedia.org/wiki/Meta-circular_evaluator>
+[The Roots of Lisp]: <ldc.upenn.edu/myl/llog/jmc.pdf>
+[cons cell]: <https://en.wikipedia.org/wiki/Cons>
+[associative arrays]: <https://en.wikipedia.org/wiki/Associative_array>
+[dotted pairs]: <http://c2.com/cgi/wiki?DottedPairNotation>
+[dotted pair]: <http://c2.com/cgi/wiki?DottedPairNotation>
+[Trees]: <https://en.wikipedia.org/wiki/Tree_%28data_structure%29>
 <!-- This isn't meant to go here but it is out of the way -->
 <style type="text/css">body{margin:40px auto;max-width:650px;line-height:1.6;font-size:18px;color:#444;padding:0 10px}h1,h2,h3{line-height:1.2}</style>

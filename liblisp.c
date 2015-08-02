@@ -7,7 +7,9 @@
  *
  *  @todo Env lookup should be split into top level hash and cons
  *        list for efficiency.
- *  @note struct hack could be applied strings and other types
+ *  @note struct hack could be applied strings and other types, as
+ *        well as the length field being encoded in the variable length
+ *        section of the object.
  *  @todo There is a problem with recursive hashes!
  *  @todo User defined type printing function should be used
  *  @note Generic error handling for primitives before they are called?
@@ -699,7 +701,7 @@ static cell *mk(lisp *l, lisp_type type, size_t count, ...)
         ret->type = type;
         for(i = 0; i < count; i++) 
                 if     (FLOAT == type)  ret->p[i].f =    va_arg(ap, double);
-                else if(SUBR == type) ret->p[i].prim = va_arg(ap, subr);
+                else if(SUBR == type)   ret->p[i].prim = va_arg(ap, subr);
                 else                    ret->p[i].v =    va_arg(ap, void*);
         va_end(ap);
         node->ref = ret;
