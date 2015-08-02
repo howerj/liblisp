@@ -97,9 +97,9 @@ char *getaline(FILE *in);
 
 /** @brief   gets a record delimited by "delim"
  *  @param   in    an input file
- *  @param   delim the delimiter
+ *  @param   delim the delimiter, can be EOF
  *  @return  char* a record of text, minus the delimiter**/
-char *getadelim(FILE *in, char delim);
+char *getadelim(FILE *in, int delim);
 
 /** @brief concatenate a variable amount of strings with a separator
  *         inbetween them
@@ -231,10 +231,10 @@ int io_puts(const char *s, io *o);
 char *io_getline(io *i);
 
 /** @brief  get a record delimited by 'delim' from an I/O stream
- *  @param  i   I/O stream, must be set up for reading
- *  @param  delim
- *  @return char*  **/
-char *io_getdelim(io *i, char delim);
+ *  @param  i      I/O stream, must be set up for reading
+ *  @param  delim  A character delimiter, can be EOF
+ *  @return char*  A character delimited record**/
+char *io_getdelim(io *i, int delim);
 
 /** @brief  print an integer to an I/O stream
  *  @param  d   an integer!
@@ -358,7 +358,7 @@ cell *mksubr(lisp *l, subr p); /**@brief make a lisp cell from a primitive**/
 cell *mkproc(lisp *l, cell *x, cell *y, cell *z); /**@brief make a lisp cell/proc**/
 cell *mkfproc(lisp *l, cell *x, cell *y, cell *z); /**@brief make a lisp cell/fproc**/
 cell *mkstr(lisp *l, char *s); /**@brief make lisp cell (string) from a string**/
-cell *mksym(lisp *l, char *s); /**@brief make lisp cell (symbol) from a string**/
+/*cell *mksym(lisp *l, char *s); use intern instead to get a unique symbol*/
 cell *mkhash(lisp *l, hashtable *h); /**@brief make lisp cell from hash**/
 cell *mkuser(lisp *l, void *x, int type); /**@brief make a user defined type**/
 subr subrval(cell *x); /**@brief cast a lisp cell to a primitive func ptr**/
@@ -606,3 +606,4 @@ int main_lisp_env(lisp *l, int argc, char **argv);
 }
 #endif
 #endif /* LIBLISP_H */
+

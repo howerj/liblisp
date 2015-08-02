@@ -5,7 +5,6 @@
  *  @email      howe.r.j.89@gmail.com
  *  @brief      A small, extensible lisp interpreter see
  *
- *  @todo Add more assertions to function, subr_close
  *  @todo Env lookup should be split into top level hash and cons
  *        list for efficiency.
  *  @note struct hack could be applied strings and other types
@@ -198,7 +197,7 @@ uint32_t djb2(const char *s, size_t len) { assert(s);
         return h;
 }
 
-char *getadelim(FILE *in, char delim) { assert(in);
+char *getadelim(FILE *in, int delim) { assert(in);
         io io_in;
         memset(&io_in, 0, sizeof(in));
         io_in.p.file = in;
@@ -453,7 +452,7 @@ int io_puts(const char *s, io *o) { assert(s && o);
         return EOF;
 }
 
-char *io_getdelim(io *i, char delim) { assert(i);
+char *io_getdelim(io *i, int delim) { assert(i);
         char *newbuf, *retbuf = NULL;
         size_t nchmax = 0, nchread = 0;
         int c;
@@ -979,7 +978,7 @@ static cell *reader(lisp *l, io *i) { /*read in s-expr*/
                    RECOVER(l, "\"unmatched %s\"", "')");
         case '(':  free(token); return readlist(l, i);
         case '"':  free(token); return readstring(l, i);
-        case '\'': free(token); return cons(l, Quote, cons(l,reader(l,i),Nil));
+        case '\'': free(token); return cons(l, Quote, cons(l, reader(l,i), Nil));
         default:   if(isnumber(token)) {
                            ret = mkint(l, strtol(token, NULL, 0));
                            free(token);
@@ -1061,7 +1060,8 @@ int printerf(io *o, unsigned depth, char *fmt, ...) {
                                    ret =  printer(o, ob, depth);
                                    break;
                         case 'H':  ht = va_arg(ap, hashtable*);
-                        {
+                        { /*@note this is printing an object that is not
+                                  a list but when printed out it does...*/
                           size_t i;
                           hashentry *cur;
                           printerf(o, depth, "(%yhash-create%t");

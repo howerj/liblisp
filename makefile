@@ -37,5 +37,5 @@ doxygen: doxygen.conf *.c *.h
 	doxygen $^
 
 clean:
-	cd libline && make clean
+	if [ -f libline/makefile ]; then cd libline && make clean; fi
 	rm -rf $(TARGET) *.a *.so *.o *.log *.htm *.html *.out doxygen
