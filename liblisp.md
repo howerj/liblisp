@@ -196,7 +196,7 @@ represented in the same way, by the [S-Expression][]. Naturally any
 programming language is going to have primitives and procedures for handling
 the data types it is built to work with; [MATLAB][] is good at handling matrices,
 [AWK][] with its associative arrays and regular expressions is good with
-strings and records, [Lisp][] is good at handling [S-Expressions][]. 
+strings, [Lisp][] is good at handling [S-Expressions][]. 
 
 Given the statements that:
 
@@ -217,6 +217,14 @@ throughout the programs execution.
 The third point mostly is the least important, but means that techniques such
 as [recursion][] (with [tail call][] optimization in this implementation) are
 preferred and functions with [side effects][] are discouraged.
+
+Some of these points are more historically important, most new languages now
+have garbage collection. Lisp also was one of the first languages to have a
+[REPL][], again many new languages also have this feature. REPL stands for
+Read-Evaluate-Print-Loop and this is what the interpreter does, it reads in a
+lisp expression, evaluates it, prints the result and loops to the beginning to
+read in a new expression. This gives instant feedback on whether an operation
+worked or now.
 
 ### Style
 
@@ -241,15 +249,88 @@ The canonical [metasyntactic variables][] will be used in the text; "foo",
 "bar" and "baz" represent arbitrary expressions or atoms, changing depending on
 the context.
 
+Runs of *car* and *cdr* will be abbreviated, although the functions that
+implement them might not be defined, examples as follows;
+
+        > caar
+        (lambda (x) (car (car x)))
+        > cdar
+        (lambda (x) (cdr (car x)))
+        > cadr
+        (lambda (x) (car (cdr x)))
+        > cddr
+        (lambda (x) (cdr (cdr x)))
+        > caaddar
+        (lambda (x) (car (car (cdr (cdr (car x))))))
+
+Reading from left to right, an "a" adds a *car* and a "d" adds a cdr to the
+front of the function.
+
+How these are defined and what they mean will be talked about in later
+chapters, they will have to be defined by the user if only the base library 
+defined in [liblisp.c][] is used and can be done so in terms of *car* and
+*cdr*.
+
 ### An introduction to the interpreter
 
 * Command line interface
+* The REPL
 * Command line options
 * C API
 * User defined primitive functions or "subr"s.
 * User defined types
 
 ### An introduction to the language
+
+This is a short introduction to the language, other very good sources of
+information about specific lisp implementations include:
+
+1. <http://www.schemers.org/Documents/Standards/R5RS/>
+
+This is one of the scheme standards, at roughly 50 pages it is very small but
+it describes a useful, usable language. [Scheme][] is one of the two popular
+dialects of lisp. Scheme aims at being small and elegant.
+
+2. <https://mitpress.mit.edu/sicp/>
+
+The Structure and Interpretation of Computer Programs. A well known
+introductory book on Scheme.
+
+3. <http://www.lispworks.com/documentation/HyperSpec/Front/index.htm>
+
+[Common Lisp][] is the other major dialect of lisp, it is a huge language and
+is the other major dialect of lisp.
+
+4. <http://shrager.org/llisp/index.html>
+
+There are many dialects of lisp, both historical and current, this is a defunct
+dialect that has a nice tutorial.
+
+#### Atoms
+
+An atom is the simplest data structure available to the lisp environment, it is
+a primitive data structure; lists are composed of collections of atoms and
+other lists and an atom cannot further be divided into smaller lists or atoms.
+
+Atoms usually evaluate to themselves, apart from symbols which evaluate to
+another atom or expression depending on the environment.
+
+For example:
+
+        > 2.0             # Floating point numbers are self evaluating
+        2.0
+        > 2               # Integer numbers are self evaluating
+        2
+        > +
+        <SUBR:4231056>    # Evaluates to an internal subroutine
+        > '+
+        (quote +)         # quote postpones evaluation
+        > "Hello, World!" # strings are self evaluating
+        "Hello, World!"
+
+Atoms can have different types, such as a hash, an IO port, a number, a string,
+and a floating point number. They will be colorized differently depending on
+what they are.
 
 #### CONS cells
 
@@ -330,14 +411,45 @@ returns a new list.
         (1 . 2)
         > (cons 1 (cons 2 3))
         (1 2 . 3)
-        > (cons  1 (cons 2 (cons 3 nil)))
+        > (cons 1 (cons 2 (cons 3 nil)))
         (1 2 3)
         > (cons (cons 1 2) (cons 3 nil))
         ((1 . 2) 3)
 
-#### S-Expressions
-#### Function definition
-#### Special forms
+The cells in a cons pair can be accessed with the *car* and *cdr* functions,
+the *car* function gets the first element in the pair, the *cdr* function gets
+the second cell.
+
+        > (car (cons 1 2))
+        1
+        > (cdr (cons 1 2))
+        2
+        > (car (cons 1 (cons 2 3)))
+        1
+        > (cdr (cons 1 (cons 2 3)))
+        (2 . 3)
+        > (car (cons 1 (cons 2 (cons 3 nil))))
+        1
+        > (cdr (cons 1 (cons 2 (cons 3 nil))))
+        (2 3)
+        > (car (cons (cons 1 2) (cons 3 nil)))
+        (1 . 2)
+        > (cdr (cons (cons 1 2) (cons 3 nil)))
+        3
+
+#### Evaluation and Evaluation of Special Forms
+
+The evaluation of lisp expressions is very simple, but there are some
+exceptions known as special forms. The standard evaluation rule is quite
+simple, any variable in the first position of a list is treated as a function
+to apply, the arguments to the function are first evaluated recursively then
+feed into the function.
+
+#### Function and variable definition
+
+New functions and variables can be defined and they can be defined in global or
+a lexical scope. 
+
 #### Control structures and recursion
 #### Association lists
 
@@ -1159,51 +1271,112 @@ Given no arguments it will test whether the systems command processor is
 available. Given a string it will attempt to execute a command with the systems
 command processor, returning an integer for the return status of the command.
 
-        (system)
-        (system STRING)
+        # (system)
+        # (system STRING)
+        > (system)
+        1               # indicates a command processor is avaiable
+        > (system "ls") # Whether this works is implementation defined
+        doxygen       exp       libline    liblisp.c    liblisp.md  lisp.1  make.bat  readme.md
+        doxygen.conf  hist.lsp  liblisp.3  liblisp.h    liblisp.o   main.c  makefile  test.lsp
+        doxygen.log   init.lsp  liblisp.a  liblisp.htm  lisp        main.o  meta.lsp
+        0
 
 * remove
 
 Remove a file specified by a string or symbol passed to it.
 
-        (remove STRING)
+        # (remove STRING)
+        > (remove "file-that-does-not-exist.txt")
+        nil
+        > (remove "file-that-exists.txt")
+        t
 
 * rename
 
 Rename a file, the first argument is the source, the second the destination.
 
-        (rename STRING STRING)
+        # (rename STRING STRING)
+        > (rename "a.txt" "b.txt")
+        t # given "a.txt" exists and no permission problems happen.
+        > (rename "a.txt" "b.txt") # "a.txt" no longer exists, it cannot be
+                                   # renamed
+        nil
+        > (rename "b.txt" "a.txt")
+        t
 
 * all-symbols
 
 This returns a list of all the symbols encountered so far, whether or not they
 have been defined.
 
-        (all-symbols)
+        # (all-symbols)
+        > (all-symbols)
+        (hash-create "io?" 'io? 
+                ... 
+                "cons" 'cons)
+        > (hash-lookup 'cons (all-symbols))
+        cons
 
 * hash-create
 
 Create a new list from a series of key-value pairs. The number of arguments to
 the function must be even (which includes zero).
 
+        # (hash-create)
+        # (hash-create {STRING EXPR}... )
+        > (hash-create)
         (hash-create)
-        (hash-create {STRING EXPR}... )
+        > (hash-create 'key1 'val1)
+        (hash-create "key1" 'val1)  # Not that this is not a list altough it
+                                    # looks like one
+        > (hash-create 'key1 'val1 "key2" '(arbitrary list))
+        (hash-create "key1" 'val1 "key2" '(arbitrary list))
 
 * hash-lookup
 
 Lookup a string in a hash.
 
-        (hash-lookup HASH STRING)
+        # (hash-lookup HASH STRING)
+        > (define foo (hash-create 'key1 'val1 "key2" '(arbitrary list)))
+        (hash-create "key1" 'val1 "key2" '(arbitrary list))
+        > (hash-lookup foo 'key1)
+        val1
+        > (hash-lookup foo 'key2)
+        (arbitrary list)
+        > (hash-lookup foo 'key3)
+        ()
+        > (hash-lookup foo "key1")
+        val1
 
 * hash-insert
 
 Insert a key-value pair into a hash table.
 
-        (hash-insert HASH SYMBOL EXPR)
+        # (hash-insert HASH SYMBOL EXPR)
+        > (define foo (hash-create 'key1 'val1 "key2" '(arbitrary list)))
+        (hash-create "key1" 'val1 "key2" '(arbitrary list))
+        > (hash-insert foo 'hello "world")
+        (hash-create "key1" 'val1 "key2" '(arbitrary list) "hello" '"world")
+        > (hash-lookup foo "hello")
+        "world"
 
 * coerce
 
-Coerce one type into another.
+Coerce one type into another, if the coercion is possible, if not it throws an
+error.
+
+The mappings are:
+
+* Integer from String, Float
+* List from String, Hash
+* String from Integer, Symbol, Float
+* Symbol from String
+* Hash from List
+* Float from Integer, String
+
+Some of the mappings have additional restrictions on them, such as when mapping
+an Integer from a String, the string must represent a valid number such as; 
+"-1", "0", "99" and not "99a", "not-a-number".
 
         (coerce ENUM EXPR)
 
@@ -1212,31 +1385,52 @@ Coerce one type into another.
 Return a number representing the time defined by the implementation of the C
 library that this program was linked against.
 
-        (time)
+        # (time)
+        > (time)
+        1438547211
+        > (time)
+        1438547212
 
 * getenv
 
 Get an environment variable from the system based on a string.
 
-        (getenv STRING)
+        # (getenv STRING)
+        > (getenv "SHELL") 
+        "/bin/bash"        # returned value is implementation defined
+        > (getenv "TERM")
+        "screen-256color"  # returned value is implementation defined
 
 * random
 
 Return a number from the Pseudo Random Number Generator.
 
-        (random)
+        # (random)
+        > (random)
+        4451522206897829187
+        > (random)
+        3015435609869357244
 
 * seed
 
 Seed the random number generator.
 
-        (seed INT INT)
+        # (seed INT INT)
+        > (seed 1 1)
+        t
+        > (seed 1 1.0)
+        (error 'subr_seed "expected (integer integer)" (1 1.000000) "liblisp.c" 1965)
+        error
 
 * date
 
 Return a list representing the date.
 
-        (date)
+        # (date)
+        > (date)
+        (2015 8 2 20 18 47)
+        > (date)
+        (2015 8 2 20 18 50)
 
 * assoc
 
@@ -1262,7 +1456,20 @@ expression on or off.
 
 Calculate the binary logarithm of an integer.
 
-        (binary-logarithm INT)
+        # (binary-logarithm INT)
+        > (binary-logarithm 4)
+        2
+        > (binary-logarithm 99)
+        6
+        > (binary-logarithm 127)
+        127
+        > (binary-logarithm 128)
+        7
+        > (binary-logarithm -1)
+        63 # implementation defined
+        > (binary-logarithm 1.0)
+        (error 'subr_binlog "expected (int)" '(1.000000) "liblisp.c" 1374)
+        error
 
 * close
 
@@ -1275,6 +1482,12 @@ Close an IO port.
 Return an integer representing the type of an object.
 
         # (type-of EXPR)
+        > (eq *integer* (type-of 1))
+        t
+        > (eq *integer* (type-of 1.0))
+        ()
+        > (type-of "Hello, World")
+        6 # implementation defined
 
 ##### Additional functions
 
@@ -1315,7 +1528,17 @@ two floating point values.
 Calculate the [natural logarithm][] of a floating point value. Integers are
 converted to floating point values before hand.
 
-        (log ARITH)
+        # (log ARITH)
+        > (log e)
+        1.0
+        > (log 1)
+        0.0
+        > (log -1)
+        nan
+        > (log 10)
+        2.302585
+        > (log 3.3)
+        1.193922
 
 * log10
 
@@ -1326,19 +1549,41 @@ to any other base, base 'b', you can use:
         or
         logb(x) = log(x) / log(b)
 
-        (log10 ARITH)
+        # (log10 ARITH)
+        > (log10 e)
+        0.434294
+        > (log10 1)
+        0.0
+        > (log10 -1)
+        nan
+        > (log10 10)
+        1.0
+        > (log10 3.3)
+        0.518514
 
 * fabs
 
 Return the [absolute value][] of a floating point number.
 
-        (fabs ARITH)
+        # (fabs ARITH)
+        > (fabs 1)
+        1
+        > (fabs -2)
+        2
+        > (fabs 5.2)
+        5.2
+        > (fabs -4.0)
+        4.0
 
 * sin
 
 Calculate the [sine][] of an angle, in radians.
 
-        (sin ARITH)
+        # (sin ARITH)
+        > (sin pi)
+        0.0
+        > (sin (/ pi 2))
+        1.0
 
 * cos
 
@@ -1409,33 +1654,73 @@ floating point number provided.
 
 Calculate the [square root][] of a number.
 
-        (sqrt ARITH)
+        # (sqrt ARITH)
+        > (sqrt 100)
+        10.0
+        > (sqrt 69.0)
+        8.306624
+        > (sqrt -4)
+        -nan
+        > (sqrt 4)
+        2.0
 
 * ceil
 
 Calculate the [ceil][] of a float, or round up to the nearest integer, from
 "ceiling".
 
-        (ceil ARITH)
+        # (ceil ARITH)
+        > (ceil 4)
+        4
+        > (ceil 4.1)
+        5.0
+        > (ceil -3)
+        -3.0
+        > (ceil -3.1)
+        -3.0
 
 * floor
 
 Round down to the "[floor][]", or down to the nearest integer.
 
-        (floor ARITH)
+        # (floor ARITH)
+        > (floor 4)
+        4.0
+        > (floor 4.9)
+        4.0
+        > (floor -3)
+        -3.0
+        > (floor -4.9)
+        -5.0
 
 * pow
 
 Raise the first value to the power of the second value.
 
-        (pow ARITH ARITH)
+        # (pow ARITH ARITH)
+        > (pow 2 4)
+        16.0
+        > (pow -2  0.5)
+        1.414214
+        > (pow -2 -0.5)
+        0.707107
+        > (pow -2 -0.5)
+        nan
 
 * [modf][]
 
 Split a floating point value (integers are converted to floats first) into
 integer and fractional parts, returning a cons of the two values.
 
-        (modf ARITH)
+        # (modf ARITH)
+        > (modf 2)
+        (2.000000 . 0.000000)
+        > (modf 2.1)
+        (2.000000 . 0.100000)
+        > (modf -3.5)
+        (-3.000000 . -0.500000)
+        > (modf -0.4)
+        (-0.000000 . -0.400000)
 
 * line-editor-mode
 
@@ -1469,6 +1754,11 @@ printed and then the prompt if that option is set.
 
 
 #### Predefined variables
+
+These are predefined variables used throughout the system, they often directly
+relate to the internal C enumerations that are used, when this is the case they
+are not guaranteed to be constant between different implementations or
+versions, only self consistent with a single specific implementation.
 
         # integers
         *seek-cur*         Seek from current file marker with seek
@@ -1506,38 +1796,146 @@ printed and then the prompt if that option is set.
         *gc-off*           Option for gc, Turn off Garbage Collection permanently
 
 * \*seek-cur\*
+
+Option for *seek*. File seeks are performed from the current file position.
+
 * \*seek-set\*
+
+Option for *seek*. File seeks are performed relative to the beginning of the file.
+
 * \*seek-end\*
+
+Option for *seek*. File seeks are performed relative to the end of the file.
+
 * \*random-max\*
+
+Maximum number a random number generated by "(random)" can take.
+
 * \*integer-max\*
+
+Maximum number an integer can hold.
+
 * \*integer-min\*
-* \*integer\*
-* \*symbol\*
-* \*cons\*
-* \*string\*
-* \*hash\*
-* \*io\*
-* \*float\*
-* \*procedure\*
-* \*primitive\*
-* \*f-procedure\*
-* \*user-defined\*
+
+Minimum number an integer can hold.
+
+The following 11 system variable represent the internal type that an object can
+take. They are returned by functions like *type-of*;
+
+For example:
+
+        > (eq *integer* (type-of 1))
+        t
+        > (eq *integer* (type-of 1.0))
+        nil
+
+1.  \*integer\*, an integer, such as '1'
+2.  \*symbol\*, a symbol such as '+'
+3.  \*cons\*, a list such as '(1 2 3)'
+4.  \*string\*, a string such as '"hello"'
+5.  \*hash\*, a hash, made by *hash-create*
+6.  \*io\*, an IO port, made by *open*
+7.  \*float\*, a floating point number such as '2.0'.
+8.  \*procedure\*, a procedure, such as "(lambda (x) (\* x x))"
+9.  \*primitive\*, a built in subroutine written in C
+10. \*f-procedure\*, a F-Expression, such as "(flambda (x) x)"
+11. \*user-defined\*, an arbitrary user defined type
+
 * \*file-in\*
+
+An option for *open*. The string passed to open will be treated as a file name
+to open up for reading.
+
+        > (open *file-in* "file.txt")
+
 * \*file-out\*
+
+An option for *open*. The string passed to open will be treated as a file name
+to open up for writing.
+
+        > (open *file-out* "file.txt")
+ 
 * \*string-in\*
+
+An option for *open*. The string passed ot open will be treated as a string to
+read from.
+
+        > (define in (open *string-in* "(+ 2 2) \"Hello, World\""))
+        <IO:IN:32145072>
+        > (read in)
+        (+ 2 2)
+        > (read in)
+        "Hello, World"
+        > (read in)
+        error
+
 * \*string-out\*
+
+An option for *open*. Not used for the moment.
+
 * \*lc-all\*
+
+An option for *locale*. It is used to set the entire locale.
+
 * \*lc-collate\*
+
+An option for *locale*. This is used to set the LC\_COLLATE option, which
+affects *strcoll* and *strxfrm*, although they are not used within the
+interpreter.
+
 * \*lc-ctype\*
+
+An option for *locale*. Affects character functions in "ctype.h", allowing the
+locale to be changed for them.
+
 * \*lc-monetary\*
+
+An option for *locale*. Affects the money format.
+
 * \*lc-numeric\*
+
+An option for *locale*. Affects non monetary numbers in I/O functions like 
+scanf and printf, although this should not affect the interpreter.
+
 * \*lc-time\*
+
+An option for *locale*. Affects strftime, which is not used in the interpreter.
+
 * \*trace-off\*
+
+An option for *trace-level!*. Tracing is turned off for all objects.
+
+        > (trace-level! *trace-off*)
+
 * \*trace-marked\*
+
+An option for *trace-level!*. Only marked objects will be traced.
+
+        > (trace-level! *trace-marked*)
+
 * \*trace-all\*
+
+An option for *trace-level!*. All objects will be traced.
+
+        > (trace-level! *trace-all*)
+
 * \*gc-on\*
+
+An option for *gc*. Turn the garbage collection back on if it was postponed.
+
+        > (gc *gc-on*)
+        
 * \*gc-postpone\*
+
+An option for *gc*. Postpone garbage collection.
+
+        > (gc *gc-postpone*)
+
 * \*gc-off\*
+
+An option for *gc*. Turn off the garbage collector and **leak memory**.
+
+        > (gc *gc-off*)
 
         # floats
         pi                 The mathematical constant pi
@@ -1720,5 +2118,8 @@ used:
 [dotted pairs]: <http://c2.com/cgi/wiki?DottedPairNotation>
 [dotted pair]: <http://c2.com/cgi/wiki?DottedPairNotation>
 [Trees]: <https://en.wikipedia.org/wiki/Tree_%28data_structure%29>
+[Scheme]: <https://en.wikipedia.org/wiki/Scheme_%28programming_language%29>
+[Common Lisp]: <https://en.wikipedia.org/wiki/Common_Lisp>
+[REPL]: https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop
 <!-- This isn't meant to go here but it is out of the way -->
 <style type="text/css">body{margin:40px auto;max-width:650px;line-height:1.6;font-size:18px;color:#444;padding:0 10px}h1,h2,h3{line-height:1.2}</style>

@@ -251,10 +251,17 @@ uint64_t xorshift128plus(uint64_t s[2]) { /*PRNG*/
 }
 
 int balance(const char *sexpr) { assert(sexpr);
-        int bal = 0, c;
+        int bal = 0, c; 
         while((c = *sexpr++))
                 if     (c == '(') bal++;
                 else if(c == ')') bal--;
+                else if(c == '"')
+                        while((c = *sexpr++)) {
+                                if (c == '\\' && '"' == *sexpr) sexpr++;
+                                else if (c == '"') break;
+                                else continue;
+                        }
+                else continue;
         return bal;
 }
 
@@ -404,14 +411,23 @@ int io_ungetc(char c, io *i) { assert(i);
 
 int io_putc(char c, io *o) { assert(o);
         int r;
+        char *p;
+        size_t maxt;
         if(o->type == FOUT) {
                 if((r = fputc(c, o->p.file)) == EOF)
                         o->eof = 1;
                 return r;
         }
         if(o->type == SOUT) {
-                if(o->position >= o->max) /*XXX: grow str instead*/
-                        return o->eof = 1, EOF;
+                if(o->position >= o->max) { /*grow the "file"*/
+                        maxt = o->max * 2;
+                        if(maxt < o->position) /*overflow*/
+                                return o->eof = 1, EOF;
+                        o->max = maxt;       
+                        if(!(p = realloc(o->p.str, maxt)))
+                                return o->eof = 1, EOF;
+                        o->p.str = p;
+                }
                 o->p.str[o->position++] = c;
                 return c;
         }
@@ -423,6 +439,8 @@ int io_putc(char c, io *o) { assert(o);
 
 int io_puts(const char *s, io *o) { assert(s && o);
         int r;
+        char *p;
+        size_t maxt;
         if(o->type == FOUT) {
                 if((r = fputs(s, o->p.file)) == EOF)
                         o->eof = 1;
@@ -430,8 +448,15 @@ int io_puts(const char *s, io *o) { assert(s && o);
         }
         if(o->type == SOUT) {
                 size_t len, newpos;
-                if(o->position >= o->max) /*XXX: grow str instead*/
-                        return o->eof = 1, EOF;
+                if(o->position >= o->max) { /*grow the "file"*/
+                        maxt = o->position * 2;
+                        if(maxt < o->position) /*overflow*/
+                                return o->eof = 1, EOF;
+                        o->max = maxt;       
+                        if(!(p = realloc(o->p.str, maxt)))
+                                return o->eof = 1, EOF;
+                        o->p.str = p;
+                }
                 len = strlen(s);
                 newpos = o->position + len;
                 if(newpos >= o->max)
@@ -1060,9 +1085,9 @@ int printerf(io *o, unsigned depth, char *fmt, ...) {
                           hashentry *cur;
                           printerf(o, depth, "(%yhash-create%t");
                           for(i = 0; i < ht->len; i++)
-                            if(ht->table[i])
+                            if(ht->table[i]) /*XXX: the string printed out is not escaped*/
                               for(cur = ht->table[i]; cur; cur = cur->next)
-                                printerf(o, depth + 1, " '%s '%S", 
+                                printerf(o, depth + 1, " \"%s\" '%S", 
                                                         cur->key, cur->val);
                           ret = io_putc(')', o);
                         }
@@ -1687,9 +1712,9 @@ static cell* subr_read(lisp *l, cell *args) {
         }
 
         if(cklen(args, 0))
-                (ob = reader(l, l->ifp)) ? ob : Error;
+                ob = (ob = reader(l, l->ifp)) ? ob : Error;
         if(cklen(args, 1) && isin(car(args)))
-                (ob = reader(l, ioval(car(args)))) ? ob : Error;
+                ob = (ob = reader(l, ioval(car(args)))) ? ob : Error;
         RECOVER_RESTORE(restore_used, l, restore); 
         if(!ob) RECOVER(l, "\"expected () or (input)\" '%S", args);
         return ob;
@@ -1804,7 +1829,7 @@ static cell* subr_hlookup(lisp *l, cell *args) {
 }
 
 static cell* subr_hinsert(lisp *l, cell *args) {
-        if(!cklen(args, 3) || !ishash(car(args)) || !issym(car(cdr(args))))
+        if(!cklen(args, 3) || !ishash(car(args)) || !isasciiz(car(cdr(args))))
                 RECOVER(l, "\"expected (hash symbol expression)\" %S", args);
         if(hash_insert(hashval(car(args)), 
                         symval(car(cdr(args))), car(cdr(cdr(args)))))
@@ -2086,9 +2111,10 @@ lisp *lisp_init(void) {
         l->gc_allocated = DEFAULT_LEN;
         l->max_depth = 4096; /*max recursion depth*/
 
-        /*I should probably discard the first N random numbers*/
         l->random_state[0] = 0xCAFE; /*Are these good seeds?*/
         l->random_state[1] = 0xBABE; /*???*/
+        for(i = 0; i < 1024; i++) /*discard first 1024 numbers*/
+                (void)xorshift128plus(l->random_state);
 
         if(!(l->all_symbols = mkhash(l, hash_create(4096)))) goto fail;
         if(!(l->top_env = cons(l, cons(l, Nil, Nil), Nil))) goto fail;

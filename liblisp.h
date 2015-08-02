@@ -130,7 +130,17 @@ uint8_t binlog(unsigned long long v);
  *  @return A pseudo random number **/
 uint64_t xorshift128plus(uint64_t s[2]);
 
-/** @brief return the "balance" of a string of parens
+/** @brief return the "balance" of a string of parens, this function
+ *         takes into account strings. 
+ *
+ *  For example:
+ *
+ *         balance("(((") == 3;
+ *         balance(")))") == -3;
+ *         balance("()") == 0;
+ *         balance("") == 0;
+ *         balance("\"( Hello World\\" ( \" ))") == 2;
+ *
  *  @param sexpr string to count balance in 
  *  @return int  positive more '(', negative more ')', zero == balanced**/ 
 int balance(const char *sexpr);

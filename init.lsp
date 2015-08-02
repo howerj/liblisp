@@ -279,13 +279,13 @@
       (t (or (eq (car lat) a)
                 (member? a (cdr lat)))))))
 
-(define remove # remove member from lat
+(define remove-member # remove member from lat
   (lambda (a lat)
     (cond
       ((null? lat) nil)
       ((eq (car lat) a) (cdr lat))
       (t (cons (car lat)
-                  (remove a (cdr lat)))))))
+                  (remove-member a (cdr lat)))))))
 
 (define <= (lambda (x y) (or (< x y) (= x y))))
 (define >= (lambda (x y) (or (> x y) (= x y))))
