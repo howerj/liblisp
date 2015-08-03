@@ -1313,7 +1313,7 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 }
                 if(isproc(proc) || isfproc(proc)) {
                         if(procargs(proc)->len != vals->len)
-                                RECOVER(l, "'proc \"expected\" %S \"got\" '%S", 
+                                RECOVER(l, "'proc \"expected %S\" '%S", 
                                                 procargs(proc), vals);
                         if(procargs(proc)->len)
                                 env = multiple_extend(l, 
@@ -1686,7 +1686,7 @@ static cell* subr_getchar(lisp *l, cell *args) {
 }
 
 static cell* subr_getdelim(lisp *l, cell *args) {
-        char *s;
+        char *s; /*XXX: should accept integers as well*/
         if(cklen(args, 1) && isstr(car(args)))
                 return (s = io_getdelim(l->ifp, strval(car(args))[0])) ? 
                                 mkstr(l, s) : Nil;
@@ -1908,7 +1908,7 @@ static cell* subr_coerce(lisp *l, cell *args) {
                             return mkstr(l, lstrdup(s));
                     }
                     break;
-        case SYMBOL:if(isstr(convfrom) && !strpbrk(strval(convfrom), " \t\n\r'\"\\"))
+        case SYMBOL:if(isstr(convfrom) && !strpbrk(strval(convfrom), " ()\t\n\r'\"\\"))
                             return intern(l, lstrdup(strval(convfrom)));
                     break;
         case HASH:  if(iscons(convfrom)) /*hash from list*/

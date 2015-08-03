@@ -1,7 +1,7 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -O2 -g
+CFLAGS=-Wall -Wextra -O2 -g -pedantic
 .PHONY: all clean
-TARGETS=cc thread unix tcc
+TARGETS=cc thread tcc
 all: $(TARGETS)
 ../liblisp.a:
 	make -C ../ -f makefile

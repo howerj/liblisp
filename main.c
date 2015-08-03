@@ -17,7 +17,6 @@
  *      int main(int argc, char **argv) { return main_lisp(argc, argv); }
  * 
  *  @todo Some level of auto-completion could be added from the libline library
- *  @todo None of the "subr" functions defined here handle errors in the best way
  *  @todo Experiment with auto insertion of parenthesis to make the shell
  *        easier to use, for example if an expression is missing right parens
  *        the line editing callback could add them in, or if there are more
@@ -29,12 +28,6 @@
  *        functionality should be added in here.
  *  @todo Porting linedit to Windows would add functionality to this
  *        interpreter
- *  @todo Add standard unix functions, libtcc and regex support from the
- *        experimental section of the interpreter. Perhaps even OpenGL support.
- *        Unix functionality would include dlopen, directory handling, file
- *        stat, etc. Better still if generic Unix/Windows could be made.
- *  @todo A branch for the _Complex data type could be made, even if not
- *        maintained after the concept has been tested.
 **/
 
 #include "liblisp.h"
@@ -55,7 +48,8 @@ static char *histfile = "hist.lsp";
 
 #define SUBR_MATH_UNARY(NAME)\
 static cell *subr_ ## NAME (lisp *l, cell *args) {\
-        if(!cklen(args, 1) || !isarith(car(args))) return (cell*)mkerror();\
+        if(!cklen(args, 1) || !isarith(car(args)))\
+                RECOVER(l, "\"expected (number)\" '%S", args);\
         return mkfloat(l, NAME (isfloat(car(args)) ? floatval(car(args)) :\
                                   (double) intval(car(args))));\
 }
@@ -74,7 +68,7 @@ static cell *subr_pow (lisp *l, cell *args) {
         cell *xo, *yo;
         double x, y;
         if(!cklen(args, 2) || !isarith(car(args)) || !isarith(car(cdr(args)))) 
-                return (cell*)mkerror();
+                RECOVER(l, "\"expected (number number)\" '%S", args);
         xo = car(args);
         yo = car(cdr(args));
         x = isfloat(xo) ? floatval(xo) : intval(xo);
@@ -86,7 +80,7 @@ static cell *subr_modf(lisp *l, cell *args) {
         cell *xo;
         double x, fracpart, intpart = 0;
         if(!cklen(args, 1) || !isarith(car(args)))
-                return (cell*)mkerror();
+                RECOVER(l, "\"expected (number)\" '%S", args);
         xo = car(args);
         x = isfloat(xo) ? floatval(xo) : intval(xo);
         fracpart = modf(x, &intpart);
@@ -116,17 +110,17 @@ static cell *subr_line_editor_mode(lisp *l, cell *args) {
 }
 
 static cell *subr_hist_len(lisp *l, cell *args) {
-        (void)l;
         if(!cklen(args, 1) || !isint(car(args)))
-                return (cell*)mkerror();
+                RECOVER(l, "\"expected (integer)\" '%S", args);
         if(!line_history_set_maxlen((int)intval(car(args))))
-                return (cell*)mkerror(); /*should really HALT the interpreter*/
+                HALT(l, "\"%s\"", "out of memory"); 
         return (cell*)mktee();
 }
 
 static cell *subr_clear_screen(lisp *l, cell *args) {
-        (void)l; (void)args;
-        if(!cklen(args, 0)) return (cell*)mkerror();
+        (void)args;
+        if(!cklen(args, 0))
+                RECOVER(l, "\"expected ()\" '%S", args);
         line_clearscreen();
         return (cell*)mktee();
 }

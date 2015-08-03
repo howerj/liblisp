@@ -1,4 +1,5 @@
-/*testing running multiple instances of the interpreter.*/
+/*Testing running multiple instances of the interpreter. This could very much
+ *be improved. It is a pretty lame test at the moment.*/
 #include <pthread.h>
 #include <liblisp.h>
 #include <stdlib.h>

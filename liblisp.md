@@ -1,4 +1,6 @@
-# liblisp.md
+liblisp.md {#mainpage}
+==========
+
 # A small and extensible lisp interpreter and library
 ## Table of contents
 
@@ -1240,8 +1242,18 @@ input port. This returns an S-Expression, not a string.
 Write a string to an IO output port, if no IO port is given it will use the
 standard output IO port (which may be different from stdout).
 
-        (put STRING)
-        (put OUT STRING)
+        # (put STRING)
+        # (put OUT STRING)
+
+        > (put "Hello\tWorld\n") # Print a string to the standard output port
+        Hello   World            # String written is printed out in raw form
+        "Hello\tWorld\n"         # String written is returned in escaped form
+        > (define a-file (open *file-out* "a.txt"))
+        <IO:OUT:33884688>
+        > (put "Hello\tWorld\n")
+        "Hello\tWorld\n"         # String written is returned in escaped form
+        # The file "a.txt" should now contain the string Hello   World in it.
+
 
 * put-char
 
@@ -1363,22 +1375,61 @@ Insert a key-value pair into a hash table.
 * coerce
 
 Coerce one type into another, if the coercion is possible, if not it throws an
-error.
+error. All objects can be coerced into the same type as the object, for example
+hashes can be coerced into hashes, integers into integers, etc.
+
+Some of the mappings have additional restrictions on them, such as when mapping
+an Integer from a String, the string must represent a valid number such as; 
+"-1", "0", "99" and not "99a", "not-a-number" or even "1.0".
 
 The mappings are:
 
 * Integer from String, Float
+
+All floats can be converted to integers.
+
+All strings must represent a valid integer, containing only characters and
+forms that would be valid integer sequences if feed into the interpreter raw.
+
+This means all strings of the form:
+
+        (+|-)?(0[xX][0-9a-fA-F]+|0[0-7]*|[1-9][0-9]+)
+        
+Can be coerced into integers.
+
 * List from String, Hash
+
+All strings and hashes can be coerced into lists.
+
 * String from Integer, Symbol, Float
+
+All integers, symbols and floats can be coerced into strings.
+
 * Symbol from String
+
+Most strings can be coerced into symbols, baring those strings with
+white spaces, single or double quotes, parentheses or the black slash
+characters.
+
 * Hash from List
+
+The list being coerced into a hash needs to have an even number of elements in
+it, the even elements need to be either symbols or strings.
+
 * Float from Integer, String
 
-Some of the mappings have additional restrictions on them, such as when mapping
-an Integer from a String, the string must represent a valid number such as; 
-"-1", "0", "99" and not "99a", "not-a-number".
+All integers can be converted to floats, the strings however need to represent
+a valid floating pointing number.
 
-        (coerce ENUM EXPR)
+        # (coerce ENUM EXPR)
+        > (coerce *integer* 5.3)
+        5
+        > (coerce *hash* '(a 3 "b" (+ 2 2) c val))
+        (hash-create "a" '3 "b" '(+ 2 2) "c" 'val)
+        > (coerce *float* "-3.2e+4")
+        -32000.000000
+        > (coerce *symbol* "hello")
+        hello
 
 * time
 
@@ -1434,9 +1485,25 @@ Return a list representing the date.
 
 * assoc
 
-Find an atom within an association list.
+Find an atom within an association list, an association list is a list
+containing a series of dotted pairs, so:
 
-        (assoc ATOM A-LIST)
+        ((a . 1) (b . 2) (c . 3))
+
+Is a valid association list. Association lists are used for to store and lookup
+small numbers of key-value pairs. *assoc* returns the dotted pair in which the
+*car* of it is equal to the *ATOM* supplied, it returns *nil* if cannot find
+one.
+
+        > (assoc ATOM A-LIST)
+        > (define a-list '((a . 1) (b . 2) (c . 3)))
+        ((a . 1) (b . 2) (c . 3))
+        > (assoc 'a a-list)
+        (a . 1)
+        > (assoc 'c a-list)
+        (c . 3)
+        > (assoc 'd a-list)
+        ()
 
 * locale!
 
