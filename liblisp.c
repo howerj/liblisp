@@ -7,33 +7,18 @@
  *
  *  @todo Env lookup should be split into top level hash and cons
  *        list for efficiency.
- *  @note struct hack could be applied strings and other types, as
+ *  @todo struct hack could be applied strings and other types, as
  *        well as the length field being encoded in the variable length
  *        section of the object.
  *  @todo There is a problem with recursive hashes!
  *  @todo User defined type printing function should be used
- *  @note Generic error handling for primitives before they are called?
- *  @note Profiling showed that the main offender is the assoc function
+ *  @todo Generic error handling for primitives before they are called?
+ *  @todo Profiling showed that the main offender is the assoc function
  *        which is not surprising.
  *  @todo Rewrite reader
  *  @todo File operations on strings could be improved. An append mode should
  *        be added as well. freopen and/or opening in append mode need to be
  *        added as well.
- *  @note Add options for turning off parsing of strings and floats 
- *
- *  The following functionality would be nice to put in to the core
- *  interpreter; support for matrices and complex numbers (c99 _Complex),
- *  UTF-8 support, text processing (diff, tr, grep, sed, à la perl), map
- *  and looping constructs from scheme, doc-strings, optional parsing of
- *  strings and float, apply, gensym, proper constant and a prolog engine. 
- *  But this is more of a wish list than anything.
- *
- *  There are a lot of things that need tidying up and rethinking about,
- *  especially when it comes to the interface of the library and the naming
- *  of functions. More comments are also in order. 
- *
- *  If you do not like the formatting use the "indent" program from: 
- *  <https://www.gnu.org/software/indent/>.
 **/
 
 #include "liblisp.h"
@@ -50,10 +35,11 @@
 #include <string.h>
 #include <time.h>
 
-#define DEFAULT_LEN        (256)   /*just an arbitrary smallish number*/
-#define MAX_USER_TYPES     (256)   /*max number of user defined types*/
-#define COLLECTION_POINT   (1<<20) /*run gc after this many allocs */
-#define UNUSED(X)          ((void)(X))
+#define DEFAULT_LEN        (256)   /**< just an arbitrary smallish number*/
+#define LARGE_DEFAULT_LEN  (4096)  /**< just another arbitrary number*/
+#define MAX_USER_TYPES     (256)   /**< max number of user defined types*/
+#define COLLECTION_POINT   (1<<20) /**< run gc after this many allocs*/
+#define UNUSED(X)          ((void)(X)) /**< unused variable*/
 #define MAX(X, Y)          ((X) > (Y) ? (X) : (Y))
 #define MIN(X, Y)          ((X) > (Y) ? (Y) : (X))
 
@@ -66,32 +52,57 @@
         if((USED)) memcpy((ENV)->recover, (RBUF), sizeof(jmp_buf));\
         else (ENV)->recover_init = 0;
 
-typedef enum lisp_type { INVALID, SYMBOL, INTEGER, CONS, PROC, SUBR, 
-STRING, IO, HASH, FPROC, FLOAT, USERDEF } lisp_type;
+typedef enum lisp_type { 
+        INVALID, /**< invalid object (default), halts interpreter*/
+        SYMBOL,  /**< symbol */
+        INTEGER, /**< integer, a normal fixed with number*/
+        CONS,    /**< cons cell*/
+        PROC,    /**< lambda procedure*/
+        SUBR,    /**< subroutine or primitive written in C*/
+        STRING,  /**< a NUL terminated string*/
+        IO,      /**< Input/Output port*/
+        HASH,    /**< Associative hash table*/
+        FPROC,   /**< F-Expression*/
+        FLOAT,   /**< Floating point number; could be float or double*/
+        USERDEF  /**< User defined types*/
+} lisp_type;     /**< A lisp object*/
 
-/**@brief The level of tracing to do when evaluating objects for debugging**/
-typedef enum trace_level { TRACE_OFF, TRACE_MARKED, TRACE_ALL} trace_level;
-/**@brief Typedef for controlling the garbage collector**/
-typedef enum gc_control { GC_ON, GC_POSTPONE, GC_OFF } gc_control;
+typedef enum trace_level { 
+        TRACE_OFF,    /**< tracing is off (default)*/
+        TRACE_MARKED, /**< trace only cells that have their trace field set*/
+        TRACE_ALL     /**< trace everything*/
+} trace_level; /**< level of debug printing to do when evaluating objects*/
 
-typedef union lisp_union { /**<ideally we would use void * for everything*/
+typedef enum gc_control { 
+        GC_ON,       /**< Garbage collection is on (default)*/
+        GC_POSTPONE, /**< Temporarily postpone garbage collection*/
+        GC_OFF       /**< *Permanently turn garbage collection off*/
+} gc_control; /**< enum for l->gc_state */
+
+typedef union lisp_union { /**< ideally we would use void * for everything*/
         void *v;     /**< use this for integers and points to cells*/
         lfloat f;    /**< if lfloat is double it could be bigger than *v */ 
-        subr prim; /**< function pointers are not guaranteed to fit into a void**/
+        subr prim;   /**< function pointers are not guaranteed to fit into a void**/
 } lisp_union;
 
 struct cell {
-        unsigned type: 4, userdef: 8, mark: 1, uncollectable: 1, trace: 1, len :32;
-        lisp_union p[1]; /*struct hack: use "lisp_union p[]" and change mk for c99*/
+        unsigned type:    4,        /**< Type of the lisp object*/
+                 userdef: 8,        /**< if type is USERDEF, the this determines which USERDEF*/
+                 mark:    1,        /**< mark for garbage collection*/
+                 uncollectable: 1,  /**< set if the object cannot, or should not, be freed*/
+                 trace:   1,        /**< set if object is to be traced for debugging*/
+                 close:   1,  
+                 len:     32;       /**< length of data p*/
+        lisp_union p[1]; /**< uses the "struct hack", c99 does not quite work here*/
 };
 
-typedef struct hashentry {/**< linked list of entries in a bin*/
-        char *key; /**< ASCII nul delimited string*/
-        void *val; /**< arbitrary value*/
-        struct hashentry *next; /*next in list!*/
+typedef struct hashentry {      /**< linked list of entries in a bin*/
+        char *key;              /**< ASCII nul delimited string*/
+        void *val;              /**< arbitrary value*/
+        struct hashentry *next; /**< next item in list*/
 } hashentry;
 
-struct hashtable {
+struct hashtable {                /**< a hash table*/
         size_t len;               /**< number of 'bins' in the hash table*/
         struct hashentry **table; /**< table of linked lists*/
 };
@@ -117,22 +128,36 @@ typedef struct userdef_funcs {
 } userdef_funcs; /**< functions the interpreter uses for user defined types*/
 
 struct lisp {
-        jmp_buf recover;
-        io *ifp /*input*/, *ofp /*output*/, *efp /*error output*/;
-        cell *all_symbols, *top_env, **gc_stack;
+        jmp_buf recover; /**< jump here when there is an error*/
+        io *ifp /*standard input*/, 
+           *ofp /*standard output*/, 
+           *efp /*standard error output*/;
+        cell *all_symbols, 
+             *top_env, 
+             **gc_stack;
         gc_list *gc_head;
-        char *token, *buf;
-        size_t buf_allocated, buf_used, gc_allocated, gc_used, 
-               gc_collectp, max_depth/*max recursion depth*/;
-        uint64_t random_state[2];
-        int sig, trace; /*set by signal handlers or other threads*/
-        unsigned ungettok:1, recover_init:1, dynamic:1;
-        gc_control gc_state;
-        userdef_funcs ufuncs[MAX_USER_TYPES];
-        int userdef_used; /*number of user defined types allocated*/
+        char *token /**< one token of put back for parser*/, 
+             *buf   /**< input buffer for parser*/;
+        size_t buf_allocated,   /**< size of buffer "l->buf"*/
+               buf_used,        /**< amount of buffer used by current string*/
+               gc_stack_allocated,    /**< length of buffer of GC stack*/
+               gc_stack_used,         /**< elements used in GC stack*/
+               gc_collectp,     /**< collection counter, collect after it goes too high*/
+               max_depth        /**< max recursion depth*/;
+        uint64_t random_state[2] /**< PRNG state*/;
+        int sig;   /**< set by signal handlers or other threads*/
+        int trace; /**< trace level for eval*/
+        unsigned ungettok:     1, /**< do we have a put-back token to read?*/
+                 recover_init: 1, /**< has the recover buffer been initialized?*/
+                 dynamic:      1, /**< use lexical scope if false, dynamic if true*/
+                 color_on:     1, /**< REPL Colorize output*/
+                 debug_on:     1, /**< REPL Debugging on*/
+                 prompt_on:    1, /**< REPL '>' Turn prompt on*/
+                 editor_on:    1; /**< REPL Turn the line editor on*/
+        gc_control gc_state /**< gc on (default), suspended or permanently off*/;
+        userdef_funcs ufuncs[MAX_USER_TYPES]; /**< functions for user defined types*/
+        int userdef_used;   /**< number of user defined types allocated*/
         editor_func editor; /**< line editor to use, optional*/
-        /*options for the REPL*/
-        unsigned color_on :1, debug_on :1, prompt_on: 1, editor_on :1;
 };
 
 #define CELL_LIST\
@@ -144,7 +169,7 @@ struct lisp {
         X(Error,   "error")     X(Env,     "environment")\
         X(LetS,    "let*")
 
-#define X(CNAME, LNAME) static cell _ ## CNAME = { SYMBOL, 0, 0, 1, 0, 0, .p[0].v = LNAME};
+#define X(CNAME, LNAME) static cell _ ## CNAME = { SYMBOL, 0, 0, 1, 0, 0, 0, .p[0].v = LNAME};
 CELL_LIST /*structs for special cells*/
 #undef X
 
@@ -169,7 +194,7 @@ void pfatal(char *msg, char *file, long line) {
 char *lstrdup(const char *s) { assert(s);
         char *str;
         if(!(str = malloc(strlen(s) + 1))) 
-                FATAL("out of memory"); /*XXX: exit() in library!*/
+                return NULL;
         strcpy(str, s);
         return str;
 }
@@ -620,7 +645,8 @@ static void gc_free(lisp *l, cell *ob) { /**< free a lisp cell*/
         case PROC:    case SUBR: case FPROC:      free(ob); break;
         case STRING:  free(strval(ob));           free(ob); break;
         case SYMBOL:  free(symval(ob));           free(ob); break;
-        case IO:      io_close(ioval(ob));        free(ob); break; 
+        case IO:      if(!ob->close)   io_close(ioval(ob));        
+                                                  free(ob); break; 
         case HASH:    hash_destroy(hashval(ob));  free(ob); break;
         case USERDEF: if(l->ufuncs[ob->userdef].free)
                               (l->ufuncs[ob->userdef].free)(ob);
@@ -650,17 +676,17 @@ static void gc(lisp *l) {
 static cell *gc_add(lisp *l, cell* op) { /**< add a cell to the working set*/
         cell **olist;
         if(l->gc_state == GC_OFF) return op;
-        if(l->gc_used++ > l->gc_allocated - 1) {
-                l->gc_allocated = l->gc_used * 2;
-                if(l->gc_allocated < l->gc_used) 
+        if(l->gc_stack_used++ > l->gc_stack_allocated - 1) {
+                l->gc_stack_allocated = l->gc_stack_used * 2;
+                if(l->gc_stack_allocated < l->gc_stack_used) 
                         HALT(l, "%s", "overflow in allocator size variable");
-                olist = realloc(l->gc_stack, l->gc_allocated * 
+                olist = realloc(l->gc_stack, l->gc_stack_allocated * 
                                 sizeof(*l->gc_stack));
                 if(!olist)
                         HALT(l, "%s", "out of memory");
                 l->gc_stack = olist;
         }
-        l->gc_stack[l->gc_used - 1] = op; /**<anything reachable in here is not freed*/
+        l->gc_stack[l->gc_stack_used - 1] = op; /**<anything reachable in here is not freed*/
         return op;
 }
 
@@ -701,7 +727,7 @@ static void gc_collect(lisp *l) {
         size_t i;
         gc_mark(l, l->all_symbols);
         gc_mark(l, l->top_env);
-        for(i = 0; i < l->gc_used; i++)
+        for(i = 0; i < l->gc_stack_used; i++)
                 gc_mark(l, l->gc_stack[i]);
         gc(l);
         l->gc_collectp = 0;
@@ -748,7 +774,7 @@ intptr_t intval(cell *x)     { return !x ? 0 : (intptr_t)(x->p[0].v); }
 int  isnil(cell *x)          { return x == Nil; }
 int  isint(cell *x)          { return !x ? 0 : x->type == INTEGER; }
 int  isfloat(cell *x)        { return !x ? 0 : x->type == FLOAT; }
-int  isio(cell *x)           { return !x ? 0 : x->type == IO; }
+int  isio(cell *x)           { return !x ? 0 : x->type == IO && !x->close; }
 int  iscons(cell *x)         { return !x ? 0 : x->type == CONS; }
 int  isproc(cell *x)         { return !x ? 0 : x->type == PROC; }
 int  isfproc(cell *x)        { return !x ? 0 : x->type == FPROC; }
@@ -776,7 +802,7 @@ cell *mkuser(lisp *l, void *x, int type) {
 }
 
 static cell *mkasciiz(lisp *l, char *s, lisp_type type) {  
-        assert(type == STRING || type == SYMBOL);
+        assert(s && (type == STRING || type == SYMBOL));
         cell *x = mk(l, type, 1, (cell *)s); 
         if(!x) return NULL;
         x->len = strlen(s);
@@ -832,7 +858,7 @@ cell *extend(lisp *l, cell *env, cell *sym, cell *val) {
         return cons(l, cons(l, sym, val), env); 
 }
 
-cell *intern(lisp *l, char *name) {
+cell *intern(lisp *l, char *name) { assert(name);
         cell *op = hash_lookup(hashval(l->all_symbols), name);
         if(op) return op;
         op = mksym(l, name);
@@ -856,16 +882,17 @@ static cell *extend_top(lisp *l, cell *sym, cell *val) {
 }
 
 static cell *assoc(cell *key, cell *alist) {
-        /** @note improving the speed of this function, perhaps by
-         *  adding support for hashes, would greatly increase the
-         *  speed of the interpreter... **/
         /*can use "if(car(car(alist)) == key)" for symbol only comparison*/
+        cell *lookup;
         if(!key || !alist) return NULL;
         for(;!isnil(alist); alist = cdr(alist))
-                if(iscons(car(alist)))
+                if(iscons(car(alist))) { /*normal assoc*/
                         if(intval(car(car(alist))) == intval(key)) 
                                 return car(alist);
-                /*else if(ishash(car(alist)) { ... */
+                } else if(ishash(car(alist)) && isasciiz(key)) { /*assoc extended with hashes*/
+                        if((lookup = hash_lookup(hashval(car(alist)), strval(key))))
+                                return lookup; 
+                }
         return Nil;
 }
 
@@ -925,9 +952,11 @@ static void add_char(lisp *l, char ch)  {
         l->buf[l->buf_used++] = ch; 
 }
 
-static char *terminate_string(lisp *l) {
-        l->buf[l->buf_used++] = '\0'; 
-        return lstrdup(l->buf);
+static char *new_token(lisp *l) {
+        char *s;
+        l->buf[l->buf_used++] = '\0';
+        if(!(s = lstrdup(l->buf))) HALT(l, "%s", "out of memory");
+        return s;
 }
 
 static void ungettok(lisp *l, char *token) { 
@@ -947,16 +976,16 @@ static char *gettoken(lisp *l, io *i) {
         } while(isspace(ch) || ch == '#');
         add_char(l, ch);
         if(strchr("()\'\"", ch))
-                return terminate_string(l);
+                return new_token(l);
         for(;;) {
                 if((ch = io_getc(i)) == EOF)
                         end = 1;
                 if(ch == '#') { comment(i); continue; } /*ugly*/
                 if(strchr("()\'\"", ch) || isspace(ch)) {
                         io_ungetc(ch, i);
-                        return terminate_string(l);
+                        return new_token(l);
                 }
-                if(end) return terminate_string(l);
+                if(end) return new_token(l);
                 add_char(l, ch);
         }
 }
@@ -980,7 +1009,7 @@ static cell *readstring(lisp *l, io* i) {
                         }
                 }
                 if(ch == '"')
-                        return mkstr(l, terminate_string(l));
+                        return mkstr(l, new_token(l));
                 add_char(l, ch);
         }
         return Nil;
@@ -1085,7 +1114,7 @@ int printerf(io *o, unsigned depth, char *fmt, ...) {
                           hashentry *cur;
                           printerf(o, depth, "(%yhash-create%t");
                           for(i = 0; i < ht->len; i++)
-                            if(ht->table[i]) /*XXX: the string printed out is not escaped*/
+                            if(ht->table[i]) /**@bug the string printed out is not escaped*/
                               for(cur = ht->table[i]; cur; cur = cur->next)
                                 printerf(o, depth + 1, " \"%s\" '%S", 
                                                         cur->key, cur->val);
@@ -1169,10 +1198,11 @@ static int printer(io *o, cell *op, unsigned depth) { /*write out s-expr*/
                       break;
         case HASH:    printerf(o, depth, "%H",            hashval(op)); break;
         case IO:      printerf(o, depth, "%B<IO:%s:%d>",  
-                                      isin(op)? "IN":"OUT", intval(op)); break;
-        case USERDEF: /*XXX: replace with print functions for userdef from lisp *l */
+                                      op->close? "CLOSED" : 
+                                      (isin(op)? "IN": "OUT"), intval(op)); break;
+        case USERDEF: /**@bug replace with print functions for userdef from lisp *l */
                       printerf(o, depth, "<USER:%d:%d>",
-                                (intptr_t)op->userdef,intval(op)); break;
+                                (intptr_t)op->userdef, intval(op)); break;
         case INVALID: 
         default:      FATAL("internal inconsistency");
         }
@@ -1183,9 +1213,8 @@ static int printer(io *o, cell *op, unsigned depth) { /*write out s-expr*/
 
 static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env);
 static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { 
-        /**@brief internal evaluator**/
-        size_t gc_point = l->gc_used;
-        cell *tmp, *first, *proc, *vals;
+        size_t gc_stack_save = l->gc_stack_used;
+        cell *tmp, *first, *proc, *vals = Nil;
         if(!exp || !env) return NULL;
         if(depth > l->max_depth)
                 RECOVER(l, "'recursion-depth-reached %d", depth);
@@ -1227,7 +1256,7 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 if(first == Lambda) {
                         if(!cklen(exp, 2))
                                 RECOVER(l, "'lambda \"argc != 2 in %S\"", exp);
-                        l->gc_used = gc_point;
+                        l->gc_stack_used = gc_stack_save;
                         tmp = mkproc(l, car(exp), cdr(exp), env);
                         return gc_add(l, tmp);
                 }
@@ -1236,7 +1265,7 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                                 RECOVER(l, "'flambda \"argc != 2 in %S\"", exp);
                         if(!cklen(car(exp), 1)) 
                                 RECOVER(l, "'flambda \"only one argument allowed %S\"", exp);
-                        l->gc_used = gc_point;
+                        l->gc_stack_used = gc_stack_save;
                         return gc_add(l, mkfproc(l, car(exp), cdr(exp), env));
                 }
                 if(first == Cond) {
@@ -1263,7 +1292,7 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 if(first == Define) {
                         if(!cklen(exp, 2))
                                 RECOVER(l, "'define \"argc != 2 in %S\"", exp);
-                        l->gc_used = gc_point;
+                        l->gc_stack_used = gc_stack_save;
                         return gc_add(l, extend_top(l, car(exp),
                               eval(l, depth+1, car(cdr(exp)), env)));
                 }
@@ -1306,7 +1335,7 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 else if(isfproc(proc)) vals = cons(l, exp, Nil);
                 else RECOVER(l, "'not-a-procedure '%s", first);
                 if(issubr(proc)) {
-                        l->gc_used = gc_point;
+                        l->gc_stack_used = gc_stack_save;
                         gc_add(l, proc);
                         gc_add(l, vals);
                         return (*subrval(proc))(l, vals);
@@ -1568,7 +1597,7 @@ static cell *subr_scdr(lisp *l, cell *args) {
         return mkstr(l, lstrdup(&strval(car(args))[1]));;
 }
 
-static cell *subr_eval(lisp *l, cell *args) { /**XXX: allows unlimited recursion!**/
+static cell *subr_eval(lisp *l, cell *args) { /**@bug allows unlimited recursion!**/
         cell *ob = NULL;
         int restore_used, r;
         jmp_buf restore;
@@ -1661,7 +1690,7 @@ static cell* subr_outp(lisp *l, cell *args) {
 }
 
 static cell* subr_open(lisp *l, cell *args) {
-        io *ret;
+        io *ret = NULL;
         char *file;
         if(!cklen(args, 2) || !isint(car(args)) || !isstr(car(cdr(args)))) 
                 RECOVER(l, "\"expected (integer string)\" '%S", args);
@@ -1686,13 +1715,16 @@ static cell* subr_getchar(lisp *l, cell *args) {
 }
 
 static cell* subr_getdelim(lisp *l, cell *args) {
-        char *s; /*XXX: should accept integers as well*/
-        if(cklen(args, 1) && isstr(car(args)))
-                return (s = io_getdelim(l->ifp, strval(car(args))[0])) ? 
-                                mkstr(l, s) : Nil;
-        if(cklen(args, 2) && isin(car(args)) && isstr(car(cdr(args))))
-                return (s = io_getdelim(ioval(car(args)), strval(car(cdr(args)))[0])) ? 
-                                mkstr(l, s) : Nil;
+        int ch;
+        char *s; 
+        if(cklen(args, 1) && (isstr(car(args)) || isint(car(args)))) {
+                ch = isstr(car(args)) ? strval(car(args))[0] : intval(car(args));
+                return (s = io_getdelim(l->ifp, ch)) ? mkstr(l, s) : Nil;
+        }
+        if(cklen(args, 2) && isin(car(args)) && (isstr(car(cdr(args))) || isint(car(cdr(args))))) {
+                ch = isstr(car(cdr(args))) ? strval(car(cdr(args)))[0] : intval(car(cdr(args)));
+                return (s = io_getdelim(ioval(car(args)), ch)) ? mkstr(l, s) : Nil;
+        }
         RECOVER(l, "\"expected (string) or (input string)\" '%S", args);
         return Error;
 }
@@ -1996,9 +2028,13 @@ static cell *subr_typeof(lisp *l, cell *args) {
 }
 
 static cell *subr_close(lisp *l, cell *args) {
-        UNUSED(l); UNUSED(args);
-        /**XXX: implement this, close an IO object**/
-        return Error;
+        cell *x;
+        if(!cklen(args, 1) || !isio(car(args)))
+                RECOVER(l, "\"expected (io)\" %S", args);
+        x = car(args);
+        x->close = 1;
+        io_close(ioval(x));
+        return x;
 }
 
 /*X-Macro of primitive functions and their names; basic built in subr*/
@@ -2108,15 +2144,15 @@ lisp *lisp_init(void) {
         l->buf_allocated = DEFAULT_LEN;
         if(!(l->gc_stack = calloc(DEFAULT_LEN, sizeof(*l->gc_stack)))) 
                 goto fail;
-        l->gc_allocated = DEFAULT_LEN;
-        l->max_depth = 4096; /*max recursion depth*/
+        l->gc_stack_allocated = DEFAULT_LEN;
+        l->max_depth          = LARGE_DEFAULT_LEN; /**< max recursion depth*/
 
         l->random_state[0] = 0xCAFE; /*Are these good seeds?*/
         l->random_state[1] = 0xBABE; /*???*/
-        for(i = 0; i < 1024; i++) /*discard first 1024 numbers*/
+        for(i = 0; i < DEFAULT_LEN; i++) /*discard first N numbers*/
                 (void)xorshift128plus(l->random_state);
 
-        if(!(l->all_symbols = mkhash(l, hash_create(4096)))) goto fail;
+        if(!(l->all_symbols = mkhash(l, hash_create(LARGE_DEFAULT_LEN)))) goto fail;
         if(!(l->top_env = cons(l, cons(l, Nil, Nil), Nil))) goto fail;
 
         /*it would be nice if this was all statically allocated*/
@@ -2268,7 +2304,7 @@ static int getoptions(lisp *l, char *arg, char *arg_0)
 }
 
 int lisp_repl(lisp *l, char *prompt, int editor_on) {
-        /**XXX: Leaks memory when an error is encountered in line editor
+        /**@bug Leaks memory when an error is encountered in line editor
          *      mode. This is probably due to some weird longjmp
          *      interactions**/
         cell *ret;
@@ -2304,11 +2340,11 @@ int lisp_repl(lisp *l, char *prompt, int editor_on) {
                         if(!(ret = eval(l, 0, ret, l->top_env))) break;
                         running = 0; /*SIGINT handling off*/
                         printerf(l->ofp, 0, "%S\n", ret);
-                        l->gc_used = 0;
+                        l->gc_stack_used = 0;
                 }
         }
         running = 0;
-        l->gc_used = 0;
+        l->gc_stack_used = 0;
         l->recover_init = 0;
         return r;
 }

@@ -1,4 +1,5 @@
 @echo off
+REM @todo This "make" batch file needs lots of improving
 REM This is a minimal script to build the lisp interpreter
 REM for Windows, it uses the Tiny C Compiler (tcc) available
 REM from <http://bellard.org/tcc/> which has all the C99 support

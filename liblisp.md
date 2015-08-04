@@ -30,6 +30,23 @@ A summary of the design goals:
 * No implicit state
 * Used as a generic utility library
 
+The following functionality would be nice to put in to the core interpreter;
+Support for matrices and complex numbers (c99 \_Complex), UTF-8 support, text
+processing (diff, tr, grep, sed, à la perl), map and looping constructs
+from scheme, doc-strings, optional parsing of strings and float, apply,
+gensym, proper constant and a prolog engine.
+
+But this is more of a wish list than anything. Complex number support has
+been added in a branch of the [git][] repository.
+
+There are a lot of things that need tidying up and rethinking about,
+especially when it comes to the interface of the library and the naming of
+functions. More comments are also in order in the code explaining what the code
+is meant to achieve is also in need.
+
+If you do not like the formatting use the "indent" program from: 
+<https://www.gnu.org/software/indent/>.
+
 ### Rationale
 
 * Simple and Small (< 3000 lines of code)
@@ -71,6 +88,7 @@ relating to the API. The rational for this being the API document is that there
 is only one document to maintain, as opposed to it and a [liblisp.3][] to keep in
 sync. The [liblisp.3][] that is present simply points the user to the [liblisp.h][]
 header.
+
 
 <div id='Building'/>
 ## Building
@@ -141,7 +159,7 @@ in the usual manner.
 
 * If you manage to get a SEGFAULT then there is a bug in the code somewhere.
 * See the "@todo" comments at the top of [liblisp.c][] to see a full list of
-  bugs as well comments labeled with "XXX".
+  bugs as well comments labeled with "@bug".
 
 <div id='Test programs'/>
 ## Test programs
@@ -454,6 +472,9 @@ a lexical scope.
 
 #### Control structures and recursion
 #### Association lists
+
+* Normal association Lists
+* Extended association list (with hashes)
 
 #### Fexprs
 
@@ -2187,6 +2208,7 @@ used:
 [Trees]: <https://en.wikipedia.org/wiki/Tree_%28data_structure%29>
 [Scheme]: <https://en.wikipedia.org/wiki/Scheme_%28programming_language%29>
 [Common Lisp]: <https://en.wikipedia.org/wiki/Common_Lisp>
-[REPL]: https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop
+[REPL]: <https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop>
+[git]: <https://git-scm.com/>
 <!-- This isn't meant to go here but it is out of the way -->
 <style type="text/css">body{margin:40px auto;max-width:650px;line-height:1.6;font-size:18px;color:#444;padding:0 10px}h1,h2,h3{line-height:1.2}</style>

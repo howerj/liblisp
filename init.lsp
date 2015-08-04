@@ -77,14 +77,14 @@
   (lambda (x)
     (null? x)))
 
-# XXX: Incorrect, evaluates all args
+# @bug Incorrect, evaluates all args
 (define and
   (lambda (x y)
     (if x
       (if y t nil)
        nil)))
 
-# XXX: Incorrect, evaluates all args
+# @bug Incorrect, evaluates all args
 (define or
   (lambda (x y)
     (cond (x t)

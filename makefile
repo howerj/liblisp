@@ -21,7 +21,11 @@ main.o: main.c lib$(TARGET).h makefile
 $(TARGET): main.o lib$(TARGET).a libline/libline.a 
 	$(CC) $(CFLAGS) -lm $^ -o $@
 
-libline/libline.a:
+libline/.git:
+	git submodule init
+	git submodule update
+
+libline/libline.a: libline/.git
 	cd libline && make
 
 lib$(TARGET).htm: lib$(TARGET).md
