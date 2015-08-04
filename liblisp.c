@@ -151,7 +151,6 @@ struct lisp {
                  recover_init: 1, /**< has the recover buffer been initialized?*/
                  dynamic:      1, /**< use lexical scope if false, dynamic if true*/
                  color_on:     1, /**< REPL Colorize output*/
-                 debug_on:     1, /**< REPL Debugging on*/
                  prompt_on:    1, /**< REPL '>' Turn prompt on*/
                  editor_on:    1; /**< REPL Turn the line editor on*/
         gc_control gc_state /**< gc on (default), suspended or permanently off*/;
@@ -2219,6 +2218,8 @@ cell *lisp_eval(lisp *l, cell *exp) { assert(l && exp);
 }
 
 cell *lisp_eval_string(lisp *l, char *evalme) { assert(l && evalme);
+        /**@bug Leaks memory when an error is encountered. This is 
+         * due to some weird longjmp interactions**/
         io *in = NULL;
         cell *ret;
         volatile int restore_used = 0;
@@ -2229,7 +2230,6 @@ cell *lisp_eval_string(lisp *l, char *evalme) { assert(l && evalme);
                 restore_used = 1;
         }
         if((r = setjmp(l->recover))) {
-                io_close(in);
                 RECOVER_RESTORE(restore_used, l, restore); 
                 return r > 0 ? Error : NULL;
         }
@@ -2272,7 +2272,7 @@ io *lisp_get_logging(lisp *l) { assert(l); return l->efp; }
 
 static lisp *lglobal;
 static int running = 0; 
-static char *usage = "usage: %s (-[hdcpE])* (-e string)? (-o file)? file* -\n";
+static char *usage = "usage: %s (-[hcpE])* (-e string)? (-o file)? file* -\n";
 enum {go_switch, go_in_file, go_out_file, go_in_string, go_error, go_in_stdin};
 
 static void int_sig_handle(int sig) { 
@@ -2290,7 +2290,6 @@ static int getoptions(lisp *l, char *arg, char *arg_0)
         while((c = *arg++))
                 switch(c) {
                 case 'h': printf(usage, arg_0); exit(0); break;
-                case 'd': l->debug_on  = 1; break;
                 case 'c': l->color_on  = 1; break;
                 case 'p': l->prompt_on = 1; break;
                 case 'E': l->editor_on = 1; break;
@@ -2304,9 +2303,6 @@ static int getoptions(lisp *l, char *arg, char *arg_0)
 }
 
 int lisp_repl(lisp *l, char *prompt, int editor_on) {
-        /**@bug Leaks memory when an error is encountered in line editor
-         *      mode. This is probably due to some weird longjmp
-         *      interactions**/
         cell *ret;
         char *line = NULL;
         int r = 0;
@@ -2319,14 +2315,15 @@ int lisp_repl(lisp *l, char *prompt, int editor_on) {
         }
         l->recover_init = 1;
         running = 0;
-        free(line);
         if(editor_on && l->editor) { /*handle line editing functionality*/
                 while((line = l->editor(prompt))) {
                         cell *prn; 
                         if(!line[strspn(line, " \t\r\n")]) { free(line); continue; }
                         running = 1; /*SIGINT handling on*/
-                        if(!(prn = lisp_eval_string(l, line)))
+                        if(!(prn = lisp_eval_string(l, line))) {
+                                free(line);
                                 RECOVER(l, "\"%s\"", "invalid or incomplete line");
+                        }
                         running = 0; /*SIGINT handling off*/
                         lisp_print(l, prn);
                         free(line);
@@ -2367,9 +2364,6 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
                         io_close(l->ifp);
                         if(!(l->ifp = io_fin(stdin)))
                                 return perror("stdin"), -1;
-                        if(l->debug_on)
-                                printerf(l->ofp, 1, 
-                                          "(debug 'stdin-in)\n", argv[i]);
                         if(lisp_repl(l, l->prompt_on ? "> ": "", l->editor_on) < 0) 
                                 return -1;
                         io_close(l->ifp);
@@ -2380,9 +2374,6 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
                         io_close(l->ifp);
                         if(!(l->ifp = io_fin(fopen(argv[i], "rb"))))
                                 return perror(argv[i]), -1;
-                        if(l->debug_on)
-                                printerf(l->ofp, 1, 
-                                          "(debug 'file-in \"%s\")\n", argv[i]);
                         if(lisp_repl(l, "", 0) < 0) return -1;
                         io_close(l->ifp);
                         l->ifp = NULL;
@@ -2394,9 +2385,6 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
                                 return fprintf(stderr, "-e expects arg\n"), -1;
                         if(!(l->ifp = io_sin(argv[i])))
                                 return perror(argv[i]), -1;
-                        if(l->debug_on)
-                                printerf(l->ofp, 1, 
-                                       "(debug 'string-in \"%s\")\n", argv[i]);
                         if(lisp_repl(l, "", 0) < 0) return -1;
                         io_close(l->ifp);
                         l->ifp = NULL;
@@ -2405,9 +2393,6 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
                 case go_out_file: /*change the file to write to*/
                         if(!(++i < argc))
                                 return fprintf(stderr, "-o expects arg\n"), -1;
-                        if(l->debug_on)
-                                printerf(l->ofp, 1, 
-                                        "(debug 'file-out \"%s\")\n", argv[i]);
                         io_close(l->ofp);
                         if(!(l->ofp = io_fout(fopen(argv[i], "wb"))))
                                 return perror(argv[i]), -1;
@@ -2417,9 +2402,6 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
                 }
         if(!stdin_off)
                 if(lisp_repl(l, l->prompt_on ? "> ": "", l->editor_on) < 0) return -1;
-        if(l->debug_on)
-                printerf(l->ofp, 1, "(debug %S %S)\n", 
-                                l->all_symbols, l->top_env);
         lisp_destroy(l);
         return 0;
 }

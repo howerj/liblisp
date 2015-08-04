@@ -36,7 +36,7 @@
 #include "libline/libline.h"
 #include <string.h>
 #include <stdlib.h>
-static char *histfile = "hist.lsp";
+static char *histfile = ".list";
 #endif
 
 #ifdef USE_MATH
@@ -154,6 +154,7 @@ MATH_UNARY_LIST
 #endif
 
 #ifdef USE_LINE /*add line editor functionality*/
+        /*static char *homedir = getenv("HOME"); //append to histfile? */
         lisp_set_line_editor(l, line_editing_function);
         line_history_load(histfile);
         line_set_vi_mode(1); /*start up in a sane editing mode*/

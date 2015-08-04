@@ -4,7 +4,7 @@
 .SH NAME
 lisp \- A small lisp interpreter.
 .SH SYNOPSIS
-lisp (-[hdcp])* (-e string)? (-o file)? file* -
+lisp (-[hcpE])* (-e string)? (-o file)? file* -
 .SH DESCRIPTION
 A small and extensible lisp interpreter, written in C, implemented as a library
 with a thin wrapper.
@@ -13,11 +13,6 @@ with a thin wrapper.
 .TP
 .B -h
 Print out the usage string and exit successfully.
-
-.TP
-.B -d
-This will print out arbitrary debugging information that might be subject to
-change.
 
 .TP
 .B -c
