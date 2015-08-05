@@ -1,7 +1,8 @@
 #!./lisp
 
 # A lot of these functions need to be rewritten so as to
-# be tail recursive
+# be tail recursive, or if looping constructs were added, with
+# them. Also if letrec were added...
 
 # These functions come from various sources, such as "The Roots Of Lisp"
 # essay, the book "The little schemer" and fragments from all over.
@@ -216,15 +217,6 @@
   (lambda (s)
     (coerce *cons* s)))
 
-## The above internal definition behaves as this
-## definition does.
-# (define explode # turn a string into a list of chars
-#   (lambda (s) 
-#     (if 
-#       (eq "" (scdr s)) 
-#       (cons (scar s) nil) 
-#       (cons (scar s) (explode (scdr s))))))
-
 (define implode # turn a list of chars into a string
   (lambda (s)
     (if
@@ -235,35 +227,6 @@
 (define get-line
   (lambda (in)
     (get-delim in "\n")))
-
-(define *slurp-lines # Read in all lines from input stream
-  (lambda (in)
-    (let* (line (get-line in))
-      (if (not line)
-        nil
-        (cons line (*slurp-lines in))))))
-
-(define *slurp-expr # Read in all expressions from input stream
-  (lambda (in)
-    (let* (x (read in))
-      (if (eof? in)
-        nil
-        (cons x (*slurp-expr in))))))
-
-(define slurp
-  (lambda (in *slurp)
-    (cond ((input? in) (*slurp in))
-          ((string? in) 
-             (let* (f (open *file-in* in)) 
-               (if (input? f) 
-                 (*slurp f) 
-                 (begin 
-                   (put "could not open input file for reading\n") 
-                   nil))) 
-          (t nil)))))
-
-(define slurp-lines (lambda (in) (slurp in *slurp-lines)))
-(define slurp-expr  (lambda (in) (slurp in *slurp-expr)))
 
 (define lat? # list of atoms?
   (lambda (l)

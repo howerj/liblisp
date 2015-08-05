@@ -475,12 +475,16 @@ void lisp_throw(lisp *l, int ret);
  *         'a'  cy(a)n
  *         'w'  (w)hite
  *
+ *  @param  lisp   an initialized lisp environment, this can be NULL but
+ *                 maximum depth will not be checked, nor will user defined
+ *                 functions be printed out with their user defined printing
+ *                 functions for that environment.
  *  @param  o      output I/O stream to print to
  *  @param  depth  indentation level of any pretty printing
  *  @param  fmt    format string
  *  @param  ...    any arguments
  *  @return int    >= 0 on success, less than 0 on failure**/
-int printerf(io *o, unsigned depth, char *fmt, ...);
+int printerf(lisp *l, io *o, unsigned depth, char *fmt, ...);
 
 /** @brief  add a symbol to the list of all symbols
  *  @param  l    lisp environment to add cell to
@@ -678,9 +682,10 @@ int main_lisp_env(lisp *l, int argc, char **argv);
  * @param FMT  Format string printing error messages
  * @param ...  Arguments for format string**/
 #define FAILPRINTER(LISP, RET, FMT, ...) do{\
-        printerf(lisp_get_logging(LISP), 0, "(error '%s " FMT " \"%s\" %d)\n",\
+        printerf((LISP), lisp_get_logging((LISP)), 0,\
+                        "(error '%s " FMT " \"%s\" %d)\n",\
                        __func__, __VA_ARGS__, __FILE__, (intptr_t)__LINE__);\
-        lisp_throw(l, RET);\
+        lisp_throw((LISP), RET);\
         } while(0)
 
 /**@brief Print out an error message and throw a lisp exception that

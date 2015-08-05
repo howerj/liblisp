@@ -10,8 +10,6 @@
  *  @todo struct hack could be applied strings and other types, as
  *        well as the length field being encoded in the variable length
  *        section of the object.
- *  @todo There is a problem with recursive hashes!
- *  @todo User defined type printing function should be used
  *  @todo Generic error handling for primitives before they are called?
  *  @todo Profiling showed that the main offender is the assoc function
  *        which is not surprising.
@@ -19,6 +17,7 @@
  *  @todo File operations on strings could be improved. An append mode should
  *        be added as well. freopen and/or opening in append mode need to be
  *        added as well.
+ *  @todo Needed primitives; letrec, map, apply, loop
 **/
 
 #include "liblisp.h"
@@ -129,13 +128,13 @@ typedef struct userdef_funcs {
 
 struct lisp {
         jmp_buf recover; /**< jump here when there is an error*/
-        io *ifp /*standard input*/, 
-           *ofp /*standard output*/, 
-           *efp /*standard error output*/;
-        cell *all_symbols, 
-             *top_env, 
-             **gc_stack;
-        gc_list *gc_head;
+        io *ifp /**< standard input port*/, 
+           *ofp /**< standard output port*/, 
+           *efp /**< standard error output port*/;
+        cell *all_symbols, /**< all intern'ed symbols*/
+             *top_env,     /**< top level lisp environment*/
+             **gc_stack;   /**< garbage collection stack for working items*/
+        gc_list *gc_head;  /**< linked list of all allocated objects*/
         char *token /**< one token of put back for parser*/, 
              *buf   /**< input buffer for parser*/;
         size_t buf_allocated,   /**< size of buffer "l->buf"*/
@@ -501,8 +500,8 @@ char *io_getdelim(io *i, int delim) { assert(i);
         int c;
         /*from <http://c-faq.com/malloc/reallocnull.html>*/
         while((c = io_getc(i)) != EOF) {
-                if(nchread >= nchmax) {
-                        nchmax += 20;
+                if(nchread >= nchmax) { 
+                        nchmax += 20; /**@bug change so grows by factor, not constant*/
                         if(nchread >= nchmax) /*overflow check*/
                                 return free(retbuf), NULL;
                         if(!(newbuf = realloc(retbuf, nchmax + 1)))
@@ -656,10 +655,10 @@ static void gc_free(lisp *l, cell *ob) { /**< free a lisp cell*/
         }
 }
 
-static void gc(lisp *l) {
+static void gc(lisp *l) { /*linked list versus dynamic array?*/
         gc_list *v, **p;
         if(l->gc_state != GC_ON) return;
-        for(p = &l->gc_head; *p != NULL;) {
+        for(p = &l->gc_head; *p != NULL;) { 
                 v = *p;
                 if(v->ref->mark) {
                         p = &v->next;
@@ -1068,8 +1067,8 @@ static cell *readlist(lisp *l, io *i) {
         return cons(l, tmp, readlist(l, i));
 }
 
-static int printer(io *o, cell *op, unsigned depth);
-int printerf(io *o, unsigned depth, char *fmt, ...) {
+static int printer(lisp *l, io *o, cell *op, unsigned depth);
+int printerf(lisp*l, io *o, unsigned depth, char *fmt, ...) {
         va_list ap;
         intptr_t d;
         unsigned dep;
@@ -1104,18 +1103,18 @@ int printerf(io *o, unsigned depth, char *fmt, ...) {
                                    ret = io_printflt(flt, o);
                                    break;
                         case 'S':  ob = va_arg(ap, cell*);
-                                   ret =  printer(o, ob, depth);
+                                   ret =  printer(l, o, ob, depth);
                                    break;
                         case 'H':  ht = va_arg(ap, hashtable*);
                         { /*@note this is printing an object that is not
                                   a list but when printed out it does...*/
                           size_t i;
                           hashentry *cur;
-                          printerf(o, depth, "(%yhash-create%t");
+                          printerf(l, o, depth, "(%yhash-create%t");
                           for(i = 0; i < ht->len; i++)
                             if(ht->table[i]) /**@bug the string printed out is not escaped*/
                               for(cur = ht->table[i]; cur; cur = cur->next)
-                                printerf(o, depth + 1, " \"%s\" '%S", 
+                                printerf(l, o, depth + 1, " \"%s\" '%S", 
                                                         cur->key, cur->val);
                           ret = io_putc(')', o);
                         }
@@ -1148,64 +1147,69 @@ finish: va_end(ap);
         return ret;
 }
 
-static int printer(io *o, cell *op, unsigned depth) { /*write out s-expr*/
+static int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
         if(!op) return EOF;
+        if(l && depth > l->max_depth) { /*problem if depth UINT_MAX < l->max_depth INTPTR_MAX*/
+                printerf(l, o, depth, "%r<PRINT-DEPTH-EXCEEDED:%d>%t", (intptr_t) depth);
+                return -1;
+        }
         switch(op->type) {
-        case INTEGER: printerf(o, depth, "%m%d", intval(op));   break; 
-        case FLOAT:   printerf(o, depth, "%m%f", floatval(op)); break; 
+        case INTEGER: printerf(l, o, depth, "%m%d", intval(op));   break; 
+        case FLOAT:   printerf(l, o, depth, "%m%f", floatval(op)); break; 
         case CONS:    if(depth && o->pretty) io_putc('\n', o);
-                      if(o->pretty) printerf(o, depth, "%* ");
+                      if(o->pretty) printerf(l, o, depth, "%* ");
                       io_putc('(', o);
                       for(;;) {
-                              printer(o, car(op), depth + 1);
+                              printer(l, o, car(op), depth + 1);
                               if(isnil(cdr(op))) {
                                       io_putc(')', o);
                                       break;
                               }
                               op = cdr(op);
                               if(op->type != CONS) {
-                                      printerf(o, depth, " . %S)", op);
+                                      printerf(l, o, depth, " . %S)", op);
                                       break;
                               }
                               io_putc(' ', o);
                       }
                       break;
-        case SYMBOL:  if(isnil(op)) printerf(o, depth, "%r()");
-                      else          printerf(o, depth, "%y%s", symval(op));
+        case SYMBOL:  if(isnil(op)) printerf(l, o, depth, "%r()");
+                      else          printerf(l, o, depth, "%y%s", symval(op));
                       break;
         case STRING:{ char c, *s = strval(op);
-                      printerf(o, depth, "%r\"");
+                      printerf(l, o, depth, "%r\"");
                       while((c = *s++)) {
                         switch(c) {
-                        case '\\': printerf(o, depth, "%m\\\\%r"); continue;
-                        case '\n': printerf(o, depth, "%m\\n%r");  continue;
-                        case '\t': printerf(o, depth, "%m\\t%r");  continue;
-                        case '\r': printerf(o, depth, "%m\\r%r");  continue;
-                        case '"':  printerf(o, depth, "%m\\\"%r"); continue;
+                        case '\\': printerf(l, o, depth, "%m\\\\%r"); continue;
+                        case '\n': printerf(l, o, depth, "%m\\n%r");  continue;
+                        case '\t': printerf(l, o, depth, "%m\\t%r");  continue;
+                        case '\r': printerf(l, o, depth, "%m\\r%r");  continue;
+                        case '"':  printerf(l, o, depth, "%m\\\"%r"); continue;
                         default: break;
                         }
                         io_putc(c, o);
                       }
                       io_putc('"', o);
                       } break;
-        case SUBR:    printerf(o, depth, "%B<SUBR:%d>", intval(op));  break;
-        case PROC:    printerf(o, depth+1, "(%ylambda%t %S %S)", 
+        case SUBR:    printerf(l, o, depth, "%B<SUBR:%d>", intval(op));  break;
+        case PROC:    printerf(l, o, depth+1, "(%ylambda%t %S %S)", 
                                       procargs(op), car(proccode(op)));
                       break;
-        case FPROC:   printerf(o, depth+1, "(%yflambda%t %S %S)", 
+        case FPROC:   printerf(l, o, depth+1, "(%yflambda%t %S %S)", 
                                       procargs(op), car(proccode(op)));
                       break;
-        case HASH:    printerf(o, depth, "%H",            hashval(op)); break;
-        case IO:      printerf(o, depth, "%B<IO:%s:%d>",  
+        case HASH:    printerf(l, o, depth, "%H",            hashval(op)); break;
+        case IO:      printerf(l, o, depth, "%B<IO:%s:%d>",  
                                       op->close? "CLOSED" : 
                                       (isin(op)? "IN": "OUT"), intval(op)); break;
-        case USERDEF: /**@bug replace with print functions for userdef from lisp *l */
-                      printerf(o, depth, "<USER:%d:%d>",
+        case USERDEF: if(l && l->ufuncs[op->userdef].print)
+                              (l->ufuncs[op->userdef].print)(op);
+                      else printerf(l, o, depth, "<USER:%d:%d>",
                                 (intptr_t)op->userdef, intval(op)); break;
         case INVALID: 
         default:      FATAL("internal inconsistency");
         }
-        return printerf(o, depth, "%t") == EOF ? EOF : 0;
+        return printerf(l, o, depth, "%t") == EOF ? EOF : 0;
 }
 
 /******************************** evaluator ***********************************/
@@ -1223,7 +1227,7 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
         tail:
         if(l->trace != TRACE_OFF) { /*print out expressions for debugging*/
                 if(l->trace == TRACE_ALL || (l->trace == TRACE_MARKED && exp->trace))
-                        printerf(l->efp, 1, "(%ytrace%t %S)\n", exp); 
+                        printerf(l, l->efp, 1, "(%ytrace%t %S)\n", exp); 
                 else if(l->trace != TRACE_MARKED)
                         HALT(l, "\"invalid trace level\" %d", l->trace);
         }
@@ -1773,9 +1777,9 @@ static cell* subr_putchar(lisp *l, cell *args) {
 
 static cell* subr_print(lisp *l, cell *args) {
         if(cklen(args, 1)) 
-                return printer(l->ofp, car(args), 0) < 0 ? Nil : car(args); 
+                return printer(l, l->ofp, car(args), 0) < 0 ? Nil : car(args); 
         if(cklen(args, 2) && isout(car(args))) 
-                return printer(ioval(car(args)), car(cdr(args)), 0) < 0 ? 
+                return printer(l, ioval(car(args)), car(cdr(args)), 0) < 0 ? 
                         Nil : car(cdr(args)); 
         RECOVER(l, "\"expected (expr) or (output expression)\" '%S", args);
         return Error;
@@ -2194,7 +2198,7 @@ cell *lisp_read(lisp *l, io *i) { assert(l && i);
 }
 
 int lisp_print(lisp *l, cell *ob) { assert(l && ob);
-        int ret = printer(l->ofp, ob, 0);
+        int ret = printer(l, l->ofp, ob, 0);
         io_putc('\n', l->ofp);
         return ret;
 }
@@ -2324,10 +2328,10 @@ int lisp_repl(lisp *l, char *prompt, int editor_on) {
                 }
         } else { /*read from stdin with no special handling, or a file*/
                 for(;;){
-                        printerf(l->ofp, 0, "%s", prompt);
+                        printerf(l, l->ofp, 0, "%s", prompt);
                         if(!(ret = reader(l, l->ifp))) break;
                         if(!(ret = eval(l, 0, ret, l->top_env))) break;
-                        printerf(l->ofp, 0, "%S\n", ret);
+                        printerf(l, l->ofp, 0, "%S\n", ret);
                         l->gc_stack_used = 0;
                 }
         }
