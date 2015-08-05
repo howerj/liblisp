@@ -2358,7 +2358,10 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
                         l->ifp = NULL;
                         stdin_off = 1;
                         break;
-                case go_in_file_next_arg: i++; /*fall through*/
+                case go_in_file_next_arg: 
+                        if(!(++i < argc))
+                                return fprintf(stderr, "-i and -- expects file\n"), -1;
+                        /*--- fall through ---*/
                 case go_in_file: /*read from a file*/
                         io_close(l->ifp);
                         if(!(l->ifp = io_fin(fopen(argv[i], "rb"))))

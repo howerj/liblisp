@@ -98,13 +98,18 @@ static cell *subr_modf(lisp *l, cell *args) {
 #ifdef USE_LINE
 /*line editing and history functionality*/
 static char *line_editing_function(const char *prompt) {
+        static int warned = 0; /**< have we warned the user we cannot write to
+                                    the history file?*/
         char *line;
         running = 0; /*SIGINT handling off when reading input*/
         line = line_editor(prompt);
         /*do not add blank lines*/
         if(!line || !line[strspn(line, " \t\r\n")]) return line;
         line_history_add(line);
-        line_history_save(histfile);
+        if(line_history_save(histfile) && !warned) {
+                PRINT_ERROR("\"could not save history\" \"%s\"", histfile);
+                warned = 1;
+        }
         assert(lglobal); /*lglobal needed for signal handler*/
         if(signal(SIGINT, sig_int_handler) == SIG_ERR) /*(re)install handler*/
                 PRINT_ERROR("\"%s\"", "could not set signal handler");
