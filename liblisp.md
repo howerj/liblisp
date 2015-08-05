@@ -65,20 +65,13 @@ users, code fragments evaluated and even new types need adding.
 
 It should be possible to run multiple instances of the interpreter in the same
 address space, this requires no implicit or hidden state in the interpreter
-design, which impedes multiple instances running at once.
+design, which impedes multiple instances running at once. There is currently no
+hidden and implicit state within the interpreter.
 
 * Used as a generic utility library
 
 The library includes routines that might be useful in other programs that it
 could have chosen not to expose, mostly relating to I/O and strings.
-
-Most of these goals have been met, although there is some implicit state
-which is regrettable. The implicit state comes from signal handler for SIGINT,
-this signal handler is used in the REPL function that has been provided. 
-
-It is unlikely that a user of this library would want to instantiate two 
-instances of that REPL within the same program, it would far easier to simply
-run two instances of the program.
 
 <div id='Documentation'/>
 ## Documentation
@@ -101,13 +94,13 @@ following commands should all work for their respective compilers:
         tcc   liblisp.c main.c -o lisp
         clang liblisp.c main.c -o lisp
 
-or the following to include basic mathematical functions:
+Or the following to include basic mathematical functions:
 
         gcc   liblisp.c -DUSE_MATH main.c -lm -o lisp
         tcc   liblisp.c -DUSE_MATH main.c -lm -o lisp
         clang liblisp.c -DUSE_MATH main.c -lm -o lisp
 
-The preprocessor defines that add or change functionality are
+The preprocessor defines that add or change functionality are:
 
         USE_MATH        Add mathematical functions from the C library
         USE_LINE        Add a line editor, must be linked with libline.a
@@ -294,8 +287,11 @@ defined in [liblisp.c][] is used and can be done so in terms of *car* and
 ### An introduction to the interpreter
 
 * Command line interface
+  - The line editor and line history
 * The REPL
 * Command line options
+* Environment variables used
+  - HOME
 * C API
 * User defined primitive functions or "subr"s.
 * User defined types
@@ -1245,10 +1241,44 @@ input port. It returns a integer representing that character.
 
 Read in a record delimited by a character, uses the default input port if none
 is given. A string can be provided, but only the first character of the string
-is used at the moment as a delimiter.
+is used at the moment as a delimiter. An integer can be provided representing
+that character instead, this can included the End-Of-File marker, which allows
+you to slurp an entire file into one string. If the record is not delimited by
+that character it will read the entire contents until the end of the file is
+encountered.
 
-        (get-delim STRING)
-        (get-delim IN STRING)
+If no input port is provided it will take its input from the standard input
+port.
+
+        # (get-delim STRING)
+        # (get-delim INTEGER)
+        # (get-delim IN STRING)
+        # (get-delim IN INTEGER)
+
+Given a file containing the following text:
+
+        'My name is Ozymandias, king of kings:
+        Look on my works, ye Mighty, and despair!'
+
+Called "ozy.txt":
+
+        > (define ozy (open *file-in* "ozy.txt"))
+        <IO:IN:8258784>
+        > (get-delim *eof*)      
+        "'My name is Ozymandias, king of kings:\nLook on my works, ye Mighty, and despair!'\n"
+        > (seek ozy *seek-set* 0)
+        0
+        > (get-delim "\n")
+        "'My name is Ozymandias, king of kings:"
+        > (get-delim "\n")
+        "Look on my works, ye Mighty, and despair!'"
+        > (get-delim "\n")
+        ()
+        > (seek ozy *seek-set* 0)
+        0
+        > (get-delim ",")
+        "'My name is Ozymandias"
+        ...
 
 * read
 
@@ -1677,25 +1707,43 @@ Calculate the [sine][] of an angle, in radians.
 
 Calculate the [cosine][] of an angle, in radians.
 
-        (cos ARITH)
+        # (cos ARITH)
+        > (cos pi)
+        -1.0
+        > (cos (/ pi 2))
+        0.0
+        > (cos (/ pi 3))
+        0.5
 
 * tan
 
 Calculate the [tangent][] of an angle, in radians.
 
-        (tan ARITH)
+        # (tan ARITH)
+        > (tan 0)
+        0
+        > (tan (/ pi 3))
+        1.732051
 
 * asin
 
 Calculate the [reciprocal of sine][], or the "cosecant".
 
-        (asin ARITH)
+        # (asin ARITH)
+        > (asin 0)
+        0.0
+        > (asin 1.0)
+        1.570796
 
 * acos
 
 Calculate the [reciprocal of cosine][], or the "secant".
 
-        (acos ARITH)
+        # (acos ARITH)
+        > (acos -1)
+        3.141593
+        > (acos 0.0)
+        1.570796
 
 * atan
 
@@ -1882,6 +1930,8 @@ versions, only self consistent with a single specific implementation.
         *gc-on*            Option for gc, Turn Garbage Collection on
         *gc-postpone*      Option for gc, Postpone Garbage Collection, temporarily
         *gc-off*           Option for gc, Turn off Garbage Collection permanently
+        *eof*              End-Of-File marker
+        *args*             Command line options passed into the interpreter
 
 * \*seek-cur\*
 
@@ -2024,6 +2074,27 @@ An option for *gc*. Postpone garbage collection.
 An option for *gc*. Turn off the garbage collector and **leak memory**.
 
         > (gc *gc-off*)
+
+
+* \*eof\*
+
+Represents the End-Of-File marker, can be passed into "get-delim" as a
+delimiter.
+
+* \*args\*
+
+This is a list containing all of the arguments passed into the interpreter, it
+is a list of strings, each string being a single argument. 
+
+If the interpreter was invoked like this 
+
+        ./lisp -Epc init.lsp
+
+Then \*args\* will be:
+
+        ("./lisp" "-Epc" "init.lsp")
+
+\*args\* is only set at startup.
 
         # floats
         pi                 The mathematical constant pi

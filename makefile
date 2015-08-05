@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -g -fwrapv -std=c99 -O2 -pedantic
+CFLAGS=-Wall -Wextra -g -fwrapv -std=c99 -pedantic
 TARGET=lisp
 .PHONY: all clean doc valgrind run libline/libline.a
 all: $(TARGET)
@@ -45,4 +45,4 @@ doxygen: doxygen.conf *.c *.h
 
 clean:
 	if [ -f libline/makefile ]; then cd libline && make clean; fi
-	rm -rf $(TARGET) *.a *.so *.o *.log *.htm *.html *.out doxygen
+	rm -rf $(TARGET) *.a *.so *.o *.log *.htm *.html *.out doxygen .list

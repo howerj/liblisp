@@ -26,11 +26,22 @@
  *  @todo There is an experimental folder, called "exp", which contains
  *        snippets of code and interfaces to libraries, such as libtcc, that
  *        functionality should be added in here.
- *  @todo Porting linedit to Windows would add functionality to this
+ *  @todo Porting libline to Windows would add functionality to this
  *        interpreter
 **/
 
 #include "liblisp.h"
+#include <signal.h>
+#include <stdlib.h>
+#include <assert.h>
+
+static lisp *lglobal;
+static int running; /**< only handle errors when the lisp interpreter is running*/
+static void sig_int_handler(int sig) { 
+        if(!running || !lglobal) exit(0);  /*exit if lisp environment is not running*/
+        lisp_set_signal(lglobal, sig); /*notify lisp environment of signal*/
+        running = 0; 
+}
 
 #ifdef USE_LINE
 #include "libline/libline.h"
@@ -39,12 +50,8 @@
 static char *histfile = ".list";
 #endif
 
-#ifdef USE_MATH
-/* Math functions found in the C library*/
-
+#ifdef USE_MATH /* Math functions found in the C library*/
 #include <math.h>
-/*@note It would be nice to add complex operations here as well, but
- *      that would require changes in the main interpreter*/
 
 #define SUBR_MATH_UNARY(NAME)\
 static cell *subr_ ## NAME (lisp *l, cell *args) {\
@@ -92,12 +99,17 @@ static cell *subr_modf(lisp *l, cell *args) {
 /*line editing and history functionality*/
 static char *line_editing_function(const char *prompt) {
         char *line;
+        running = 0; /*SIGINT handling off when reading input*/
         line = line_editor(prompt);
         /*do not add blank lines*/
         if(!line || !line[strspn(line, " \t\r\n")]) return line;
         line_history_add(line);
         line_history_save(histfile);
-        return line;
+        assert(lglobal); /*lglobal needed for signal handler*/
+        if(signal(SIGINT, sig_int_handler) == SIG_ERR) /*(re)install handler*/
+                PRINT_ERROR("\"%s\"", "could not set signal handler");
+        running = 1; /*SIGINT handling on when evaluating input*/
+        return line; /*returned line will be evaluated*/
 }
 
 static cell *subr_line_editor_mode(lisp *l, cell *args) {
@@ -126,25 +138,14 @@ static cell *subr_clear_screen(lisp *l, cell *args) {
 }
 #endif
 
-#ifdef USE_TCC
-/*on the fly code generation*/
-/* ... To do ... */
-#endif
-
-#ifdef USE_REGEX
-/*regex support*/
-/* ... To do ... */
-#endif
-
-#ifdef USE_UTF8
-/*utf-8 support*/
-/* ... To do ... */
-#endif
-
 int main(int argc, char **argv) { 
+        int r;
         lisp *l = lisp_init();
         if(!l) return PRINT_ERROR("\"%s\"", "initialization failed"), -1;
 
+        if(signal(SIGINT, sig_int_handler) == SIG_ERR)
+                PRINT_ERROR("\"%s\"", "could not set signal handler");
+        lglobal = l;
 #ifdef USE_MATH /*add math functionality from math.h*/
 #define X(FUNC) lisp_add_subr(l, subr_ ## FUNC, # FUNC);
 MATH_UNARY_LIST
@@ -154,7 +155,12 @@ MATH_UNARY_LIST
 #endif
 
 #ifdef USE_LINE /*add line editor functionality*/
-        /*static char *homedir = getenv("HOME"); //append to histfile? */
+        static char *homedir;
+        homedir = getenv("HOME"); /*Unix home path*/
+        if(homedir) /*if found put the history file there*/
+                histfile = VSTRCATSEP("/", homedir, histfile);
+        if(!histfile)
+                PRINT_ERROR("\"%s\"", "VSTRCATSEP allocation failed"); 
         lisp_set_line_editor(l, line_editing_function);
         line_history_load(histfile);
         line_set_vi_mode(1); /*start up in a sane editing mode*/
@@ -162,22 +168,9 @@ MATH_UNARY_LIST
         lisp_add_subr(l, subr_clear_screen,     "clear-screen");
         lisp_add_subr(l, subr_hist_len, "history-length");
 #endif 
+        r = main_lisp_env(l, argc, argv); 
+        if(homedir) free(histfile);
 
-#ifdef USE_TCC
-/*on the fly code generation*/
-/* ... To do ... */
-#endif
-
-#ifdef USE_REGEX
-/*regex support*/
-/* ... To do ... */
-#endif
-
-#ifdef USE_UTF8
-/*utf-8 support*/
-/* ... To do ... */
-#endif
-
-        return main_lisp_env(l, argc, argv); 
+        return r;
 }
 

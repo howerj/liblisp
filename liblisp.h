@@ -592,9 +592,15 @@ int lisp_set_logging(lisp *l, io *logging);
  *          a string to print as the prompt and returns a line of text
  *          that has been read in.
  *  @param  l      an initialized lisp environment
- *  @param  editor the line editor function
- *  @return int    zero on success, non zero otherwise**/
-int lisp_set_line_editor(lisp *l, editor_func editor);
+ *  @param  ed     the line editor function**/
+void lisp_set_line_editor(lisp *l, editor_func ed);
+
+/** @brief  set the internal signal handling variable of a lisp environment,
+ *          this is a way for a function such as a signal handler or another
+ *          thread to halt the interpreter.
+ *  @param  l   an initialized lisp environment
+ *  @param  int signal value, any non zero value halts the lisp environment**/
+void lisp_set_signal(lisp *l, int sig);
 
 /** @brief get the input channel in use in a lisp environment
  *  @param  l lisp environment to retrieve input channel from

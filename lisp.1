@@ -1,10 +1,10 @@
 .\" Manpage for a small lisp interpreter
 .\" Contact howe.r.j.89@gmail.com to correct errors or typos.
-.TH man 1 "Last Change: JUN 2015" "1.0.0" "lisp man page"
+.TH man 1 "Last Change: AUG 2015" "0.3.6" "lisp man page"
 .SH NAME
 lisp \- A small lisp interpreter.
 .SH SYNOPSIS
-lisp (-[hcpE])* (-e string)? (-o file)? file* -
+lisp (-[hcpE])* (-[i\\-] file)* (-e string)* (-o file)* file* -
 .SH DESCRIPTION
 A small and extensible lisp interpreter, written in C, implemented as a library
 with a thin wrapper.
@@ -31,6 +31,16 @@ news" Unix maxim.
 This will turn on the line editor when reading from stdin.
 
 .TP
+.B -i file
+This option allows the user to supply a file name that would otherwise look
+like an argument to the lisp interpreter, for example if the file name began
+with a "-" character.
+
+.TP
+.B -- file
+Same as "-i".
+
+.TP
 .B -e string
 Evaluate a string as input, this disables reading from stdin(3).
 
@@ -50,7 +60,6 @@ This forces reading from stdin(3). By default the interpreter will read from
 stdin(3) but this behavior is disabled if an argument has been evaluated with
 "-e" or a file has been read in.
 
-.TP
 If no file is given the interpreter reads input from stdin(3), if one is given
 then the interpreter will exit after having read all input files or evaluated
 all strings.
@@ -60,15 +69,13 @@ Arguments are read in order and executed as soon as they are encountered.
 .SH SEE ALSO
 liblisp(3)
 .SH BUGS
-There are bound to be many in the interpreter library, comments on known ones
-are in the source code. 
-
-Files that begin with "-" cannot be read from, they are instead treated as
-options and will most likely be invalid options.
-
 If an error is encountered in a file it will continue to process the remaining
 input and then continue on to any other files passed in onto the command line
-instead of exiting.
+instead of exiting. Search for "@bug" in the source code or "@note" for missing
+and planned functionality.
+
+There are bound to be many in the interpreter library, comments on known ones
+are in the source code. 
 
 .SH AUTHOR
 Richard James Howe (howe.r.j.89@gmail.com)

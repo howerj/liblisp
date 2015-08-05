@@ -91,7 +91,7 @@ struct cell {
                  mark:    1,        /**< mark for garbage collection*/
                  uncollectable: 1,  /**< set if the object cannot, or should not, be freed*/
                  trace:   1,        /**< set if object is to be traced for debugging*/
-                 close:   1,  
+                 close:   1,        /**< set if the objects data field is now invalid/freed*/
                  len:     32;       /**< length of data p*/
         lisp_union p[1]; /**< uses the "struct hack", c99 does not quite work here*/
 };
@@ -2093,7 +2093,7 @@ static struct subr_list { subr p; char *name; } primitives[] = {
         X("*user-defined*", USERDEF)      X("*trace-off*",   TRACE_OFF)\
         X("*trace-marked*", TRACE_MARKED) X("*trace-all*",   TRACE_ALL)\
         X("*gc-on*",        GC_ON)        X("*gc-postpone*", GC_POSTPONE)\
-        X("*gc-off*",       GC_OFF)
+        X("*gc-off*",       GC_OFF)       X("*eof*",         EOF)
 
 #define X(NAME, VAL) { NAME, VAL }, 
 static struct integer_list { char *name; intptr_t val; } integers[] = {
@@ -2259,10 +2259,8 @@ int lisp_set_logging(lisp *l, io *logging) { assert(l && logging);
         return 0;
 }
 
-int lisp_set_line_editor(lisp *l, editor_func editor){ assert(l);
-        l->editor = editor;
-        return 0;
-}
+void lisp_set_line_editor(lisp *l, editor_func ed){ assert(l); l->editor = ed; }
+void lisp_set_signal(lisp *l, int sig) { assert(l); l->sig = sig; }
 
 io *lisp_get_input(lisp *l)   { assert(l); return l->ifp; }
 io *lisp_get_output(lisp *l)  { assert(l); return l->ofp; }
@@ -2270,17 +2268,15 @@ io *lisp_get_logging(lisp *l) { assert(l); return l->efp; }
 
 /**************************** example program *********************************/
 
-static lisp *lglobal;
-static int running = 0; 
-static char *usage = "usage: %s (-[hcpE])* (-e string)? (-o file)? file* -\n";
-enum {go_switch, go_in_file, go_out_file, go_in_string, go_error, go_in_stdin};
-
-static void int_sig_handle(int sig) { 
-        if(!running) exit(0); 
-        assert(lglobal);
-        lglobal->sig = sig; 
-        running = 0; 
-}
+static char *usage = "usage: %s (-[hcpE])* (-[i\\-] file)* (-e string)* (-o file)* file* -\n";
+enum {  go_switch,           /**< current argument was a valid flag*/
+        go_in_file,          /**< current argument is file input to eval*/
+        go_in_file_next_arg, /**< process the next argument as file input*/
+        go_out_file,         /**< next argument is an output file*/
+        go_in_string,        /**< next argument is a string to eval*/
+        go_in_stdin,         /**< read input from stdin*/
+        go_error             /**< invalid flag or argument*/
+}; /**< getoptions enum*/
 
 static int getoptions(lisp *l, char *arg, char *arg_0)
 { /**@brief simple parser for command line options**/
@@ -2289,17 +2285,18 @@ static int getoptions(lisp *l, char *arg, char *arg_0)
         if(!arg[0]) return go_in_stdin;
         while((c = *arg++))
                 switch(c) {
+                case 'i': case '-': return go_in_file_next_arg;
                 case 'h': printf(usage, arg_0); exit(0); break;
-                case 'c': l->color_on  = 1; break;
-                case 'p': l->prompt_on = 1; break;
-                case 'E': l->editor_on = 1; break;
-                case 'e': return go_in_string;
-                case 'o': return go_out_file;
+                case 'c': l->color_on  = 1; break; /*colorize output*/
+                case 'p': l->prompt_on = 1; break; /*turn standard prompt when reading stdin*/
+                case 'E': l->editor_on = 1; break; /*turn line editor on when reading stdin*/
+                case 'e': return go_in_string; 
+                case 'o': return go_out_file; 
                 default:  fprintf(stderr, "unknown option '%c'\n", c);
                           fprintf(stderr, usage, arg_0);
-                          return go_error;
+                          return go_error; 
                 }
-        return go_switch;
+        return go_switch; /*this argument was a valid flag, nothing more*/
 }
 
 int lisp_repl(lisp *l, char *prompt, int editor_on) {
@@ -2308,23 +2305,19 @@ int lisp_repl(lisp *l, char *prompt, int editor_on) {
         int r = 0;
         l->ofp->pretty = l->efp->pretty = 1; /*pretty print output*/
         l->ofp->color = l->efp->color = l->color_on;
-        if((r = setjmp(l->recover)) < 0) {  /*catch errors and SIGINT*/
+        if((r = setjmp(l->recover)) < 0) {  /*catch errors and "sig"*/
                 l->recover_init = 0;
-                running = 0;
                 return r; 
         }
         l->recover_init = 1;
-        running = 0;
         if(editor_on && l->editor) { /*handle line editing functionality*/
                 while((line = l->editor(prompt))) {
                         cell *prn; 
                         if(!line[strspn(line, " \t\r\n")]) { free(line); continue; }
-                        running = 1; /*SIGINT handling on*/
                         if(!(prn = lisp_eval_string(l, line))) {
                                 free(line);
                                 RECOVER(l, "\"%s\"", "invalid or incomplete line");
                         }
-                        running = 0; /*SIGINT handling off*/
                         lisp_print(l, prn);
                         free(line);
                         line = NULL;
@@ -2333,14 +2326,11 @@ int lisp_repl(lisp *l, char *prompt, int editor_on) {
                 for(;;){
                         printerf(l->ofp, 0, "%s", prompt);
                         if(!(ret = reader(l, l->ifp))) break;
-                        running = 1; /*SIGINT handling on*/
                         if(!(ret = eval(l, 0, ret, l->top_env))) break;
-                        running = 0; /*SIGINT handling off*/
                         printerf(l->ofp, 0, "%S\n", ret);
                         l->gc_stack_used = 0;
                 }
         }
-        running = 0;
         l->gc_stack_used = 0;
         l->recover_init = 0;
         return r;
@@ -2350,8 +2340,6 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
         int i, stdin_off = 0;
         cell *ob = Nil;
         if(!l) return -1;
-        lglobal = l;
-        if(signal(SIGINT, int_sig_handle) == SIG_ERR) return -1;
         for(i = argc - 1; i + 1 ; i--) /*add command line args to list*/
                 if(!(ob = cons(l, mkstr(l, lstrdup(argv[i])), ob))) 
                         return -1; 
@@ -2370,6 +2358,7 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
                         l->ifp = NULL;
                         stdin_off = 1;
                         break;
+                case go_in_file_next_arg: i++; /*fall through*/
                 case go_in_file: /*read from a file*/
                         io_close(l->ifp);
                         if(!(l->ifp = io_fin(fopen(argv[i], "rb"))))
