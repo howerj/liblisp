@@ -179,25 +179,24 @@
       ((null? (cdr (cdr x))) t)
       (t nil))))
 
-(define *sort-insert  
-  (lambda (x l)
+(define sort 
+  (letrec
+   (*sort-insert (lambda (x l)
     (if 
-      (null? l)
+     (null? l)
       (list x)
-      (if 
+       (if 
         (<= x (car l))
-        (cons x l)
-        (cons 
+         (cons x l)
+         (cons 
           (car l)
           (*sort-insert x (cdr l)))))))
-
-(define sort 
   (lambda (l)
     (if (null? l)
       nil
       (*sort-insert 
         (car l) 
-        (sort (cdr l))))))
+        (sort (cdr l)))))))
 
 (define float-equal
   (lambda (x y)
@@ -271,16 +270,16 @@
       ((member? (car lat) (cdr lat)) nil)
       (t (set? (cdr lat))))))
 
-(define *make-set # Does the work of making a set from a list
-  (lambda (lat)
-    (cond
-      ((null? lat) nil)
-      ((member? (car lat) (cdr lat)) (make-set (cdr lat)))
-      (t (cons (car lat) (make-set (cdr lat)))))))
-
 (define make-set # Make a set from a list (remove repeats)
-  (lambda (lat)
-    (*make-set (sort lat))))
+  (letrec
+   (*make-set # Does the work of making a set from a list
+     (lambda (lat)
+       (cond
+         ((null? lat) nil)
+         ((member? (car lat) (cdr lat)) (*make-set (cdr lat)))
+         (t (cons (car lat) (*make-set (cdr lat)))))))
+   (lambda (lat)
+    (*make-set (sort lat)))))
 
 (define subset? # A ⊆ B
   (lambda (A B)

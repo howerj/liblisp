@@ -165,7 +165,7 @@ struct lisp {
         X(Define,  "define")    X(Set,     "set!")\
         X(Begin,   "begin")     X(Cond,    "cond")\
         X(Error,   "error")     X(Env,     "environment")\
-        X(LetS,    "let*")
+        X(LetS,    "let*")      X(LetRec,  "letrec")
 
 #define X(CNAME, LNAME) static cell _ ## CNAME = { SYMBOL, 0, 0, 1, 0, 0, 0, .p[0].v = LNAME};
 CELL_LIST /*structs for special cells*/
@@ -1309,7 +1309,8 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                         setcdr(pair, newval);
                         return newval;
                 }
-                if(first == LetS) {
+                if(first == LetS || first == LetRec) {
+                        cell *r, *s;
                         if(exp->len < 2)
                                 RECOVER(l, "'let* \"argc < 2 in %S\"", exp);
                         tmp = exp;
@@ -1317,8 +1318,12 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                                 if(!iscons(car(exp)) || !cklen(car(exp), 2))
                                    RECOVER(l, "'let* \"expected list of length 2: got '%S in '%S\"",
                                                    car(exp), tmp);
-                                env = extend(l, env, car(car(exp)),
+                                if(first == LetRec)
+                                        s = env = extend(l, env, car(car(exp)), Nil);
+                                r = env = extend(l, env, car(car(exp)),
                                         eval(l, depth + 1, car(cdr(car(exp))), env));
+                                if(first == LetRec)
+                                        setcdr(car(s),cdr(car(r)));
                         }
                         return eval(l, depth+1, car(exp), env);
                 }

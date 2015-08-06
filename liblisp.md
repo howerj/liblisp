@@ -37,7 +37,11 @@ from scheme, doc-strings, optional parsing of strings and float, apply,
 gensym, proper constant and a prolog engine.
 
 But this is more of a wish list than anything. Complex number support has
-been added in a branch of the [git][] repository.
+been added in a branch of the [git][] repository. Another interesting
+possibility would be to use a big memory pool and allocate objects from that,
+pointers would be replaces with indexes into this table, it would make saving
+the state of the interpreter and restoring it a lot easier, plus would allow
+for more advanced memory management in a portable way.
 
 There are a lot of things that need tidying up and rethinking about,
 especially when it comes to the interface of the library and the naming of
@@ -682,6 +686,7 @@ library and their behavior.
         cond               Conditional evaluation
         environment        Return a list of all in scope variables
         let*               Create a new variable scope
+        letrec             Create a new variable scope, allowing recursion
         error              Error, an object representing an error
 
 ##### Special variables
@@ -876,7 +881,7 @@ association list.
 Creates new temporary local bindings for variables and evaluates expressions
 with them. The format is:
 
-        (let (VARIABLE VALUE) (VARIABLE VALUE) ... EXPR)
+        (let (SYMBOL VALUE) (SYMBOL VALUE) ... EXPR)
 
         # Examples:
         > (let* (x 3) (y (+ x x)) y)
@@ -884,6 +889,38 @@ with them. The format is:
         > (define baz (lambda (y) (let* (foo -2) (bar 2) (+ (* foo y) bar))))
         > (baz 5)
         -8
+
+* letrec
+
+This is like let\*, but the SYMBOL is defined first, then the VALUE is 
+evaluated, which is then bound to the SYMBOL. The upshot of all that is now
+recursive procedures can be given local scope.
+
+        (let (SYMBOL VALUE) (SYMBOL VALUE) ... EXPR)
+
+        # Examples:
+        > (letrec
+           (factorial (lambda 
+            (x) 
+            (if 
+             (< x 2) 1 
+             (* x 
+              (factorial 
+               (- x 1))))))
+           (factorial 6))
+        720
+        > (define f 
+           (letrec
+            (factorial (lambda 
+             (x) 
+             (if 
+              (< x 2) 1 
+              (* x 
+               (factorial 
+                (- x 1))))))
+            factorial)
+        > (f 6)
+        720
 
 * error
 
