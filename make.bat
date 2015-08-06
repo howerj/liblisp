@@ -25,7 +25,7 @@ REM build the interpreter or fail
 :build
 @echo on
 REM build lisp interpreter, the main object file
-tcc -Wall -Wextra liblisp.c -c -o liblisp.o || goto :error
+tcc -DNDEBUG -Wall -Wextra liblisp.c -c -o liblisp.o || goto :error
 REM tcc -shared liblisp.o -o liblisp.a || goto :error
 
 REM built without asserts as its easier

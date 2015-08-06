@@ -48,7 +48,6 @@
         (test = (match 'abc 'abcd) nil)
         (test = (match 'abcd 'abc) nil)
         (test float-equal (cos (/ pi 3)) 0.5)
-        (test float-equal (monte-carlo-pi 40) 3.1) # PRNG should provide the same sequence
         (test = (cdr (assoc 'x '((x . a) (y . b)))) 'a)
         (test = (eval 'x '((x a) (y b))) '(a))
         (put "All tests passed.\n")
