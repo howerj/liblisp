@@ -31,7 +31,6 @@
 (define caddar (lambda (x) (car (cdr (cdr (car x))))))
 
 (define type? (lambda (type-enum x) (eq type-enum (type-of x))))
-
 (define list?   (lambda (x)  (type? *cons* x)))
 (define atom?   (lambda (x)  (if (list? x) nil t)))
 (define float?  (lambda (x)  (type? *float* x)))
@@ -43,7 +42,8 @@
 (define string? (lambda (x)  (type? *string* x)))
 (define procedure? (lambda (x)  (type? *procedure* x)))
 (define primitive? (lambda (x)  (type? *primitive* x)))
-
+(define char?   (lambda (x) (and (string? x) (= (length x) 1))))
+(define dotted? (lambda (x) (and (list? x) (not (list? (cdr x))))))
 
 (define gcd 
  (lambda (x y) 
@@ -199,6 +199,12 @@
         (car l) 
         (sort (cdr l))))))
 
+(define float-equal
+  (lambda (x y)
+    (<
+      (fabs (- x y))
+      0.00001)))
+
 ##############################################################################
 
 (define exit (lambda () (error -1)))
@@ -255,6 +261,8 @@
 
 ##############################################################################
 # Sets
+# To do
+#  * Power set
 
 (define set? # Is list a set, eg. no repeated symbols
   (lambda (lat)
@@ -332,9 +340,6 @@
   (lambda (A B)
     (union (A\B A B) (A\B B A))))
 
-# To do
-#  * Power set
-
 (define list-tail
   (lambda (l k)
     (cond
@@ -366,5 +371,4 @@
        'error))))
 
 ##############################################################################
-
 

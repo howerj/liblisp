@@ -778,7 +778,7 @@ int  isproc(cell *x)         { return !x ? 0 : x->type == PROC; }
 int  isfproc(cell *x)        { return !x ? 0 : x->type == FPROC; }
 int  isstr(cell *x)          { return !x ? 0 : x->type == STRING; }
 int  issym(cell *x)          { return !x ? 0 : x->type == SYMBOL; }
-int  issubr(cell *x)       { return !x ? 0 : x->type == SUBR; }
+int  issubr(cell *x)         { return !x ? 0 : x->type == SUBR; }
 int  ishash(cell *x)         { return !x ? 0 : x->type == HASH; }
 int  isuserdef(cell *x)      { return !x ? 0 : x->type == USERDEF; }
 int  isusertype(cell *x, int type) {
@@ -1311,11 +1311,11 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 }
                 if(first == LetS) {
                         if(exp->len < 2)
-                                RECOVER(l, "'let \"argc < 2 in %S\"", exp);
+                                RECOVER(l, "'let* \"argc < 2 in %S\"", exp);
                         tmp = exp;
                         for(; !isnil(cdr(exp)); exp = cdr(exp)) {
                                 if(!iscons(car(exp)) || !cklen(car(exp), 2))
-                                   RECOVER(l, "'let \"expected list of length 2: got '%S in '%S\"",
+                                   RECOVER(l, "'let* \"expected list of length 2: got '%S in '%S\"",
                                                    car(exp), tmp);
                                 env = extend(l, env, car(car(exp)),
                                         eval(l, depth + 1, car(cdr(car(exp))), env));
@@ -1943,7 +1943,7 @@ static cell* subr_coerce(lisp *l, cell *args) {
                             return mkstr(l, lstrdup(s));
                     }
                     break;
-        case SYMBOL:if(isstr(convfrom) && !strpbrk(strval(convfrom), " ()\t\n\r'\"\\"))
+        case SYMBOL:if(isstr(convfrom) && !strpbrk(strval(convfrom), " #()\t\n\r'\"\\"))
                             return intern(l, lstrdup(strval(convfrom)));
                     break;
         case HASH:  if(iscons(convfrom)) /*hash from list*/
@@ -2040,6 +2040,17 @@ static cell *subr_close(lisp *l, cell *args) {
         return x;
 }
 
+static cell *subr_eval_time(lisp *l, cell *args) {
+        clock_t start, end;
+        lfloat used;
+        cell *x;
+        start = clock();
+        x = subr_eval(l, args);
+        end = clock();
+        used = ((lfloat) (end - start)) / CLOCKS_PER_SEC;
+        return cons(l, mkfloat(l, used), x);
+}
+
 /*X-Macro of primitive functions and their names; basic built in subr*/
 #define SUBR_LIST\
         X(subr_band,    "&")            X(subr_bor,      "|")\
@@ -2071,7 +2082,7 @@ static cell *subr_close(lisp *l, cell *args) {
         X(subr_seed,    "seed")         X(subr_date,     "date")\
         X(subr_assoc,   "assoc")        X(subr_setlocale, "locale!")\
         X(subr_trace_cell, "trace")     X(subr_binlog,    "binary-logarithm")\
-        
+        X(subr_eval_time, "timed-eval")
 
 #define X(SUBR, NAME) { SUBR, NAME },
 static struct subr_list { subr p; char *name; } primitives[] = {

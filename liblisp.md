@@ -962,6 +962,7 @@ available.
         binary-logarithm   Calculate the binary logarithm of an integer
         close              Close an IO object
         type-of            Return an integer-enum for the type of an object
+        timed-eval         Eval with execution time
 
 * &
 
@@ -1606,6 +1607,28 @@ Return an integer representing the type of an object.
         ()
         > (type-of "Hello, World")
         6 # implementation defined
+
+* timed-eval
+
+Evaluate an expression in an environment, as with *eval*, but *cons* the time
+taken to execute (in seconds) with the returned value from *eval*.
+
+        # (timed-eval EXPR)
+        # (timed-eval EXPR A-LIST)
+        # In this example "monte-carlo-pi" is a function which attempts to
+        # approximate the value of pi with the Monte Carlo Method, the value
+        # passed to "monte-carlo-pi" is the number of iterations to perform,
+        # the more performed the closer it should get to the value of pi.
+        > (monte-carlo-pi 400)
+        3.150000
+        > (timed-eval '(monte-carlo-pi 400))
+        (0.040000 . 3.280000)
+        > (timed-eval '(monte-carlo-pi 4000))
+        (0.430000 . 3.127000)
+           ^           ^
+           |           |
+        Exec time    Approximation of "pi"
+
 
 ##### Additional functions
 

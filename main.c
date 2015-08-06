@@ -33,6 +33,7 @@
 #include "liblisp.h"
 #include <signal.h>
 #include <stdlib.h>
+#include <time.h>
 #include <assert.h>
 
 static lisp *lglobal;
@@ -174,8 +175,9 @@ MATH_UNARY_LIST
         lisp_add_subr(l, subr_hist_len, "history-length");
 #endif 
         r = main_lisp_env(l, argc, argv); 
+#ifdef USE_LINE
         if(homedir) free(histfile);
-
+#endif
         return r;
 }
 
