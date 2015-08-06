@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -g -fwrapv -std=c99 -pedantic
+CFLAGS=-Wall -Wextra -g -fwrapv -std=c99 -pedantic -O2
 TARGET=lisp
 .PHONY: all clean doc valgrind run libline/libline.a
 all: $(TARGET)

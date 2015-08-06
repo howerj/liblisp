@@ -1310,7 +1310,7 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                         return newval;
                 }
                 if(first == LetS || first == LetRec) {
-                        cell *r, *s;
+                        cell *r = NULL, *s = NULL;
                         if(exp->len < 2)
                                 RECOVER(l, "'let* \"argc < 2 in %S\"", exp);
                         tmp = exp;
