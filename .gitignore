@@ -31,6 +31,10 @@ doc/rtf/*
 doc/rtf/
 doc/man/
 doc/man/*
+html/*
+latex/*
+html
+latex
 *.out
 *.diff
 *.patch
@@ -42,3 +46,5 @@ bin/history.lsp
 bin/lisp.linenoise
 bin/test
 .list
+Doxyfile
+Doxyfile.bak

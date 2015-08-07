@@ -355,6 +355,7 @@
   (lambda (l start end)
     (list-tail (list-head l end) start)))
 
+# Test whether a variable is defined or not
 (define defined?
   (flambda (x)
     (let* (ret (assoc (car x) (environment))) (if ret (cdr ret) nil))))

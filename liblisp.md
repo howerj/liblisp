@@ -987,6 +987,7 @@ available.
         hash-create        Create a hash table
         hash-lookup        Lookup a value in a hash by string
         hash-insert        Insert a value into a hash
+        hash-defined       Is a value defined in a hash table
         coerce             Convert types
         time               Return the time
         getenv             Get an environment variable
@@ -1460,6 +1461,18 @@ Insert a key-value pair into a hash table.
         (hash-create "key1" 'val1 "key2" '(arbitrary list) "hello" '"world")
         > (hash-lookup foo "hello")
         "world"
+
+* hash-defined?
+
+Tests whether a value is defined, or exists within, a hash table.
+
+        # (hash-defined? HASH SYMBOL)
+        > (hash-defined? (hash-create 'a 'b) 'a)
+        t
+        > (hash-defined? (hash-create 'a 'b) 'b)
+        ()
+        > (hash-defined? (hash-create 'a 'b) 'c)
+        ()
 
 * coerce
 
@@ -1992,6 +2005,9 @@ versions, only self consistent with a single specific implementation.
         *gc-off*           Option for gc, Turn off Garbage Collection permanently
         *eof*              End-Of-File marker
         *args*             Command line options passed into the interpreter
+        *history-file*     If using libline, it contains the history file name
+        *have-math*        't if the math library is available, '() otherwise
+        *have-line*        't if the line editor is available, '() otherwise
 
 * \*seek-cur\*
 
@@ -2156,9 +2172,24 @@ Then \*args\* will be:
 
 \*args\* is only set at startup.
 
+* \*history-file\*
+
+The name of the history file in use by "libline", which is the line editor, if
+that functionality has been added to the interpreter.
+
         # floats
         pi                 The mathematical constant pi
         e                  Euler's number
+
+* \*have-math\*
+
+This is 't if the math library functions such as *sin*, *cos* and *exp* are
+available, it is '() otherwise.
+
+* \*have-line\*
+
+This is 't if the line editor functions and variables are available, 
+it is '() otherwise.
 
 * pi
 

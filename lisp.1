@@ -4,7 +4,7 @@
 .SH NAME
 lisp \- A small lisp interpreter.
 .SH SYNOPSIS
-lisp (-[hcpE])* (-[i\\-] file)* (-e string)* (-o file)* file* -
+lisp (-[hcpEH])* (-[i\\-] file)* (-e string)* (-o file)* file* -
 .SH DESCRIPTION
 A small and extensible lisp interpreter, written in C, implemented as a library
 with a thin wrapper.
@@ -29,6 +29,11 @@ news" Unix maxim.
 .TP
 .B -E
 This will turn on the line editor when reading from stdin.
+
+.TP
+.B -H
+If an error is encountered the interpreter will be halted rather than trying to
+recover.
 
 .TP
 .B -i file
@@ -69,13 +74,10 @@ Arguments are read in order and executed as soon as they are encountered.
 .SH SEE ALSO
 liblisp(3)
 .SH BUGS
-If an error is encountered in a file it will continue to process the remaining
-input and then continue on to any other files passed in onto the command line
-instead of exiting. Search for "@bug" in the source code or "@note" for missing
-and planned functionality.
 
 There are bound to be many in the interpreter library, comments on known ones
-are in the source code. 
+are in the source code. Search for "@bug" in the source code or "@todo" for missing
+and planned functionality.
 
 .SH AUTHOR
 Richard James Howe (howe.r.j.89@gmail.com)

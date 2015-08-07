@@ -153,11 +153,14 @@ int main(int argc, char **argv) {
                 PRINT_ERROR("\"%s\"", "could not set signal handler");
         lglobal = l;
 #ifdef USE_MATH /*add math functionality from math.h*/
-#define X(FUNC) lisp_add_subr(l, subr_ ## FUNC, # FUNC);
+#define X(FUNC) lisp_add_subr(l, # FUNC, subr_ ## FUNC);
 MATH_UNARY_LIST
 #undef X
-        lisp_add_subr(l, subr_pow, "pow");
-        lisp_add_subr(l, subr_modf, "modf");
+        lisp_add_subr(l, "pow", subr_pow);
+        lisp_add_subr(l, "modf", subr_modf);
+        lisp_add_cell(l, "*have-math*", (cell*)mktee());
+#else
+        lisp_add_cell(l, "*have-math*", (cell*)mknil());
 #endif
 
 #ifdef USE_LINE /*add line editor functionality*/
@@ -170,10 +173,15 @@ MATH_UNARY_LIST
         lisp_set_line_editor(l, line_editing_function);
         line_history_load(histfile);
         line_set_vi_mode(1); /*start up in a sane editing mode*/
-        lisp_add_subr(l, subr_line_editor_mode, "line-editor-mode");
-        lisp_add_subr(l, subr_clear_screen,     "clear-screen");
-        lisp_add_subr(l, subr_hist_len, "history-length");
+        lisp_add_subr(l, "line-editor-mode", subr_line_editor_mode);
+        lisp_add_subr(l, "clear-screen",     subr_clear_screen);
+        lisp_add_subr(l, "history-length",   subr_hist_len);
+        lisp_add_cell(l, "*history-file*",   mkstr(l, lstrdup(histfile)));
+        lisp_add_cell(l, "*have-line*", (cell*)mktee());
+#else
+        lisp_add_cell(l, "*have-line*", (cell*)mknil());
 #endif 
+
         r = main_lisp_env(l, argc, argv); 
 #ifdef USE_LINE
         if(homedir) free(histfile);

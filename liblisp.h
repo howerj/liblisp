@@ -84,6 +84,17 @@ char *lstrdup(const char *s);
  *
  *           Which is a little more powerful but longer.
  *
+ *           This pattern matcher is a little different, to the one shown
+ *           above, it has error handling and has a different syntax.
+ *
+ *           'c'  An arbitrary character
+ *           '*'  Any string of characters
+ *           '.'  Any character
+ *
+ *           And allows for characters to be escaped with the backslash
+ *           character, "\*" and "\." match only a single asterisk and
+ *           period respectively.
+ *
  *  @param   pat  a pattern to match
  *  @param   str  the string to match on
  *  @return  int  1 == match, 0 == no match, -1 == error **/
@@ -502,11 +513,11 @@ cell *lisp_add_cell(lisp *l, char *sym, cell *val);
 /** @brief  add a function primitive to a lisp environment. It will be
  *          referenced internally by the "name" string.
  *  @param  l     lisp environment to add primitive to
- *  @param  func  function primitive
  *  @param  name  name to call the function primitive by
+ *  @param  func  function primitive
  *  @return cell* pointer to extended environment if successful, NULL
  *                otherwise. You shouldn't do anything with pointer**/
-cell *lisp_add_subr(lisp *l, subr func, char *name);
+cell *lisp_add_subr(lisp *l, char *name, subr func);
 
 /** @brief  Initialize a lisp environment. By default it will read
  *          from stdin, print to stdout and log errors to stderr.

@@ -7,6 +7,7 @@
  *
  *  @todo Env lookup should be split into top level hash and cons
  *        list for efficiency.
+ *  @todo Consider linear probing for the hash function instead.
  *  @todo struct hack could be applied strings and other types, as
  *        well as the length field being encoded in the variable length
  *        section of the object.
@@ -17,7 +18,9 @@
  *  @todo File operations on strings could be improved. An append mode should
  *        be added as well. freopen and/or opening in append mode need to be
  *        added as well.
- *  @todo Needed primitives; letrec, map, apply, loop
+ *  @todo Needed primitives; map, apply, loop, split, join, regex
+ *  @todo Make a cut down version with no hashes, floats, user defined
+ *        variables, etc.
 **/
 
 #include "liblisp.h"
@@ -108,9 +111,19 @@ struct hashtable {                /**< a hash table*/
 
 struct io {
         union { FILE *file; char *str; } p;
-        size_t position, max; /**< current position and max buf len*/
-        enum { IO_INVALID, FIN, FOUT, SIN, SOUT, NULLOUT } type;
-        unsigned ungetc:1, color:1, pretty :1, eof :1;
+        size_t position, /**< current position, used for string*/
+               max;      /**< max position in buffer, used for string*/
+        enum { IO_INVALID,    /**< invalid (default)*/ 
+               FIN,           /**< file input*/
+               FOUT,          /**< file output*/
+               SIN,           /**< string input*/
+               SOUT,          /**< string output, write to char* block*/
+               NULLOUT        /**< null output, discard output*/
+        } type; /**< type of the IO object*/
+        unsigned ungetc :1, /**< push back is in use?*/
+                 color  :1, /**< colorize output? Used in lisp_print*/
+                 pretty :1, /**< pretty print output? Used in lisp_print*/
+                 eof    :1; /**< End-Of-File marker*/
         char c; /**< one character of push back*/
 };
 
@@ -149,6 +162,7 @@ struct lisp {
         unsigned ungettok:     1, /**< do we have a put-back token to read?*/
                  recover_init: 1, /**< has the recover buffer been initialized?*/
                  dynamic:      1, /**< use lexical scope if false, dynamic if true*/
+                 errors_halt:  1, /**< any error halts the interpreter if true*/
                  color_on:     1, /**< REPL Colorize output*/
                  prompt_on:    1, /**< REPL '>' Turn prompt on*/
                  editor_on:    1; /**< REPL Turn the line editor on*/
@@ -197,13 +211,14 @@ char *lstrdup(const char *s) { assert(s);
         return str;
 }
 
-int match(char *pat, char *str) { /*original @ http://c-faq.com/lib/regex.html*/
+int match(char *pat, char *str) {
         if(!str) return 0;
 again:  switch(*pat) {
         case '\0': return !*str;
         case '*':  return match(pat+1, str) || (*str && match(pat, str+1));
-        case '?':  if(!*str)        return 0; pat++; str++; goto again;
-        default:   if(*pat != *str) return 0; pat++; str++; goto again;
+        case '.':  if(!*str)        return  0; pat++; str++; goto again;
+        case '\\': if(!*(pat+1))    return -1; if(!*str) return 0; pat++; /*fall through*/
+        default:   if(*pat != *str) return  0; pat++; str++; goto again;
         }
 }
 
@@ -496,12 +511,13 @@ int io_puts(const char *s, io *o) { assert(s && o);
 
 char *io_getdelim(io *i, int delim) { assert(i);
         char *newbuf, *retbuf = NULL;
-        size_t nchmax = 0, nchread = 0;
+        size_t nchmax = 1, nchread = 0;
         int c;
+        if(!(retbuf = calloc(1,1))) return NULL;
         /*from <http://c-faq.com/malloc/reallocnull.html>*/
         while((c = io_getc(i)) != EOF) {
                 if(nchread >= nchmax) { 
-                        nchmax += 20; /**@bug change so grows by factor, not constant*/
+                        nchmax = nchread * 2;
                         if(nchread >= nchmax) /*overflow check*/
                                 return free(retbuf), NULL;
                         if(!(newbuf = realloc(retbuf, nchmax + 1)))
@@ -512,12 +528,8 @@ char *io_getdelim(io *i, int delim) { assert(i);
                 retbuf[nchread++] = c;
         }
 
-        if(retbuf) {
+        if(retbuf)
                 retbuf[nchread] = '\0';
-                newbuf = realloc(retbuf, nchread + 1);
-                if(newbuf)
-                        retbuf = newbuf;
-        }
         return retbuf;
 }
 
@@ -1868,6 +1880,12 @@ static cell* subr_hlookup(lisp *l, cell *args) {
                                 symval(car(cdr(args))))) ? ob : Nil; 
 }
 
+static cell* subr_hdefined(lisp *l, cell *args) {
+        if(!cklen(args, 2) || !ishash(car(args)) || !isasciiz(car(cdr(args))))
+                RECOVER(l, "\"expected (hash symbol-or-string)\" %S", args);
+        return hash_lookup(hashval(car(args)), symval(car(cdr(args)))) ? Tee : Nil; 
+}
+
 static cell* subr_hinsert(lisp *l, cell *args) {
         if(!cklen(args, 3) || !ishash(car(args)) || !isasciiz(car(cdr(args))))
                 RECOVER(l, "\"expected (hash symbol expression)\" %S", args);
@@ -2058,36 +2076,36 @@ static cell *subr_eval_time(lisp *l, cell *args) {
 
 /*X-Macro of primitive functions and their names; basic built in subr*/
 #define SUBR_LIST\
-        X(subr_band,    "&")            X(subr_bor,      "|")\
-        X(subr_bxor,    "^")            X(subr_binv,     "~")\
-        X(subr_sum,     "+")            X(subr_sub,      "-")\
-        X(subr_prod,    "*")            X(subr_mod,      "%")\
-        X(subr_div,     "/")            X(subr_eq,       "=")\
-        X(subr_eq,      "eq")           X(subr_greater,  ">")\
-        X(subr_less,    "<")            X(subr_cons,     "cons")\
-        X(subr_car,     "car")          X(subr_cdr,      "cdr")\
-        X(subr_list,    "list")         X(subr_match,    "match")\
-        X(subr_scons,   "scons")        X(subr_scar,     "scar")\
-        X(subr_scdr,    "scdr")         X(subr_eval,     "eval")\
-        X(subr_trace,   "trace-level!") X(subr_gc,       "gc")\
-        X(subr_length,  "length")       X(subr_typeof,   "type-of")\
-        X(subr_inp,     "input?")       X(subr_outp,     "output?")\
-        X(subr_eofp,    "eof?")         X(subr_flush,    "flush")\
-        X(subr_tell,    "tell")         X(subr_seek,     "seek")\
-        X(subr_close,   "close")        X(subr_open,     "open")\
-        X(subr_getchar, "get-char")     X(subr_getdelim, "get-delim")\
-        X(subr_read,    "read")         X(subr_puts,     "put")\
-        X(subr_putchar, "put-char")     X(subr_print,    "print")\
-        X(subr_ferror,  "ferror")       X(subr_system,   "system")\
-        X(subr_remove,  "remove")       X(subr_rename,   "rename")\
-        X(subr_allsyms, "all-symbols")  X(subr_hcreate,  "hash-create")\
-        X(subr_hlookup, "hash-lookup")  X(subr_hinsert,  "hash-insert")\
-        X(subr_coerce,  "coerce")       X(subr_time,     "time")\
-        X(subr_getenv,  "getenv")       X(subr_rand,     "random")\
-        X(subr_seed,    "seed")         X(subr_date,     "date")\
-        X(subr_assoc,   "assoc")        X(subr_setlocale, "locale!")\
-        X(subr_trace_cell, "trace")     X(subr_binlog,    "binary-logarithm")\
-        X(subr_eval_time, "timed-eval")
+        X(subr_band,    "&")              X(subr_bor,      "|")\
+        X(subr_bxor,    "^")              X(subr_binv,     "~")\
+        X(subr_sum,     "+")              X(subr_sub,      "-")\
+        X(subr_prod,    "*")              X(subr_mod,      "%")\
+        X(subr_div,     "/")              X(subr_eq,       "=")\
+        X(subr_eq,      "eq")             X(subr_greater,  ">")\
+        X(subr_less,    "<")              X(subr_cons,     "cons")\
+        X(subr_car,     "car")            X(subr_cdr,      "cdr")\
+        X(subr_list,    "list")           X(subr_match,    "match")\
+        X(subr_scons,   "scons")          X(subr_scar,     "scar")\
+        X(subr_scdr,    "scdr")           X(subr_eval,     "eval")\
+        X(subr_trace,   "trace-level!")   X(subr_gc,       "gc")\
+        X(subr_length,  "length")         X(subr_typeof,   "type-of")\
+        X(subr_inp,     "input?")         X(subr_outp,     "output?")\
+        X(subr_eofp,    "eof?")           X(subr_flush,    "flush")\
+        X(subr_tell,    "tell")           X(subr_seek,     "seek")\
+        X(subr_close,   "close")          X(subr_open,     "open")\
+        X(subr_getchar, "get-char")       X(subr_getdelim, "get-delim")\
+        X(subr_read,    "read")           X(subr_puts,     "put")\
+        X(subr_putchar, "put-char")       X(subr_print,    "print")\
+        X(subr_ferror,  "ferror")         X(subr_system,   "system")\
+        X(subr_remove,  "remove")         X(subr_rename,   "rename")\
+        X(subr_allsyms, "all-symbols")    X(subr_hcreate,  "hash-create")\
+        X(subr_hlookup, "hash-lookup")    X(subr_hinsert,  "hash-insert")\
+        X(subr_hdefined, "hash-defined?") X(subr_eval_time, "timed-eval")\
+        X(subr_coerce,  "coerce")         X(subr_time,     "time")\
+        X(subr_getenv,  "getenv")         X(subr_rand,     "random")\
+        X(subr_seed,    "seed")           X(subr_date,     "date")\
+        X(subr_assoc,   "assoc")          X(subr_setlocale, "locale!")\
+        X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")
 
 #define X(SUBR, NAME) { SUBR, NAME },
 static struct subr_list { subr p; char *name; } primitives[] = {
@@ -2124,12 +2142,12 @@ static struct integer_list { char *name; intptr_t val; } integers[] = {
 
 /***************** initialization and lisp interfaces *************************/
 
-void lisp_throw(lisp *l, int ret) { 
-        if(l && l->recover_init) longjmp(l->recover, ret);
+void lisp_throw(lisp *l, int ret) {
+        if(!l->errors_halt && l && l->recover_init) longjmp(l->recover, ret);
         else exit(ret);
 }
 
-cell *lisp_add_subr(lisp *l, subr func, char *name) { assert(l && func && name);
+cell *lisp_add_subr(lisp *l, char *name, subr func) { assert(l && func && name);
         return extend_top(l, intern(l, lstrdup(name)), mksubr(l, func));
 }
 
@@ -2188,7 +2206,7 @@ lisp *lisp_init(void) {
                 if(!lisp_add_cell(l, integers[i].name, mkint(l, integers[i].val)))
                         goto fail;
         for(i = 0; primitives[i].p; i++) /*add all primitives*/
-                if(!lisp_add_subr(l, primitives[i].p, primitives[i].name))
+                if(!lisp_add_subr(l, primitives[i].name, primitives[i].p))
                         goto fail;
         return l;
 fail:   lisp_destroy(l);
@@ -2288,7 +2306,7 @@ io *lisp_get_logging(lisp *l) { assert(l); return l->efp; }
 
 /**************************** example program *********************************/
 
-static char *usage = "usage: %s (-[hcpE])* (-[i\\-] file)* (-e string)* (-o file)* file* -\n";
+static char *usage = "usage: %s (-[hcpEH])* (-[i\\-] file)* (-e string)* (-o file)* file* -\n";
 enum {  go_switch,           /**< current argument was a valid flag*/
         go_in_file,          /**< current argument is file input to eval*/
         go_in_file_next_arg, /**< process the next argument as file input*/
@@ -2310,6 +2328,7 @@ static int getoptions(lisp *l, char *arg, char *arg_0)
                 case 'c': l->color_on  = 1; break; /*colorize output*/
                 case 'p': l->prompt_on = 1; break; /*turn standard prompt when reading stdin*/
                 case 'E': l->editor_on = 1; break; /*turn line editor on when reading stdin*/
+                case 'H': l->errors_halt = 1; break;
                 case 'e': return go_in_string; 
                 case 'o': return go_out_file; 
                 default:  fprintf(stderr, "unknown option '%c'\n", c);

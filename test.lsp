@@ -43,7 +43,7 @@
         (test = (match 'abc 'abc) t)
         (test = (match 'a*c 'abbbc) t)
         (test = (match 'a*c 'ac) t)
-        (test = (match 'a?c 'abc) t)
+        (test = (match 'a.c 'abc) t)
         (test = (match 'abc* 'abcd) t)
         (test = (match 'abc 'abcd) nil)
         (test = (match 'abcd 'abc) nil)

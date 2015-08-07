@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -g -fwrapv -std=c99 -pedantic -O2
 TARGET=lisp
-.PHONY: all clean doc valgrind run libline/libline.a
+.PHONY: all clean doc doxygen valgrind run libline/libline.a
 all: $(TARGET)
 doc: lib$(TARGET).htm doxygen
 
@@ -40,9 +40,26 @@ run: $(TARGET)
 valgrind: $(TARGET)
 	valgrind --leak-check=full ./$^ -Epc init.lsp test.lsp -
 
-doxygen: doxygen.conf *.c *.h
-	doxygen $^
+doxygen: 
+	doxygen -g # makes Doxyfile
+	doxygen Doxyfile
 
 clean:
 	if [ -f libline/makefile ]; then cd libline && make clean; fi
-	rm -rf $(TARGET) *.a *.so *.o *.log *.htm *.html *.out doxygen .list
+	rm -rf $(TARGET) *.a *.so *.o 
+	rm -rf html latex *.bak doxygen *.htm *.html 
+	rm -rf .list
+	rm -rf *.log *.out *.bak *~
+
+help:
+	@echo "make [option]"
+	@echo "     all         build the example lisp interpreter"
+	@echo "     lisp        build the example lisp interpreter"
+	@echo "     liblisp.so  build the lisp library"
+	@echo "     liblisp.a   build the lisp library (static)"
+	@echo "     run         make the interpreter and run it"
+	@echo "     help        this help message"
+	@echo "     valgrind    make the interpreter and run it with valgrind"
+	@echo "     clean       remove all build artifacts and targets"
+	@echo "     doc         make html and doxygen documentation"
+
