@@ -987,7 +987,6 @@ available.
         hash-create        Create a hash table
         hash-lookup        Lookup a value in a hash by string
         hash-insert        Insert a value into a hash
-        hash-defined       Is a value defined in a hash table
         coerce             Convert types
         time               Return the time
         getenv             Get an environment variable
@@ -1442,13 +1441,13 @@ Lookup a string in a hash.
         > (define foo (hash-create 'key1 'val1 "key2" '(arbitrary list)))
         (hash-create "key1" 'val1 "key2" '(arbitrary list))
         > (hash-lookup foo 'key1)
-        val1
+        (key1 . val1)
         > (hash-lookup foo 'key2)
-        (arbitrary list)
+        (key2 . (arbitrary list))
         > (hash-lookup foo 'key3)
         ()
         > (hash-lookup foo "key1")
-        val1
+        (key1 . val1)
 
 * hash-insert
 
@@ -1460,19 +1459,7 @@ Insert a key-value pair into a hash table.
         > (hash-insert foo 'hello "world")
         (hash-create "key1" 'val1 "key2" '(arbitrary list) "hello" '"world")
         > (hash-lookup foo "hello")
-        "world"
-
-* hash-defined?
-
-Tests whether a value is defined, or exists within, a hash table.
-
-        # (hash-defined? HASH SYMBOL)
-        > (hash-defined? (hash-create 'a 'b) 'a)
-        t
-        > (hash-defined? (hash-create 'a 'b) 'b)
-        ()
-        > (hash-defined? (hash-create 'a 'b) 'c)
-        ()
+        (hello . "world")
 
 * coerce
 

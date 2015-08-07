@@ -1127,7 +1127,7 @@ int printerf(lisp*l, io *o, unsigned depth, char *fmt, ...) {
                             if(ht->table[i]) /**@bug the string printed out is not escaped*/
                               for(cur = ht->table[i]; cur; cur = cur->next)
                                 printerf(l, o, depth + 1, " \"%s\" '%S", 
-                                                        cur->key, cur->val);
+                                                        cur->key, cdr(cur->val));
                           ret = io_putc(')', o);
                         }
                         break;
@@ -1880,17 +1880,12 @@ static cell* subr_hlookup(lisp *l, cell *args) {
                                 symval(car(cdr(args))))) ? ob : Nil; 
 }
 
-static cell* subr_hdefined(lisp *l, cell *args) {
-        if(!cklen(args, 2) || !ishash(car(args)) || !isasciiz(car(cdr(args))))
-                RECOVER(l, "\"expected (hash symbol-or-string)\" %S", args);
-        return hash_lookup(hashval(car(args)), symval(car(cdr(args)))) ? Tee : Nil; 
-}
-
 static cell* subr_hinsert(lisp *l, cell *args) {
         if(!cklen(args, 3) || !ishash(car(args)) || !isasciiz(car(cdr(args))))
                 RECOVER(l, "\"expected (hash symbol expression)\" %S", args);
         if(hash_insert(hashval(car(args)), 
-                        symval(car(cdr(args))), car(cdr(cdr(args)))))
+                        symval(car(cdr(args))), 
+                        cons(l, car(cdr(args)), car(cdr(cdr(args))))))
                                 HALT(l, "%s", "out of memory");
         return car(args); 
 }
@@ -1902,7 +1897,7 @@ static cell* subr_hcreate(lisp *l, cell *args) {
         if(!(ht = hash_create(DEFAULT_LEN))) HALT(l, "%s", "out of memory");
         for(;!isnil(args); args = cdr(cdr(args))) {
                 if(!isasciiz(car(args))) return Error;
-                hash_insert(ht, symval(car(args)), car(cdr(args)));
+                hash_insert(ht, symval(car(args)), cons(l, car(args), car(cdr(args))));
         }
         return mkhash(l, ht); 
 }
@@ -2100,12 +2095,12 @@ static cell *subr_eval_time(lisp *l, cell *args) {
         X(subr_remove,  "remove")         X(subr_rename,   "rename")\
         X(subr_allsyms, "all-symbols")    X(subr_hcreate,  "hash-create")\
         X(subr_hlookup, "hash-lookup")    X(subr_hinsert,  "hash-insert")\
-        X(subr_hdefined, "hash-defined?") X(subr_eval_time, "timed-eval")\
         X(subr_coerce,  "coerce")         X(subr_time,     "time")\
         X(subr_getenv,  "getenv")         X(subr_rand,     "random")\
         X(subr_seed,    "seed")           X(subr_date,     "date")\
         X(subr_assoc,   "assoc")          X(subr_setlocale, "locale!")\
-        X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")
+        X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")\
+        X(subr_eval_time, "timed-eval")
 
 #define X(SUBR, NAME) { SUBR, NAME },
 static struct subr_list { subr p; char *name; } primitives[] = {

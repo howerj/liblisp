@@ -47,7 +47,7 @@ doxygen:
 clean:
 	if [ -f libline/makefile ]; then cd libline && make clean; fi
 	rm -rf $(TARGET) *.a *.so *.o 
-	rm -rf html latex *.bak doxygen *.htm *.html 
+	rm -rf html latex *.bak doxygen *.htm *.html Doxyfile
 	rm -rf .list
 	rm -rf *.log *.out *.bak *~
 
