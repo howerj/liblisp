@@ -51,7 +51,6 @@ static void sig_int_handler(int sig) {
 static char *histfile = ".list";
 #endif
 
-#ifdef USE_MATH /* Math functions found in the C library*/
 #include <math.h>
 
 #define SUBR_MATH_UNARY(NAME)\
@@ -94,7 +93,6 @@ static cell *subr_modf(lisp *l, cell *args) {
         fracpart = modf(x, &intpart);
         return cons(l, mkfloat(l, intpart), mkfloat(l, fracpart));
 }
-#endif
 
 #ifdef USE_LINE
 /*line editing and history functionality*/
@@ -152,16 +150,12 @@ int main(int argc, char **argv) {
         if(signal(SIGINT, sig_int_handler) == SIG_ERR)
                 PRINT_ERROR("\"%s\"", "could not set signal handler");
         lglobal = l;
-#ifdef USE_MATH /*add math functionality from math.h*/
 #define X(FUNC) lisp_add_subr(l, # FUNC, subr_ ## FUNC);
 MATH_UNARY_LIST
 #undef X
         lisp_add_subr(l, "pow", subr_pow);
         lisp_add_subr(l, "modf", subr_modf);
         lisp_add_cell(l, "*have-math*", (cell*)mktee());
-#else
-        lisp_add_cell(l, "*have-math*", (cell*)mknil());
-#endif
 
 #ifdef USE_LINE /*add line editor functionality*/
         static char *homedir;
@@ -177,7 +171,7 @@ MATH_UNARY_LIST
         lisp_add_subr(l, "clear-screen",     subr_clear_screen);
         lisp_add_subr(l, "history-length",   subr_hist_len);
         lisp_add_cell(l, "*history-file*",   mkstr(l, lstrdup(histfile)));
-        lisp_add_cell(l, "*have-line*", (cell*)mktee());
+        lisp_add_cell(l, "*have-line*",      (cell*)mktee());
 #else
         lisp_add_cell(l, "*have-line*", (cell*)mknil());
 #endif 

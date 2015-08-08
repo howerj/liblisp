@@ -2208,6 +2208,18 @@ structures relating to built in subroutines, special symbols (such as *nil*,
 1. <https://en.wikipedia.org/wiki/X_Macro>
 2. <http://www.drdobbs.com/the-new-c-x-macros/184401387>
 3. <http://www.drdobbs.com/cpp/the-x-macro/228700289>
+
+### "Struct hack" and Flexible Array Members
+
+The "Struct hack" in C is a common pre C99 technique that has been replaced by
+Flexible Array Members. It does not quite work in this project however, due to
+the fact that it needs to initialize static structures as well.
+
+1. <http://c-faq.com/struct/structhack.html>
+2. <https://stackoverflow.com/questions/16553542/c-struct-hack-at-work>
+3. <https://stackoverflow.com/questions/3711233/is-the-struct-hack-technically-undefined-behavior>
+4. <https://en.wikipedia.org/wiki/Flexible_array_member>
+5. <https://stackoverflow.com/questions/246977/flexible-array-members-in-c-bad>
  
 ### [Lisp][]
 

@@ -1,6 +1,21 @@
-CC=gcc
-CFLAGS=-Wall -Wextra -g -fwrapv -std=c99 -pedantic -O2
-TARGET=lisp
+# liblisp
+# A lisp library and interpreter
+# Released under the LGPL license
+#
+# If this makefile fails for some reason the following commands
+# should work:
+#  
+# 	cc liblisp.c -c -o liblisp.o
+# 	ar rcs liblisp.a liblisp.o
+# 	cc main.c -c -o main.o
+# 	cc main.o liblisp.a -o lisp
+#
+# Which will build the library and the example interpreter.
+#
+
+include config.mk
+
+TARGET = lisp
 .PHONY: all clean doc doxygen valgrind run libline/libline.a
 all: $(TARGET)
 doc: lib$(TARGET).htm doxygen
@@ -8,15 +23,15 @@ doc: lib$(TARGET).htm doxygen
 lib$(TARGET).a: lib$(TARGET).o
 	ar rcs $@ $<
 
-lib$(TARGET).so: lib$(TARGET).c lib$(TARGET).h makefile
+lib$(TARGET).so: lib$(TARGET).c lib$(TARGET).h 
 	$(CC) $(CFLAGS) lib$(TARGET).c -c -fpic -o $@
 	$(CC) -shared -fPIC $< -o $@
 
-lib$(TARGET).o: lib$(TARGET).c lib$(TARGET).h makefile
+lib$(TARGET).o: lib$(TARGET).c lib$(TARGET).h 
 	$(CC) $(CFLAGS) $< -c -o $@
 
 main.o: main.c lib$(TARGET).h makefile libline/libline.a libline/libline.h
-	$(CC) $(CFLAGS) -DUSE_LINE -DUSE_MATH $< -c -o $@
+	$(CC) $(CFLAGS) ${DEFINES} $< -c -o $@
 
 $(TARGET): main.o lib$(TARGET).a libline/libline.a 
 	$(CC) $(CFLAGS) -lm $^ -o $@
@@ -41,7 +56,7 @@ valgrind: $(TARGET)
 	valgrind --leak-check=full ./$^ -Epc init.lsp test.lsp -
 
 doxygen: 
-	doxygen -g # makes Doxyfile
+	doxygen -g 
 	doxygen Doxyfile
 
 clean:
@@ -50,6 +65,16 @@ clean:
 	rm -rf html latex *.bak doxygen *.htm *.html Doxyfile
 	rm -rf .list
 	rm -rf *.log *.out *.bak *~
+
+install: all
+	@echo "installing executable ${TARGET} to ${DESTDIR}${PREFIX}/bin"
+	mkdir -p ${DESTDIR}${PREFIX}/bin
+	cp -f ${TARGET} ${DESTDIR}${PREFIX}/bin
+	chmod 755 ${DESTDIR}${PREFIX}/bin/${TARGET}
+	@echo "installing manual pages to ${DESTDIR}${MANPREFIX}/man1"
+	mkdir -p ${DESTDIR}${MANPREFIX}/man1
+	sed "s/VERSION/${VERSION}/g" < ${TARGET}.1 > ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
+	chmod 644 ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
 
 help:
 	@echo "make [option]"

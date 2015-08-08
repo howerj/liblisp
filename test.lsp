@@ -37,7 +37,6 @@
 (list 'a 'b 'c)
 (pair '(x y z) '(a b c))
 
-# Test suite
 (begin
         (test = (factorial 6) 720)
         (test = (match 'abc 'abc) t)
@@ -50,6 +49,20 @@
         (test float-equal (cos (/ pi 3)) 0.5)
         (test = (cdr (assoc 'x '((x . a) (y . b)))) 'a)
         (test = (eval 'x '((x a) (y b))) '(a))
-        (put "All tests passed.\n")
+        (put "Self-Test Passed\n")
         t)
+
+# Test suite
+
+(if
+  *have-line* 
+  (begin 
+    (test = (line-editor-mode t) t)
+    (test = (clear-screen) t)
+    (put "line editor test passed")
+    (clear-screen)
+    t)
+  nil)
+
+(if *have-line* (clear-screen) t)
 
