@@ -74,9 +74,6 @@ libline/libline.h: libline/.git
 libline/libline.a: libline/.git
 	cd libline && make
 
-lib$(TARGET).htm: lib$(TARGET).md
-	markdown $^ > $@
-
 ### running ##################################################################
 
 run: $(TARGET)
@@ -84,10 +81,13 @@ run: $(TARGET)
 	./$^ -Epc init.lsp test.lsp -
 
 valgrind: $(TARGET)
-	@echo running the executable through leak detection program (valgrind)
+	@echo running the executable through leak detection program, valgrind
 	valgrind --leak-check=full ./$^ -Epc init.lsp test.lsp -
 
 ### documentation ############################################################
+
+lib$(TARGET).htm: lib$(TARGET).md
+	markdown $^ > $@
 
 doc: lib$(TARGET).htm doxygen
 

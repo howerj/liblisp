@@ -12,15 +12,10 @@
  *        well as the length field being encoded in the variable length
  *        section of the object.
  *  @todo Generic error handling for primitives before they are called?
- *  @todo Profiling showed that the main offender is the assoc function
- *        which is not surprising.
- *  @todo Rewrite reader
  *  @todo File operations on strings could be improved. An append mode should
  *        be added as well. freopen and/or opening in append mode need to be
  *        added as well.
  *  @todo Needed primitives; map, apply, loop, split, join, regex
- *  @todo Make a cut down version with no hashes, floats, user defined
- *        variables, etc.
 **/
 
 #include "liblisp.h"
@@ -75,7 +70,7 @@ typedef enum trace_level {
         TRACE_ALL     /**< trace everything*/
 } trace_level; /**< level of debug printing to do when evaluating objects*/
 
-typedef enum gc_control { 
+typedef enum gc_control { /**< Garbage collection control enumeration*/
         GC_ON,       /**< Garbage collection is on (default)*/
         GC_POSTPONE, /**< Temporarily postpone garbage collection*/
         GC_OFF       /**< *Permanently turn garbage collection off*/
@@ -85,7 +80,7 @@ typedef union lisp_union { /**< ideally we would use void * for everything*/
         void *v;     /**< use this for integers and points to cells*/
         lfloat f;    /**< if lfloat is double it could be bigger than *v */ 
         subr prim;   /**< function pointers are not guaranteed to fit into a void**/
-} lisp_union;
+} lisp_union; /**< a union of all the different C datatypes used*/
 
 struct cell {
         unsigned type:    4,        /**< Type of the lisp object*/
@@ -96,7 +91,7 @@ struct cell {
                  close:   1,        /**< set if the objects data field is now invalid/freed*/
                  len:     32;       /**< length of data p*/
         lisp_union p[1]; /**< uses the "struct hack", c99 does not quite work here*/
-};
+}; /**< a tagged object representing all possible lisp objects*/
 
 typedef struct hashentry {      /**< linked list of entries in a bin*/
         char *key;              /**< ASCII nul delimited string*/
@@ -267,7 +262,7 @@ char *vstrcatsep(const char *separator, const char *first, ...) {
 
         va_start(argp2, first);
         while ((p = va_arg(argp2, char *)))
-                 strcat(retbuf,separator), strcat(retbuf, p);
+                 strcat(retbuf, separator), strcat(retbuf, p);
         va_end(argp2);
         return retbuf;
 }
@@ -893,7 +888,8 @@ static cell *extend_top(lisp *l, cell *sym, cell *val) {
 }
 
 static cell *assoc(cell *key, cell *alist) {
-        /*can use "if(car(car(alist)) == key)" for symbol only comparison*/
+        /*@note assoc is the main offender when it comes to slowing
+         *      the interpreter down, speeding this up will greatly help*/
         cell *lookup;
         if(!key || !alist) return NULL;
         for(;!isnil(alist); alist = cdr(alist))
@@ -1027,7 +1023,7 @@ static cell *readstring(lisp *l, io* i) {
 }
 
 static cell *readlist(lisp *l, io *i);
-static cell *reader(lisp *l, io *i) { /*read in s-expr*/
+static cell *reader(lisp *l, io *i) { /**< read in s-expr, this should be rewritten*/
         char *token = gettoken(l, i), *fltend = NULL;
         double flt; 
         cell *ret;
@@ -2072,33 +2068,33 @@ static cell *subr_eval_time(lisp *l, cell *args) {
 
 /*X-Macro of primitive functions and their names; basic built in subr*/
 #define SUBR_LIST\
-        X(subr_band,    "&")              X(subr_bor,      "|")\
-        X(subr_bxor,    "^")              X(subr_binv,     "~")\
-        X(subr_sum,     "+")              X(subr_sub,      "-")\
-        X(subr_prod,    "*")              X(subr_mod,      "%")\
-        X(subr_div,     "/")              X(subr_eq,       "=")\
-        X(subr_eq,      "eq")             X(subr_greater,  ">")\
-        X(subr_less,    "<")              X(subr_cons,     "cons")\
-        X(subr_car,     "car")            X(subr_cdr,      "cdr")\
-        X(subr_list,    "list")           X(subr_match,    "match")\
-        X(subr_scons,   "scons")          X(subr_scar,     "scar")\
-        X(subr_scdr,    "scdr")           X(subr_eval,     "eval")\
-        X(subr_trace,   "trace-level!")   X(subr_gc,       "gc")\
-        X(subr_length,  "length")         X(subr_typeof,   "type-of")\
-        X(subr_inp,     "input?")         X(subr_outp,     "output?")\
-        X(subr_eofp,    "eof?")           X(subr_flush,    "flush")\
-        X(subr_tell,    "tell")           X(subr_seek,     "seek")\
-        X(subr_close,   "close")          X(subr_open,     "open")\
-        X(subr_getchar, "get-char")       X(subr_getdelim, "get-delim")\
-        X(subr_read,    "read")           X(subr_puts,     "put")\
-        X(subr_putchar, "put-char")       X(subr_print,    "print")\
-        X(subr_ferror,  "ferror")         X(subr_system,   "system")\
-        X(subr_remove,  "remove")         X(subr_rename,   "rename")\
-        X(subr_allsyms, "all-symbols")    X(subr_hcreate,  "hash-create")\
-        X(subr_hlookup, "hash-lookup")    X(subr_hinsert,  "hash-insert")\
-        X(subr_coerce,  "coerce")         X(subr_time,     "time")\
-        X(subr_getenv,  "getenv")         X(subr_rand,     "random")\
-        X(subr_seed,    "seed")           X(subr_date,     "date")\
+        X(subr_band,    "&")              X(subr_bor,       "|")\
+        X(subr_bxor,    "^")              X(subr_binv,      "~")\
+        X(subr_sum,     "+")              X(subr_sub,       "-")\
+        X(subr_prod,    "*")              X(subr_mod,       "%")\
+        X(subr_div,     "/")              X(subr_eq,        "=")\
+        X(subr_eq,      "eq")             X(subr_greater,   ">")\
+        X(subr_less,    "<")              X(subr_cons,      "cons")\
+        X(subr_car,     "car")            X(subr_cdr,       "cdr")\
+        X(subr_list,    "list")           X(subr_match,     "match")\
+        X(subr_scons,   "scons")          X(subr_scar,      "scar")\
+        X(subr_scdr,    "scdr")           X(subr_eval,      "eval")\
+        X(subr_trace,   "trace-level!")   X(subr_gc,        "gc")\
+        X(subr_length,  "length")         X(subr_typeof,    "type-of")\
+        X(subr_inp,     "input?")         X(subr_outp,      "output?")\
+        X(subr_eofp,    "eof?")           X(subr_flush,     "flush")\
+        X(subr_tell,    "tell")           X(subr_seek,      "seek")\
+        X(subr_close,   "close")          X(subr_open,      "open")\
+        X(subr_getchar, "get-char")       X(subr_getdelim,  "get-delim")\
+        X(subr_read,    "read")           X(subr_puts,      "put")\
+        X(subr_putchar, "put-char")       X(subr_print,     "print")\
+        X(subr_ferror,  "ferror")         X(subr_system,    "system")\
+        X(subr_remove,  "remove")         X(subr_rename,    "rename")\
+        X(subr_allsyms, "all-symbols")    X(subr_hcreate,   "hash-create")\
+        X(subr_hlookup, "hash-lookup")    X(subr_hinsert,   "hash-insert")\
+        X(subr_coerce,  "coerce")         X(subr_time,      "time")\
+        X(subr_getenv,  "getenv")         X(subr_rand,      "random")\
+        X(subr_seed,    "seed")           X(subr_date,      "date")\
         X(subr_assoc,   "assoc")          X(subr_setlocale, "locale!")\
         X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")\
         X(subr_eval_time, "timed-eval")
