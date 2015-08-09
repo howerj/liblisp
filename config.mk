@@ -2,7 +2,9 @@
 
 # Version control variables and information
 
-VERSION=$(shell git describe) 
+## These commands will depend on what version control is being run, or
+## if any is being used at all. Currently git is being used.
+VERSION    = $(shell git describe) 
 VCS_COMMIT = $(shell git rev-parse --verify HEAD)
 VCS_ORIGIN = $(shell git config --get remote.origin.url)
 
@@ -14,8 +16,8 @@ MANPREFIX ?= ${PREFIX}/share/man
 
 # Compiler and compiler flags
 
-CC ?= gcc
-CFLAGS ?=-Wall -Wextra -g -fwrapv -std=c99 -pedantic -O2
+CC      ?= gcc
+CFLAGS 	?= -Wall -Wextra -g -fwrapv -std=c99 -pedantic -O2
 
 # Compilation options
 

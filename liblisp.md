@@ -17,8 +17,8 @@ liblisp.md {#mainpage}
 <div id='Introduction'/>
 ## Introduction
 
-This is a lisp interpreter written largely in [ANSI C][], with some [c99][], it is a 
-non-standard variant of lisp. 
+This is a lisp interpreter written largely in [ANSI C][], with some [c99][], it is a
+non-standard variant of lisp.
 
 <div id='Design goals'/>
 ## Design goals
@@ -48,7 +48,7 @@ especially when it comes to the interface of the library and the naming of
 functions. More comments are also in order in the code explaining what the code
 is meant to achieve is also in need.
 
-If you do not like the formatting use the "indent" program from: 
+If you do not like the formatting use the "indent" program from:
 <https://www.gnu.org/software/indent/>.
 
 ### Rationale
@@ -147,7 +147,8 @@ in the usual manner.
 <div id='BUGS'/>
 ## BUGS
 
-* If you manage to get a SEGFAULT then there is a bug in the code somewhere.
+* If you manage to get a SEGFAULT then there is a bug in the code somewhere. It
+  should not be possible to make the interpreter seg-fault.
 * See the "@todo" comments at the top of [liblisp.c][] to see a full list of
   bugs as well comments labeled with "@bug".
 
@@ -190,7 +191,7 @@ that language provided by [liblisp.c][] and [main.c][].
 
 [Lisp][] is the second oldest language after [FORTRAN][] that still has
 descendants still in use. Despite its age it is a very high level language
-built on simple principles; it had features that are now finding their way 
+built on simple principles; it had features that are now finding their way
 into newer programming languages such as the [lambda procedure][]. It is a
 multi-paradigm programming language built around a few core concepts:
 
@@ -201,12 +202,12 @@ multi-paradigm programming language built around a few core concepts:
 And their are various minor attributes that could also be said about the
 language as well.
 
-The first point however is very important, in [Lisp][] code and data are 
+The first point however is very important, in [Lisp][] code and data are
 represented in the same way, by the [S-Expression][]. Naturally any
 programming language is going to have primitives and procedures for handling
 the data types it is built to work with; [MATLAB][] is good at handling matrices,
 [AWK][] with its associative arrays and regular expressions is good with
-strings, [Lisp][] is good at handling [S-Expressions][]. 
+strings, [Lisp][] is good at handling [S-Expressions][].
 
 Given the statements that:
 
@@ -244,7 +245,7 @@ Code examples will be presented as follows:
         # The '>' represents the prompt at which we can interactively
         # type expressions
         >
-        > (+ 2 2) # "(+ 2 2)" is an expression 
+        > (+ 2 2) # "(+ 2 2)" is an expression
         4         # This is the return value of the evaluated expression
                   # note the lack of the '>' prompt.
 
@@ -277,7 +278,7 @@ Reading from left to right, an "a" adds a *car* and a "d" adds a cdr to the
 front of the function.
 
 How these are defined and what they mean will be talked about in later
-chapters, they will have to be defined by the user if only the base library 
+chapters, they will have to be defined by the user if only the base library
 defined in [liblisp.c][] is used and can be done so in terms of *car* and
 *cdr*.
 
@@ -349,7 +350,7 @@ what they are.
 #### CONS cells
 
 The [cons cell][] is the basic data structure from which lists and trees, and
-so most structured data in this lisp apart from [associative arrays][], are 
+so most structured data in this lisp apart from [associative arrays][], are
 built. The *cons* subroutine is used to allocate and build new cons cells and
 lists.
 
@@ -364,7 +365,7 @@ The proper list:
 
 Looks like this in memory:
 
-          CAR   CDR         
+          CAR   CDR
         .-----.-----.     .-----.-----.     .-----.-----.
         |  1  | PTR |---->|  2  | PTR |---->|  3  | NIL |
         .-----.-----.     .-----.-----.     .-----.-----.
@@ -373,7 +374,7 @@ The first cell in the pair is called the "car" cell and the second the "cdr"
 cell for historical reasons. "PTR" represents a pointer to another cell and
 "NIL" represents the "nil" symbol, which is used to terminate a proper list.
 
-Lists which are not terminated by a "nil" can also be made, they are called 
+Lists which are not terminated by a "nil" can also be made, they are called
 [dotted pairs][].
 
 The [dotted pair][]:
@@ -462,7 +463,7 @@ feed into the function.
 #### Function and variable definition
 
 New functions and variables can be defined and they can be defined in global or
-a lexical scope. 
+a lexical scope.
 
 #### Control structures and recursion
 #### Association lists
@@ -491,7 +492,7 @@ such as [factorial][] and [gcd][], and functions for operating on lists.
 
 * [meta.lsp][]
 
-This contains a [Meta-circular Evaluator][], as defined in 
+This contains a [Meta-circular Evaluator][], as defined in
 [The Roots of Lisp][].
 
 * [test.lsp][]
@@ -507,7 +508,7 @@ of the REPL.
 
 To view the definition of an expression we can type it at the prompt:
 
-        # define a function to calculate the 
+        # define a function to calculate the
         # Greatest Common Denominator
         > (define gcd (lambda (x y) (if (= 0 y) x (gcd y (% x y)))))
         (lambda (x y) (if (= 0 y) x (gcd y (% x y))))
@@ -521,11 +522,11 @@ somehow *special* is printed out:
 
         > (+ 2 2)
         > +             # What is the definition of '+'?
-        <SUBR:4228480>  # Unfortunately the C code would have to 
-                        # be consulted "<SUBR:" indicates that this 
-                        # is a built in language primitive the "4228480" 
-                        # is the pointer at which the function lives in 
-                        # the lisp executable. 
+        <SUBR:4228480>  # Unfortunately the C code would have to
+                        # be consulted "<SUBR:" indicates that this
+                        # is a built in language primitive the "4228480"
+                        # is the pointer at which the function lives in
+                        # the lisp executable.
 
 Subroutines and "IO" types are unprintable types, they have no sensible
 representation that could be printed out to the screen so are instead
@@ -559,7 +560,7 @@ tracing and trace everything.
         > (trace 'foo)      # is the symbol 'foo' marked for tracing?
         > (trace 'foo t)    # mark the symbol 'foo' for tracing
         > (trace 'foo nil)  # clear the symbol 'foo' of tracing mark
-        
+
         > (trace foo)       # is the evaluated expression 'foo' marked for tracing?
         > (trace foo t)     # mark the evaluated expression 'foo' for tracing
         > (trace foo nil)   # clear the evaluated expression 'foo' of tracing mark
@@ -577,19 +578,19 @@ As an example:
 
         # A naive factorial implementation
         > (define factorial
-         (lambda 
-          (x) 
-           (if 
-            (< x 2) 1 
-            (* x 
-             (factorial 
+         (lambda
+          (x)
+           (if
+            (< x 2) 1
+            (* x
+             (factorial
              (- x 1)))))
 
         # turn full tracing on
         > (trace-level! *trace-all*)
 
         > (factorial 3)
-        (trace 
+        (trace
          (factorial 3))
         (trace factorial)
         (trace 3)
@@ -650,7 +651,7 @@ The error message format is *usually* as follows:
         (error PRIM MSG ARGS C-FILE C-LINE)
 
         PRIM:   The C-level function the error occurred in.
-        MSG:    An arbitrary, but hopefully useful message, 
+        MSG:    An arbitrary, but hopefully useful message,
                 often containing information on the number
                 and type of arguments expected
         ARGS:   The actual arguments passed into our function.
@@ -749,7 +750,7 @@ to be returned are evaluated.
 Create a new [lambda procedure][] or anonymous function that can be applied,
 assigned to a label and passed around like any other expression. The arguments
 to the procedure are evaluated before they are passed in.
-        
+
         (lambda (VARIABLE VARIABLE ...) EXPR)
         # Examples:
         > ((lambda (x) (* x x)) 4)
@@ -774,7 +775,7 @@ arguments are *not* evaluated when they are passed in.
         > (print-me hello 'world (+ 2 2))
         (hello (quote world) (+ 2 2))
 
-This allows the creation of functions that evaluate can delay, not or 
+This allows the creation of functions that evaluate can delay, not or
 reevaluate their arguments.
 
 * define
@@ -814,7 +815,7 @@ Change the value of an already defined variable to another value.
         error
 
 * begin
-        
+
 Sequence a list of expressions for evaluation; expressions are evaluated from
 left to right and only the value of the last expression is returned.
 
@@ -851,23 +852,23 @@ Returns an association list of the current environment, the list is quite large
 as it contains every defined symbol and what they evaluated to as well as all
 the symbols defined in the current and encapsulating scopes. It returns an
 association list.
-        
+
         > (defined square (lambda (x) (* x x)))
         (lambda (x) (* x x))
         > (environment)
          ((square . (lambda (x) (* x x))) # Most recently defined top level
                                           # definition is the first entry
          ...
-         (*seek-cur* . 1) 
-         (e . 2.718282) 
-         (pi . 3.141593) 
+         (*seek-cur* . 1)
+         (e . 2.718282)
+         (pi . 3.141593)
          (t . t))
         > (let (x 4) (environment))
-        ((x . 4) 
+        ((x . 4)
          ...
-         (*seek-cur* . 1) 
-         (e . 2.718282) 
-         (pi . 3.141593) 
+         (*seek-cur* . 1)
+         (e . 2.718282)
+         (pi . 3.141593)
          (t . t))
 
 * let\*
@@ -886,7 +887,7 @@ with them. The format is:
 
 * letrec
 
-This is like let\*, but the SYMBOL is defined first, then the VALUE is 
+This is like let\*, but the SYMBOL is defined first, then the VALUE is
 evaluated, which is then bound to the SYMBOL. The upshot of all that is now
 recursive procedures can be given local scope.
 
@@ -894,23 +895,23 @@ recursive procedures can be given local scope.
 
         # Examples:
         > (letrec
-           (factorial (lambda 
-            (x) 
-            (if 
-             (< x 2) 1 
-             (* x 
-              (factorial 
+           (factorial (lambda
+            (x)
+            (if
+             (< x 2) 1
+             (* x
+              (factorial
                (- x 1))))))
            (factorial 6))
         720
-        > (define f 
+        > (define f
            (letrec
-            (factorial (lambda 
-             (x) 
-             (if 
-              (< x 2) 1 
-              (* x 
-               (factorial 
+            (factorial (lambda
+             (x)
+             (if
+              (< x 2) 1
+              (* x
+               (factorial
                 (- x 1))))))
             factorial)
         > (f 6)
@@ -928,7 +929,7 @@ representation of an error returned from primitive functions.
         error
         > (error -1) # The error message here does not make much sense.
         (error 'lisp_repl "invalid or incomplete line" "liblisp.c" 2265)
-        
+
 
 #### Built in subroutines
 
@@ -989,7 +990,7 @@ available.
         date               Return a list of integers representing the date
         assoc              Find a value in an association list
         locale!            Set the locale
-        trace              Control the tracing of an object  
+        trace              Control the tracing of an object
         binary-logarithm   Calculate the binary logarithm of an integer
         close              Close an IO object
         type-of            Return an integer-enum for the type of an object
@@ -1148,7 +1149,7 @@ Create a list from a series of expressions.
 
 A very simple string matching routine. This routine takes a pattern as its
 first argument and a string to match the pattern against as its second
-argument. 
+argument.
 
         # (match STRING STRING)
         > (match "hell?" "hello")
@@ -1196,7 +1197,7 @@ when garbage is collected, if at all.
 The garbage collector is on by default, or in the \*gc-on\* state. Garbage
 collection can be postponed with the \*gc-postpone\* enumeration, in this state
 the collector will not run but cells will still be added to the list of all
-variables to collect, the collector can be turned on at a later date. 
+variables to collect, the collector can be turned on at a later date.
 
 The collector can be turned off completely, *this will leak memory*, after
 references are lost they are lost permanently. The collector cannot be turned
@@ -1296,7 +1297,7 @@ Called "ozy.txt":
 
         > (define ozy (open *file-in* "ozy.txt"))
         <IO:IN:8258784>
-        > (get-delim *eof*)      
+        > (get-delim *eof*)
         "'My name is Ozymandias, king of kings:\nLook on my works, ye Mighty, and despair!'\n"
         > (seek ozy *seek-set* 0)
         0
@@ -1406,8 +1407,8 @@ have been defined.
 
         # (all-symbols)
         > (all-symbols)
-        (hash-create "io?" 'io? 
-                ... 
+        (hash-create "io?" 'io?
+                ...
                 "cons" 'cons)
         > (hash-lookup 'cons (all-symbols))
         cons
@@ -1462,7 +1463,7 @@ error. All objects can be coerced into the same type as the object, for example
 hashes can be coerced into hashes, integers into integers, etc.
 
 Some of the mappings have additional restrictions on them, such as when mapping
-an Integer from a String, the string must represent a valid number such as; 
+an Integer from a String, the string must represent a valid number such as;
 "-1", "0", "99" and not "99a", "not-a-number" or even "1.0".
 
 The mappings are:
@@ -1477,7 +1478,7 @@ forms that would be valid integer sequences if feed into the interpreter raw.
 This means all strings of the form:
 
         (+|-)?(0[xX][0-9a-fA-F]+|0[0-7]*|[1-9][0-9]+)
-        
+
 Can be coerced into integers.
 
 * List from String, Hash
@@ -1530,7 +1531,7 @@ library that this program was linked against.
 Get an environment variable from the system based on a string.
 
         # (getenv STRING)
-        > (getenv "SHELL") 
+        > (getenv "SHELL")
         "/bin/bash"        # returned value is implementation defined
         > (getenv "TERM")
         "screen-256color"  # returned value is implementation defined
@@ -1714,7 +1715,7 @@ converted to floating point values before hand.
 
 * log10
 
-Calculate a [logarithm][] with base 10. If you need a logarithm of a value 'x' 
+Calculate a [logarithm][] with base 10. If you need a logarithm of a value 'x'
 to any other base, base 'b', you can use:
 
         logb(x) = log10(x) / log10(b)
@@ -1916,7 +1917,7 @@ integer and fractional parts, returning a cons of the two values.
 
 If the line editing library is used then this function can be used to query the
 state of line editor mode, 't' representing ["Vi"][] like editing mode, 'nil'
-["Emacs"][] mode. The mode can be changed by passing in 't' to set it to 'Vi' 
+["Emacs"][] mode. The mode can be changed by passing in 't' to set it to 'Vi'
 mode and 'nil' to Emacs mode.
 
         (line-editor-mode)
@@ -1925,7 +1926,7 @@ mode and 'nil' to Emacs mode.
 * history-length
 
 This variable controls the length of the history that the line-editing library
-saves. 
+saves.
 
         # (history-length INT)
         > (history-length 1) # disable history
@@ -1940,7 +1941,7 @@ printed and then the prompt if that option is set.
         # (clear-screen)
         > (clear-screen)
         t
-        > 
+        >
 
 
 #### Predefined variables
@@ -1989,6 +1990,9 @@ versions, only self consistent with a single specific implementation.
         *history-file*     If using libline, it contains the history file name
         *have-math*        't if the math library is available, '() otherwise
         *have-line*        't if the line editor is available, '() otherwise
+        *version*          The version of this interpreter if known
+        *commit*           Commit version
+        *repository-origin* Origin of the lisp interpreters repository
 
 * \*seek-cur\*
 
@@ -2049,7 +2053,7 @@ An option for *open*. The string passed to open will be treated as a file name
 to open up for writing.
 
         > (open *file-out* "file.txt")
- 
+
 * \*string-in\*
 
 An option for *open*. The string passed ot open will be treated as a string to
@@ -2089,7 +2093,7 @@ An option for *locale*. Affects the money format.
 
 * \*lc-numeric\*
 
-An option for *locale*. Affects non monetary numbers in I/O functions like 
+An option for *locale*. Affects non monetary numbers in I/O functions like
 scanf and printf, although this should not affect the interpreter.
 
 * \*lc-time\*
@@ -2119,7 +2123,7 @@ An option for *trace-level!*. All objects will be traced.
 An option for *gc*. Turn the garbage collection back on if it was postponed.
 
         > (gc *gc-on*)
-        
+
 * \*gc-postpone\*
 
 An option for *gc*. Postpone garbage collection.
@@ -2141,9 +2145,9 @@ delimiter.
 * \*args\*
 
 This is a list containing all of the arguments passed into the interpreter, it
-is a list of strings, each string being a single argument. 
+is a list of strings, each string being a single argument.
 
-If the interpreter was invoked like this 
+If the interpreter was invoked like this
 
         ./lisp -Epc init.lsp
 
@@ -2158,6 +2162,21 @@ Then \*args\* will be:
 The name of the history file in use by "libline", which is the line editor, if
 that functionality has been added to the interpreter.
 
+* \*version\*
+
+This contains the version, as determined by the [VCS][], if the [VCS][] is not
+available it will be set to "unknown".
+
+* \*commit\*
+
+This contains the commit, as determined by the [VCS][], if the [VCS][] is not
+available it will be set to "unknown".
+
+* \*repository-origin\*
+
+This contains a string describing the origin of the lisp interpreters
+repository, if this is not available it will be set to "unknown".
+
         # floats
         pi                 The mathematical constant pi
         e                  Euler's number
@@ -2169,7 +2188,7 @@ available, it is '() otherwise.
 
 * \*have-line\*
 
-This is 't if the line editor functions and variables are available, 
+This is 't if the line editor functions and variables are available,
 it is '() otherwise.
 
 * pi
@@ -2178,7 +2197,7 @@ Roughly "3.14159...".
 
 The numerical constant ["pi"][], this is a floating point value that does not
 follow the normal naming convention for the predefined variables of enclosing
-the name within asterisks. 
+the name within asterisks.
 
 * e
 
@@ -2214,7 +2233,7 @@ the fact that it needs to initialize static structures as well.
 3. <https://stackoverflow.com/questions/3711233/is-the-struct-hack-technically-undefined-behavior>
 4. <https://en.wikipedia.org/wiki/Flexible_array_member>
 5. <https://stackoverflow.com/questions/246977/flexible-array-members-in-c-bad>
- 
+
 ### [Lisp][]
 
 Here are a list of references on how to implement lisp interpreters and to
@@ -2365,5 +2384,6 @@ used:
 [Common Lisp]: <https://en.wikipedia.org/wiki/Common_Lisp>
 [REPL]: <https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop>
 [git]: <https://git-scm.com/>
+[VCS]: <https://en.wikipedia.org/wiki/Revision_control>
 <!-- This isn't meant to go here but it is out of the way -->
-<style type="text/css">body{margin:40px auto;max-width:650px;line-height:1.6;font-size:18px;color:#444;padding:0 10px}h1,h2,h3{line-height:1.2}</style>
+<style type="text/css">body{margin:40px auto;max-width:650px;line-height:1.6;font-size:18px;color:#444;padding:0 10px}h1,h2,h3,h4,h5,h6{line-height:1.2}</style>

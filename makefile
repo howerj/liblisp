@@ -43,6 +43,8 @@ help:
 	@echo "     clean       remove all build artifacts and targets"
 	@echo "     doc         make html and doxygen documentation"
 
+### building #################################################################
+
 lib$(TARGET).a: lib$(TARGET).o
 	ar rcs $@ $<
 
@@ -53,16 +55,17 @@ lib$(TARGET).so: lib$(TARGET).c lib$(TARGET).h
 lib$(TARGET).o: lib$(TARGET).c lib$(TARGET).h 
 	$(CC) $(CFLAGS) $< -c -o $@
 
+VCS_DEFINES=-DVCS_ORIGIN="${VCS_ORIGIN}" -DVCS_COMMIT="${VCS_COMMIT}" -DVERSION="${VERSION}" 
 # Always rebuilds as libline.h is .PHONY, it has to be.
 main.o: main.c lib$(TARGET).h libline/libline.h
-	$(CC) $(CFLAGS) ${DEFINES} $< -c -o $@
+	$(CC) $(CFLAGS) ${DEFINES} ${VCS_DEFINES} $< -c -o $@
 
 # Always rebuilds as libline.a is .PHONY, it has to be.
 $(TARGET): main.o lib$(TARGET).a libline/libline.a 
 	$(CC) $(CFLAGS) -lm $^ -o $@
 
 # Work around so the makefile initializes submodules. This requires
-# the full liblinerepository to be available.
+# the full liblisp git repository to be available.
 libline/.git:
 	git submodule init
 	git submodule update
@@ -90,7 +93,7 @@ doc: lib$(TARGET).htm doxygen
 
 doxygen: 
 	doxygen -g 
-	doxygen Doxyfile
+	doxygen Doxyfile 2> doxygen.log
 
 ### distribution and installation ############################################
 

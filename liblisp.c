@@ -110,7 +110,7 @@ struct hashtable {                /**< a hash table*/
 };
 
 struct io {
-        union { FILE *file; char *str; } p;
+        union { FILE *file; char *str; } p; /**< the actual file or string*/
         size_t position, /**< current position, used for string*/
                max;      /**< max position in buffer, used for string*/
         enum { IO_INVALID,    /**< invalid (default)*/ 
@@ -246,6 +246,7 @@ char *lstrcatend(char *dest, const char *src) { assert(dest && src);
 }
 
 char *vstrcatsep(const char *separator, const char *first, ...) { 
+        /**@todo change so this uses lstrcatend*/
         size_t len, seplen, num = 0;
         char *retbuf, *p;
         va_list argp1, argp2;

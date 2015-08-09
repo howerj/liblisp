@@ -60,8 +60,19 @@ void pfatal(char *msg, char *file, long line);
 /** @brief   lstrdup for where it is not available, despite what POSIX thinks
  *           it is not OK to stick random junk into the C-library.  
  *  @param   s  the string to duplicate
- *  @return  char* NULL on error,  **/
+ *  @return  char* NULL on error, a duplicate string that can be freed
+ *                 otherwise **/
 char *lstrdup(const char *s);
+
+/** @brief lstrcatend is like "strcat" from "string.h", however it returns the
+ *         end of the new string instead instead of the start of it which is
+ *         much more useful.
+ *  @param  dest a block of memory containing a ASCII NUL terminated string,
+ *               it must be capable of hold the "dest" string as well as the
+ *               "src" string, plus a single ASCII NUL character
+ *  @param  src  An ASCII NUL terminated string to copy into dest
+ *  @return char* The end of the new string**/
+char *lstrcatend(char *dest, const char *src);
 
 /** @brief   a dumb, but cleverly simple, regex matcher, from
  *           <http://c-faq.com/lib/regex.html>, but modified slightly, by
@@ -717,6 +728,14 @@ int main_lisp_env(lisp *l, int argc, char **argv);
  *        for the error message to print.
  * @param MSG Message to print out**/
 #define FATAL(MSG) pfatal((MSG), __FILE__, __LINE__)
+
+/**@brief Stringify X, turn X into a string.
+ * X      Thing to turn into a string  **/
+#define STRINGIFY(X) #X
+
+/**@brief Stringify with macro expansion
+ * X      Thing to turn into a string with macro expansion  **/
+#define XSTRINGIFY(X) STRINGIFY(X)
 
 #ifdef __cplusplus
 }
