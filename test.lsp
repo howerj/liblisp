@@ -46,23 +46,10 @@
         (test = (match 'abc* 'abcd) t)
         (test = (match 'abc 'abcd) nil)
         (test = (match 'abcd 'abc) nil)
-        (test float-equal (cos (/ pi 3)) 0.5)
         (test = (cdr (assoc 'x '((x . a) (y . b)))) 'a)
         (test = (eval 'x '((x a) (y b))) '(a))
         (put "Self-Test Passed\n")
         t)
 
 # Test suite
-
-(if
-  *have-line* 
-  (begin 
-    (test = (line-editor-mode t) t)
-    (test = (clear-screen) t)
-    (put "line editor test passed")
-    (clear-screen)
-    t)
-  nil)
-
-(if *have-line* (clear-screen) t)
 

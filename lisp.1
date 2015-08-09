@@ -4,7 +4,7 @@
 .SH NAME
 lisp \- A small lisp interpreter.
 .SH SYNOPSIS
-lisp (-[hcpEH])* (-[i\\-] file)* (-e string)* (-o file)* file* -
+lisp (-[hcpH])* (-[i\\-] file)* (-e string)* (-o file)* file* -
 .SH DESCRIPTION
 A small and extensible lisp interpreter, written in C, implemented as a library
 with a thin wrapper.
@@ -25,10 +25,6 @@ checking for whether it is writing to terminal or not with isatty(3).
 This will turn the prompt on, by default no prompt is given when typing so as
 to allow output to be piped to other programs following the "No news is good
 news" Unix maxim.
-
-.TP
-.B -E
-This will turn on the line editor when reading from stdin.
 
 .TP
 .B -H
