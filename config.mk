@@ -1,22 +1,26 @@
-VERSION = 0.3.10
+# "dwm" from <http://suckless.org/> inspired config file
 
-# Paths
+# Version control variables and information
 
-DESTDIR = 
-PREFIX = /usr/local
-MANPREFIX = ${PREFIX}/share/man
+VERSION=$(shell git describe) 
+VCS_COMMIT = $(shell git rev-parse --verify HEAD)
+VCS_ORIGIN = $(shell git config --get remote.origin.url)
 
-# Libraries
+# Install paths
 
-# Options
+DESTDIR   ?= 
+PREFIX 	  ?= /usr/local
+MANPREFIX ?= ${PREFIX}/share/man
 
-DEFINES = -DUSE_LINE 
+# Compiler and compiler flags
 
-# Compiler
+CC ?= gcc
+CFLAGS ?=-Wall -Wextra -g -fwrapv -std=c99 -pedantic -O2
 
-CC = cc
+# Compilation options
 
-# Compiler flags
-
-CFLAGS=-Wall -Wextra -g -fwrapv -std=c99 -pedantic -O2
+## CPP defines:
+### NDEBUG       Disable asserts
+### USE_LINE     Add line editing capability, requires libline
+DEFINES ?= -DUSE_LINE 
 

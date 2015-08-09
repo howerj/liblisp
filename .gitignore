@@ -48,3 +48,6 @@ bin/test
 .list
 Doxyfile
 Doxyfile.bak
+*.tgz
+*.tar
+*.tar.gz

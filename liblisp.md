@@ -94,19 +94,12 @@ To build the interpreter a C compiler for a hosted platform is needed. It has
 no other dependencies apart from the C library. A makefile is provided, but the
 following commands should all work for their respective compilers:
 
-        gcc   liblisp.c main.c -o lisp
-        tcc   liblisp.c main.c -o lisp
-        clang liblisp.c main.c -o lisp
-
-Or the following to include basic mathematical functions:
-
-        gcc   liblisp.c -DUSE_MATH main.c -lm -o lisp
-        tcc   liblisp.c -DUSE_MATH main.c -lm -o lisp
-        clang liblisp.c -DUSE_MATH main.c -lm -o lisp
+        gcc   liblisp.c main.c -lm -o lisp
+        tcc   liblisp.c main.c -lm -o lisp
+        clang liblisp.c main.c -lm -o lisp
 
 The preprocessor defines that add or change functionality are:
 
-        USE_MATH        Add mathematical functions from the C library
         USE_LINE        Add a line editor, must be linked with libline.a
         NDEBUG          The interpreter liberally uses assertions
 
@@ -178,7 +171,7 @@ Or in C++:
         using namespace std;
         int main(int argc, char **argv)
         {
-                cout << "(debug 'cpp-test)" << endl;
+                cout << "(cpp-test)" << endl;
                 return main_lisp(argc, argv);
         }
 
@@ -297,6 +290,7 @@ defined in [liblisp.c][] is used and can be done so in terms of *car* and
 * Environment variables used
   - HOME
 * C API
+* Interpreter Internals
 * User defined primitive functions or "subr"s.
 * User defined types
 
