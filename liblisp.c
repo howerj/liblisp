@@ -15,7 +15,8 @@
  *  @todo File operations on strings could be improved. An append mode should
  *        be added as well. freopen and/or opening in append mode need to be
  *        added as well.
- *  @todo Needed primitives; map, apply, loop, split, join, regex
+ *  @todo Needed primitives; map, apply, loop, split, join, regex, 
+ *        reverse (hash/string/list).
 **/
 
 #include "liblisp.h"
@@ -167,6 +168,7 @@ struct lisp {
         editor_func editor; /**< line editor to use, optional*/
 };
 
+/**@brief list of all special cells for initializer*/
 #define CELL_LIST\
         X(Nil,     "nil")       X(Tee,     "t")\
         X(Quote,   "quote")     X(If,      "if")\
@@ -185,8 +187,9 @@ CELL_LIST /*pointers to structs for special cells*/
 #undef X
 
 #define X(CNAME, NOT_USED) { & _ ## CNAME },
+/**@brief a list of all the special symbols**/
 static struct special_cell_list { cell *internal; } special_cells[] = {
-        CELL_LIST /*list of all special cells for initializer*/
+        CELL_LIST 
         { NULL }
 };
 #undef X
@@ -1076,6 +1079,24 @@ static cell *readlist(lisp *l, io *i) {
         return cons(l, tmp, readlist(l, i));
 }
 
+static int print_escaped_string(lisp *l, io *o, unsigned depth, char *s) {
+        char c;
+        printerf(l, o, depth, "%r\"");
+        while((c = *s++)) {
+               switch(c) {
+               case '\\': printerf(l, o, depth, "%m\\\\%r"); continue;
+               case '\n': printerf(l, o, depth, "%m\\n%r");  continue;
+               case '\t': printerf(l, o, depth, "%m\\t%r");  continue;
+               case '\r': printerf(l, o, depth, "%m\\r%r");  continue;
+               case '"':  printerf(l, o, depth, "%m\\\"%r"); continue;
+               default: break;
+               }
+               io_putc(c, o);
+        }
+        return io_putc('"', o);
+}
+
+
 static int printer(lisp *l, io *o, cell *op, unsigned depth);
 int printerf(lisp*l, io *o, unsigned depth, char *fmt, ...) {
         va_list ap;
@@ -1115,16 +1136,17 @@ int printerf(lisp*l, io *o, unsigned depth, char *fmt, ...) {
                                    ret =  printer(l, o, ob, depth);
                                    break;
                         case 'H':  ht = va_arg(ap, hashtable*);
-                        { /*@note this is printing an object that is not
-                                  a list but when printed out it does...*/
+                        { 
                           size_t i;
                           hashentry *cur;
                           printerf(l, o, depth, "(%yhash-create%t");
                           for(i = 0; i < ht->len; i++)
-                            if(ht->table[i]) /**@bug the string printed out is not escaped*/
-                              for(cur = ht->table[i]; cur; cur = cur->next)
-                                printerf(l, o, depth + 1, " \"%s\" '%S", 
-                                                        cur->key, cdr(cur->val));
+                            if(ht->table[i])
+                              for(cur = ht->table[i]; cur; cur = cur->next) {
+                                io_putc(' ', o);
+                                print_escaped_string(l, o, depth, cur->key);
+                                printerf(l, o, depth, "%t '%S", cdr(cur->val));
+                              }
                           ret = io_putc(')', o);
                         }
                         break;
@@ -1185,21 +1207,7 @@ static int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-exp
         case SYMBOL:  if(isnil(op)) printerf(l, o, depth, "%r()");
                       else          printerf(l, o, depth, "%y%s", symval(op));
                       break;
-        case STRING:{ char c, *s = strval(op);
-                      printerf(l, o, depth, "%r\"");
-                      while((c = *s++)) {
-                        switch(c) {
-                        case '\\': printerf(l, o, depth, "%m\\\\%r"); continue;
-                        case '\n': printerf(l, o, depth, "%m\\n%r");  continue;
-                        case '\t': printerf(l, o, depth, "%m\\t%r");  continue;
-                        case '\r': printerf(l, o, depth, "%m\\r%r");  continue;
-                        case '"':  printerf(l, o, depth, "%m\\\"%r"); continue;
-                        default: break;
-                        }
-                        io_putc(c, o);
-                      }
-                      io_putc('"', o);
-                      } break;
+        case STRING:  print_escaped_string(l, o, depth, strval(op));     break;
         case SUBR:    printerf(l, o, depth, "%B<SUBR:%d>", intval(op));  break;
         case PROC:    printerf(l, o, depth+1, "(%ylambda%t %S %S)", 
                                       procargs(op), car(proccode(op)));
@@ -1207,7 +1215,7 @@ static int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-exp
         case FPROC:   printerf(l, o, depth+1, "(%yflambda%t %S %S)", 
                                       procargs(op), car(proccode(op)));
                       break;
-        case HASH:    printerf(l, o, depth, "%H",            hashval(op)); break;
+        case HASH:    printerf(l, o, depth, "%H",             hashval(op)); break;
         case IO:      printerf(l, o, depth, "%B<IO:%s:%d>",  
                                       op->close? "CLOSED" : 
                                       (isin(op)? "IN": "OUT"), intval(op)); break;
@@ -1325,7 +1333,7 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                         tmp = exp;
                         for(; !isnil(cdr(exp)); exp = cdr(exp)) {
                                 if(!iscons(car(exp)) || !cklen(car(exp), 2))
-                                   RECOVER(l, "'let* \"expected list of length 2: got '%S in '%S\"",
+                                   RECOVER(l, "'let* \"expected list of length 2: '%S '%S\"",
                                                    car(exp), tmp);
                                 if(first == LetRec)
                                         s = env = extend(l, env, car(car(exp)), Nil);
@@ -1709,7 +1717,7 @@ static cell* subr_outp(lisp *l, cell *args) {
 static cell* subr_open(lisp *l, cell *args) {
         io *ret = NULL;
         char *file;
-        if(!cklen(args, 2) || !isint(car(args)) || !isstr(car(cdr(args)))) 
+        if(!cklen(args, 2) || !isint(car(args)) || !isasciiz(car(cdr(args)))) 
                 RECOVER(l, "\"expected (integer string)\" '%S", args);
         file = strval(car(cdr(args)));
         switch(intval(car(args))) {
@@ -1734,12 +1742,12 @@ static cell* subr_getchar(lisp *l, cell *args) {
 static cell* subr_getdelim(lisp *l, cell *args) {
         int ch;
         char *s; 
-        if(cklen(args, 1) && (isstr(car(args)) || isint(car(args)))) {
-                ch = isstr(car(args)) ? strval(car(args))[0] : intval(car(args));
+        if(cklen(args, 1) && (isasciiz(car(args)) || isint(car(args)))) {
+                ch = isasciiz(car(args)) ? strval(car(args))[0] : intval(car(args));
                 return (s = io_getdelim(l->ifp, ch)) ? mkstr(l, s) : Nil;
         }
-        if(cklen(args, 2) && isin(car(args)) && (isstr(car(cdr(args))) || isint(car(cdr(args))))) {
-                ch = isstr(car(cdr(args))) ? strval(car(cdr(args)))[0] : intval(car(cdr(args)));
+        if(cklen(args, 2) && isin(car(args)) && (isasciiz(car(cdr(args))) || isint(car(cdr(args))))) {
+                ch = isasciiz(car(cdr(args))) ? strval(car(cdr(args)))[0] : intval(car(cdr(args)));
                 return (s = io_getdelim(ioval(car(args)), ch)) ? mkstr(l, s) : Nil;
         }
         RECOVER(l, "\"expected (string) or (input string)\" '%S", args);
@@ -1770,9 +1778,9 @@ static cell* subr_read(lisp *l, cell *args) {
 }
 
 static cell* subr_puts(lisp *l, cell *args) {
-        if(cklen(args, 1) && isstr(car(args)))
+        if(cklen(args, 1) && isasciiz(car(args)))
                 return io_puts(strval(car(args)),l->ofp) < 0 ? Nil : car(args);
-        if(cklen(args, 2) && isout(car(args)) && isstr(car(cdr(args))))
+        if(cklen(args, 2) && isout(car(args)) && isasciiz(car(cdr(args))))
                 return io_puts(strval(car(cdr(args))), ioval(car(args))) < 0 ?
                         Nil : car(cdr(args));
         RECOVER(l, "\"expected (string) or (output string)\" '%S", args);
@@ -2000,7 +2008,7 @@ static cell* subr_date(lisp *l, cell *args) { /*not thread safe, also only GMT*/
 
 static cell* subr_getenv(lisp *l, cell *args) {
         char *ret;
-        if(!cklen(args, 1) || !isstr(car(args)))
+        if(!cklen(args, 1) || !isasciiz(car(args)))
                 RECOVER(l, "\"expected (string)\" '%S", args);
         return (ret = getenv(strval(car(args)))) ? mkstr(l, lstrdup(ret)) : Nil;
 }
@@ -2248,23 +2256,21 @@ cell *lisp_eval(lisp *l, cell *exp) { assert(l && exp);
 }
 
 cell *lisp_eval_string(lisp *l, char *evalme) { assert(l && evalme);
-        /**@bug Leaks memory when an error is encountered. This is 
-         * due to some weird longjmp interactions**/
         io *in = NULL;
         cell *ret;
-        volatile int restore_used = 0;
-        int r;
+        volatile int restore_used = 0, r;
         jmp_buf restore;
+        if(!(in = io_sin(evalme))) return NULL;
         if(l->recover_init) {
                 memcpy(restore, l->recover, sizeof(jmp_buf));
                 restore_used = 1;
         }
         if((r = setjmp(l->recover))) {
+                io_close(in);
                 RECOVER_RESTORE(restore_used, l, restore); 
                 return r > 0 ? Error : NULL;
         }
         l->recover_init = 1;
-        if(!(in = io_sin(evalme))) return NULL;
         ret = eval(l, 0, reader(l, in), l->top_env);
         io_close(in);
         RECOVER_RESTORE(restore_used, l, restore); 
@@ -2298,7 +2304,9 @@ io *lisp_get_logging(lisp *l) { assert(l); return l->efp; }
 
 /**************************** example program *********************************/
 
-static char *usage = "usage: %s (-[hcpEH])* (-[i\\-] file)* (-e string)* (-o file)* file* -\n";
+static char *usage = /**< command line options for example interpreter*/
+     "usage: %s (-[hcpEH])* (-[i\\-] file)* (-e string)* (-o file)* file* -\n";
+
 enum {  go_switch,           /**< current argument was a valid flag*/
         go_in_file,          /**< current argument is file input to eval*/
         go_in_file_next_arg, /**< process the next argument as file input*/

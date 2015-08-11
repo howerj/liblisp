@@ -1,4 +1,6 @@
-# readme.md
+readme.md {#mainpage}
+=========
+
 
 A small lisp interpreter library and wrapper written in C. The documentation 
 is in [liblisp.md][] which contains information on how to build and run the

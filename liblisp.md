@@ -1,4 +1,4 @@
-liblisp.md {#mainpage}
+liblisp.md 
 ==========
 
 # A small and extensible lisp interpreter and library
@@ -936,66 +936,6 @@ representation of an error returned from primitive functions.
 The following is a list of all the built in subroutines that are always
 available.
 
-        &                  Perform a bitwise AND on two integers
-        |                  Perform a bitwise OR on two integers
-        ^                  Perform a bitwise XOR on two integers
-        ~                  Perform a bitwise inversion on an integer
-        +                  Add two numbers
-        -                  Subtract a number from another number
-        *                  Multiply two numbers together
-        %                  Calculate the remainder of a division
-        /                  Divide two numbers
-        =                  Test for equality
-        eq                 Test for equality
-        >                  Greater than test
-        <                  Less than test
-        cons               Create a new cons cell
-        car                Get the first value of a cons cell
-        cdr                Get the second value of a cons cell
-        list               Create a list from multiple expressions
-        match              Match a string based on a patten
-        scons              Concatenate two strings
-        scar               Get the first character in a string
-        scdr               Get a string excluding the first character
-        eval               Evaluate an expression
-        trace-level!       Set the trace level
-        gc                 Control the garbage collector
-        length             Get the length of an expression or string
-        input?             Check if an IO object is set up for reading
-        output?            Check if an IO object is set up for writing
-        eof?               Check if an IO object has its End Of File marker set
-        flush              Flush an output stream
-        tell               Get the current file position indicator
-        seek               Perform a seek in a file
-        open               Open an IO object for reading or writing (not both)
-        get-char           Get a character
-        get-delim          Read in a line delimited by a character
-        read               Read in a S-Expression
-        put                Print a string, unescaping it
-        put-char           Print a character
-        print              Print out an S-Expression
-        ferror             Check if an IO object has encountered an error
-        system             Run a command in the systems command processor
-        remove             Remove files
-        rename             Rename files
-        all-symbols        Return all the symbols encountered (bound or not)
-        hash-create        Create a hash table
-        hash-lookup        Lookup a value in a hash by string
-        hash-insert        Insert a value into a hash
-        coerce             Convert types
-        time               Return the time
-        getenv             Get an environment variable
-        random             The Pseudo Random Number Generator
-        seed               Seed the Pseudo Random Number Generator
-        date               Return a list of integers representing the date
-        assoc              Find a value in an association list
-        locale!            Set the locale
-        trace              Control the tracing of an object
-        binary-logarithm   Calculate the binary logarithm of an integer
-        close              Close an IO object
-        type-of            Return an integer-enum for the type of an object
-        timed-eval         Eval with execution time
-
 * &
 
 Perform the bitwise and of two integers.
@@ -1666,31 +1606,6 @@ taken to execute (in seconds) with the returned value from *eval*.
 
 Functions added optionally in [main.c][]:
 
-        # math.h
-        log                Compute the natural logarithm of a float
-        log10              Compute the logarith of a float in base 10
-        fabs               Return the absolute
-        sin                Sine of an angle (in radians)
-        cos                Cosine of an angle (in radians)
-        tan                Tangent of an angle (in radians)
-        asin               Arc Sine
-        acos               Arc Cosine
-        atan               Arc Tangent
-        sinh               Hyperbolic Sine
-        cosh               Hyperbolic Cosine
-        tanh               Hyperbolic Tangent
-        exp                Eulers constant raised to the power of X
-        sqrt               Squareroot of a float
-        ceil               Round upwards
-        floor              Round downwards
-        pow                Computer X raised to the Y
-        modf               Split a value into integer and fractional parts
-        # line-editor
-        line-editor-mode   Change the line editing mode
-        history-length     Change the number of records stored in the
-                                   history file
-        clear-screen       Clear the screen
-
 For all the mathematical functions imported from the C math library the
 arguments are converted to floating point numbers before, the functions also
 all return floating point values, apart from [modf][] which returns a cons of
@@ -1951,48 +1866,6 @@ relate to the internal C enumerations that are used, when this is the case they
 are not guaranteed to be constant between different implementations or
 versions, only self consistent with a single specific implementation.
 
-        # integers
-        *seek-cur*         Seek from current file marker with seek
-        *seek-set*         Seek from the beginning of a file with seek
-        *seek-end*         Seek from the end of a file with seek
-        *random-max*       Maximum number a random number can be
-        *integer-max*      Maximum number an integer can be
-        *integer-min*      Minimum number an integer can be
-        *integer*          Integer   type option for coerce or type-of
-        *symbol*           Symbol    type option for coerce or type-of
-        *cons*             Cons      type option for coerce or type-of
-        *string*           String    type option for coerce or type-of
-        *hash*             Hash      type option for coerce or type-of
-        *io*               IO        type option for type-of
-        *float*            Float     type option for coerce or type-of
-        *procedure*        Procedure type option type-of
-        *primitive*        Primitive type option for type-of
-        *f-procedure*      Fexpr     type option for type-of
-        *user-defined*     User-define type option for type-of
-        *file-in*          File   input  option for open
-        *file-out*         File   output option for open
-        *string-in*        String input  option for open
-        *string-out*       String output option for open
-        *lc-all*           Locale all option for locale!
-        *lc-collate*       Locale collate option for locale!
-        *lc-ctype*         Locale C-type option for locale!
-        *lc-monetary*      Locale money formatting option for locale!
-        *lc-numeric*       Locale numeric option for locale!
-        *lc-time*          Locale time option for locale!
-        *trace-off*        Option for trace, turn it off
-        *trace-marked*     Option for trace, trace only marked objects
-        *trace-all*        Option for trace, trace all expression evaluations
-        *gc-on*            Option for gc, Turn Garbage Collection on
-        *gc-postpone*      Option for gc, Postpone Garbage Collection, temporarily
-        *gc-off*           Option for gc, Turn off Garbage Collection permanently
-        *eof*              End-Of-File marker
-        *args*             Command line options passed into the interpreter
-        *history-file*     If using libline, it contains the history file name
-        *have-math*        't if the math library is available, '() otherwise
-        *have-line*        't if the line editor is available, '() otherwise
-        *version*          The version of this interpreter if known
-        *commit*           Commit version
-        *repository-origin* Origin of the lisp interpreters repository
 
 * \*seek-cur\*
 
@@ -2206,6 +2079,145 @@ Roughly "2.71828...".
 The numerical constant ["e"][]. It also breaks with the usual variable naming
 convention like ["pi"][] does.
 
+#### List of all defined variables and functions
+
+##### Built in subroutines
+
+        &                  Perform a bitwise AND on two integers
+        |                  Perform a bitwise OR on two integers
+        ^                  Perform a bitwise XOR on two integers
+        ~                  Perform a bitwise inversion on an integer
+        +                  Add two numbers
+        -                  Subtract a number from another number
+        *                  Multiply two numbers together
+        %                  Calculate the remainder of a division
+        /                  Divide two numbers
+        =                  Test for equality
+        eq                 Test for equality
+        >                  Greater than test
+        <                  Less than test
+        cons               Create a new cons cell
+        car                Get the first value of a cons cell
+        cdr                Get the second value of a cons cell
+        list               Create a list from multiple expressions
+        match              Match a string based on a patten
+        scons              Concatenate two strings
+        scar               Get the first character in a string
+        scdr               Get a string excluding the first character
+        eval               Evaluate an expression
+        trace-level!       Set the trace level
+        gc                 Control the garbage collector
+        length             Get the length of an expression or string
+        input?             Check if an IO object is set up for reading
+        output?            Check if an IO object is set up for writing
+        eof?               Check if an IO object has its End Of File marker set
+        flush              Flush an output stream
+        tell               Get the current file position indicator
+        seek               Perform a seek in a file
+        open               Open an IO object for reading or writing (not both)
+        get-char           Get a character
+        get-delim          Read in a line delimited by a character
+        read               Read in a S-Expression
+        put                Print a string, unescaping it
+        put-char           Print a character
+        print              Print out an S-Expression
+        ferror             Check if an IO object has encountered an error
+        system             Run a command in the systems command processor
+        remove             Remove files
+        rename             Rename files
+        all-symbols        Return all the symbols encountered (bound or not)
+        hash-create        Create a hash table
+        hash-lookup        Lookup a value in a hash by string
+        hash-insert        Insert a value into a hash
+        coerce             Convert types
+        time               Return the time
+        getenv             Get an environment variable
+        random             The Pseudo Random Number Generator
+        seed               Seed the Pseudo Random Number Generator
+        date               Return a list of integers representing the date
+        assoc              Find a value in an association list
+        locale!            Set the locale
+        trace              Control the tracing of an object
+        binary-logarithm   Calculate the binary logarithm of an integer
+        close              Close an IO object
+        type-of            Return an integer-enum for the type of an object
+        timed-eval         Eval with execution time
+
+##### math.h
+
+        log                Compute the natural logarithm of a float
+        log10              Compute the logarith of a float in base 10
+        fabs               Return the absolute
+        sin                Sine of an angle (in radians)
+        cos                Cosine of an angle (in radians)
+        tan                Tangent of an angle (in radians)
+        asin               Arc Sine
+        acos               Arc Cosine
+        atan               Arc Tangent
+        sinh               Hyperbolic Sine
+        cosh               Hyperbolic Cosine
+        tanh               Hyperbolic Tangent
+        exp                Eulers constant raised to the power of X
+        sqrt               Squareroot of a float
+        ceil               Round upwards
+        floor              Round downwards
+        pow                Computer X raised to the Y
+        modf               Split a value into integer and fractional parts
+
+##### line-editor (optional)
+
+        line-editor-mode   Change the line editing mode
+        history-length     Change the number of records stored in the history file
+        clear-screen       Clear the screen
+
+##### integers
+
+        *seek-cur*         Seek from current file marker with seek
+        *seek-set*         Seek from the beginning of a file with seek
+        *seek-end*         Seek from the end of a file with seek
+        *random-max*       Maximum number a random number can be
+        *integer-max*      Maximum number an integer can be
+        *integer-min*      Minimum number an integer can be
+        *integer*          Integer   type option for coerce or type-of
+        *symbol*           Symbol    type option for coerce or type-of
+        *cons*             Cons      type option for coerce or type-of
+        *string*           String    type option for coerce or type-of
+        *hash*             Hash      type option for coerce or type-of
+        *io*               IO        type option for type-of
+        *float*            Float     type option for coerce or type-of
+        *procedure*        Procedure type option type-of
+        *primitive*        Primitive type option for type-of
+        *f-procedure*      Fexpr     type option for type-of
+        *user-defined*     User-define type option for type-of
+        *file-in*          File   input  option for open
+        *file-out*         File   output option for open
+        *string-in*        String input  option for open
+        *string-out*       String output option for open
+        *lc-all*           Locale all option for locale!
+        *lc-collate*       Locale collate option for locale!
+        *lc-ctype*         Locale C-type option for locale!
+        *lc-monetary*      Locale money formatting option for locale!
+        *lc-numeric*       Locale numeric option for locale!
+        *lc-time*          Locale time option for locale!
+        *trace-off*        Option for trace, turn it off
+        *trace-marked*     Option for trace, trace only marked objects
+        *trace-all*        Option for trace, trace all expression evaluations
+        *gc-on*            Option for gc, Turn Garbage Collection on
+        *gc-postpone*      Option for gc, Postpone Garbage Collection, temporarily
+        *gc-off*           Option for gc, Turn off Garbage Collection permanently
+        *eof*              End-Of-File marker
+        *args*             Command line options passed into the interpreter
+        *history-file*     If using libline, it contains the history file name
+        *have-math*        't if the math library is available, '() otherwise
+        *have-line*        't if the line editor is available, '() otherwise
+        *version*          The version of this interpreter if known
+        *commit*           Commit version
+        *repository-origin* Origin of the lisp interpreters repository
+
+##### floats
+        pi                 The mathematical constant pi
+        e                  Euler's number
+
 <div id='References'/>
 ## References
 
@@ -2239,15 +2251,15 @@ the fact that it needs to initialize static structures as well.
 Here are a list of references on how to implement lisp interpreters and to
 other lisp interpreters people have made.
 
-1. <http://ldc.upenn.edu/myl/llog/jmc.pdf>
-2. <http://c2.com/cgi/wiki?ImplementingLisp>
-3. <http://www.sonoma.edu/users/l/luvisi/sl5.c>
-4. <https://news.ycombinator.com/item?id=8444930>
-5. <https://github.com/kimtg/Arcadia>
-6. <https://www.gnu.org/software/guile/>
-7. <https://github.com/kanaka/mal>
-8. <https://news.ycombinator.com/item?id=9121448>
-9. <http://www.schemers.org/Documents/Standards/R5RS/>
+1.  <http://ldc.upenn.edu/myl/llog/jmc.pdf>
+2.  <http://c2.com/cgi/wiki?ImplementingLisp>
+3.  <http://www.sonoma.edu/users/l/luvisi/sl5.c>
+4.  <https://news.ycombinator.com/item?id=8444930>
+5.  <https://github.com/kimtg/Arcadia>
+6.  <https://www.gnu.org/software/guile/>
+7.  <https://github.com/kanaka/mal>
+8.  <https://news.ycombinator.com/item?id=9121448>
+9.  <http://www.schemers.org/Documents/Standards/R5RS/>
 10. <https://news.ycombinator.com/item?id=869141>
 11. <http://shrager.org/llisp/>
 

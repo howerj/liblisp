@@ -258,6 +258,62 @@
 (define <= (lambda (x y) (or (< x y) (= x y))))
 (define >= (lambda (x y) (or (> x y) (= x y))))
 
+# Example of a "flambda" expression
+(define newline
+  (flambda (x)
+        (cond ((= (length x) 1) 
+               (if (output? (eval (car x) (environment)))
+                   (put (eval (car x) (environment)) "\n")
+                   (begin
+                     (put "newline expects (IO)\n")
+                     (error 1))))
+              ((= (length x) 0)
+               (put "\n"))
+              (t (begin 
+                   (put "newline expects () or (IO))")
+                   (error 1))))))
+
+# Evaluate an entire file
+# (eval-file STRING)
+# (eval-file INPUT-PORT)
+(define eval-file
+  (lambda (file)
+
+    # This bit does the evaluation of a file input object
+    (letrec 
+      (eval-file-inner
+       (lambda (S)
+        (if (eof? S) 
+          nil
+          (let* 
+            (x (read S))
+            (if (eq x 'error) 
+              nil
+              (begin 
+                (print (eval x))
+                (newline)
+                (eval-file-inner S)))))))
+
+    (cond 
+      # If we have been given a potential file name, try to open it
+      ((or (string? file) (symbol? file))
+        (let* (file-handle (open *file-in* file))
+          (if (input? file-handle)
+            (begin (eval-file-inner file-handle)
+                   (close file-handle) # Close file!
+                   nil)
+            (begin (put "could not open file for reading\n")
+                   'error))))
+      # We must have been passed an input file port
+      ((input? file)
+       (eval-file-inner file)) # Do not close file!
+      # User error
+      (t 
+        (begin 
+          (put "Not a file name or a output IO type\n") 
+          'error))))))
+        
+
 ##############################################################################
 # Sets
 # To do
