@@ -25,7 +25,7 @@ non-standard variant of lisp.
 
 A summary of the design goals:
 
-* Simple and Small (< 3000 lines of code)
+* Simple and Small (< 5000 lines of code)
 * Extensible
 * No implicit state
 * Used as a generic utility library
@@ -1601,6 +1601,24 @@ taken to execute (in seconds) with the returned value from *eval*.
            |           |
         Exec time    Approximation of "pi"
 
+* reverse
+
+        # (reverse STRING)
+        # (reverse LIST)
+        # (reverse HASH)
+
+* split
+
+        # (split STRING)
+        # (split STRING STRING)
+
+* join
+
+        # (join STRING STRING...)
+
+* format
+
+        # (format STRING EXPRS)
 
 ##### Additional functions
 
@@ -2144,6 +2162,10 @@ Glossary of all of defined subroutine primitives and variables.
         close              Close an IO object
         type-of            Return an integer-enum for the type of an object
         timed-eval         Eval with execution time
+        reverse            Reverse a string, a list or a hash
+        split              Split a string based
+        join               Join a list of strings together
+        format             Print out a list of objects based on a format string
 
 ##### math.h
 

@@ -169,7 +169,7 @@ struct lisp {
 };
 
 /**@brief list of all special cells for initializer*/
-#define CELL_LIST\
+#define CELL_XLIST\
         X(Nil,     "nil")       X(Tee,     "t")\
         X(Quote,   "quote")     X(If,      "if")\
         X(Lambda,  "lambda")    X(Flambda, "flambda")\
@@ -179,17 +179,17 @@ struct lisp {
         X(LetS,    "let*")      X(LetRec,  "letrec")
 
 #define X(CNAME, LNAME) static cell _ ## CNAME = { SYMBOL, 0, 0, 1, 0, 0, 0, .p[0].v = LNAME};
-CELL_LIST /*structs for special cells*/
+CELL_XLIST /*structs for special cells*/
 #undef X
 
 #define X(CNAME, NOT_USED) static cell* CNAME = & _ ## CNAME;
-CELL_LIST /*pointers to structs for special cells*/
+CELL_XLIST /*pointers to structs for special cells*/
 #undef X
 
 #define X(CNAME, NOT_USED) { & _ ## CNAME },
 /**@brief a list of all the special symbols**/
 static struct special_cell_list { cell *internal; } special_cells[] = {
-        CELL_LIST 
+        CELL_XLIST 
         { NULL }
 };
 #undef X
@@ -1964,6 +1964,9 @@ static cell* subr_coerce(lisp *l, cell *args) {
                             sprintf(s, "%f", floatval(convfrom));
                             return mkstr(l, lstrdup(s));
                     }
+                    if(iscons(convfrom)) { /*list of chars/ints to string*/
+                        /**@bug list of integers or chars to string*/
+                    }
                     break;
         case SYMBOL:if(isstr(convfrom) && !strpbrk(strval(convfrom), " #()\t\n\r'\"\\"))
                             return intern(l, lstrdup(strval(convfrom)));
@@ -2073,8 +2076,60 @@ static cell *subr_eval_time(lisp *l, cell *args) {
         return cons(l, mkfloat(l, used), x);
 }
 
+static cell *subr_reverse(lisp *l, cell *args) {
+        if(!cklen(args, 1)) goto fail;
+        if(Nil == car(args)) return Nil;
+        switch(car(args)->type) {
+        case STRING:
+                {       
+                        char *s = lstrdup(strval(car(args))), c;
+                        size_t i, len;
+                        if(!s) HALT(l, "\"%s\"", "out of memory");
+                        if(!(car(args)->len))
+                                return mkstr(l, s);
+                        len = car(args)->len - 1;
+                        for(i = 0; i < (len / 2); i++) {
+                                c = s[i];
+                                s[i] = s[len - i];
+                                s[len - i] = c;
+                        }
+                        return mkstr(l, s);
+                } break;
+        case CONS:
+                {
+                        cell *x = car(args), *y = Nil;
+                        if(!iscons(cdr(x)) && !isnil(cdr(x)))
+                                return cons(l, cdr(x), car(x));
+                        for(; !isnil(x); x = cdr(x)) 
+                                y = cons(l, car(x), y);
+                        return y;
+                } break;
+        case HASH: /**@bug implement me*/
+                break;
+        default:   
+                break;
+        }
+fail:   RECOVER(l, "\"expected () (STRING) (LIST) (HASH)\" %S", args);
+        return Error;
+}
+
+static cell *subr_split(lisp *l, cell *args) {
+        /**@bug implement me*/
+        return Nil;
+}
+
+static cell *subr_join(lisp *l, cell *args) {
+        /**@bug implement me*/
+        return Nil;
+}
+
+static cell *subr_format(lisp *l, cell *args) {
+        /**@bug implement me*/
+        return Nil;
+}
+
 /*X-Macro of primitive functions and their names; basic built in subr*/
-#define SUBR_LIST\
+#define SUBROUTINE_XLIST\
         X(subr_band,    "&")              X(subr_bor,       "|")\
         X(subr_bxor,    "^")              X(subr_binv,      "~")\
         X(subr_sum,     "+")              X(subr_sub,       "-")\
@@ -2104,16 +2159,18 @@ static cell *subr_eval_time(lisp *l, cell *args) {
         X(subr_seed,    "seed")           X(subr_date,      "date")\
         X(subr_assoc,   "assoc")          X(subr_setlocale, "locale!")\
         X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")\
-        X(subr_eval_time, "timed-eval")
+        X(subr_eval_time, "timed-eval")   X(subr_reverse,   "reverse")\
+        X(subr_split,     "split")        X(subr_join,      "join")\
+        X(subr_format,    "format")
 
 #define X(SUBR, NAME) { SUBR, NAME },
 static struct subr_list { subr p; char *name; } primitives[] = {
-        SUBR_LIST  /*all of the subr*/
+        SUBROUTINE_XLIST /*all of the subr functions*/
         {NULL, NULL} /*must be terminated with NULLs*/
 };
 #undef X
 
-#define INTEGER_LIST\
+#define INTEGER_XLIST\
         X("*seek-cur*",     SEEK_CUR)     X("*seek-set*",    SEEK_SET)\
         X("*seek-end*",     SEEK_END)     X("*random-max*",  INTPTR_MAX)\
         X("*integer-max*",  INTPTR_MAX)   X("*integer-min*", INTPTR_MIN)\
@@ -2134,7 +2191,7 @@ static struct subr_list { subr p; char *name; } primitives[] = {
 
 #define X(NAME, VAL) { NAME, VAL }, 
 static struct integer_list { char *name; intptr_t val; } integers[] = {
-        INTEGER_LIST
+        INTEGER_XLIST
         {NULL, 0}
 };
 #undef X

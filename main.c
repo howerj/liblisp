@@ -70,8 +70,8 @@ static char *histfile = ".list";
 
 #include <math.h>
 
-/**@brief
- * @param NAME*/
+/**@brief Template for most of the functions in "math.h"
+ * @param NAME name of math function such as "log", "sin", etc.*/
 #define SUBR_MATH_UNARY(NAME)\
 static cell *subr_ ## NAME (lisp *l, cell *args) {\
         if(!cklen(args, 1) || !isarith(car(args)))\
