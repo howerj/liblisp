@@ -2079,7 +2079,9 @@ Roughly "2.71828...".
 The numerical constant ["e"][]. It also breaks with the usual variable naming
 convention like ["pi"][] does.
 
-#### List of all defined variables and functions
+#### Glossary
+
+Glossary of all of defined subroutine primitives and variables.
 
 ##### Built in subroutines
 
@@ -2331,25 +2333,25 @@ used:
 
 <!-- Links used throughout the document. These will not be present in the HTML
      but only in the markdown document used to generate the HTML -->
-[side effects]: <https://en.wikipedia.org/wiki/Side_effect_%28computer_science%29>
-[recursion]: <https://en.wikipedia.org/wiki/Recursion_%28computer_science%29>
-[tail call]: <https://en.wikipedia.org/wiki/Tail_call>
-[mark and sweep]: <http://c2.com/cgi/wiki?MarkAndSweep>
-[MATLAB]: <https://en.wikipedia.org/wiki/MATLAB>
-[AWK]: <https://en.wikipedia.org/wiki/AWK>
-[S-Expressions]: <https://en.wikipedia.org/wiki/S-expression>
-[S-Expression]: <https://en.wikipedia.org/wiki/S-expression>
-[Garbage Collection]: <https://en.wikipedia.org/wiki/Garbage_collection_%28computer_science%29>
-[Lisp]: <https://en.wikipedia.org/wiki/Lisp_%28programming_language%29>
-[FORTRAN]: <https://en.wikipedia.org/wiki/Fortran>
-[ANSI C]: <https://en.wikipedia.org/wiki/ANSI_C>
-[c99]: <https://en.wikipedia.org/wiki/C99>
-[Cygwin]: <https://www.cygwin.com/>
-[VT220]: <https://en.wikipedia.org/wiki/VT220>
-[ANSI escape codes]: <https://en.wikipedia.org/wiki/ANSI_escape_code#Colors>
-[libline]: <https://github.com/howerj/libline>
-[linenoise]: <https://github.com/antirez/linenoise>
-["Vi"]: <https://en.wikipedia.org/wiki/Vi>
+[side effects]: https://en.wikipedia.org/wiki/Side_effect_%28computer_science%29
+[recursion]: https://en.wikipedia.org/wiki/Recursion_%28computer_science%29
+[tail call]: https://en.wikipedia.org/wiki/Tail_call
+[mark and sweep]: http://c2.com/cgi/wiki?MarkAndSweep
+[MATLAB]: https://en.wikipedia.org/wiki/MATLAB
+[AWK]: https://en.wikipedia.org/wiki/AWK
+[S-Expressions]: https://en.wikipedia.org/wiki/S-expression
+[S-Expression]: https://en.wikipedia.org/wiki/S-expression
+[Garbage Collection]: https://en.wikipedia.org/wiki/Garbage_collection_%28computer_science%29
+[Lisp]: https://en.wikipedia.org/wiki/Lisp_%28programming_language%29
+[FORTRAN]: https://en.wikipedia.org/wiki/Fortran
+[ANSI C]: https://en.wikipedia.org/wiki/ANSI_C
+[c99]: https://en.wikipedia.org/wiki/C99
+[Cygwin]: https://www.cygwin.com/
+[VT220]: https://en.wikipedia.org/wiki/VT220
+[ANSI escape codes]: https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
+[libline]: https://github.com/howerj/libline
+[linenoise]: https://github.com/antirez/linenoise
+["Vi"]: https://en.wikipedia.org/wiki/Vi
 [liblisp.c]: liblisp.c
 [liblisp.h]: liblisp.h
 [liblisp.1]: liblisp.1
@@ -2358,44 +2360,44 @@ used:
 [meta.lsp]:  meta.lsp
 [test.lsp]:  test.lsp
 [main.c]: main.c
-[metasyntactic variables]: <http://www.catb.org/jargon/html/M/metasyntactic-variable.html>
-[fexpr]: <https://en.wikipedia.org/wiki/Fexpr>
-[tail calls]: <https://en.wikipedia.org/wiki/Tail_call>
-[lambda procedure]: <https://en.wikipedia.org/wiki/Anonymous_function>
-["pi"]: <https://en.wikipedia.org/wiki/Pi>
-["e"]: <https://en.wikipedia.org/wiki/E_%28mathematical_constant%29>
-["Emacs"]: <https://en.wikipedia.org/wiki/Emacs>
-[natural logarithm]: <https://en.wikipedia.org/wiki/Natural_logarithm>
-[logarithm]: <https://en.wikipedia.org/wiki/Logarithm>
-[absolute value]: <https://en.wikipedia.org/wiki/Absolute_value>
-[sine]: <https://en.wikipedia.org/wiki/Sine>
-[cosine]: <https://en.wikipedia.org/wiki/Trigonometric_functions#Sine.2C_cosine_and_tangent>
-[tangent]:<https://en.wikipedia.org/wiki/Trigonometric_functions#Sine.2C_cosine_and_tangent>
-[reciprocal of sine]: <https://en.wikipedia.org/wiki/Trigonometric_functions#Reciprocal_functions>
-[reciprocal of cosine]: <https://en.wikipedia.org/wiki/Trigonometric_functions#Reciprocal_functions>
-[reciprocal of tangent]: <https://en.wikipedia.org/wiki/Trigonometric_functions#Reciprocal_functions>
-[hyperbolic sine]: <https://en.wikipedia.org/wiki/Hyperbolic_function>
-[hyperbolic cosine]: <https://en.wikipedia.org/wiki/Hyperbolic_function>
-[hyperbolic tangent]: <https://en.wikipedia.org/wiki/Hyperbolic_function>
-[exponential function]: <https://en.wikipedia.org/wiki/Exponential_function>
-[square root]: <https://en.wikipedia.org/wiki/Square_root>
-[ceil]: <http://www.cplusplus.com/reference/cmath/ceil/>
-[floor]: <http://www.cplusplus.com/reference/cmath/floor/>
-[modf]: <http://www.cplusplus.com/reference/cmath/modf/>
-[sets]: <https://en.wikipedia.org/wiki/Set_theory>
-[factorial]: <https://en.wikipedia.org/wiki/Factorial>
-[gcd]: <https://en.wikipedia.org/wiki/Greatest_common_divisor>
-[Meta-circular Evaluator]: <https://en.wikipedia.org/wiki/Meta-circular_evaluator>
-[The Roots of Lisp]: <ldc.upenn.edu/myl/llog/jmc.pdf>
-[cons cell]: <https://en.wikipedia.org/wiki/Cons>
-[associative arrays]: <https://en.wikipedia.org/wiki/Associative_array>
-[dotted pairs]: <http://c2.com/cgi/wiki?DottedPairNotation>
-[dotted pair]: <http://c2.com/cgi/wiki?DottedPairNotation>
-[Trees]: <https://en.wikipedia.org/wiki/Tree_%28data_structure%29>
-[Scheme]: <https://en.wikipedia.org/wiki/Scheme_%28programming_language%29>
-[Common Lisp]: <https://en.wikipedia.org/wiki/Common_Lisp>
-[REPL]: <https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop>
-[git]: <https://git-scm.com/>
-[VCS]: <https://en.wikipedia.org/wiki/Revision_control>
+[metasyntactic variables]: http://www.catb.org/jargon/html/M/metasyntactic-variable.html
+[fexpr]: https://en.wikipedia.org/wiki/Fexpr
+[tail calls]: https://en.wikipedia.org/wiki/Tail_call
+[lambda procedure]: https://en.wikipedia.org/wiki/Anonymous_function
+["pi"]: https://en.wikipedia.org/wiki/Pi
+["e"]: https://en.wikipedia.org/wiki/E_%28mathematical_constant%29
+["Emacs"]: https://en.wikipedia.org/wiki/Emacs
+[natural logarithm]: https://en.wikipedia.org/wiki/Natural_logarithm
+[logarithm]: https://en.wikipedia.org/wiki/Logarithm
+[absolute value]: https://en.wikipedia.org/wiki/Absolute_value
+[sine]: https://en.wikipedia.org/wiki/Sine
+[cosine]: https://en.wikipedia.org/wiki/Trigonometric_functions#Sine.2C_cosine_and_tangent
+[tangent]:https://en.wikipedia.org/wiki/Trigonometric_functions#Sine.2C_cosine_and_tangent
+[reciprocal of sine]: https://en.wikipedia.org/wiki/Trigonometric_functions#Reciprocal_functions
+[reciprocal of cosine]: https://en.wikipedia.org/wiki/Trigonometric_functions#Reciprocal_functions
+[reciprocal of tangent]: https://en.wikipedia.org/wiki/Trigonometric_functions#Reciprocal_functions
+[hyperbolic sine]: https://en.wikipedia.org/wiki/Hyperbolic_function
+[hyperbolic cosine]: https://en.wikipedia.org/wiki/Hyperbolic_function
+[hyperbolic tangent]: https://en.wikipedia.org/wiki/Hyperbolic_function
+[exponential function]: https://en.wikipedia.org/wiki/Exponential_function
+[square root]: https://en.wikipedia.org/wiki/Square_root
+[ceil]: http://www.cplusplus.com/reference/cmath/ceil/
+[floor]: http://www.cplusplus.com/reference/cmath/floor/
+[modf]: http://www.cplusplus.com/reference/cmath/modf/
+[sets]: https://en.wikipedia.org/wiki/Set_theory
+[factorial]: https://en.wikipedia.org/wiki/Factorial
+[gcd]: https://en.wikipedia.org/wiki/Greatest_common_divisor
+[Meta-circular Evaluator]: https://en.wikipedia.org/wiki/Meta-circular_evaluator
+[The Roots of Lisp]: ldc.upenn.edu/myl/llog/jmc.pdf
+[cons cell]: https://en.wikipedia.org/wiki/Cons
+[associative arrays]: https://en.wikipedia.org/wiki/Associative_array
+[dotted pairs]: http://c2.com/cgi/wiki?DottedPairNotation
+[dotted pair]: http://c2.com/cgi/wiki?DottedPairNotation
+[Trees]: https://en.wikipedia.org/wiki/Tree_%28data_structure%29
+[Scheme]: https://en.wikipedia.org/wiki/Scheme_%28programming_language%29
+[Common Lisp]: https://en.wikipedia.org/wiki/Common_Lisp
+[REPL]: https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop
+[git]: https://git-scm.com/
+[VCS]: https://en.wikipedia.org/wiki/Revision_control
 <!-- This isn't meant to go here but it is out of the way -->
 <style type="text/css">body{margin:40px auto;max-width:650px;line-height:1.6;font-size:18px;color:#444;padding:0 10px}h1,h2,h3,h4,h5,h6{line-height:1.2}</style>

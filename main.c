@@ -33,19 +33,28 @@
 #include <assert.h>
 
 #ifndef VERSION
-#define VERSION unknown
+#define VERSION unknown    /**< Version of the interpreter*/
 #endif
 
 #ifndef VCS_COMMIT
-#define VCS_COMMIT unknown
+#define VCS_COMMIT unknown /**< Version control commit of this interpreter*/
 #endif
 
 #ifndef VCS_ORIGIN
-#define VCS_ORIGIN unknown
+#define VCS_ORIGIN unknown /**< Version control repository origin*/
 #endif
 
-static lisp *lglobal;
+static lisp *lglobal; /**< used for signal handler*/
 static int running; /**< only handle errors when the lisp interpreter is running*/
+
+/** @brief This function tells a running lisp REPL to halt if it is reading
+ *         input or printing output, but if it is evaluating an expression
+ *         instead it will stop doing that and try to get more input. This is
+ *         so the user can sent the SIGINT signal to the interpreter to halt
+ *         expressions that are not terminating, but can still use SIGINT to
+ *         halt the interpreter by at maximum sending the signal twice. This
+ *         function is meant to be passed to "signal".
+ *  @param sig This will only be SIGINT in our case. */
 static void sig_int_handler(int sig) {
         if(!running || !lglobal) exit(0);  /*exit if lisp environment is not running*/
         lisp_set_signal(lglobal, sig); /*notify lisp environment of signal*/
@@ -61,6 +70,8 @@ static char *histfile = ".list";
 
 #include <math.h>
 
+/**@brief
+ * @param NAME*/
 #define SUBR_MATH_UNARY(NAME)\
 static cell *subr_ ## NAME (lisp *l, cell *args) {\
         if(!cklen(args, 1) || !isarith(car(args)))\
@@ -72,8 +83,7 @@ static cell *subr_ ## NAME (lisp *l, cell *args) {\
 #define MATH_UNARY_LIST\
         X(log)    X(log10)   X(fabs)    X(sin)     X(cos)   X(tan)\
         X(asin)   X(acos)    X(atan)    X(sinh)    X(cosh)  X(tanh)\
-        X(exp)    X(sqrt)    X(ceil)    X(floor) /*X(log2)  X(round)\
-        X(trunc)  X(tgamma)  X(lgamma)  X(erf)     X(erfc)*/
+        X(exp)    X(sqrt)    X(ceil)    X(floor)
 
 #define X(FUNC) SUBR_MATH_UNARY(FUNC)
 MATH_UNARY_LIST

@@ -38,8 +38,8 @@
 #define MAX_USER_TYPES     (256)   /**< max number of user defined types*/
 #define COLLECTION_POINT   (1<<20) /**< run gc after this many allocs*/
 #define UNUSED(X)          ((void)(X)) /**< unused variable*/
-#define MAX(X, Y)          ((X) > (Y) ? (X) : (Y))
-#define MIN(X, Y)          ((X) > (Y) ? (Y) : (X))
+#define MAX(X, Y)    ((X)>(Y)?(X):(Y)) /**< largest of two values*/
+#define MIN(X, Y)    ((X)>(Y)?(Y):(X)) /**< smallest of two values*/
 
 /**@brief This restores a jmp_buf stored in lisp environment if it
  *        has been copied out to make way for another jmp_buf.
@@ -240,32 +240,31 @@ char *getaline(FILE *in) { assert(in); return getadelim(in, '\n'); }
 char *lstrcatend(char *dest, const char *src) { assert(dest && src);
         size_t sz = strlen(dest);
         strcpy(dest + sz, src);
-        return dest+sz;
+        return dest + sz;
 }
 
 char *vstrcatsep(const char *separator, const char *first, ...) { 
-        /**@todo change so this uses lstrcatend*/
         size_t len, seplen, num = 0;
-        char *retbuf, *p;
+        char *retbuf, *va, *p;
         va_list argp1, argp2;
 
         if (!separator || !first) return NULL;
-        len = strlen(first);
+        len    = strlen(first);
         seplen = strlen(separator);
 
         va_start(argp1, first);
         va_copy(argp2, argp1);
-        while ((p = va_arg(argp1, char *))) 
-                 num++, len += strlen(p);
+        while ((va = va_arg(argp1, char *))) 
+                 num++, len += strlen(va);
         va_end(argp1);
 
         len += (seplen * num);
-        if (!(retbuf = malloc(len+1))) return NULL;
-        strcpy(retbuf, first);
-
+        if (!(retbuf = malloc(len + 1))) return NULL;
+        retbuf[0] = '\0';
+        p = lstrcatend(retbuf, first);
         va_start(argp2, first);
-        while ((p = va_arg(argp2, char *)))
-                 strcat(retbuf, separator), strcat(retbuf, p);
+        while ((va = va_arg(argp2, char *)))
+                 p = lstrcatend(p, separator), p = lstrcatend(p, va);
         va_end(argp2);
         return retbuf;
 }
