@@ -215,6 +215,13 @@ ISX_LIST
         lisp_add_cell(l, "*repository-origin*", mkstr(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));
         lisp_add_subr(l, "raise", subr_raise);
 
+        lisp_add_cell(l, "*sig-abrt*", mkint(l, SIGABRT));
+        lisp_add_cell(l, "*sig-fpe*",  mkint(l, SIGFPE));
+        lisp_add_cell(l, "*sig-ill*",  mkint(l, SIGILL));
+        lisp_add_cell(l, "*sig-int*",  mkint(l, SIGINT));
+        lisp_add_cell(l, "*sig-segv*", mkint(l, SIGSEGV));
+        lisp_add_cell(l, "*sig-term*", mkint(l, SIGTERM));
+
 #ifdef USE_LINE /*add line editor functionality*/
         static char *homedir;
         homedir = getenv("HOME"); /*Unix home path*/

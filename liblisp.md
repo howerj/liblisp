@@ -1629,6 +1629,12 @@ Print out a list of expressions based on a format string.
         # (format IO STRING EXPRS)
         # (format STRING EXPRS)
 
+* raise
+
+Raise a signal.
+
+        # (signal INTEGER)
+
 ##### Additional functions
 
 Functions added optionally in [main.c][]:
@@ -2276,6 +2282,7 @@ Glossary of all of defined subroutine primitives and variables.
         split              Split a string based
         join               Join a list of strings together
         format             Print out a list of objects based on a format string
+        raise              Raise a signal
 
 ##### math.h
 
