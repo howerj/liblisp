@@ -1965,7 +1965,7 @@ static cell* subr_coerce(lisp *l, cell *args) {
                             return mkstr(l, lstrdup(s));
                     }
                     if(iscons(convfrom)) { /*list of chars/ints to string*/
-                        /**@bug list of integers or chars to string*/
+                        /**@bug implement me*/
                     }
                     break;
         case SYMBOL:if(isstr(convfrom) && !strpbrk(strval(convfrom), " #()\t\n\r'\"\\"))
@@ -2113,19 +2113,22 @@ fail:   RECOVER(l, "\"expected () (STRING) (LIST) (HASH)\" %S", args);
         return Error;
 }
 
-static cell *subr_split(lisp *l, cell *args) {
-        /**@bug implement me*/
-        return Nil;
-}
-
 static cell *subr_join(lisp *l, cell *args) {
-        /**@bug implement me*/
-        return Nil;
-}
-
-static cell *subr_format(lisp *l, cell *args) {
-        /**@bug implement me*/
-        return Nil;
+        char *sep = "", *r, *tmp;
+        if(args->len < 2 || !isasciiz(car(args)) || !isasciiz(car(cdr(args))))
+                goto fail;
+        sep = strval(car(args));
+        r = lstrdup(strval(car(cdr(args))));
+        for(args = cdr(cdr(args)); !isnil(args); args = cdr(args)) {
+                if(!isasciiz(car(args)))
+                        goto fail;
+                tmp = vstrcatsep(sep, r, strval(car(args)), NULL);
+                free(r);
+                r = tmp;
+        }
+        return mkstr(l, r);
+fail:   RECOVER(l, "\"expected (STRING STRING...)\" %S", args);
+        return Error;
 }
 
 /*X-Macro of primitive functions and their names; basic built in subr*/
@@ -2160,8 +2163,9 @@ static cell *subr_format(lisp *l, cell *args) {
         X(subr_assoc,   "assoc")          X(subr_setlocale, "locale!")\
         X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")\
         X(subr_eval_time, "timed-eval")   X(subr_reverse,   "reverse")\
-        X(subr_split,     "split")        X(subr_join,      "join")\
-        X(subr_format,    "format")
+        X(subr_join,    "join")
+      /*X(subr_split,     "split")        X(subr_join,      "join")\
+        X(subr_format,    "format")*/
 
 #define X(SUBR, NAME) { SUBR, NAME },
 static struct subr_list { subr p; char *name; } primitives[] = {

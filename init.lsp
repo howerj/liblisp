@@ -208,6 +208,8 @@
 
 (define exit (lambda () (error -1)))
 
+(define rewind (lambda (port) (seek port 0 *seek-set*)))
+
 (define flatten # flatten a tree
   (lambda (l)
     (cond

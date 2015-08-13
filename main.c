@@ -27,10 +27,12 @@
 **/
 
 #include "liblisp.h"
+#include <assert.h>
+#include <ctype.h>
+#include <math.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <time.h>
-#include <assert.h>
 
 #ifndef VERSION
 #define VERSION unknown    /**< Version of the interpreter*/
@@ -64,11 +66,8 @@ static void sig_int_handler(int sig) {
 #ifdef USE_LINE
 #include "libline/libline.h"
 #include <string.h>
-#include <stdlib.h>
 static char *histfile = ".list";
 #endif
-
-#include <math.h>
 
 /**@brief Template for most of the functions in "math.h"
  * @param NAME name of math function such as "log", "sin", etc.*/
@@ -87,6 +86,31 @@ static cell *subr_ ## NAME (lisp *l, cell *args) {\
 
 #define X(FUNC) SUBR_MATH_UNARY(FUNC)
 MATH_UNARY_LIST
+#undef X
+
+#define SUBR_ISX(NAME)\
+static cell *subr_ ## NAME (lisp *l, cell *args) {\
+        char *s, c;\
+        if(cklen(args, 1) && isint(car(args)))\
+                return NAME (intval(car(args))) ? (cell*)mktee() : (cell*)mknil();\
+        if(!cklen(args, 1) || !isasciiz(car(args)))\
+                RECOVER(l, "\"expected (string)\" %S", args);\
+        s = strval(car(args));\
+        if(!s[0]) return (cell*)mknil();\
+        while((c = *s++)) \
+                if(! NAME (c))\
+                        return (cell*)mknil();\
+        return (cell*)mktee();\
+}
+
+#define ISX_LIST\
+        X(isalnum) X(isalpha) X(iscntrl)\
+        X(isdigit) X(isgraph) X(islower)\
+        X(isprint) X(ispunct) X(isspace)\
+        X(isupper) X(isxdigit)
+
+#define X(FUNC) SUBR_ISX(FUNC)
+ISX_LIST
 #undef X
 
 static cell *subr_pow (lisp *l, cell *args) {
@@ -110,6 +134,12 @@ static cell *subr_modf(lisp *l, cell *args) {
         x = isfloat(xo) ? floatval(xo) : intval(xo);
         fracpart = modf(x, &intpart);
         return cons(l, mkfloat(l, intpart), mkfloat(l, fracpart));
+}
+
+static cell *subr_raise(lisp *l, cell *args) {
+        if(!cklen(args, 1) || !isint(car(args)))
+                RECOVER(l, "\"expected (integer)\" %S", args);
+        return raise(intval(car(args))) ? (cell*)mknil(): (cell*)mktee();
 }
 
 #ifdef USE_LINE
@@ -169,16 +199,21 @@ int main(int argc, char **argv) {
                 PRINT_ERROR("\"%s\"", "could not set signal handler");
         lglobal = l;
 
-        lisp_add_cell(l, "*version*",           mkstr(l, lstrdup(XSTRINGIFY(VERSION))));
-        lisp_add_cell(l, "*commit*",            mkstr(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
-        lisp_add_cell(l, "*repository-origin*", mkstr(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));
-
 #define X(FUNC) lisp_add_subr(l, # FUNC, subr_ ## FUNC);
 MATH_UNARY_LIST
 #undef X
-        lisp_add_subr(l, "pow", subr_pow);
+        lisp_add_subr(l, "pow",  subr_pow);
         lisp_add_subr(l, "modf", subr_modf);
         lisp_add_cell(l, "*have-math*", (cell*)mktee());
+
+#define X(FUNC) lisp_add_subr(l, # FUNC "?", subr_ ## FUNC);
+ISX_LIST
+#undef X
+
+        lisp_add_cell(l, "*version*",           mkstr(l, lstrdup(XSTRINGIFY(VERSION))));
+        lisp_add_cell(l, "*commit*",            mkstr(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
+        lisp_add_cell(l, "*repository-origin*", mkstr(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));
+        lisp_add_subr(l, "raise", subr_raise);
 
 #ifdef USE_LINE /*add line editor functionality*/
         static char *homedir;
@@ -196,9 +231,8 @@ MATH_UNARY_LIST
         lisp_add_cell(l, "*history-file*",   mkstr(l, lstrdup(histfile)));
         lisp_add_cell(l, "*have-line*",      (cell*)mktee());
 #else
-        lisp_add_cell(l, "*have-line*", (cell*)mknil());
+        lisp_add_cell(l, "*have-line*",      (cell*)mknil());
 #endif
-
         r = main_lisp_env(l, argc, argv);
 #ifdef USE_LINE
         if(homedir) free(histfile);

@@ -1603,21 +1603,30 @@ taken to execute (in seconds) with the returned value from *eval*.
 
 * reverse
 
+Reverse a string, a list, or a hash (exchanging keys for values).
+
         # (reverse STRING)
         # (reverse LIST)
         # (reverse HASH)
 
 * split
 
+Split a string based on a pattern.
+
         # (split STRING)
         # (split STRING STRING)
 
 * join
 
+Join a list of strings together with a separator between them.
+
         # (join STRING STRING...)
 
 * format
 
+Print out a list of expressions based on a format string.
+
+        # (format IO STRING EXPRS)
         # (format STRING EXPRS)
 
 ##### Additional functions
@@ -1846,6 +1855,114 @@ integer and fractional parts, returning a cons of the two values.
         > (modf -0.4)
         (-0.000000 . -0.400000)
 
+isalnum?
+
+Returns 't if argument is alphanumeric, nil otherwise. This function can be used on
+integers or strings.
+
+        # (isalnum? INTEGER)
+        # (isalnum? STRING)
+        > (isalnum? "")
+        ()
+        > (isalnum? "abcABC123")
+        t
+        > (isalnum? 97) # True if using ASCII, 97 == ASCII 'a'
+        t
+
+isalpha?
+
+Returns 't if argument consists of alphabetic characters, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (isalpha? INTEGER)
+        # (isalpha? STRING)
+        > (isalpha? "abcABC")
+        t
+
+iscntrl?
+
+Returns 't if argument consists of control characters, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (iscntrl? INTEGER)
+        # (iscntrl? STRING)
+
+
+isdigit?
+
+Returns 't if argument consists of digits, nil otherwise. This function can be 
+used on integers or strings.
+
+        # (isdigit? INTEGER)
+        # (isdigit? STRING)
+        > (isdigit? "0123")
+        t
+
+isgraph?
+
+Returns 't if argument consists of printable characters (excluding space), 
+nil otherwise. This function can be used on integers or strings.
+
+        # (isgraph? INTEGER)
+        # (isgraph? STRING)
+        > (isgraph? "1aAB2.#")
+        t
+
+islower?
+
+Returns 't if argument consists of lower case characters, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (islower? INTEGER)
+        # (islower? STRING)
+        > (islower? "abc")
+        t
+
+isprint?
+
+Returns 't if argument consists of printable characters, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (isprint? INTEGER)
+        # (isprint? STRING)
+        > (isgraph? "1a AB2.#")
+        t
+
+ispunct?
+
+Returns 't if argument consists of punctuation characters, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (ispunct? INTEGER)
+        # (ispunct? STRING)
+
+
+isspace?
+
+Returns 't if argument consists of whitespace, nil otherwise. This function 
+can be used on integers or strings.
+
+        # (isspace? INTEGER)
+        # (isspace? STRING)
+
+
+isupper?
+
+Returns 't if argument consists of upper case characters, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (isupper? INTEGER)
+        # (isupper? STRING)
+
+
+isxdigit?
+
+Returns 't if argument consists of hexadecimal digits, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (isxdigit? INTEGER)
+        # (isxdigit? STRING)
+
 * line-editor-mode
 
 If the line editing library is used then this function can be used to query the
@@ -1874,8 +1991,6 @@ printed and then the prompt if that option is set.
         # (clear-screen)
         > (clear-screen)
         t
-        >
-
 
 #### Predefined variables
 
@@ -2072,11 +2187,6 @@ repository, if this is not available it will be set to "unknown".
         pi                 The mathematical constant pi
         e                  Euler's number
 
-* \*have-math\*
-
-This is 't if the math library functions such as *sin*, *cos* and *exp* are
-available, it is '() otherwise.
-
 * \*have-line\*
 
 This is 't if the line editor functions and variables are available,
@@ -2188,6 +2298,20 @@ Glossary of all of defined subroutine primitives and variables.
         pow                Computer X raised to the Y
         modf               Split a value into integer and fractional parts
 
+##### ctype.h
+
+        isalnum?           is string or integer alphanumeric only?
+        isalpha?           is string or integer alphabetic only?
+        iscntrl?           is string or integer control character?
+        isdigit?           is string or integer digits?
+        isgraph?           is string or integer printable (except space)?
+        islower?           is string or integer is lower case?
+        isprint?           is string or integer is printable?
+        ispunct?           is string or integer is punctuation?
+        isspace?           is string or integer is white space?
+        isupper?           is string or integer is upper case?
+        isxdigit?          is string or integer is a hex digit?
+
 ##### line-editor (optional)
 
         line-editor-mode   Change the line editing mode
@@ -2232,7 +2356,6 @@ Glossary of all of defined subroutine primitives and variables.
         *eof*              End-Of-File marker
         *args*             Command line options passed into the interpreter
         *history-file*     If using libline, it contains the history file name
-        *have-math*        't if the math library is available, '() otherwise
         *have-line*        't if the line editor is available, '() otherwise
         *version*          The version of this interpreter if known
         *commit*           Commit version
