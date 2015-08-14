@@ -74,6 +74,15 @@
   (lambda (x) 
     (eq x nil)))
 
+(define null?
+  (lambda (x)
+    (cond
+      ((string? x)  (eq x ""))
+      ((float? x)   (eq x 0.0))
+      ((integer? x) (eq x 0))
+      ((hash? x)    (eq (coerce *cons* x) nil))
+      (t (eq nil x)))))  
+
 (define not # null? and not are the same in this lisp
   (lambda (x)
     (null? x)))
@@ -427,6 +436,14 @@
          (put out "\n")
          (append '(logged) (cdr x)))
        'error))))
+
+(define random-element
+  (lambda (x)
+    (if (list? x)
+      (let*
+        (ll (% (abs (random)) (length x)))
+        (sublist x ll ll))
+      x)))
 
 ##############################################################################
 

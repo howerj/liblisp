@@ -15,8 +15,7 @@
  *  @todo File operations on strings could be improved. An append mode should
  *        be added as well. freopen and/or opening in append mode need to be
  *        added as well.
- *  @todo Needed primitives; map, apply, loop, split, join, regex, 
- *        reverse (hash/string/list).
+ *  @todo Needed primitives; map, apply, loop, split, regex, tr. 
 **/
 
 #include "liblisp.h"
@@ -512,7 +511,6 @@ char *io_getdelim(io *i, int delim) { assert(i);
         size_t nchmax = 1, nchread = 0;
         int c;
         if(!(retbuf = calloc(1,1))) return NULL;
-        /*from <http://c-faq.com/malloc/reallocnull.html>*/
         while((c = io_getc(i)) != EOF) {
                 if(nchread >= nchmax) { 
                         nchmax = nchread * 2;
@@ -525,7 +523,8 @@ char *io_getdelim(io *i, int delim) { assert(i);
                 if(c == delim) break;
                 retbuf[nchread++] = c;
         }
-
+        if(!nchread && c == EOF)
+                return free(retbuf), NULL;
         if(retbuf)
                 retbuf[nchread] = '\0';
         return retbuf;
@@ -1354,10 +1353,23 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                                 exp = cdr(exp);
                         }
                 }
+
                 proc = eval(l, depth + 1, first, env);
-                if(isproc(proc) || issubr(proc)) vals = evlis(l, depth + 1, exp, env);
-                else if(isfproc(proc)) vals = cons(l, exp, Nil);
-                else RECOVER(l, "'not-a-procedure '%s", first);
+                if(isproc(proc) || issubr(proc)) { /*eval their args*/
+                        vals = evlis(l, depth + 1, exp, env);
+                } else if(isfproc(proc)) { /*f-expr do not eval their args*/
+                        vals = cons(l, exp, Nil);
+                } else if(isin(proc)) { /*special behavior for input ports*/
+                        char *s;
+                        if(!cklen(exp, 0))
+                                RECOVER(l, "\"incorrect application of input port\" %S", exp);
+                        if(!(s = io_getline(ioval(proc)))) return Error;
+                        else return mkstr(l, s);
+              /*} else if(isout(proc)) {*/
+                } else { 
+                        RECOVER(l, "\"not a procedure\" '%S", first);
+                }
+
                 if(issubr(proc)) {
                         l->gc_stack_used = gc_stack_save;
                         gc_add(l, proc);
@@ -1375,7 +1387,7 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                         exp = cons(l, Begin, proccode(proc));
                         goto tail;
                 }
-                RECOVER(l, "'not-a-procedure '%S", car(exp));
+                RECOVER(l, "\"not a procedure\" '%S", first);
         case INVALID: 
         default:     HALT(l, "%s", "internal inconsistency: unknown type");
         }
@@ -2245,7 +2257,7 @@ lisp *lisp_init(void) {
         l->max_depth          = LARGE_DEFAULT_LEN; /**< max recursion depth*/
 
         l->random_state[0] = 0xCAFE; /*Are these good seeds?*/
-        l->random_state[1] = 0xBABE; /*???*/
+        l->random_state[1] = 0xBABE; 
         for(i = 0; i < DEFAULT_LEN; i++) /*discard first N numbers*/
                 (void)xorshift128plus(l->random_state);
 
@@ -2261,6 +2273,10 @@ lisp *lisp_init(void) {
 
         if(!lisp_add_cell(l, "pi", mkfloat(l, 3.14159265358979323846))) goto fail;
         if(!lisp_add_cell(l, "e",  mkfloat(l, 2.71828182845904523536))) goto fail;
+
+        if(!lisp_add_cell(l, "*stdin*",  mkio(l, io_fin(stdin))))   goto fail;
+        if(!lisp_add_cell(l, "*stdout*", mkio(l, io_fout(stdout)))) goto fail;
+        if(!lisp_add_cell(l, "*stderr*", mkio(l, io_fout(stderr)))) goto fail;
 
         for(i = 0; integers[i].name; i++) /*add all integers*/
                 if(!lisp_add_cell(l, integers[i].name, mkint(l, integers[i].val)))
