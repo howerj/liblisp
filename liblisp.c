@@ -3,20 +3,7 @@
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com
- *  @brief      A small, extensible lisp interpreter see
- *
- *  @todo Env lookup should be split into top level hash and cons
- *        list for efficiency.
- *  @todo Consider linear probing for the hash function instead.
- *  @todo struct hack could be applied strings and other types, as
- *        well as the length field being encoded in the variable length
- *        section of the object.
- *  @todo Generic error handling for primitives before they are called?
- *  @todo File operations on strings could be improved. An append mode should
- *        be added as well. freopen and/or opening in append mode need to be
- *        added as well.
- *  @todo Needed primitives; map, apply, loop, split, regex, tr. 
-**/
+ *  @brief      A small, extensible lisp interpreter see **/
 
 #include "liblisp.h"
 #include <assert.h>
@@ -34,6 +21,7 @@
 
 #define DEFAULT_LEN        (256)   /**< just an arbitrary smallish number*/
 #define LARGE_DEFAULT_LEN  (4096)  /**< just another arbitrary number*/
+#define REGEX_MAX_DEPTH    (8192)  /**< max recursion depth of a regex*/
 #define MAX_USER_TYPES     (256)   /**< max number of user defined types*/
 #define COLLECTION_POINT   (1<<20) /**< run gc after this many allocs*/
 #define UNUSED(X)          ((void)(X)) /**< unused variable*/
@@ -167,8 +155,7 @@ struct lisp {
         editor_func editor; /**< line editor to use, optional*/
 };
 
-/**@brief list of all special cells for initializer*/
-#define CELL_XLIST\
+#define CELL_XLIST /**< list of all special cells for initializer*/ \
         X(Nil,     "nil")       X(Tee,     "t")\
         X(Quote,   "quote")     X(If,      "if")\
         X(Lambda,  "lambda")    X(Flambda, "flambda")\
@@ -218,6 +205,68 @@ again:  switch(*pat) {
         default:   if(*pat != *str) return  0; pat++; str++; goto again;
         }
 }
+
+static int matchhere(char *regexp, char *text, size_t depth);
+static int matchstar(int literal, int c, char *regexp, char *text, size_t depth);
+
+int regex_match(char *regexp, char *text) { 
+        unsigned depth = 0;
+        if (regexp[0] == '^')
+                return matchhere(regexp + 1, text, depth + 1);
+        do { /* must look even if string is empty */
+                if (matchhere(regexp, text, depth + 1))
+                        return 1;
+        } while (*text++ != '\0');
+        return 0;
+}
+
+static int matchhere(char *regexp, char *text, size_t depth) {
+        if (REGEX_MAX_DEPTH < depth)
+                return -1;
+ BEGIN:
+        if (regexp[0] == '\0')
+                return 1;
+        if (regexp[0] == '\\' && regexp[1] == *text) {
+                if (regexp[1] == *text) {
+                        regexp += 2;
+                        text++;
+                        goto BEGIN;
+                } else {
+                        return -1;
+                }
+        }
+        if (regexp[1] == '?') {
+                text = text + (regexp[0] == *text ? 1 : 0);
+                regexp = regexp + 2;
+                goto BEGIN;
+        }
+        if (regexp[1] == '+') {
+                if (regexp[0] == '.' || regexp[0] == *text)
+                        return matchstar(0, regexp[0], regexp + 2, text, depth + 1);
+                return 0;
+        }
+        if (regexp[1] == '*')
+                return matchstar(0, regexp[0], regexp + 2, text, depth + 1);
+        if (regexp[0] == '$' && regexp[1] == '\0')
+                return *text == '\0' ? 1: 0;
+        if (*text != '\0' && (regexp[0] == '.' || regexp[0] == *text)) {
+                regexp++;
+                text++;
+                goto BEGIN;
+        }
+        return 0;
+}
+
+static int matchstar(int literal, int c, char *regexp, char *text, size_t depth) {
+        if (REGEX_MAX_DEPTH < depth)
+                return -1;
+        do { /* a* matches zero or more instances */
+                if (matchhere(regexp, text, depth + 1))
+                        return 1;
+        } while (*text != '\0' && (*text++ == c || (c == '.' && !literal)));
+        return 0;
+}
+
 
 uint32_t djb2(const char *s, size_t len) { assert(s); 
         uint32_t h = 5381;   /*magic number this hash uses, it just is*/
@@ -2121,7 +2170,7 @@ static cell *subr_reverse(lisp *l, cell *args) {
         default:   
                 break;
         }
-fail:   RECOVER(l, "\"expected () (STRING) (LIST) (HASH)\" %S", args);
+fail:   RECOVER(l, "\"expected () (string) (list) (hash)\" %S", args);
         return Error;
 }
 
@@ -2132,14 +2181,16 @@ static cell *subr_join(lisp *l, cell *args) {
         sep = strval(car(args));
         r = lstrdup(strval(car(cdr(args))));
         for(args = cdr(cdr(args)); !isnil(args); args = cdr(args)) {
-                if(!isasciiz(car(args)))
+                if(!isasciiz(car(args))) {
+                        free(r);
                         goto fail;
+                }
                 tmp = vstrcatsep(sep, r, strval(car(args)), NULL);
                 free(r);
                 r = tmp;
         }
         return mkstr(l, r);
-fail:   RECOVER(l, "\"expected (STRING STRING...)\" %S", args);
+fail:   RECOVER(l, "\"expected (string string...)\" %S", args);
         return Error;
 }
 

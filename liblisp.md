@@ -4,15 +4,16 @@ liblisp.md
 # A small and extensible lisp interpreter and library
 ## Table of contents
 
-1. [Introduction](#Introduction)
-2. [Design Goals](#Design goals)
-3. [Documentation](#Documentation)
-4. [Building](#Building)
-5. [Deviations from other lisps](#Deviations from other lisps)
-6. [BUGS](#BUGS)
-7. [Test programs](#Test programs)
-8. [Manual](#Manual)
-9. [References](#References)
+1.  [Introduction](#Introduction)
+2.  [Design Goals](#Design goals)
+3.  [Documentation](#Documentation)
+4.  [Building](#Building)
+5.  [Deviations from other lisps](#Deviations from other lisps)
+6.  [BUGS](#BUGS)
+7.  [To Do](#To Do)
+8.  [Test programs](#Test programs)
+9.  [Manual](#Manual)
+10. [References](#References)
 
 <div id='Introduction'/>
 ## Introduction
@@ -151,6 +152,38 @@ in the usual manner.
   should not be possible to make the interpreter seg-fault.
 * See the "@todo" comments at the top of [liblisp.c][] to see a full list of
   bugs as well comments labeled with "@bug".
+
+<div id='To Do'/>
+## To Do
+
+There are several issues that need resolving with the interpreter.
+
+#### liblisp.c
+
+* Environment lookup should be split into top level hash and cons
+list for efficiency.
+* Linear probing should be used for the hash function instead of
+chained hashing
+* The "struct hack" could be applied strings and other types, as
+well as the length field being encoded in the variable length
+section of the object.
+* Generic error handling for primitives before they are called would
+cut down on the amount of code needed in the primitives subroutines.
+* File operations on strings could be improved. An append mode should
+be added as well. freopen and/or opening in append mode need to be
+added as well.
+* Needed primitives; map, apply, loop, split, regex, tr. 
+
+#### main.c
+
+* Some level of auto-completion could be added from the libline library.
+* Experiment with auto insertion of parenthesis to make the shell
+easier to use, for example if an expression is missing right parens
+the line editing callback could add them in, or if there are more
+than one atoms on a line it could enclose them in parens and see if
+that can be evaluated "+ 2 2" would become "(+ 2 2)". This would only
+be part of the line editor.
+* Porting libline to Windows
 
 <div id='Test programs'/>
 ## Test programs

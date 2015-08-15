@@ -1,30 +1,9 @@
 /** @file       main.c
  *  @brief      A minimal lisp interpreter and utility library, simple driver
  *  @author     Richard Howe (2015)
- *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com
- *
- *  See <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> for the
- *  license.
- *
- *  This file optionally adds functionality based on whether certain macros
- *  are defined, such as support for the functions in "math.h".
- *
- *  Alternatively, the following code can be use to create a much simpler
- *  REPL without the extra functionality:
- *
- *      #include "liblisp.h"
- *      int main(int argc, char **argv) { return main_lisp(argc, argv); }
- *
- *  @todo Some level of auto-completion could be added from the libline library
- *  @todo Experiment with auto insertion of parenthesis to make the shell
- *        easier to use, for example if an expression is missing right parens
- *        the line editing callback could add them in, or if there are more
- *        than one atoms on a line it could enclose them in parens and see if
- *        that can be evaluated "+ 2 2" would become "(+ 2 2)". This would only
- *        be part of the line editor.
- *  @todo Porting libline to Windows
-**/
+ *  @license    LGPL v2.1 or Later 
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @email      howe.r.j.89@gmail.com**/
 
 #include "liblisp.h"
 #include <assert.h>

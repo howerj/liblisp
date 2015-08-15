@@ -45,6 +45,12 @@ typedef int  (*ud_print)(cell*);    /*printing out user defined types*/
  *        REPL.**/
 typedef char *(*editor_func)(const char *); 
 
+typedef struct {
+        char *start; /**< where the match started*/
+        char *end;   /**< where the match ended*/
+        int result;  /**< the result, -1 on error, 0 on no match, 1 on match*/
+} regex_result; /**< a structure representing a regex result*/
+
 /************************** useful functions *********************************/
 
 /* This module mostly has string manipulation functions to make processing
@@ -110,6 +116,29 @@ char *lstrcatend(char *dest, const char *src);
  *  @param   str  the string to match on
  *  @return  int  1 == match, 0 == no match, -1 == error **/
 int match(char *pat, char *str);
+
+/* @brief  A very small and simple regular expression engine adapted from here:
+ *         <http://www.cs.princeton.edu/courses/archive/spr09/cos333/beautiful.html>
+ *         It is more powerful than the simpler "match" function whilst still
+ *         being very small.
+ *
+ *         Supports:
+ *
+ *         'c'  Matched any specific character
+ *         '.'  Matches any character
+ *         '^'  Anchors search at the beginning of the string
+ *         '$'  Anchors search to the end of the string
+ *         '?'  Zero or one of the previous character
+ *         '*'  Zero or more of the previous character
+ *         '+'  One or more of the previous character 
+ *         '\\' Escape the next character
+ *
+ *         This adaption of the original is probably quite buggy.
+ *
+ * @param  regexp NUL terminated regular expression pattern to search for
+ * @param  text   NUL terminated string to perform search in
+ * @return int -1 on error, 0 on no match, 1 on match**/
+int regex_match(char *regexp, char *text);
 
 /** @brief   a hash algorithm by Dan Bernstein, see
  *           <http://www.cse.yorku.ca/~oz/hash.html> for more information.
