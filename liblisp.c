@@ -206,33 +206,35 @@ again:  switch(*pat) {
         }
 }
 
-static int matchhere(char *regexp, char *text, size_t depth);
-static int matchstar(int literal, int c, char *regexp, char *text, size_t depth);
+static int matchhere(regex_result *r, char *regexp, char *text, size_t depth);
+static int matchstar(regex_result *r, int literal, int c, char *regexp, char *text, size_t depth);
 
-int regex_match(char *regexp, char *text) { 
-        unsigned depth = 0;
+regex_result regex_match(char *regexp, char *text) { 
+        regex_result r = {text, text, 0};
+        size_t depth = 0;
         if (regexp[0] == '^')
-                return matchhere(regexp + 1, text, depth + 1);
+                return matchhere(&r, regexp + 1, text, depth + 1), r;
         do { /* must look even if string is empty */
-                if (matchhere(regexp, text, depth + 1))
-                        return 1;
+                r.start = text;
+                if (matchhere(&r, regexp, text, depth + 1))
+                        return r;
         } while (*text++ != '\0');
-        return 0;
+        return r.result = 0, r;
 }
 
-static int matchhere(char *regexp, char *text, size_t depth) {
+static int matchhere(regex_result *r, char *regexp, char *text, size_t depth) {
         if (REGEX_MAX_DEPTH < depth)
-                return -1;
+                return r->result = -1;
  BEGIN:
         if (regexp[0] == '\0')
-                return 1;
+                return r->end = MAX(r->end, text), r->result = 1;
         if (regexp[0] == '\\' && regexp[1] == *text) {
                 if (regexp[1] == *text) {
                         regexp += 2;
                         text++;
                         goto BEGIN;
                 } else {
-                        return -1;
+                        return r->end = MAX(r->end, text), r->result = -1;
                 }
         }
         if (regexp[1] == '?') {
@@ -242,29 +244,31 @@ static int matchhere(char *regexp, char *text, size_t depth) {
         }
         if (regexp[1] == '+') {
                 if (regexp[0] == '.' || regexp[0] == *text)
-                        return matchstar(0, regexp[0], regexp + 2, text, depth + 1);
+                        return r->result = matchstar(r, 0, regexp[0], regexp + 2, text, depth + 1);
+                r->end = MAX(r->end,text);
                 return 0;
         }
         if (regexp[1] == '*')
-                return matchstar(0, regexp[0], regexp + 2, text, depth + 1);
+                return r->end = MAX(r->end, text), 
+                       r->result = matchstar(r, 0, regexp[0], regexp + 2, text, depth + 1);
         if (regexp[0] == '$' && regexp[1] == '\0')
-                return *text == '\0' ? 1: 0;
+                return r->end = MAX(r->end, text), r->result = (*text == '\0' ? 1 : 0);
         if (*text != '\0' && (regexp[0] == '.' || regexp[0] == *text)) {
                 regexp++;
                 text++;
                 goto BEGIN;
         }
-        return 0;
+        return r->end = MAX(r->end, text), r->result = 0;
 }
 
-static int matchstar(int literal, int c, char *regexp, char *text, size_t depth) {
+static int matchstar(regex_result *r, int literal, int c, char *regexp, char *text, size_t depth) {
         if (REGEX_MAX_DEPTH < depth)
-                return -1;
+                return r->result = -1;
         do { /* a* matches zero or more instances */
-                if (matchhere(regexp, text, depth + 1))
-                        return 1;
+                if (matchhere(r, regexp, text, depth + 1))
+                        return r->end = MAX(r->end, text), r->result = 1;
         } while (*text != '\0' && (*text++ == c || (c == '.' && !literal)));
-        return 0;
+        return r->result = 0;
 }
 
 
@@ -2194,6 +2198,20 @@ fail:   RECOVER(l, "\"expected (string string...)\" %S", args);
         return Error;
 }
 
+static cell *subr_regex(lisp *l, cell *args) {
+        regex_result r;
+        if(!cklen(args, 2) || !isasciiz(car(args)) || !isasciiz(car(cdr(args))))
+                RECOVER(l, "\"expected (string string)\" %S", args);
+        r = regex_match(strval(car(args)), strval(car(cdr(args))));
+        if(r.result <= 0) {
+                r.start = strval(car(cdr(args))) - 1;
+                r.end   = strval(car(cdr(args))) - 1;
+        }
+        return cons(l, mkint(l, r.result), 
+                cons(l, mkint(l, r.start - strval(car(cdr(args)))),
+                cons(l, mkint(l, r.end   - strval(car(cdr(args)))), Nil)));
+}
+
 /*X-Macro of primitive functions and their names; basic built in subr*/
 #define SUBROUTINE_XLIST\
         X(subr_band,    "&")              X(subr_bor,       "|")\
@@ -2226,7 +2244,7 @@ fail:   RECOVER(l, "\"expected (string string...)\" %S", args);
         X(subr_assoc,   "assoc")          X(subr_setlocale, "locale!")\
         X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")\
         X(subr_eval_time, "timed-eval")   X(subr_reverse,   "reverse")\
-        X(subr_join,    "join")
+        X(subr_join,    "join")           X(subr_regex,     "regex")
       /*X(subr_split,     "split")        X(subr_join,      "join")\
         X(subr_format,    "format")*/
 

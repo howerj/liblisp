@@ -173,6 +173,7 @@ cut down on the amount of code needed in the primitives subroutines.
 be added as well. freopen and/or opening in append mode need to be
 added as well.
 * Needed primitives; map, apply, loop, split, regex, tr. 
+* Anonymous recursion would be a good thing to have.
 
 #### main.c
 
@@ -1662,11 +1663,11 @@ Print out a list of expressions based on a format string.
         # (format IO STRING EXPRS)
         # (format STRING EXPRS)
 
-* raise
 
-Raise a signal.
 
-        # (signal INTEGER)
+* regex
+
+        # (regex STRING STRING)
 
 ##### Additional functions
 
@@ -1676,6 +1677,12 @@ For all the mathematical functions imported from the C math library the
 arguments are converted to floating point numbers before, the functions also
 all return floating point values, apart from [modf][] which returns a cons of
 two floating point values.
+
+* raise
+
+Raise a signal.
+
+        # (signal INTEGER)
 
 * log
 
@@ -2315,6 +2322,10 @@ Glossary of all of defined subroutine primitives and variables.
         split              Split a string based
         join               Join a list of strings together
         format             Print out a list of objects based on a format string
+        regex              Match a regular expression on a string
+
+##### misc.
+
         raise              Raise a signal
 
 ##### math.h

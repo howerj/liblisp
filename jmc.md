@@ -62,7 +62,7 @@ and **cond**.
         a 
         (quote (a b c)) (a b c) 
 
-2. **(atom x)** returns the atom t if the value of x is an atom or the empty
+2. **(atom x)** returns the atom *t* if the value of *x* is an atom or the empty
 list. Otherwise it returns *()*. In Lisp we conventionally use the atom
 t to represent truth, and the empty list to represent falsity.
 
@@ -79,7 +79,6 @@ list given as an argument to an operator like atom is treated as code:
 
         > (atom (atom 'a)) 
         t
-
 
 whereas a quoted list is treated as mere list, in this case a list of
 two elements:
@@ -119,7 +118,7 @@ after the first element.
         (b c) 
 
 6. **(cons x y)** expects the value of **y** to be a list, and returns a list
-containing the value of x followed by the elements of the value of y.
+containing the value of *x* followed by the elements of the value of *y*.
 
         > (cons 'a '(b c)) 
         (a b c)
@@ -131,8 +130,8 @@ containing the value of x followed by the elements of the value of y.
         (b c) 
 
 
-7. **(cond (p1 e1) ... (pn en))** is evaluated as follows. The p expressions
-are evaluated in order until one returns **t**. When one is found, the value
+7. **(cond (p1 e1) ... (pn en))** is evaluated as follows. The *p* expressions
+are evaluated in order until one returns *t*. When one is found, the value
 of the corresponding e expression is returned as the value of the whole
 **cond** expression.
 
@@ -230,7 +229,7 @@ is equivalent to what we might write in a language with syntax as
 Now that we have a way of expressing functions, we define some new ones
 in terms of our seven primitive operators. First it will be convenient
 to introduce some abbreviations for common patterns. We will use _c*x*r_, where *x* is a
-sequence of **as** or **ds**, as an abbreviation for the corresponding composition
+sequence of *as* or *ds*, as an abbreviation for the corresponding composition
 of **car** and **cdr**. So for example **(cadr e)** is an abbreviation for 
 **(car (cdr e))**, which returns the second element of *e*.
 
@@ -301,7 +300,9 @@ of two-element lists containing successive pairs of an element from each.
         > (pair. '(x y z) '(a b c)) 
         ((x a) (y b) (z c))
 
-6. **(assoc. x y)** takes an atom *x* and a list *y* of the form created by pair., and returns the second element of the first list in *y* whose first element is *x*. 
+6. **(assoc. x y)** takes an atom *x* and a list *y* of the form created
+by **pair.**, and returns the second element of the first list in *y* whose
+first element is *x*.
 
         > (defun assoc. (x y) 
                       (cond 
@@ -424,14 +425,14 @@ inner lambda expression substituted for the label expression. That is,
 becomes
 
         (eval. '((lambda (x)
-        (cond ((atom x) x)
-        ('t (firstatom (car x)))))
-        y)
-        '((firstatom
-        (label firstatom (lambda (x)
-        (cond ((atom x) x)
-        ('t (firstatom (car x)))))))
-        (y ((a b) (c d)))))
+                   (cond ((atom x) x)
+                         ('t (firstatom (car x)))))
+                  y)
+               '((firstatom
+                     (label firstatom (lambda (x)
+                                         (cond ((atom x) x)
+                                                ('t (firstatom (car x)))))))
+                 (y ((a b) (c d)))))
 
 which eventually returns *a*.
 
@@ -555,11 +556,13 @@ for a surprisingly long time - until Sussman and Steele developed Scheme
 in 1975.  Lexical scope does not complicate the definition of **eval** very much,
 but it may make compilers harder to write.
 
+<div id='1'/>
 ### 1 
 
 Recursive Functions of Symbolic Expressions and Their Computation by
 Machine, Part I. Communications of the ACM 3:4, April 1960, pp. 184-195.
 
+<div id='2'/>
 ### 2 
 
 Expressions beginning with the other two operators, quote and cond,
@@ -568,6 +571,7 @@ argument is not evaluated, but is simply returned as the value of the
 whole quote expression. And in a valid cond expression, only an L-shaped
 path of subexpressions will be evaluated.
 
+<div id='3'/>
 ### 3 
 
 Logically we don't need to define a new notation for this. We could
@@ -576,17 +580,20 @@ functions called the Y combinator. It may be that McCarthy did not know
 about the Y combinator when he wrote his paper; in any case, **label**
 notation is more readable.
 
+<div id='4'/>
 ### 4 
 
 It is possible to do arithmetic in McCarthy's 1960 Lisp by using e.g. a
 list of n atoms to represent the number n.
 
+<div id='5'/>
 ### 5 
 
 Guy Lewis Steele, Jr. and Gerald Jay Sussman, "The Art of the Interpreter,
 or the Modularity Complex (Parts Zero, One, and Two)," MIT AI Lab Memo
 453, May 1978.
 
+<div id='6'/>
 ### 6 
 
 Present day Lisp programmers would use *mapcar* instead of *maplist*
@@ -594,4 +601,4 @@ here. This example does clear up one mystery: why *maplist* is in
 Common Lisp at all. It was the original mapping function, and *mapcar*
 a later addition.
 
-<style type="text/css">body{margin:40px auto;max-width:650px;line-height:1.6;font-size:18px;color:#444;padding:0 10px}h1,h2,h3,h4,h5,h6{line-height:1.2}</style>
+<style type="text/css">body{margin:40px auto;max-width:650px;line-height:1.6;font-size:18px;color:#444;padding:0 10px}h1,h2,h3{line-height:1.2}</style>

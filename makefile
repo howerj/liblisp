@@ -66,6 +66,8 @@ $(TARGET): main.o lib$(TARGET).a libline/libline.a
 
 # Work around so the makefile initializes submodules. This requires
 # the full liblisp git repository to be available.
+# The repository is available at <https://github.com/howerj/liblisp>
+
 libline/.git:
 	git submodule init
 	git submodule update

@@ -138,7 +138,7 @@ int match(char *pat, char *str);
  * @param  regexp NUL terminated regular expression pattern to search for
  * @param  text   NUL terminated string to perform search in
  * @return int -1 on error, 0 on no match, 1 on match**/
-int regex_match(char *regexp, char *text);
+regex_result regex_match(char *regexp, char *text);
 
 /** @brief   a hash algorithm by Dan Bernstein, see
  *           <http://www.cse.yorku.ca/~oz/hash.html> for more information.
