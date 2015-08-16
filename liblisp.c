@@ -246,7 +246,7 @@ static int matchhere(regex_result *r, char *regexp, char *text, size_t depth) {
         if (regexp[1] == '+') {
                 if (regexp[0] == '.' || regexp[0] == *text)
                         return r->result = matchstar(r, 0, regexp[0], regexp + 2, text, depth + 1);
-                r->end = MAX(r->end,text);
+                r->end = MAX(r->end, text);
                 return 0;
         }
         if (regexp[1] == '*')
@@ -269,7 +269,7 @@ static int matchstar(regex_result *r, int literal, int c, char *regexp, char *te
                 if (matchhere(r, regexp, text, depth + 1))
                         return r->end = MAX(r->end, text), r->result = 1;
         } while (*text != '\0' && (*text++ == c || (c == '.' && !literal)));
-        return r->result = 0;
+        return r->end = MAX(r->end, text), r->result = 0;
 }
 
 
@@ -2217,6 +2217,31 @@ static cell *subr_raise(lisp *l, cell *args) {
         return raise(intval(car(args))) ? (cell*)mknil(): (cell*)mktee();
 }
 
+static cell *subr_split(lisp *l, cell *args) {
+        char *pat, *s, *f;
+        cell *op = Nil, *head;
+        regex_result rr;
+        if(!cklen(args, 2) || !isasciiz(car(args)) || !isasciiz(car(cdr(args))))
+                RECOVER(l, "\"expected (string string)\" %S", args);
+        pat = strval(car(args));
+        if(!(f = s = lstrdup(strval(car(cdr(args)))))) 
+                HALT(l, "\"%s\"", "out of memory");
+        head = op = cons(l, Nil, Nil);
+        for(;;) {
+                rr = regex_match(pat, s);
+                if(!rr.result || rr.end == rr.start) {
+                        setcdr(op, cons(l, mkstr(l, lstrdup(s)), Nil));
+                        break;
+                }
+                rr.start[0] = '\0';
+                setcdr(op, cons(l, mkstr(l, lstrdup(s)), Nil));
+                op = cdr(op);
+                s = rr.end;
+        }
+        free(f);
+        return cdr(head);
+}
+
 /*X-Macro of primitive functions and their names; basic built in subr*/
 #define SUBROUTINE_XLIST\
         X(subr_band,    "&")              X(subr_bor,       "|")\
@@ -2250,7 +2275,7 @@ static cell *subr_raise(lisp *l, cell *args) {
         X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")\
         X(subr_eval_time, "timed-eval")   X(subr_reverse,   "reverse")\
         X(subr_join,    "join")           X(subr_regex,     "regex")\
-        X(subr_raise,   "raise")         
+        X(subr_raise,   "raise")          X(subr_split,     "split")
       /*X(subr_split,   "split")          X(subr_format,    "format")*/
 
 #define X(SUBR, NAME) { SUBR, NAME },

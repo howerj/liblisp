@@ -179,6 +179,8 @@ added as well.
 * Anonymous recursion would be a good thing to have.
 * The semantics of the default IO port to **read** or **print** to need
 to be worked out.
+* There is currently no decent way of handling binary data, also string
+  handling could be improved a lot.
 * Bignum branch
 
 #### main.c
