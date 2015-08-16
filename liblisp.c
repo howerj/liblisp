@@ -209,6 +209,7 @@ again:  switch(*pat) {
 static int matchhere(regex_result *r, char *regexp, char *text, size_t depth);
 static int matchstar(regex_result *r, int literal, int c, char *regexp, char *text, size_t depth);
 
+/* This regex engine is a bit of a mess and needs to be rewritten*/
 regex_result regex_match(char *regexp, char *text) { 
         regex_result r = {text, text, 0};
         size_t depth = 0;
@@ -2203,13 +2204,17 @@ static cell *subr_regex(lisp *l, cell *args) {
         if(!cklen(args, 2) || !isasciiz(car(args)) || !isasciiz(car(cdr(args))))
                 RECOVER(l, "\"expected (string string)\" %S", args);
         r = regex_match(strval(car(args)), strval(car(cdr(args))));
-        if(r.result <= 0) {
-                r.start = strval(car(cdr(args))) - 1;
-                r.end   = strval(car(cdr(args))) - 1;
-        }
+        if(r.result <= 0)
+                r.start = r.end = strval(car(cdr(args))) - 1;
         return cons(l, mkint(l, r.result), 
                 cons(l, mkint(l, r.start - strval(car(cdr(args)))),
                 cons(l, mkint(l, r.end   - strval(car(cdr(args)))), Nil)));
+}
+
+static cell *subr_raise(lisp *l, cell *args) {
+        if(!cklen(args, 1) || !isint(car(args)))
+                RECOVER(l, "\"expected (integer)\" %S", args);
+        return raise(intval(car(args))) ? (cell*)mknil(): (cell*)mktee();
 }
 
 /*X-Macro of primitive functions and their names; basic built in subr*/
@@ -2244,9 +2249,9 @@ static cell *subr_regex(lisp *l, cell *args) {
         X(subr_assoc,   "assoc")          X(subr_setlocale, "locale!")\
         X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")\
         X(subr_eval_time, "timed-eval")   X(subr_reverse,   "reverse")\
-        X(subr_join,    "join")           X(subr_regex,     "regex")
-      /*X(subr_split,     "split")        X(subr_join,      "join")\
-        X(subr_format,    "format")*/
+        X(subr_join,    "join")           X(subr_regex,     "regex")\
+        X(subr_raise,   "raise")         
+      /*X(subr_split,   "split")          X(subr_format,    "format")*/
 
 #define X(SUBR, NAME) { SUBR, NAME },
 static struct subr_list { subr p; char *name; } primitives[] = {
@@ -2272,7 +2277,10 @@ static struct subr_list { subr p; char *name; } primitives[] = {
         X("*user-defined*", USERDEF)      X("*trace-off*",   TRACE_OFF)\
         X("*trace-marked*", TRACE_MARKED) X("*trace-all*",   TRACE_ALL)\
         X("*gc-on*",        GC_ON)        X("*gc-postpone*", GC_POSTPONE)\
-        X("*gc-off*",       GC_OFF)       X("*eof*",         EOF)
+        X("*gc-off*",       GC_OFF)       X("*eof*",         EOF)\
+        X("*sig-abrt*",     SIGABRT)      X("*sig-fpe*",     SIGFPE)\
+        X("*sig-ill*",      SIGILL)       X("*sig-int*",     SIGINT)\
+        X("*sig-segv*",     SIGSEGV)      X("*sig-term*",    SIGTERM)
 
 #define X(NAME, VAL) { NAME, VAL }, 
 static struct integer_list { char *name; intptr_t val; } integers[] = {

@@ -115,12 +115,6 @@ static cell *subr_modf(lisp *l, cell *args) {
         return cons(l, mkfloat(l, intpart), mkfloat(l, fracpart));
 }
 
-static cell *subr_raise(lisp *l, cell *args) {
-        if(!cklen(args, 1) || !isint(car(args)))
-                RECOVER(l, "\"expected (integer)\" %S", args);
-        return raise(intval(car(args))) ? (cell*)mknil(): (cell*)mktee();
-}
-
 #ifdef USE_LINE
 /*line editing and history functionality*/
 static char *line_editing_function(const char *prompt) {
@@ -192,14 +186,6 @@ ISX_LIST
         lisp_add_cell(l, "*version*",           mkstr(l, lstrdup(XSTRINGIFY(VERSION))));
         lisp_add_cell(l, "*commit*",            mkstr(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
         lisp_add_cell(l, "*repository-origin*", mkstr(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));
-        lisp_add_subr(l, "raise", subr_raise);
-
-        lisp_add_cell(l, "*sig-abrt*", mkint(l, SIGABRT));
-        lisp_add_cell(l, "*sig-fpe*",  mkint(l, SIGFPE));
-        lisp_add_cell(l, "*sig-ill*",  mkint(l, SIGILL));
-        lisp_add_cell(l, "*sig-int*",  mkint(l, SIGINT));
-        lisp_add_cell(l, "*sig-segv*", mkint(l, SIGSEGV));
-        lisp_add_cell(l, "*sig-term*", mkint(l, SIGTERM));
 
 #ifdef USE_LINE /*add line editor functionality*/
         static char *homedir;

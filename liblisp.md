@@ -152,6 +152,9 @@ in the usual manner.
   should not be possible to make the interpreter seg-fault.
 * See the "@todo" comments at the top of [liblisp.c][] to see a full list of
   bugs as well comments labeled with "@bug".
+* The code is formatted in an odd way, but I like it, it is simple enough to
+  change however by using GNU indent.
+* Some line lengths in the C file exceed 80 characters.
 
 <div id='To Do'/>
 ## To Do
@@ -174,6 +177,9 @@ be added as well. freopen and/or opening in append mode need to be
 added as well.
 * Needed primitives; map, apply, loop, split, regex, tr. 
 * Anonymous recursion would be a good thing to have.
+* The semantics of the default IO port to **read** or **print** to need
+to be worked out.
+* Bignum branch
 
 #### main.c
 
@@ -1669,6 +1675,12 @@ Print out a list of expressions based on a format string.
 
         # (regex STRING STRING)
 
+* raise
+
+Raise a signal.
+
+        # (signal INTEGER)
+
 ##### Additional functions
 
 Functions added optionally in [main.c][]:
@@ -1677,12 +1689,6 @@ For all the mathematical functions imported from the C math library the
 arguments are converted to floating point numbers before, the functions also
 all return floating point values, apart from [modf][] which returns a cons of
 two floating point values.
-
-* raise
-
-Raise a signal.
-
-        # (signal INTEGER)
 
 * log
 
@@ -2323,9 +2329,6 @@ Glossary of all of defined subroutine primitives and variables.
         join               Join a list of strings together
         format             Print out a list of objects based on a format string
         regex              Match a regular expression on a string
-
-##### misc.
-
         raise              Raise a signal
 
 ##### math.h
