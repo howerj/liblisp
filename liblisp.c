@@ -1396,10 +1396,10 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                         }
                         return eval(l, depth+1, car(exp), env);
                 }
-                if(first == Begin) {
+                if(first == Begin) { /**@todo Add looping constructs here*/
                         if(isnil(exp)) return Nil;
                         for(;;) {
-                                if(cdr(exp) == Nil) {
+                                if(isnil(cdr(exp))) {
                                       exp = car(exp);
                                       goto tail;
                                 }
@@ -2181,11 +2181,22 @@ fail:   RECOVER(l, "\"expected () (string) (list) (hash)\" %S", args);
 
 static cell *subr_join(lisp *l, cell *args) {
         char *sep = "", *r, *tmp;
-        if(args->len < 2 || !isasciiz(car(args)) || !isasciiz(car(cdr(args))))
+        if(args->len < 2 || !isasciiz(car(args))) 
                 goto fail;
         sep = strval(car(args));
-        r = lstrdup(strval(car(cdr(args))));
-        for(args = cdr(cdr(args)); !isnil(args); args = cdr(args)) {
+        if(!isasciiz(car(cdr(args)))) {
+                if(iscons(car(cdr(args)))) {
+                        args = car(cdr(args));
+                        if(!isasciiz(car(args)))
+                                goto fail;
+                } else {
+                        goto fail;
+                }
+        } else {
+                args = cdr(args);
+        }
+        r = lstrdup(strval(car(args)));
+        for(args = cdr(args); !isnil(args); args = cdr(args)) {
                 if(!isasciiz(car(args))) {
                         free(r);
                         goto fail;
@@ -2195,7 +2206,7 @@ static cell *subr_join(lisp *l, cell *args) {
                 r = tmp;
         }
         return mkstr(l, r);
-fail:   RECOVER(l, "\"expected (string string...)\" %S", args);
+fail:   RECOVER(l, "\"expected (string string...) or (string (string ...))\" %S", args);
         return Error;
 }
 

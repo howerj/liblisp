@@ -1663,6 +1663,7 @@ Split a string based on a pattern.
 Join a list of strings together with a separator between them.
 
         # (join STRING STRING...)
+        # (join STRING (STRING...))
 
 * format
 
