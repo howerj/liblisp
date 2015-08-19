@@ -195,7 +195,7 @@ char *lstrdup(const char *s) { assert(s);
         return str;
 }
 
-int match(char *pat, char *str) {
+int match(char *pat, char *str) { /**@todo add max depth check and other checks*/
         if(!str) return 0;
 again:  switch(*pat) {
         case '\0': return !*str;
@@ -209,18 +209,18 @@ again:  switch(*pat) {
 static int matchhere(regex_result *r, char *regexp, char *text, size_t depth);
 static int matchstar(regex_result *r, int literal, int c, char *regexp, char *text, size_t depth);
 
-/* This regex engine is a bit of a mess and needs to be rewritten*/
+/*This regex engine is a bit of a mess and needs to be rewritten*/
 regex_result regex_match(char *regexp, char *text) { 
-        regex_result r = {text, text, 0};
+        regex_result rr = {text, text, 0};
         size_t depth = 0;
         if (regexp[0] == '^')
-                return matchhere(&r, regexp + 1, text, depth + 1), r;
+                return matchhere(&rr, regexp + 1, text, depth + 1), rr;
         do { /* must look even if string is empty */
-                r.start = text;
-                if (matchhere(&r, regexp, text, depth + 1))
-                        return r;
+                rr.start = text;
+                if (matchhere(&rr, regexp, text, depth + 1))
+                        return rr;
         } while (*text++ != '\0');
-        return r.result = 0, r;
+        return rr.result = 0, rr;
 }
 
 static int matchhere(regex_result *r, char *regexp, char *text, size_t depth) {
@@ -1034,15 +1034,15 @@ static char *gettoken(lisp *l, io *i) {
         do {
                 if((ch = io_getc(i)) == EOF) 
                         return NULL;
-                if(ch == '#') { comment(i); continue; } /*ugly*/
-        } while(isspace(ch) || ch == '#');
+                if(ch == '#' || ch == ';') { comment(i); continue; } /*ugly*/
+        } while(isspace(ch) || ch == '#' || ch == ';');
         add_char(l, ch);
         if(strchr("()\'\"", ch))
                 return new_token(l);
         for(;;) {
                 if((ch = io_getc(i)) == EOF)
                         end = 1;
-                if(ch == '#') { comment(i); continue; } /*ugly*/
+                if(ch == '#' || ch == ';') { comment(i); continue; } /*ugly*/
                 if(strchr("()\'\"", ch) || isspace(ch)) {
                         io_ungetc(ch, i);
                         return new_token(l);
@@ -1197,7 +1197,9 @@ int printerf(lisp*l, io *o, unsigned depth, char *fmt, ...) {
                               for(cur = ht->table[i]; cur; cur = cur->next) {
                                 io_putc(' ', o);
                                 print_escaped_string(l, o, depth, cur->key);
-                                printerf(l, o, depth, "%t '%S", cdr(cur->val));
+                                if(iscons(cur->val))
+                                        printerf(l, o, depth, "%t '%S", cdr(cur->val));
+                                else    printerf(l, o, depth, "%t '%S", cur->val);
                               }
                           ret = io_putc(')', o);
                         }
@@ -1419,7 +1421,7 @@ static cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                                 RECOVER(l, "\"incorrect application of input port\" %S", exp);
                         if(!(s = io_getline(ioval(proc)))) return Error;
                         else return mkstr(l, s);
-              /*} else if(isout(proc)) {*/
+              /*} else if(isout(proc)) { // todo? */
                 } else { 
                         RECOVER(l, "\"not a procedure\" '%S", first);
                 }
@@ -2034,7 +2036,7 @@ static cell* subr_coerce(lisp *l, cell *args) {
                         /**@bug implement me*/
                     }
                     break;
-        case SYMBOL:if(isstr(convfrom) && !strpbrk(strval(convfrom), " #()\t\n\r'\"\\"))
+        case SYMBOL:if(isstr(convfrom) && !strpbrk(strval(convfrom), " ;#()\t\n\r'\"\\"))
                             return intern(l, lstrdup(strval(convfrom)));
                     break;
         case HASH:  if(iscons(convfrom)) /*hash from list*/
@@ -2210,16 +2212,18 @@ fail:   RECOVER(l, "\"expected (string string...) or (string (string ...))\" %S"
         return Error;
 }
 
-static cell *subr_regex(lisp *l, cell *args) {
-        regex_result r;
+static cell *subr_regexspan(lisp *l, cell *args) {
+        regex_result rr;
+        cell *m = Nil;
         if(!cklen(args, 2) || !isasciiz(car(args)) || !isasciiz(car(cdr(args))))
                 RECOVER(l, "\"expected (string string)\" %S", args);
-        r = regex_match(strval(car(args)), strval(car(cdr(args))));
-        if(r.result <= 0)
-                r.start = r.end = strval(car(cdr(args))) - 1;
-        return cons(l, mkint(l, r.result), 
-                cons(l, mkint(l, r.start - strval(car(cdr(args)))),
-                cons(l, mkint(l, r.end   - strval(car(cdr(args)))), Nil)));
+        rr = regex_match(strval(car(args)), strval(car(cdr(args))));
+        if(rr.result <= 0)
+                rr.start = rr.end = strval(car(cdr(args))) - 1;
+        m = (rr.result < 0 ? Error : (rr.result == 0 ? Nil : Tee));
+        return cons(l, m, 
+                cons(l, mkint(l, rr.start - strval(car(cdr(args)))),
+                cons(l, mkint(l, rr.end   - strval(car(cdr(args)))), Nil)));
 }
 
 static cell *subr_raise(lisp *l, cell *args) {
@@ -2285,9 +2289,9 @@ static cell *subr_split(lisp *l, cell *args) {
         X(subr_assoc,   "assoc")          X(subr_setlocale, "locale!")\
         X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")\
         X(subr_eval_time, "timed-eval")   X(subr_reverse,   "reverse")\
-        X(subr_join,    "join")           X(subr_regex,     "regex")\
+        X(subr_join,    "join")           X(subr_regexspan, "regex-span")\
         X(subr_raise,   "raise")          X(subr_split,     "split")
-      /*X(subr_split,   "split")          X(subr_format,    "format")*/
+      /*X(subr_format,    "format")*/
 
 #define X(SUBR, NAME) { SUBR, NAME },
 static struct subr_list { subr p; char *name; } primitives[] = {

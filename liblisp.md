@@ -139,9 +139,9 @@ general behaviors and corner cases that are out of line with other standards
 implementation, or are combinations of behaviors from other standards. The
 implementation is the standard for now, which is a downside.
 
-* '#' as comments
+* '#' as comments as well as ';'
 
-Another major deviation is that comments are represented by '#' instead of ';'
+Another major deviation is that comments are represented by '#' as well as ';'
 so that source code can easily be run as a Unix script with no special syntax
 in the usual manner.
 
@@ -155,6 +155,13 @@ in the usual manner.
 * The code is formatted in an odd way, but I like it, it is simple enough to
   change however by using GNU indent.
 * Some line lengths in the C file exceed 80 characters.
+* The regex implementation does not work when built under Windows with the
+  64-bit version of the Tiny C Compiler. This is related to this bug
+  in version 0.9.26 of the compiler.
+  <https://lists.nongnu.org/archive/html/tinycc-devel/2015-06/msg00000.html>
+  with a solution posted here:
+  <https://lists.nongnu.org/archive/html/tinycc-devel/2015-06/msg00001.html>
+  The current Windows build script [make.bat][] is dependent on "tcc".
 
 <div id='To Do'/>
 ## To Do
@@ -175,13 +182,14 @@ cut down on the amount of code needed in the primitives subroutines.
 * File operations on strings could be improved. An append mode should
 be added as well. freopen and/or opening in append mode need to be
 added as well.
-* Needed primitives; map, apply, loop, split, regex, tr. 
+* Needed primitives; apply, loop, tr. 
 * Anonymous recursion would be a good thing to have.
 * The semantics of the default IO port to **read** or **print** to need
 to be worked out.
 * There is currently no decent way of handling binary data, also string
   handling could be improved a lot.
 * Bignum branch
+* A branch where liblisp.c is split up like it should be.
 
 #### main.c
 
@@ -1674,9 +1682,9 @@ Print out a list of expressions based on a format string.
 
 
 
-* regex
+* regex-span
 
-        # (regex STRING STRING)
+        # (regex-span STRING STRING)
 
 * raise
 
@@ -2561,6 +2569,7 @@ used:
 [init.lsp]:  init.lsp
 [meta.lsp]:  meta.lsp
 [test.lsp]:  test.lsp
+[make.bat]:  make.bat
 [main.c]: main.c
 [metasyntactic variables]: http://www.catb.org/jargon/html/M/metasyntactic-variable.html
 [fexpr]: https://en.wikipedia.org/wiki/Fexpr
