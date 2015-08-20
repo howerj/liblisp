@@ -105,5 +105,6 @@
 ; has been devised yet. They must be executed in order.
 (eval-file 'base.lsp)
 (eval-file 'sets.lsp)
+(eval-file 'diff.lsp)
 (eval-file 'test.lsp)
 

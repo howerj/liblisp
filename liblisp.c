@@ -619,7 +619,7 @@ int printerf(lisp*l, io *o, unsigned depth, char *fmt, ...) {
                               for(cur = ht->table[i]; cur; cur = cur->next) {
                                 io_putc(' ', o);
                                 print_escaped_string(l, o, depth, cur->key);
-                                if(iscons(cur->val))
+                                if(iscons(cur->val)) /**@warning messy hash stuff*/
                                         printerf(l, o, depth, "%t '%S", cdr(cur->val));
                                 else    printerf(l, o, depth, "%t '%S", cur->val);
                               }

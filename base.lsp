@@ -310,3 +310,32 @@
         (sublist x ll ll))
       x)))
 
+; walk two isomorphic trees apply a function to each pair
+; of elements in each tree
+(define tree-walk
+  (lambda (f x y)
+        (cond 
+          ((and (atom? x) (atom? y))
+           (f x y))
+          ((and (list? x) (list? y))
+           (and 
+             (tree-walk f (car x) (car y))
+             (tree-walk f (cdr x) (cdr y))))
+          (t nil))))
+
+; are two trees equal?
+(define equal
+  (lambda (x y)
+    (tree-walk eq x y)))
+
+; are two trees structurally isomorphic
+(define struct-iso?
+  (lambda (x y)
+    (tree-walk (lambda (x y) t) x y)))
+
+; are two trees structurally isomorphic and each elements of
+; the same type?
+(define type-iso?
+  (lambda (x y)
+    (tree-walk (lambda (x y) (eq (type-of x) (type-of y))) x y)))
+
