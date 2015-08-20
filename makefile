@@ -80,11 +80,11 @@ libline/libline.a: libline/.git
 
 run: $(TARGET)
 	@echo running the executable with default arguments
-	./$^ -Epc init.lsp test.lsp -
+	./$^ -Epc init.lsp -
 
 valgrind: $(TARGET)
 	@echo running the executable through leak detection program, valgrind
-	valgrind --leak-check=full ./$^ -Epc init.lsp test.lsp -
+	valgrind --leak-check=full ./$^ -Epc init.lsp -
 
 ### documentation ############################################################
 
