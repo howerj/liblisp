@@ -2,10 +2,10 @@
  *  @brief      A minimal lisp interpreter and utility library
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com
- *  @brief      A small, extensible lisp interpreter see **/
+ *  @email      howe.r.j.89@gmail.com**/
 
 #include "liblisp.h"
+#include "private.h"
 #include <assert.h>
 #include <ctype.h>
 #include <inttypes.h>
@@ -18,142 +18,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#define DEFAULT_LEN        (256)   /**< just an arbitrary smallish number*/
-#define LARGE_DEFAULT_LEN  (4096)  /**< just another arbitrary number*/
-#define REGEX_MAX_DEPTH    (8192)  /**< max recursion depth of a regex*/
-#define MAX_USER_TYPES     (256)   /**< max number of user defined types*/
-#define COLLECTION_POINT   (1<<20) /**< run gc after this many allocs*/
-#define UNUSED(X)          ((void)(X)) /**< unused variable*/
-#define MAX(X, Y)    ((X)>(Y)?(X):(Y)) /**< largest of two values*/
-#define MIN(X, Y)    ((X)>(Y)?(Y):(X)) /**< smallest of two values*/
-
-/**@brief This restores a jmp_buf stored in lisp environment if it
- *        has been copied out to make way for another jmp_buf.
- * @param USED is RBUF used?
- * @param ENV  lisp environment to restore jmp_buf to
- * @param RBUF jmp_buf to restore**/
-#define RECOVER_RESTORE(USED, ENV, RBUF)\
-        if((USED)) memcpy((ENV)->recover, (RBUF), sizeof(jmp_buf));\
-        else (ENV)->recover_init = 0;
-
-typedef enum lisp_type { 
-        INVALID, /**< invalid object (default), halts interpreter*/
-        SYMBOL,  /**< symbol */
-        INTEGER, /**< integer, a normal fixed with number*/
-        CONS,    /**< cons cell*/
-        PROC,    /**< lambda procedure*/
-        SUBR,    /**< subroutine or primitive written in C*/
-        STRING,  /**< a NUL terminated string*/
-        IO,      /**< Input/Output port*/
-        HASH,    /**< Associative hash table*/
-        FPROC,   /**< F-Expression*/
-        FLOAT,   /**< Floating point number; could be float or double*/
-        USERDEF  /**< User defined types*/
-} lisp_type;     /**< A lisp object*/
-
-typedef enum trace_level { 
-        TRACE_OFF,    /**< tracing is off (default)*/
-        TRACE_MARKED, /**< trace only cells that have their trace field set*/
-        TRACE_ALL     /**< trace everything*/
-} trace_level; /**< level of debug printing to do when evaluating objects*/
-
-typedef enum gc_control { /**< Garbage collection control enumeration*/
-        GC_ON,       /**< Garbage collection is on (default)*/
-        GC_POSTPONE, /**< Temporarily postpone garbage collection*/
-        GC_OFF       /**< *Permanently turn garbage collection off*/
-} gc_control; /**< enum for l->gc_state */
-
-typedef union lisp_union { /**< ideally we would use void * for everything*/
-        void *v;     /**< use this for integers and points to cells*/
-        lfloat f;    /**< if lfloat is double it could be bigger than *v */ 
-        subr prim;   /**< function pointers are not guaranteed to fit into a void**/
-} lisp_union; /**< a union of all the different C datatypes used*/
-
-struct cell {
-        unsigned type:    4,        /**< Type of the lisp object*/
-                 userdef: 8,        /**< if type is USERDEF, the this determines which USERDEF*/
-                 mark:    1,        /**< mark for garbage collection*/
-                 uncollectable: 1,  /**< set if the object cannot, or should not, be freed*/
-                 trace:   1,        /**< set if object is to be traced for debugging*/
-                 close:   1,        /**< set if the objects data field is now invalid/freed*/
-                 len:     32;       /**< length of data p*/
-        lisp_union p[1]; /**< uses the "struct hack", c99 does not quite work here*/
-}; /**< a tagged object representing all possible lisp objects*/
-
-typedef struct hashentry {      /**< linked list of entries in a bin*/
-        char *key;              /**< ASCII nul delimited string*/
-        void *val;              /**< arbitrary value*/
-        struct hashentry *next; /**< next item in list*/
-} hashentry;
-
-struct hashtable {                /**< a hash table*/
-        size_t len;               /**< number of 'bins' in the hash table*/
-        struct hashentry **table; /**< table of linked lists*/
-};
-
-struct io {
-        union { FILE *file; char *str; } p; /**< the actual file or string*/
-        size_t position, /**< current position, used for string*/
-               max;      /**< max position in buffer, used for string*/
-        enum { IO_INVALID,    /**< invalid (default)*/ 
-               FIN,           /**< file input*/
-               FOUT,          /**< file output*/
-               SIN,           /**< string input*/
-               SOUT,          /**< string output, write to char* block*/
-               NULLOUT        /**< null output, discard output*/
-        } type; /**< type of the IO object*/
-        unsigned ungetc :1, /**< push back is in use?*/
-                 color  :1, /**< colorize output? Used in lisp_print*/
-                 pretty :1, /**< pretty print output? Used in lisp_print*/
-                 eof    :1; /**< End-Of-File marker*/
-        char c; /**< one character of push back*/
-};
-
-typedef struct gc_list { 
-        cell *ref; /**< reference to cell for the garbage collector to act on*/
-        struct gc_list *next; /**< next in list*/
-} gc_list; /**< type used to form linked list of all allocations*/
-
-typedef struct userdef_funcs { 
-        ud_free   free;  /**< to free a user defined type*/
-        ud_mark   mark;  /**< to mark a user defined type*/
-        ud_equal  equal; /**< to compare two user defined types*/
-        ud_print  print; /**< to print two user defined types*/
-} userdef_funcs; /**< functions the interpreter uses for user defined types*/
-
-struct lisp {
-        jmp_buf recover; /**< jump here when there is an error*/
-        io *ifp /**< standard input port*/, 
-           *ofp /**< standard output port*/, 
-           *efp /**< standard error output port*/;
-        cell *all_symbols, /**< all intern'ed symbols*/
-             *top_env,     /**< top level lisp environment*/
-             **gc_stack;   /**< garbage collection stack for working items*/
-        gc_list *gc_head;  /**< linked list of all allocated objects*/
-        char *token /**< one token of put back for parser*/, 
-             *buf   /**< input buffer for parser*/;
-        size_t buf_allocated,   /**< size of buffer "l->buf"*/
-               buf_used,        /**< amount of buffer used by current string*/
-               gc_stack_allocated,    /**< length of buffer of GC stack*/
-               gc_stack_used,         /**< elements used in GC stack*/
-               gc_collectp,     /**< collection counter, collect after it goes too high*/
-               max_depth        /**< max recursion depth*/;
-        uint64_t random_state[2] /**< PRNG state*/;
-        int sig;   /**< set by signal handlers or other threads*/
-        int trace; /**< trace level for eval*/
-        unsigned ungettok:     1, /**< do we have a put-back token to read?*/
-                 recover_init: 1, /**< has the recover buffer been initialized?*/
-                 dynamic:      1, /**< use lexical scope if false, dynamic if true*/
-                 errors_halt:  1, /**< any error halts the interpreter if true*/
-                 color_on:     1, /**< REPL Colorize output*/
-                 prompt_on:    1, /**< REPL '>' Turn prompt on*/
-                 editor_on:    1; /**< REPL Turn the line editor on*/
-        gc_control gc_state /**< gc on (default), suspended or permanently off*/;
-        userdef_funcs ufuncs[MAX_USER_TYPES]; /**< functions for user defined types*/
-        int userdef_used;   /**< number of user defined types allocated*/
-        editor_func editor; /**< line editor to use, optional*/
-};
 
 #define CELL_XLIST /**< list of all special cells for initializer*/ \
         X(Nil,     "nil")       X(Tee,     "t")\
@@ -180,522 +44,80 @@ static struct special_cell_list { cell *internal; } special_cells[] = {
 };
 #undef X
 
-/************************ generic helper functions ****************************/
+/*X-Macro of primitive functions and their names; basic built in subr*/
+#define SUBROUTINE_XLIST\
+        X(subr_band,    "&")              X(subr_bor,       "|")\
+        X(subr_bxor,    "^")              X(subr_binv,      "~")\
+        X(subr_sum,     "+")              X(subr_sub,       "-")\
+        X(subr_prod,    "*")              X(subr_mod,       "%")\
+        X(subr_div,     "/")              X(subr_eq,        "=")\
+        X(subr_eq,      "eq")             X(subr_greater,   ">")\
+        X(subr_less,    "<")              X(subr_cons,      "cons")\
+        X(subr_car,     "car")            X(subr_cdr,       "cdr")\
+        X(subr_list,    "list")           X(subr_match,     "match")\
+        X(subr_scons,   "scons")          X(subr_scar,      "scar")\
+        X(subr_scdr,    "scdr")           X(subr_eval,      "eval")\
+        X(subr_trace,   "trace-level!")   X(subr_gc,        "gc")\
+        X(subr_length,  "length")         X(subr_typeof,    "type-of")\
+        X(subr_inp,     "input?")         X(subr_outp,      "output?")\
+        X(subr_eofp,    "eof?")           X(subr_flush,     "flush")\
+        X(subr_tell,    "tell")           X(subr_seek,      "seek")\
+        X(subr_close,   "close")          X(subr_open,      "open")\
+        X(subr_getchar, "get-char")       X(subr_getdelim,  "get-delim")\
+        X(subr_read,    "read")           X(subr_puts,      "put")\
+        X(subr_putchar, "put-char")       X(subr_print,     "print")\
+        X(subr_ferror,  "ferror")         X(subr_system,    "system")\
+        X(subr_remove,  "remove")         X(subr_rename,    "rename")\
+        X(subr_hlookup, "hash-lookup")    X(subr_hinsert,   "hash-insert")\
+        X(subr_coerce,  "coerce")         X(subr_time,      "time")\
+        X(subr_getenv,  "getenv")         X(subr_rand,      "random")\
+        X(subr_seed,    "seed")           X(subr_date,      "date")\
+        X(subr_assoc,   "assoc")          X(subr_setlocale, "locale!")\
+        X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")\
+        X(subr_eval_time, "timed-eval")   X(subr_reverse,   "reverse")\
+        X(subr_join,    "join")           X(subr_regexspan, "regex-span")\
+        X(subr_raise,   "raise")          X(subr_split,     "split")\
+        X(subr_hcreate, "hash-create")  /*X(subr_format,    "format")*/
 
-void pfatal(char *msg, char *file, long line) {
-        fprintf(stderr, "(error \"%s\" \"%s\" %ld)\n", msg, file, line);
-        exit(-1);
-}
+#define X(SUBR, NAME) static cell* SUBR (lisp *l, cell *args);
+SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
+#undef X
 
-char *lstrdup(const char *s) { assert(s);
-        char *str;
-        if(!(str = malloc(strlen(s) + 1))) 
-                return NULL;
-        strcpy(str, s);
-        return str;
-}
+#define X(SUBR, NAME) { SUBR, NAME },
+static struct subr_list { subr p; char *name; } primitives[] = {
+        SUBROUTINE_XLIST /*all of the subr functions*/
+        {NULL, NULL} /*must be terminated with NULLs*/
+};
+#undef X
 
-int match(char *pat, char *str) { /**@todo add max depth check and other checks*/
-        if(!str) return 0;
-again:  switch(*pat) {
-        case '\0': return !*str;
-        case '*':  return match(pat+1, str) || (*str && match(pat, str+1));
-        case '.':  if(!*str)        return  0; pat++; str++; goto again;
-        case '\\': if(!*(pat+1))    return -1; if(!*str) return 0; pat++; /*fall through*/
-        default:   if(*pat != *str) return  0; pat++; str++; goto again;
-        }
-}
+#define INTEGER_XLIST\
+        X("*seek-cur*",     SEEK_CUR)     X("*seek-set*",    SEEK_SET)\
+        X("*seek-end*",     SEEK_END)     X("*random-max*",  INTPTR_MAX)\
+        X("*integer-max*",  INTPTR_MAX)   X("*integer-min*", INTPTR_MIN)\
+        X("*integer*",      INTEGER)      X("*symbol*",      SYMBOL)\
+        X("*cons*",         CONS)         X("*string*",      STRING)\
+        X("*hash*",         HASH)         X("*io*",          IO)\
+        X("*float*",        FLOAT)        X("*procedure*",   PROC)\
+        X("*primitive*",    SUBR)         X("*f-procedure*", FPROC)\
+        X("*file-in*",      FIN)          X("*file-out*",    FOUT)\
+        X("*string-in*",    SIN)          X("*string-out*",  SOUT)\
+        X("*lc-all*",       LC_ALL)       X("*lc-collate*",  LC_COLLATE)\
+        X("*lc-ctype*",     LC_CTYPE)     X("*lc-monetary*", LC_MONETARY)\
+        X("*lc-numeric*",   LC_NUMERIC)   X("*lc-time*",     LC_TIME)\
+        X("*user-defined*", USERDEF)      X("*trace-off*",   TRACE_OFF)\
+        X("*trace-marked*", TRACE_MARKED) X("*trace-all*",   TRACE_ALL)\
+        X("*gc-on*",        GC_ON)        X("*gc-postpone*", GC_POSTPONE)\
+        X("*gc-off*",       GC_OFF)       X("*eof*",         EOF)\
+        X("*sig-abrt*",     SIGABRT)      X("*sig-fpe*",     SIGFPE)\
+        X("*sig-ill*",      SIGILL)       X("*sig-int*",     SIGINT)\
+        X("*sig-segv*",     SIGSEGV)      X("*sig-term*",    SIGTERM)
 
-static int matchhere(regex_result *r, char *regexp, char *text, size_t depth);
-static int matchstar(regex_result *r, int literal, int c, char *regexp, char *text, size_t depth);
-
-/*This regex engine is a bit of a mess and needs to be rewritten*/
-regex_result regex_match(char *regexp, char *text) { 
-        regex_result rr = {text, text, 0};
-        size_t depth = 0;
-        if (regexp[0] == '^')
-                return matchhere(&rr, regexp + 1, text, depth + 1), rr;
-        do { /* must look even if string is empty */
-                rr.start = text;
-                if (matchhere(&rr, regexp, text, depth + 1))
-                        return rr;
-        } while (*text++ != '\0');
-        return rr.result = 0, rr;
-}
-
-static int matchhere(regex_result *r, char *regexp, char *text, size_t depth) {
-        if (REGEX_MAX_DEPTH < depth)
-                return r->result = -1;
- BEGIN:
-        if (regexp[0] == '\0')
-                return r->end = MAX(r->end, text), r->result = 1;
-        if (regexp[0] == '\\' && regexp[1] == *text) {
-                if (regexp[1] == *text) {
-                        regexp += 2;
-                        text++;
-                        goto BEGIN;
-                } else {
-                        return r->end = MAX(r->end, text), r->result = -1;
-                }
-        }
-        if (regexp[1] == '?') {
-                text = text + (regexp[0] == *text ? 1 : 0);
-                regexp = regexp + 2;
-                goto BEGIN;
-        }
-        if (regexp[1] == '+') {
-                if (regexp[0] == '.' || regexp[0] == *text)
-                        return r->result = matchstar(r, 0, regexp[0], regexp + 2, text, depth + 1);
-                r->end = MAX(r->end, text);
-                return 0;
-        }
-        if (regexp[1] == '*')
-                return r->end = MAX(r->end, text), 
-                       r->result = matchstar(r, 0, regexp[0], regexp + 2, text, depth + 1);
-        if (regexp[0] == '$' && regexp[1] == '\0')
-                return r->end = MAX(r->end, text), r->result = (*text == '\0' ? 1 : 0);
-        if (*text != '\0' && (regexp[0] == '.' || regexp[0] == *text)) {
-                regexp++;
-                text++;
-                goto BEGIN;
-        }
-        return r->end = MAX(r->end, text), r->result = 0;
-}
-
-static int matchstar(regex_result *r, int literal, int c, char *regexp, char *text, size_t depth) {
-        if (REGEX_MAX_DEPTH < depth)
-                return r->result = -1;
-        do { /* a* matches zero or more instances */
-                if (matchhere(r, regexp, text, depth + 1))
-                        return r->end = MAX(r->end, text), r->result = 1;
-        } while (*text != '\0' && (*text++ == c || (c == '.' && !literal)));
-        return r->end = MAX(r->end, text), r->result = 0;
-}
-
-
-uint32_t djb2(const char *s, size_t len) { assert(s); 
-        uint32_t h = 5381;   /*magic number this hash uses, it just is*/
-        size_t i = 0;
-        for (i = 0; i < len; s++, i++) h = ((h << 5) + h) + (*s);
-        return h;
-}
-
-char *getadelim(FILE *in, int delim) { assert(in);
-        io io_in;
-        memset(&io_in, 0, sizeof(io_in));
-        io_in.p.file = in;
-        io_in.type = FIN;
-        return io_getdelim(&io_in, delim);
-}
-
-char *getaline(FILE *in) { assert(in); return getadelim(in, '\n'); }
-
-char *lstrcatend(char *dest, const char *src) { assert(dest && src);
-        size_t sz = strlen(dest);
-        strcpy(dest + sz, src);
-        return dest + sz;
-}
-
-char *vstrcatsep(const char *separator, const char *first, ...) { 
-        size_t len, seplen, num = 0;
-        char *retbuf, *va, *p;
-        va_list argp1, argp2;
-
-        if (!separator || !first) return NULL;
-        len    = strlen(first);
-        seplen = strlen(separator);
-
-        va_start(argp1, first);
-        va_copy(argp2, argp1);
-        while ((va = va_arg(argp1, char *))) 
-                 num++, len += strlen(va);
-        va_end(argp1);
-
-        len += (seplen * num);
-        if (!(retbuf = malloc(len + 1))) return NULL;
-        retbuf[0] = '\0';
-        p = lstrcatend(retbuf, first);
-        va_start(argp2, first);
-        while ((va = va_arg(argp2, char *)))
-                 p = lstrcatend(p, separator), p = lstrcatend(p, va);
-        va_end(argp2);
-        return retbuf;
-}
-
-uint8_t binlog(unsigned long long v) { /*binary logarithm*/
-        uint8_t r = 0;
-        while(v >>= 1) r++;
-        return r;
-}
-
-uint64_t xorshift128plus(uint64_t s[2]) { /*PRNG*/
-	uint64_t x = s[0];
-	uint64_t const y = s[1];
-	s[0] = y;
-	x ^= x << 23; /*a*/
-	x ^= x >> 17; /*b*/
-	x ^= y ^ (y >> 26); /*c*/
-	s[1] = x;
-	return x + y;
-}
-
-int balance(const char *sexpr) { assert(sexpr);
-        int bal = 0, c; 
-        while((c = *sexpr++))
-                if     (c == '(') bal++;
-                else if(c == ')') bal--;
-                else if(c == '"')
-                        while((c = *sexpr++)) {
-                                if (c == '\\' && '"' == *sexpr) sexpr++;
-                                else if (c == '"') break;
-                                else continue;
-                        }
-                else continue;
-        return bal;
-}
-
-/************************ small hash library **********************************/
-
-static uint32_t hash_alg(hashtable *table, const char *s) {
-        return djb2(s, strlen(s)) % (table->len ? table->len : 1);
-}
-
-static hashentry *hash_newpair(const char *key, void *val) 
-{ /**@brief internal function to create a chained hash node**/
-        hashentry *np;
-        if (!(np = calloc(1, sizeof(*np)))) return NULL;
-        np->key = lstrdup(key);
-        np->val = val;
-        if (!np->key || !np->val) return NULL;
-        return np;
-}
-
-hashtable *hash_create(size_t len) {
-        hashtable *nt;
-        if (!len || !(nt = calloc(1, sizeof(*nt)))) return NULL;
-        if (!(nt->table  = calloc(1, sizeof(*nt->table)*len)))
-                return free(nt), NULL;
-        nt->len = len;
-        return nt;
-}
-
-void hash_destroy(hashtable *h) {
-        size_t i;
-        hashentry *cur, *prev;
-        if (!h) return;
-        for(i = 0; i < h->len; i++)
-                if(h->table[i]){
-                        prev = NULL;
-                        for(cur = h->table[i]; cur; cur = cur->next){
-                                free(prev);
-                                free(cur->key);
-                                prev = cur;
-                        }
-                        free(prev);
-                }
-        free(h->table);
-        free(h);
-}
-
-int hash_insert(hashtable *ht, const char *key, void *val) { assert(ht && key && val);
-        uint32_t hash = hash_alg(ht, key);
-        hashentry *cur = ht->table[hash], *newt, *last = NULL;
-
-        for(;cur && cur->key && strcmp(key, cur->key); cur = cur->next)
-                last = cur;
-
-        if (cur && cur->key && !strcmp(key, cur->key)) {
-                cur->val = val;
-        } else {
-                if(!(newt = hash_newpair(key, val))) 
-                        return -1;
-                if (cur == ht->table[hash]) {
-                        newt->next = cur;
-                        ht->table[hash] = newt;
-                } else if (!cur) {
-                        last->next = newt;
-                } else {
-                        newt->next = cur;
-                        last->next = newt;
-                }
-        }
-        return 0;
-}
-
-void *hash_foreach(hashtable *h, hash_func func) {
-        size_t i;
-        hashentry *cur;
-        void *ret;
-        if (!h || !func) return NULL;
-        for(i = 0; i < h->len; i++)
-                if(h->table[i])
-                        for(cur = h->table[i]; cur; cur = cur->next)
-                                if((ret = (*func)(cur->key, cur->val)))
-                                        return ret;
-        return NULL;
-}
-
-static void *hprint(const char *key, void *val) { assert(key);
-        return printf("(\"%s\" %p)\n", key, val), NULL;
-}
-
-void hash_print(hashtable *h) { assert(h); hash_foreach(h, hprint); }
-
-void* hash_lookup(hashtable *h, const char *key) {
-        uint32_t hash;
-        hashentry *cur;
-        assert(h && key);
-
-        hash = hash_alg(h, key);
-        cur = h->table[hash];
-        while (cur && cur->next && strcmp(cur->key, key))
-                cur = cur->next;
-        if(!cur || !cur->key || strcmp(cur->key, key)) return NULL;
-        else return cur->val;
-}
-
-/***************************** I/O handling ***********************************/
-
-int io_isin(io *i) { assert(i);
-        return (i->type == FIN || i->type == SIN); 
-}
-
-int io_isout(io *o) { assert(o); 
-        return (o->type == FOUT || o->type == SOUT || o->type == NULLOUT); 
-}
-
-int io_isfile(io *f) { assert(f);
-        return (f->type == FIN || f->type == FOUT);
-}
-
-int io_isstring(io *s) { assert(s);
-        return (s->type == SIN || s->type == SOUT);
-}
-
-int io_isnull(io *n) { assert(n);
-        return n->type == NULLOUT;
-}
-
-int io_getc(io *i) { assert(i);
-        int r;
-        if(i->ungetc)
-                return i->ungetc = 0, i->c;
-        if(i->type == FIN) { 
-                if((r = fgetc(i->p.file)) == EOF)
-                        i->eof = 1;
-                return r;
-        }
-        if(i->type == SIN) 
-                return i->p.str[i->position] ? i->p.str[i->position++] : EOF;
-        FATAL("unknown or invalid IO type");
-        return i->eof = 1, EOF;
-}
-
-int io_ungetc(char c, io *i) { assert(i);
-        if(i->ungetc) return i->eof = 1, EOF;
-        i->c = c;
-        i->ungetc = 1;
-        return c;
-}
-
-int io_putc(char c, io *o) { assert(o);
-        int r;
-        char *p;
-        size_t maxt;
-        if(o->type == FOUT) {
-                if((r = fputc(c, o->p.file)) == EOF)
-                        o->eof = 1;
-                return r;
-        }
-        if(o->type == SOUT) {
-                if(o->position >= o->max) { /*grow the "file"*/
-                        maxt = o->max * 2;
-                        if(maxt < o->position) /*overflow*/
-                                return o->eof = 1, EOF;
-                        o->max = maxt;       
-                        if(!(p = realloc(o->p.str, maxt)))
-                                return o->eof = 1, EOF;
-                        o->p.str = p;
-                }
-                o->p.str[o->position++] = c;
-                return c;
-        }
-        if(o->type == NULLOUT)
-                return c;
-        FATAL("unknown or invalid IO type");
-        return o->eof = 1, EOF;
-}
-
-int io_puts(const char *s, io *o) { assert(s && o);
-        int r;
-        char *p;
-        size_t maxt;
-        if(o->type == FOUT) {
-                if((r = fputs(s, o->p.file)) == EOF)
-                        o->eof = 1;
-                return r;
-        }
-        if(o->type == SOUT) {
-                size_t len, newpos;
-                if(o->position >= o->max) { /*grow the "file"*/
-                        maxt = o->position * 2;
-                        if(maxt < o->position) /*overflow*/
-                                return o->eof = 1, EOF;
-                        o->max = maxt;       
-                        if(!(p = realloc(o->p.str, maxt)))
-                                return o->eof = 1, EOF;
-                        o->p.str = p;
-                }
-                len = strlen(s);
-                newpos = o->position + len;
-                if(newpos >= o->max)
-                        len = newpos - o->max;
-                memmove(o->p.str + o->position, s, len);
-                o->position = newpos;
-                return len;
-        }
-        if(o->type == NULLOUT)
-                return (int)strlen(s);
-        FATAL("unknown or invalid IO type");
-        return EOF;
-}
-
-char *io_getdelim(io *i, int delim) { assert(i);
-        char *newbuf, *retbuf = NULL;
-        size_t nchmax = 1, nchread = 0;
-        int c;
-        if(!(retbuf = calloc(1,1))) return NULL;
-        while((c = io_getc(i)) != EOF) {
-                if(nchread >= nchmax) { 
-                        nchmax = nchread * 2;
-                        if(nchread >= nchmax) /*overflow check*/
-                                return free(retbuf), NULL;
-                        if(!(newbuf = realloc(retbuf, nchmax + 1)))
-                                return free(retbuf), NULL;
-                        retbuf = newbuf;
-                }
-                if(c == delim) break;
-                retbuf[nchread++] = c;
-        }
-        if(!nchread && c == EOF)
-                return free(retbuf), NULL;
-        if(retbuf)
-                retbuf[nchread] = '\0';
-        return retbuf;
-}
-
-char *io_getline(io *i) { assert(i); return io_getdelim(i, '\n'); }
-
-int io_printd(intptr_t d, io * o) { assert(o);
-        if(o->type == FOUT)
-                return fprintf(o->p.file, "%"PRIiPTR, d);
-        if(o->type == SOUT) {
-                char dstr[64] = ""; 
-                sprintf(dstr, "%"SCNiPTR, d);
-                return io_puts(dstr, o);
-        }
-        return EOF;
-}
-
-int io_printflt(double f, io * o) { assert(o);
-        if(o->type == FOUT)
-                return fprintf(o->p.file, "%f", f);
-        if(o->type == SOUT) {
-                char dstr[512] = ""; /*floats can be very big!*/
-                sprintf(dstr, "%f", f);
-                return io_puts(dstr, o);
-        }
-        return EOF;
-}
-
-io *io_sin(char *sin) {
-        io *i;
-        if(!sin || !(i = calloc(1, sizeof(*i)))) return NULL;
-        if(!(i->p.str = lstrdup(sin))) return NULL;
-        i->type = SIN;
-        i->max = strlen(sin);
-        return i;
-}
-
-io *io_fin(FILE *fin) { 
-        io *i;
-        if(!fin || !(i = calloc(1, sizeof(*i)))) return NULL;
-        i->p.file = fin;
-        i->type = FIN;
-        return i;
-}
-
-io *io_sout(char *sout, size_t len) {
-        io *o;
-        if(!sout || !(o = calloc(1, sizeof(*o)))) return NULL;
-        o->p.str = sout;
-        o->type = SOUT;
-        o->max = len;
-        return o;
-}
-
-io *io_fout(FILE *fout) {
-        io *o;
-        if(!fout || !(o = calloc(1, sizeof(*o)))) return NULL;
-        o->p.file = fout;
-        o->type = FOUT;
-        return o;
-}
-
-int io_close(io *c) {
-        int ret = 0;
-        if(!c) return -1;
-        if(c->type == FIN || c->type == FOUT)
-                if(c->p.file != stdin 
-                && c->p.file != stdout 
-                && c->p.file != stderr)
-                        ret = fclose(c->p.file);
-        if(c->type == SIN)
-                free(c->p.str);
-        free(c);
-        return ret;
-}
-
-int io_eof(io *f) { assert(f);
-        if(f->type == FIN || f->type == FOUT) f->eof = feof(f->p.file) ? 1 : 0;
-        return f->eof;
-}
-
-int io_flush(io *f) { assert(f);
-        if(f->type == FIN || f->type == FOUT) return fflush(f->p.file);
-        return 0;
-}
-
-long io_tell(io *f) { assert(f);
-        if(f->type == FIN || f->type == FOUT) return ftell(f->p.file);
-        if(f->type == SIN || f->type == SOUT) return f->position;
-        return -1;
-}
-
-int io_seek(io *f, long offset, int origin) { assert(f);
-        if(f->type == FIN || f->type == FOUT) 
-                return fseek(f->p.file, offset, origin);
-        if(f->type == SIN || f->type == SOUT) {
-                if(!f->max) return -1;
-                switch(origin) {
-                case SEEK_SET: f->position = offset;  break;
-                case SEEK_CUR: f->position += offset; break;
-                case SEEK_END: f->position = f->max - offset; break;
-                default: return -1;
-                }
-                return f->position = MIN(f->position, f->max);
-        }
-        return -1;
-}
-
-int io_error(io *f) { assert(f);
-        if(f->type == FIN || f->type == FOUT) 
-                return ferror(f->p.file);
-        return 0;
-}
-
-void io_color(io *out, int color_on)   { assert(out); out->color = color_on; }
-void io_pretty(io *out, int pretty_on) { assert(out); out->pretty = pretty_on; }
+#define X(NAME, VAL) { NAME, VAL }, 
+static struct integer_list { char *name; intptr_t val; } integers[] = {
+        INTEGER_XLIST
+        {NULL, 0}
+};
+#undef X
 
 /***************************** lisp lists *************************************/
 
@@ -1939,11 +1361,6 @@ static cell* subr_rename(lisp *l, cell *args) {
         return rename(strval(car(args)), strval(car(cdr(args)))) ? Nil : Tee;
 }
 
-static cell* subr_allsyms(lisp *l, cell *args) {
-        UNUSED(args);
-        return l->all_symbols;
-}
-
 static cell* subr_hlookup(lisp *l, cell *args) {
         cell *ob;
         if(!cklen(args, 2) || !ishash(car(args)) || !isasciiz(car(cdr(args))))
@@ -2256,79 +1673,6 @@ static cell *subr_split(lisp *l, cell *args) {
         free(f);
         return cdr(head);
 }
-
-/*X-Macro of primitive functions and their names; basic built in subr*/
-#define SUBROUTINE_XLIST\
-        X(subr_band,    "&")              X(subr_bor,       "|")\
-        X(subr_bxor,    "^")              X(subr_binv,      "~")\
-        X(subr_sum,     "+")              X(subr_sub,       "-")\
-        X(subr_prod,    "*")              X(subr_mod,       "%")\
-        X(subr_div,     "/")              X(subr_eq,        "=")\
-        X(subr_eq,      "eq")             X(subr_greater,   ">")\
-        X(subr_less,    "<")              X(subr_cons,      "cons")\
-        X(subr_car,     "car")            X(subr_cdr,       "cdr")\
-        X(subr_list,    "list")           X(subr_match,     "match")\
-        X(subr_scons,   "scons")          X(subr_scar,      "scar")\
-        X(subr_scdr,    "scdr")           X(subr_eval,      "eval")\
-        X(subr_trace,   "trace-level!")   X(subr_gc,        "gc")\
-        X(subr_length,  "length")         X(subr_typeof,    "type-of")\
-        X(subr_inp,     "input?")         X(subr_outp,      "output?")\
-        X(subr_eofp,    "eof?")           X(subr_flush,     "flush")\
-        X(subr_tell,    "tell")           X(subr_seek,      "seek")\
-        X(subr_close,   "close")          X(subr_open,      "open")\
-        X(subr_getchar, "get-char")       X(subr_getdelim,  "get-delim")\
-        X(subr_read,    "read")           X(subr_puts,      "put")\
-        X(subr_putchar, "put-char")       X(subr_print,     "print")\
-        X(subr_ferror,  "ferror")         X(subr_system,    "system")\
-        X(subr_remove,  "remove")         X(subr_rename,    "rename")\
-        X(subr_allsyms, "all-symbols")    X(subr_hcreate,   "hash-create")\
-        X(subr_hlookup, "hash-lookup")    X(subr_hinsert,   "hash-insert")\
-        X(subr_coerce,  "coerce")         X(subr_time,      "time")\
-        X(subr_getenv,  "getenv")         X(subr_rand,      "random")\
-        X(subr_seed,    "seed")           X(subr_date,      "date")\
-        X(subr_assoc,   "assoc")          X(subr_setlocale, "locale!")\
-        X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")\
-        X(subr_eval_time, "timed-eval")   X(subr_reverse,   "reverse")\
-        X(subr_join,    "join")           X(subr_regexspan, "regex-span")\
-        X(subr_raise,   "raise")          X(subr_split,     "split")
-      /*X(subr_format,    "format")*/
-
-#define X(SUBR, NAME) { SUBR, NAME },
-static struct subr_list { subr p; char *name; } primitives[] = {
-        SUBROUTINE_XLIST /*all of the subr functions*/
-        {NULL, NULL} /*must be terminated with NULLs*/
-};
-#undef X
-
-#define INTEGER_XLIST\
-        X("*seek-cur*",     SEEK_CUR)     X("*seek-set*",    SEEK_SET)\
-        X("*seek-end*",     SEEK_END)     X("*random-max*",  INTPTR_MAX)\
-        X("*integer-max*",  INTPTR_MAX)   X("*integer-min*", INTPTR_MIN)\
-        X("*integer*",      INTEGER)      X("*symbol*",      SYMBOL)\
-        X("*cons*",         CONS)         X("*string*",      STRING)\
-        X("*hash*",         HASH)         X("*io*",          IO)\
-        X("*float*",        FLOAT)        X("*procedure*",   PROC)\
-        X("*primitive*",    SUBR)         X("*f-procedure*", FPROC)\
-        X("*file-in*",      FIN)          X("*file-out*",    FOUT)\
-        X("*string-in*",    SIN)          X("*string-out*",  SOUT)\
-        X("*lc-all*",       LC_ALL)       X("*lc-collate*",  LC_COLLATE)\
-        X("*lc-ctype*",     LC_CTYPE)     X("*lc-monetary*", LC_MONETARY)\
-        X("*lc-numeric*",   LC_NUMERIC)   X("*lc-time*",     LC_TIME)\
-        X("*user-defined*", USERDEF)      X("*trace-off*",   TRACE_OFF)\
-        X("*trace-marked*", TRACE_MARKED) X("*trace-all*",   TRACE_ALL)\
-        X("*gc-on*",        GC_ON)        X("*gc-postpone*", GC_POSTPONE)\
-        X("*gc-off*",       GC_OFF)       X("*eof*",         EOF)\
-        X("*sig-abrt*",     SIGABRT)      X("*sig-fpe*",     SIGFPE)\
-        X("*sig-ill*",      SIGILL)       X("*sig-int*",     SIGINT)\
-        X("*sig-segv*",     SIGSEGV)      X("*sig-term*",    SIGTERM)
-
-#define X(NAME, VAL) { NAME, VAL }, 
-static struct integer_list { char *name; intptr_t val; } integers[] = {
-        INTEGER_XLIST
-        {NULL, 0}
-};
-#undef X
-
 /***************** initialization and lisp interfaces *************************/
 
 void lisp_throw(lisp *l, int ret) {

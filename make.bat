@@ -26,12 +26,14 @@ REM build the interpreter or fail
 @echo on
 REM build lisp interpreter, the main object file
 tcc -DNDEBUG -Wall -Wextra liblisp.c -c -o liblisp.o || goto :error
-REM tcc -shared liblisp.o -o liblisp.a || goto :error
+tcc -DNDEBUG -Wall -Wextra hash.c    -c -o hash.o    || goto :error
+tcc -DNDEBUG -Wall -Wextra io.c      -c -o io.o      || goto :error
+tcc -DNDEBUG -Wall -Wextra util.c    -c -o util.o    || goto :error
 
 REM built without asserts as its easier
 REM built without libline as it has not been ported to Windows
 REM built with "math.h" functions added
-tcc -DNDEBUG -DUSE_MATH -Wall -Wextra liblisp.o main.c -o lisp.exe || goto :error
+tcc -DNDEBUG -DUSE_MATH -Wall -Wextra liblisp.o hash.o io.o util.o main.c -o lisp.exe || goto :error
 exit /b 0
 
 :run

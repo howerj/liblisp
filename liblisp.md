@@ -1390,19 +1390,6 @@ Rename a file, the first argument is the source, the second the destination.
         > (rename "b.txt" "a.txt")
         t
 
-* all-symbols
-
-This returns a list of all the symbols encountered so far, whether or not they
-have been defined.
-
-        # (all-symbols)
-        > (all-symbols)
-        (hash-create "io?" 'io?
-                ...
-                "cons" 'cons)
-        > (hash-lookup 'cons (all-symbols))
-        cons
-
 * hash-create
 
 Create a new list from a series of key-value pairs. The number of arguments to

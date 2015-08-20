@@ -2,16 +2,6 @@
 # A lisp library and interpreter
 # Released under the LGPL license
 #
-# If this makefile fails for some reason the following commands
-# should work:
-#  
-# 	cc liblisp.c -c -o liblisp.o
-# 	ar rcs liblisp.a liblisp.o
-# 	cc main.c -c -o main.o
-# 	cc main.o liblisp.a -o lisp
-#
-# Which will build the library and the example interpreter.
-#
 
 include config.mk
 
@@ -35,7 +25,7 @@ help:
 	@echo "     install     install the example executable, library and man pages"
 	@echo "     uninstall   uninstall the example executable, library and man pages"
 	@echo "     ${TARGET}        build the example executable"
-	@echo "     lib${TARGET}.so  build the library (dynamic)"
+	@#echo "     lib${TARGET}.so  build the library (dynamic)"
 	@echo "     lib${TARGET}.a   build the library (static)"
 	@echo "     run         make the example executable and run it"
 	@echo "     help        this help message"
@@ -45,14 +35,16 @@ help:
 
 ### building #################################################################
 
-lib$(TARGET).a: lib$(TARGET).o
-	ar rcs $@ $<
+OBJFILES=liblisp.o hash.o io.o util.o 
 
-lib$(TARGET).so: lib$(TARGET).c lib$(TARGET).h 
-	$(CC) $(CFLAGS) lib$(TARGET).c -c -fpic -o $@
-	$(CC) -shared -fPIC $< -o $@
+lib$(TARGET).a: $(OBJFILES)
+	ar rcs $@ $^
 
-lib$(TARGET).o: lib$(TARGET).c lib$(TARGET).h 
+# lib$(TARGET).so: $(OBJFILES) lib$(TARGET).h private.h
+# 	$(CC) $(CFLAGS) $(OBJFILES) -c -fpic -o $@
+# 	$(CC) -shared -fPIC $< -o $@
+ 
+%.o: %.c lib$(TARGET).h private.h
 	$(CC) $(CFLAGS) $< -c -o $@
 
 VCS_DEFINES=-DVCS_ORIGIN="${VCS_ORIGIN}" -DVCS_COMMIT="${VCS_COMMIT}" -DVERSION="${VERSION}" 
@@ -104,8 +96,8 @@ doxygen:
 space := 
 space +=
 TARBALL=$(subst $(space),,${TARGET}-${VERSION}.tgz) # Remove spaces 
-# make distribution tarball
-dist: ${TARGET} lib${TARGET}.[ah3] lib${TARGET}.so lib${TARGET}.htm ${TARGET}.1
+# make distribution tarball, lib${TARGET}.so is not included at the moment...
+dist: ${TARGET} lib${TARGET}.[ah3] lib${TARGET}.htm ${TARGET}.1
 	tar -zcf ${TARBALL} $^
 
 install: all 
