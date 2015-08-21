@@ -4,10 +4,11 @@
 ; These functions come from various sources, such as "The Roots Of Lisp"
 ; essay, the book "The little schemer" and fragments from all over.
 
-; Todo
-; * list equality
-; * list structural equality
-; * unify, prolog interpreter
+; To-do
+; * unify, prolog interpreter, statistics package, symbolic manipulation
+;   of sets, logic and state machine minimization routines and all kinds
+;   off neat stuff.
+;
 
 ; doesn't work correctly yet
 (define assert
@@ -34,6 +35,8 @@
 (define primitive? (lambda (x) (type? *primitive* x)))
 (define char?      (lambda (x) (and (string? x) (= (length x) 1))))
 (define dotted?    (lambda (x) (and (list? x) (not (list? (cdr x))))))
+
+(define nil? (lambda (x) (if x nil t)))
 
 (define null?
   (lambda (x)

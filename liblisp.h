@@ -26,18 +26,18 @@ extern "C" {
  *  functions. They should be opaque types if possible to hide the
  *  implementation details. **/
 
-typedef double lfloat;
-typedef struct io io;                   /*generic I/O to files, strings, ... */
-typedef struct hashtable hashtable;     /*standard hash table implementation */
-typedef struct cell cell;               /*a lisp object, or "cell"*/
-typedef struct lisp lisp;               /*a full lisp environment*/
-typedef cell *(*subr)(lisp *, cell*);   /*lisp primitive operations*/
-typedef void *(*hash_func)(const char *key, void *val); /*for hash foreach*/
+typedef double lfloat;                  /**<float type used by this lisp*/
+typedef struct io io;                   /**<generic I/O to files, strings, ...*/
+typedef struct hashtable hashtable;     /**<standard hash table implementation */
+typedef struct cell cell;               /**<a lisp object, or "cell"*/
+typedef struct lisp lisp;               /**<a full lisp environment*/
+typedef cell *(*subr)(lisp *, cell*);   /**<lisp primitive operations*/
+typedef void *(*hash_func)(const char *key, void *val); /**<for hash foreach*/
 
-typedef void (*ud_free)(cell*);     /*function to free a user type*/
-typedef void (*ud_mark)(cell*);     /*marking function for user types*/
-typedef int  (*ud_equal)(cell*, cell*); /*equality function for user types*/
-typedef int  (*ud_print)(cell*);    /*printing out user defined types*/
+typedef void (*ud_free)(cell*);     /**<function to free a user type*/
+typedef void (*ud_mark)(cell*);     /**<marking function for user types*/
+typedef int  (*ud_equal)(cell*, cell*);  /**<equality function for user types*/
+typedef int  (*ud_print)(io*, unsigned, cell*); /**<print out user def types*/
 
 /**@brief This is a prototype for the (optional) line editing functionality
  *        that the REPL can use. The editor function should accept a prompt
@@ -439,9 +439,9 @@ char *symval(cell *x); /**@brief get string (symbol) from a lisp cell**/
 void *userval(cell *x); /**@brief get data from user defined type**/
 lfloat floatval(cell *x); /**@brief get floating point val from lisp cell**/
 hashtable *hashval(cell *x); /**@brief get hash table from a lisp cell**/
-const cell *mkerror(void); /**@brief return the error cell**/
-const cell *mknil(void);   /**@brief return the nil cell**/
-const cell *mktee(void);   /**@brief return the mktee cell**/
+cell *mkerror(void); /**@brief return the error cell**/
+cell *mknil(void);   /**@brief return the nil cell**/
+cell *mktee(void);   /**@brief return the mktee cell**/
 
 /**@brief  return a new token representing a new type
  * @param  l lisp environment to put the new type in
@@ -765,6 +765,13 @@ int main_lisp_env(lisp *l, int argc, char **argv);
 /**@brief Stringify with macro expansion
  * X      Thing to turn into a string with macro expansion  **/
 #define XSTRINGIFY(X) STRINGIFY(X)
+
+/**@brief Like assert() but will not be disabled by NDEBUG. It would be
+ *        nice if this would print a stack trace but there is no portable
+ *        way of doing this without make the C code look ugly with macro
+ *        magic.
+ * X      Test to perform**/
+#define ASSERT(X) do { if(!(X)) FATAL("assertion failed: " # X ); } while(0)
 
 #ifdef __cplusplus
 }

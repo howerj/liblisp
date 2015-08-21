@@ -54,7 +54,7 @@ main.o: main.c lib$(TARGET).h libline/libline.h
 
 # Always rebuilds as libline.a is .PHONY, it has to be.
 $(TARGET): main.o lib$(TARGET).a libline/libline.a 
-	$(CC) $(CFLAGS) -lm $^ -o $@
+	$(CC) $(CFLAGS) $^ -lm ${LINK} -o $@
 
 # Work around so the makefile initializes submodules. This requires
 # the full liblisp git repository to be available.

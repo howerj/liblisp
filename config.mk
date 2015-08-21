@@ -24,5 +24,9 @@ CFLAGS 	?= -Wall -Wextra -g -fwrapv -std=c99 -pedantic -O2
 ## CPP defines:
 ### NDEBUG       Disable asserts
 ### USE_LINE     Add line editing capability, requires libline
-DEFINES ?= -DUSE_LINE 
-
+### USE_TCC      Add support for libtcc, for compiling C code within the
+###              interpreter. LINK must be set to "-ltcc -ldl" for this
+###              to work.
+DEFINES ?= -DUSE_LINE
+#LINK    ?= -ltcc -ldl
+LINK    ?=

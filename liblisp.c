@@ -307,9 +307,9 @@ void setcdr(cell *x, cell *y) { if(!x||!y) return;  x->p[1].v = y; }
 char *symval(cell *x)        { return !x ? NULL : (char *)(x->p[0].v); }
 char *strval(cell *x)        { return !x ? NULL : (char *)(x->p[0].v); }
 void *userval(cell *x)       { return !x ? NULL : (void *)(x->p[0].v); }
-const cell *mkerror(void)    { return Error; }
-const cell *mknil(void)      { return Nil; }
-const cell *mktee(void)      { return Tee; }
+cell *mkerror(void)          { return Error; }
+cell *mknil(void)            { return Nil; }
+cell *mktee(void)            { return Tee; }
 hashtable *hashval(cell *x){ return !x ? NULL : (hashtable *)(x->p[0].v); }
 int  cklen(cell *x, size_t expect)  { return !x ? 0 : (x->len) == expect; }
 lfloat floatval(cell *x)     { return !x ? 0.f : x->p[0].f; }
@@ -696,7 +696,7 @@ static int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-exp
                                       op->close? "CLOSED" : 
                                       (isin(op)? "IN": "OUT"), intval(op)); break;
         case USERDEF: if(l && l->ufuncs[op->userdef].print)
-                              (l->ufuncs[op->userdef].print)(op);
+                              (l->ufuncs[op->userdef].print)(o, depth, op);
                       else printerf(l, o, depth, "<USER:%d:%d>",
                                 (intptr_t)op->userdef, intval(op)); break;
         case INVALID: 

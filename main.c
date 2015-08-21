@@ -11,6 +11,7 @@
 #include <math.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #ifndef VERSION
@@ -42,12 +43,6 @@ static void sig_int_handler(int sig) {
         running = 0;
 }
 
-#ifdef USE_LINE
-#include "libline/libline.h"
-#include <string.h>
-static char *histfile = ".list";
-#endif
-
 /**@brief Template for most of the functions in "math.h"
  * @param NAME name of math function such as "log", "sin", etc.*/
 #define SUBR_MATH_UNARY(NAME)\
@@ -71,15 +66,15 @@ MATH_UNARY_LIST
 static cell *subr_ ## NAME (lisp *l, cell *args) {\
         char *s, c;\
         if(cklen(args, 1) && isint(car(args)))\
-                return NAME (intval(car(args))) ? (cell*)mktee() : (cell*)mknil();\
+                return NAME (intval(car(args))) ? mktee() : (cell*)mknil();\
         if(!cklen(args, 1) || !isasciiz(car(args)))\
                 RECOVER(l, "\"expected (string)\" %S", args);\
         s = strval(car(args));\
-        if(!s[0]) return (cell*)mknil();\
+        if(!s[0]) return mknil();\
         while((c = *s++)) \
                 if(! NAME (c))\
-                        return (cell*)mknil();\
-        return (cell*)mktee();\
+                        return mknil();\
+        return mktee();\
 }
 
 #define ISX_LIST\
@@ -116,6 +111,9 @@ static cell *subr_modf(lisp *l, cell *args) {
 }
 
 #ifdef USE_LINE
+#include "libline/libline.h"
+static char *histfile = ".list";
+
 /*line editing and history functionality*/
 static char *line_editing_function(const char *prompt) {
         static int warned = 0; /**< have we warned the user we cannot write to
@@ -141,9 +139,9 @@ static cell *subr_line_editor_mode(lisp *l, cell *args) {
         (void)l;
         if(cklen(args, 1)) {
                 line_set_vi_mode(isnil(car(args)) ? 0 : 1);
-                return (cell*)mktee();
+                return mktee();
         }
-        return line_get_vi_mode() ? (cell*)mktee(): (cell*)mknil();
+        return line_get_vi_mode() ? mktee(): (cell*)mknil();
 }
 
 static cell *subr_hist_len(lisp *l, cell *args) {
@@ -151,7 +149,7 @@ static cell *subr_hist_len(lisp *l, cell *args) {
                 RECOVER(l, "\"expected (integer)\" '%S", args);
         if(!line_history_set_maxlen((int)intval(car(args))))
                 HALT(l, "\"%s\"", "out of memory");
-        return (cell*)mktee();
+        return mktee();
 }
 
 static cell *subr_clear_screen(lisp *l, cell *args) {
@@ -159,7 +157,37 @@ static cell *subr_clear_screen(lisp *l, cell *args) {
         if(!cklen(args, 0))
                 RECOVER(l, "\"expected ()\" '%S", args);
         line_clearscreen();
-        return (cell*)mktee();
+        return mktee();
+}
+#endif
+
+#ifdef USE_TCC
+#include <libtcc.h>
+static int ud_tcc = 0;
+
+static void ud_tcc_free(cell *f) {
+        tcc_delete(userval(f));
+        free(f);
+}
+
+static int ud_tcc_print(io *o, unsigned depth, cell *f) {
+        return printerf(NULL, o, depth, "<COMPILE-STATE:%d>", userval(f));
+}
+
+static cell* subr_compile(lisp *l, cell *args) {
+        if(!cklen(args, 3) 
+        || !isusertype(car(args), ud_tcc)
+        || !isasciiz(car(cdr(args))) || !isstr(car(cdr(cdr(args)))))
+                RECOVER(l, "\"expected (compile-state string string\" '%S", args);
+        char *fname = strval(car(cdr(args))), *prog = strval(car(cdr(cdr(args))));
+        subr func;
+        TCCState *st = userval(car(args));
+        if(tcc_compile_string(st, prog) < 0)
+                return mkerror();
+        if(tcc_relocate(st, TCC_RELOCATE_AUTO) < 0)
+                return mkerror();
+        func = (subr)tcc_get_symbol(st, fname);
+        return mksubr(l, func);
 }
 #endif
 
@@ -177,7 +205,7 @@ MATH_UNARY_LIST
 #undef X
         lisp_add_subr(l, "pow",  subr_pow);
         lisp_add_subr(l, "modf", subr_modf);
-        lisp_add_cell(l, "*have-math*", (cell*)mktee());
+        lisp_add_cell(l, "*have-math*", mktee());
 
 #define X(FUNC) lisp_add_subr(l, # FUNC "?", subr_ ## FUNC);
 ISX_LIST
@@ -187,7 +215,40 @@ ISX_LIST
         lisp_add_cell(l, "*commit*",            mkstr(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
         lisp_add_cell(l, "*repository-origin*", mkstr(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));
 
-#ifdef USE_LINE /*add line editor functionality*/
+#ifdef USE_TCC
+        /** Tiny C compiler library
+         * The interface to libtcc needs a lot of work to make it useful, but
+         * it does work. All of the symbols needed by the libtcc would need
+         * to be added. Perhaps "tcc_add_file" could be used to add the headers
+         * and symbols automatically to TCCState?
+         *
+         * This example create a function that returns the integer "3" from
+         * within the interpreter:
+         *
+         * > (define three-func 
+         *      (compile *compile-state* "p" 
+         *        "cell *p(void *l, void *a) { return (void*)mkint(l, 3); }"))
+         * <SUBR:35097280>
+         * > (three-func)
+         * 3
+         *
+         * However it requires that "mkint" be added to TCCState before hand, 
+         * so using "mkfloat" (for example) will not
+         * work.**/
+        ud_tcc = newuserdef(l, ud_tcc_free, NULL, NULL, ud_tcc_print);
+        TCCState *st = tcc_new();
+        tcc_add_symbol(st, "mkint", mkint); /*required for the example*/
+        tcc_set_output_type(st, TCC_OUTPUT_MEMORY);
+        lisp_add_cell(l, "*compile-state*", mkuser(l, st, ud_tcc));
+        lisp_add_subr(l, "compile", subr_compile);
+        lisp_add_cell(l, "*have-compile*", mktee());
+#else
+        lisp_add_cell(l, "*have-compile*", mknil());
+#endif
+
+#ifdef USE_LINE 
+        /* This adds line editor functionality from the "libline" library,
+         * this is a fork of the "linenoise" library.*/
         static char *homedir;
         homedir = getenv("HOME"); /*Unix home path*/
         if(homedir) /*if found put the history file there*/
@@ -201,9 +262,9 @@ ISX_LIST
         lisp_add_subr(l, "clear-screen",     subr_clear_screen);
         lisp_add_subr(l, "history-length",   subr_hist_len);
         lisp_add_cell(l, "*history-file*",   mkstr(l, lstrdup(histfile)));
-        lisp_add_cell(l, "*have-line*",      (cell*)mktee());
+        lisp_add_cell(l, "*have-line*",      mktee());
 #else
-        lisp_add_cell(l, "*have-line*",      (cell*)mknil());
+        lisp_add_cell(l, "*have-line*",      mknil());
 #endif
         r = main_lisp_env(l, argc, argv);
 #ifdef USE_LINE

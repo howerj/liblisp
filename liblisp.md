@@ -190,6 +190,10 @@ to be worked out.
   handling could be improved a lot.
 * Bignum branch
 * A branch where liblisp.c is split up like it should be.
+* The memory layout of cells could be improved greatly. Other Lisps tend to use
+  knowledge about the pointer layout use spare bits, the lower two bits will
+  always be zero as the pointer should be aligned, so a pointer cannot have
+  those bits set. This can be used to mark what is and what is not a pointer.
 
 #### main.c
 
@@ -2236,6 +2240,12 @@ repository, if this is not available it will be set to "unknown".
         # floats
         pi                 The mathematical constant pi
         e                  Euler's number
+
+* \*have-compile\*
+
+This is 't if the run time C compiler is available (backed by the Tiny C
+Compiler), this is '() if it is not available. This feature currently is not
+stable.
 
 * \*have-line\*
 

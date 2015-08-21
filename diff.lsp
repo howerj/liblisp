@@ -1,6 +1,8 @@
-; Differentiation of polynomials
-; from http://shrager.org/llisp/
+; Differentiation of polynomials and symbolic simplification
+; From http://shrager.org/llisp/, which is the tutorial for
+; an old lisp called "P-LISP" which ran on the Apple II.
 
+; The symbolic differentiation function uses these rules:
 ; D[0,x]=0
 ; D[x,x]=1
 ; D[(u+v),x]=D[u,x]+D[v,x]
@@ -12,7 +14,7 @@
 (define first-term  (lambda (poly) (cadr poly)))
 (define second-term (lambda (poly) (caddr poly)))
 
-(define derv 
+(define derive
   (lambda (poly var)
     (cond
       ((atom? poly) (dervatom poly var))
@@ -22,8 +24,8 @@
        (dervminus poly var))
       ((eq '* (function poly))
        (dervprod poly var))
-      ((eq 'exp (function poly))
-       (dervexp poly var)))))
+      ((eq 'pow (function poly))
+       (dervpow poly var)))))
 
 (define dervatom
   (lambda (poly var)
@@ -34,49 +36,50 @@
 (define dervsum
   (lambda (poly var)
     (list '+
-          (derv (first-term poly) var)
-          (derv (second-term poly) var))))
+          (derive (first-term poly) var)
+          (derive (second-term poly) var))))
 
 (define dervminus
   (lambda (poly var)
     (list '-
-          (derv (first-term poly) var)
-          (derv (second-term poly) var))))
+          (derive (first-term poly) var)
+          (derive (second-term poly) var))))
 
 (define dervprod
   (lambda (poly var)
     (list '+
           (list '*
                 (first-term poly)
-                (derv (second-term poly) var))
+                (derive (second-term poly) var))
           (list '*
                 (second-term poly)
-                (derv (first-term poly) var)))))
+                (derive (first-term poly) var)))))
 
-(define dervexp
+(define dervpow
   (lambda (poly var)
     (list '*
           (list '*
                 (second-term poly)
-                (list 'exp
+                (list 'pow
                       (first-term poly)
                       (- (second-term poly) 1))
-                (derv (first-term poly) var)))))
+                (derive (first-term poly) var)))))
 
-
-; Lisp form      Simplified form
-; ---------      ---------------
-; *   ? 0              0
-; *   0 ?              0
-; *   1 ?              ?
-; *   ? 1              ?
-; +   0 ?              ?
-; +   ? 0              ?
-; -   ? 0              ?
-; exp ? 0              1
-; exp ? 1              ?
-; exp 0 ?              0
-; exp 1 ?              1
+; The simplification function uses these rules:
+;
+;    Lisp form      Simplified form
+;    ---------      ---------------
+;    *   ? 0              0
+;    *   0 ?              0
+;    *   1 ?              ?
+;    *   ? 1              ?
+;    +   0 ?              ?
+;    +   ? 0              ?
+;    -   ? 0              ?
+;    pow ? 0              1
+;    pow ? 1              ?
+;    pow 0 ?              0
+;    pow 1 ?              1
  
 (define simplify1 (lambda (poly)
   (cond
@@ -108,7 +111,7 @@
          (t (list '-
                 (simplify1 (first-term  poly))
                 (simplify1 (second-term poly))))))
-       ((eq 'exp (function poly))
+       ((eq 'pow (function poly))
         (cond
           ((eq 0 (second-term poly)) 1)
            ((eq 1 (second-term poly))
@@ -117,4 +120,13 @@
           ((eq 1 (first-term poly)) 1) ))
        (t poly))))
 
+; Repeatedly apply simplify1 until there is no change
+(define simplify
+  (lambda (poly)
+    (let* (poly1 (simplify1 poly))
+      (cond 
+        ((nil? poly1) poly)
+        ((equal poly poly1)
+         poly)
+        (t (simplify poly1))))))
 
