@@ -171,6 +171,20 @@ void gc_mark_and_sweep(lisp *l);
  * @param l      the lisp environment to sweep and invalidate**/
 void gc_sweep_only(lisp *l);
 
+/**@brief Read in a lisp expression
+ * @param l      a lisp environment 
+ * @param i      the input port
+ * @return cell* a fully parsed lisp expression**/
+cell *reader(lisp *l, io *i);
+
+/**@brief  Print out a lisp expression
+ * @param  l      a lisp environment
+ * @param  o      the output port
+ * @param  op     S-Expression to print out
+ * @param  depth  depth to print out S-Expression 
+ * @return int    negative on error **/
+int printer(lisp *l, io *o, cell *op, unsigned depth);
+
 #ifdef __cplusplus
 }
 #endif

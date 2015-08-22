@@ -441,7 +441,8 @@ lfloat floatval(cell *x); /**@brief get floating point val from lisp cell**/
 hashtable *hashval(cell *x); /**@brief get hash table from a lisp cell**/
 cell *mkerror(void); /**@brief return the error cell**/
 cell *mknil(void);   /**@brief return the nil cell**/
-cell *mktee(void);   /**@brief return the mktee cell**/
+cell *mktee(void);   /**@brief return the tee cell**/
+cell *mkquote(void); /**@brief return the quote cell**/
 
 /**@brief  return a new token representing a new type
  * @param  l lisp environment to put the new type in
