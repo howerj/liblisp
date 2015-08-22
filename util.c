@@ -185,3 +185,38 @@ int balance(const char *sexpr) { assert(sexpr);
         return bal;
 }
 
+int isnumber(const char *buf) { assert(buf);
+        char conv[] = "0123456789abcdefABCDEF";
+        if(!buf[0]) return 0;
+        if(buf[0] == '-' || buf[0] == '+') buf++;
+        if(!buf[0]) return 0;
+        if(buf[0] == '0') { /*shorten the conv table depending on numbers base*/
+                if(buf[1] == 'x' || buf[1] == 'X') conv[22] = '\0', buf+=2;
+                else conv[8] = '\0';
+        } else { conv[10] = '\0';}
+        if(!buf[0]) return 0;
+        return buf[strspn(buf, conv)] == '\0';
+}
+
+int isfnumber(const char *buf) { 
+        size_t i;
+        char conv[] = "0123456789";
+        if(!buf[0]) return 0;
+        if(buf[0] == '-' || buf[0] == '+') buf++;
+        if(!buf[0]) return 0;
+        i = strspn(buf, conv);
+        if(buf[i] == '\0') return 1;
+        if(buf[i] == 'e') goto expon; /*got check for valid exponentiation*/
+        if(buf[i] != '.') return 0;
+        buf = buf + i + 1;
+        i = strspn(buf, conv);
+        if(buf[i] == '\0') return 1;
+        if(buf[i] != 'e' && buf[i] != 'E') return 0;
+expon:  buf = buf + i + 1;
+        if(buf[0] == '-' || buf[0] == '+') buf++;
+        if(!buf[0]) return 0;
+        i = strspn(buf, conv);
+        if(buf[i] == '\0') return 1;
+        return 0;
+}
+

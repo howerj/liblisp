@@ -1,7 +1,8 @@
 /** @file       private.h
- *  @brief      A *internal* header for the liblisp project, not for external
+ *  @brief      An *internal* header for the liblisp project, not for external
  *              use. It defines the internals of what are opaque objects to the
- *              programs outside of the library.
+ *              programs outside of the library. As well as any functions which
+ *              should not be used outside the project.
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com**/
@@ -152,6 +153,23 @@ struct lisp {
         int userdef_used;   /**< number of user defined types allocated*/
         editor_func editor; /**< line editor to use, optional*/
 };
+
+/**@brief  Add a lisp object to the stack of temporary variables, anything
+ *         on this stack will not be collected until it becomes unreachable
+ *         (by being overwritten or by being popped off the stack).
+ * @param  l     the lisp environment to add the cell to
+ * @param  op    the cell to add
+ * @return cell* the added cell, or NULL when an internal allocation failed**/
+cell *gc_add(lisp *l, cell* op);
+
+/**@brief Mark all reachable objects then perform a sweep.
+ * @param l      the lisp environment to perform the mark and sweep in**/
+void gc_mark_and_sweep(lisp *l);
+
+/**@brief This only performs a sweep, no objects are marked, this effectively
+ *        invalidates the lisp environment!
+ * @param l      the lisp environment to sweep and invalidate**/
+void gc_sweep_only(lisp *l);
 
 #ifdef __cplusplus
 }

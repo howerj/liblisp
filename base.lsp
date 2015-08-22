@@ -212,20 +212,20 @@
       ((atom? (car l)) (lat? (cdr l)))
       (t nil))))
 
-; find 'a in lat
+; find 'a in list
 (define member?
   (lambda (a lat)
     (cond
       ((null? lat) ())
-      (t (or (eq (car lat) a)
+      (t (or (equal (car lat) a)
                 (member? a (cdr lat)))))))
 
-; remove member from lat
+; remove member from list
 (define remove-member 
   (lambda (a lat)
     (cond
       ((null? lat) nil)
-      ((eq (car lat) a) (cdr lat))
+      ((equal (car lat) a) (cdr lat))
       (t (cons (car lat)
                   (remove-member a (cdr lat)))))))
 

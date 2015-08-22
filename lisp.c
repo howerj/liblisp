@@ -1,8 +1,14 @@
-/** @file       liblisp.c
+/** @file       lisp.c
  *  @brief      A minimal lisp interpreter and utility library
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com**/
+ *  @email      howe.r.j.89@gmail.com
+ *
+ *  This file needs splitting up into:
+ *      - subr.c:  For the built in primitives
+ *      - read.c:  S-Expression parser
+ *      - print.c: S-Expression printer
+ *      - eval.c:  The main lisp core **/
 
 #include "liblisp.h"
 #include "private.h"
@@ -121,101 +127,6 @@ static struct integer_list { char *name; intptr_t val; } integers[] = {
 
 /***************************** lisp lists *************************************/
 
-static void gc_free(lisp *l, cell *ob) { /**< free a lisp cell*/
-        if(ob->uncollectable) return;
-        switch(ob->type) {
-        case INTEGER: case CONS: case FLOAT:
-        case PROC:    case SUBR: case FPROC:      free(ob); break;
-        case STRING:  free(strval(ob));           free(ob); break;
-        case SYMBOL:  free(symval(ob));           free(ob); break;
-        case IO:      if(!ob->close)   io_close(ioval(ob));        
-                                                  free(ob); break; 
-        case HASH:    hash_destroy(hashval(ob));  free(ob); break;
-        case USERDEF: if(l->ufuncs[ob->userdef].free)
-                              (l->ufuncs[ob->userdef].free)(ob);
-                      else free(ob);
-                      break;
-        case INVALID:
-        default: FATAL("internal inconsistency"); break;
-        }
-}
-
-static void gc(lisp *l) { /*linked list versus dynamic array?*/
-        gc_list *v, **p;
-        if(l->gc_state != GC_ON) return;
-        for(p = &l->gc_head; *p != NULL;) { 
-                v = *p;
-                if(v->ref->mark) {
-                        p = &v->next;
-                        v->ref->mark = 0;
-                } else {
-                        *p = v->next;
-                        gc_free(l, v->ref);
-                        free(v);
-                }
-        }
-}
-
-static cell *gc_add(lisp *l, cell* op) { /**< add a cell to the working set*/
-        cell **olist;
-        if(l->gc_state == GC_OFF) return op;
-        if(l->gc_stack_used++ > l->gc_stack_allocated - 1) {
-                l->gc_stack_allocated = l->gc_stack_used * 2;
-                if(l->gc_stack_allocated < l->gc_stack_used) 
-                        HALT(l, "%s", "overflow in allocator size variable");
-                olist = realloc(l->gc_stack, l->gc_stack_allocated * 
-                                sizeof(*l->gc_stack));
-                if(!olist)
-                        HALT(l, "%s", "out of memory");
-                l->gc_stack = olist;
-        }
-        l->gc_stack[l->gc_stack_used - 1] = op; /**<anything reachable in here is not freed*/
-        return op;
-}
-
-static void gc_mark(lisp *l, cell* op) { /**<recursively mark reachable cells*/
-        if(l->gc_state != GC_ON) return;
-        if(!op || op->uncollectable || op->mark) return;
-        op->mark = 1;
-        switch(op->type) {
-        case INTEGER: case SYMBOL: case SUBR: 
-        case STRING:  case IO:     case FLOAT:  break;
-        case FPROC: case PROC: 
-                   gc_mark(l, procargs(op)); 
-                   gc_mark(l, proccode(op));
-                   gc_mark(l, procenv(op));
-                   break;
-        case CONS: gc_mark(l, car(op));
-                   gc_mark(l, cdr(op));
-                   break;
-        case HASH: {
-                        size_t i;
-                        hashentry *cur;
-                        hashtable *h = hashval(op);
-                        for(i = 0; i < h->len; i++)
-                                if(h->table[i])
-                                        for(cur = h->table[i]; cur; cur = cur->next)
-                                                gc_mark(l, cur->val);
-                   }
-                   break;
-        case USERDEF: if(l->ufuncs[op->userdef].mark)
-                             (l->ufuncs[op->userdef].mark)(op);
-                      break;
-        case INVALID:
-        default:   FATAL("internal inconsistency: unknown type");
-        }
-}
-
-static void gc_collect(lisp *l) {
-        size_t i;
-        gc_mark(l, l->all_symbols);
-        gc_mark(l, l->top_env);
-        for(i = 0; i < l->gc_stack_used; i++)
-                gc_mark(l, l->gc_stack[i]);
-        gc(l);
-        l->gc_collectp = 0;
-}
-
 static cell *mk(lisp *l, lisp_type type, size_t count, ...) 
 { /**@brief make new lisp cells and perform garbage bookkeeping/collection*/
         cell *ret;
@@ -225,7 +136,7 @@ static cell *mk(lisp *l, lisp_type type, size_t count, ...)
 
         if(l->gc_collectp++ > COLLECTION_POINT) /*Set to 1 for testing*/
                 if(l->gc_state == GC_ON) /*only collect when gc is on*/
-                        gc_collect(l);
+                        gc_mark_and_sweep(l);
 
         va_start(ap, count);
         if(!(ret = calloc(1, sizeof(cell) + (count - 1) * sizeof(lisp_union))))
@@ -381,41 +292,6 @@ static cell *assoc(cell *key, cell *alist) {
 }
 
 /******************************** parsing *************************************/
-
-int isnumber(const char *buf) { assert(buf);
-        char conv[] = "0123456789abcdefABCDEF";
-        if(!buf[0]) return 0;
-        if(buf[0] == '-' || buf[0] == '+') buf++;
-        if(!buf[0]) return 0;
-        if(buf[0] == '0') { /*shorten the conv table depending on numbers base*/
-                if(buf[1] == 'x' || buf[1] == 'X') conv[22] = '\0', buf+=2;
-                else conv[8] = '\0';
-        } else { conv[10] = '\0';}
-        if(!buf[0]) return 0;
-        return buf[strspn(buf, conv)] == '\0';
-}
-
-int isfnumber(const char *buf) { 
-        size_t i;
-        char conv[] = "0123456789";
-        if(!buf[0]) return 0;
-        if(buf[0] == '-' || buf[0] == '+') buf++;
-        if(!buf[0]) return 0;
-        i = strspn(buf, conv);
-        if(buf[i] == '\0') return 1;
-        if(buf[i] == 'e') goto expon; /*got check for valid exponentiation*/
-        if(buf[i] != '.') return 0;
-        buf = buf + i + 1;
-        i = strspn(buf, conv);
-        if(buf[i] == '\0') return 1;
-        if(buf[i] != 'e' && buf[i] != 'E') return 0;
-expon:  buf = buf + i + 1;
-        if(buf[0] == '-' || buf[0] == '+') buf++;
-        if(!buf[0]) return 0;
-        i = strspn(buf, conv);
-        if(buf[i] == '\0') return 1;
-        return 0;
-}
 
 static int comment(io *i) { /**@brief process a comment from I/O stream**/
         int c; 
@@ -1170,7 +1046,7 @@ static cell *subr_trace_cell(lisp *l, cell *args) {
 
 static cell *subr_gc(lisp *l, cell *args) {
         if(cklen(args, 0))
-                gc_collect(l);
+                gc_mark_and_sweep(l);
         if(cklen(args, 1) && isint(car(args))) {
                 switch(intval(car(args))) {
                 case GC_ON:       if(l->gc_state == GC_OFF) goto fail;
@@ -1695,7 +1571,7 @@ cell *lisp_add_cell(lisp *l, char *sym, cell *val) { assert(l && sym && val);
 
 void lisp_destroy(lisp *l) {       
         if(!l) return;
-        if(l->gc_stack) gc(l), free(l->gc_stack);
+        if(l->gc_stack) gc_sweep_only(l), free(l->gc_stack);
         if(l->buf) free(l->buf);
         if(l->efp) io_close(l->efp);
         if(l->ofp) io_close(l->ofp);
