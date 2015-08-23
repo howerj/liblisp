@@ -27,6 +27,15 @@ extern "C" {
 #define MAX(X, Y)    ((X)>(Y)?(X):(Y)) /**< largest of two values*/
 #define MIN(X, Y)    ((X)>(Y)?(Y):(X)) /**< smallest of two values*/
 
+#define CELL_XLIST /**< list of all special cells for initializer*/ \
+        X(Nil,     "nil")       X(Tee,     "t")\
+        X(Quote,   "quote")     X(If,      "if")\
+        X(Lambda,  "lambda")    X(Flambda, "flambda")\
+        X(Define,  "define")    X(Set,     "set!")\
+        X(Begin,   "begin")     X(Cond,    "cond")\
+        X(Error,   "error")     X(Env,     "environment")\
+        X(LetS,    "let*")      X(LetRec,  "letrec")
+
 /**@brief This restores a jmp_buf stored in lisp environment if it
  *        has been copied out to make way for another jmp_buf.
  * @param USED is RBUF used?
@@ -152,6 +161,12 @@ struct lisp {
         userdef_funcs ufuncs[MAX_USER_TYPES]; /**< functions for user defined types*/
         int userdef_used;   /**< number of user defined types allocated*/
         editor_func editor; /**< line editor to use, optional*/
+
+#define X(CNAME, LNAME) * CNAME, 
+        /* This is a list of all the special symbols in use within the
+         * interpreter*/
+        cell CELL_XLIST Unused;
+#undef X
 };
 
 /**@brief  Add a lisp object to the stack of temporary variables, anything
@@ -184,6 +199,28 @@ cell *reader(lisp *l, io *i);
  * @param  depth  depth to print out S-Expression 
  * @return int    negative on error **/
 int printer(lisp *l, io *o, cell *op, unsigned depth);
+
+/**@brief  Evaluate a lisp expression
+ * @param  l      the lisp environment to evaluate in
+ * @param  depth  current evaluation depth, not to exceed a limit
+ * @param  exp    the expression to evaluate
+ * @param  env    the environment to evaluate in
+ * @return cell*  the evaluated expression **/
+cell *eval(lisp *l, unsigned depth, cell *exp, cell *env);
+
+/**@brief  find a key in an association list (a-list)
+ * @param  key    key to search for
+ * @param  alist  association list
+ * @return if key is found it returns a cons of the key and the associated
+ *         value, if not found it returns Nil**/
+cell *assoc(cell *key, cell *alist);
+
+/**@brief  Extend the top level lisp environment with a key value pair
+ * @param  l   the lisp environment to perform the extension on
+ * @param  sym the symbol to associate with a value
+ * @param  val value add to the top level environment
+ * @return NULL on failure, not NULL on success**/
+cell *extend_top(lisp *l, cell *sym, cell *val);
 
 #ifdef __cplusplus
 }
