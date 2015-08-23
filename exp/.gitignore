@@ -2,6 +2,7 @@ cc
 big
 thread
 unix
+hash
 line
 tcc
 *.o
