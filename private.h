@@ -169,6 +169,9 @@ struct lisp {
 #undef X
 };
 
+/*************************** internal functions *******************************/
+/* Ideally these functions would only have internal file linkage*/
+
 /**@brief  Add a lisp object to the stack of temporary variables, anything
  *         on this stack will not be collected until it becomes unreachable
  *         (by being overwritten or by being popped off the stack).

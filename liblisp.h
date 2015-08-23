@@ -527,7 +527,7 @@ void lisp_throw(lisp *l, int ret);
  *         'a'  cy(a)n
  *         'w'  (w)hite
  *
- *  @param  lisp   an initialized lisp environment, this can be NULL but
+ *  @param  l      an initialized lisp environment, this can be NULL but
  *                 maximum depth will not be checked, nor will user defined
  *                 functions be printed out with their user defined printing
  *                 functions for that environment.
@@ -655,7 +655,7 @@ void lisp_set_line_editor(lisp *l, editor_func ed);
  *          this is a way for a function such as a signal handler or another
  *          thread to halt the interpreter.
  *  @param  l   an initialized lisp environment
- *  @param  int signal value, any non zero value halts the lisp environment**/
+ *  @param  sig signal value, any non zero value halts the lisp environment**/
 void lisp_set_signal(lisp *l, int sig);
 
 /** @brief get the input channel in use in a lisp environment

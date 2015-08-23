@@ -35,7 +35,7 @@ help:
 
 ### building #################################################################
 
-OBJFILES=hash.o io.o util.o gc.o read.o print.o subr.o lisp.o
+OBJFILES=hash.o io.o util.o gc.o read.o print.o subr.o repl.o eval.o lisp.o
 
 lib$(TARGET).a: $(OBJFILES)
 	ar rcs $@ $^
