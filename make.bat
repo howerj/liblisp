@@ -25,15 +25,21 @@ REM build the interpreter or fail
 :build
 @echo on
 REM build lisp interpreter, the main object file
-tcc -DNDEBUG -Wall -Wextra liblisp.c -c -o liblisp.o || goto :error
-tcc -DNDEBUG -Wall -Wextra hash.c    -c -o hash.o    || goto :error
-tcc -DNDEBUG -Wall -Wextra io.c      -c -o io.o      || goto :error
-tcc -DNDEBUG -Wall -Wextra util.c    -c -o util.o    || goto :error
+tcc -DNDEBUG -Wall -Wextra lisp.c  -c -o lisp.o    || goto :error
+tcc -DNDEBUG -Wall -Wextra hash.c  -c -o hash.o    || goto :error
+tcc -DNDEBUG -Wall -Wextra io.c    -c -o io.o      || goto :error
+tcc -DNDEBUG -Wall -Wextra util.c  -c -o util.o    || goto :error
+tcc -DNDEBUG -Wall -Wextra subr.c  -c -o subr.o    || goto :error
+tcc -DNDEBUG -Wall -Wextra eval.c  -c -o eval.o    || goto :error
+tcc -DNDEBUG -Wall -Wextra gc.c    -c -o gc.o      || goto :error
+tcc -DNDEBUG -Wall -Wextra print.c -c -o print.o   || goto :error
+tcc -DNDEBUG -Wall -Wextra repl.c  -c -o repl.o    || goto :error
+tcc -DNDEBUG -Wall -Wextra read.c  -c -o read.o    || goto :error
 
 REM built without asserts as its easier
 REM built without libline as it has not been ported to Windows
 REM built with "math.h" functions added
-tcc -DNDEBUG -DUSE_MATH -Wall -Wextra liblisp.o hash.o io.o util.o main.c -o lisp.exe || goto :error
+tcc -DNDEBUG -DUSE_MATH -Wall -Wextra lisp.o hash.o io.o util.o gc.o eval.o repl.o subr.o read.o print.o main.c -o lisp.exe || goto :error
 exit /b 0
 
 :run
