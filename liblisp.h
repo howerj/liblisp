@@ -774,6 +774,14 @@ int main_lisp_env(lisp *l, int argc, char **argv);
  * X      Test to perform**/
 #define ASSERT(X) do { if(!(X)) FATAL("assertion failed: " # X ); } while(0)
 
+/* The following macros are helper macros for lisp list access */
+#define CAAR(X)  car(car((X)))
+#define CADR(X)  car(cdr((X)))
+#define CDAR(X)  cdr(car((X)))
+#define CDDR(X)  cdr(cdr((X)))
+#define CADAR(X) car(cdr(car((X))))
+#define CADDR(X) car(cdr(cdr((X))))
+
 #ifdef __cplusplus
 }
 #endif

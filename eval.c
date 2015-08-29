@@ -162,7 +162,7 @@ cell *assoc(cell *key, cell *alist) {
         if(!key || !alist) return NULL;
         for(;!isnil(alist); alist = cdr(alist))
                 if(iscons(car(alist))) { /*normal assoc*/
-                        if(intval(car(car(alist))) == intval(key)) 
+                        if(intval(CAAR(alist)) == intval(key)) 
                                 return car(alist);
                 } else if(ishash(car(alist)) && isasciiz(key)) { /*assoc extended with hashes*/
                         if((lookup = hash_lookup(hashval(car(alist)), strval(key))))
@@ -211,8 +211,8 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                         if(!cklen(exp, 3))
                                 RECOVER(l, "'if \"argc != 3 in %S\"", exp);
                         exp = !isnil(eval(l, depth+1, car(exp), env)) ?
-                                car(cdr(exp)) :
-                                car(cdr(cdr(exp)));
+                                CADR(exp) :
+                                CADDR(exp);
                         goto tail;
                 }
                 if(first == l->Lambda) {
@@ -234,9 +234,9 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                         if(cklen(exp, 0)) return l->Nil;
                         for(tmp = l->Nil; isnil(tmp) && !isnil(exp); exp=cdr(exp)) {
                                 if(!iscons(car(exp))) return l->Nil;
-                                tmp = eval(l, depth+1, car(car(exp)), env);
+                                tmp = eval(l, depth+1, CAAR(exp), env);
                                 if(!isnil(tmp)) {
-                                        exp = car(cdr(car(exp)));
+                                        exp = CADAR(exp);
                                         goto tail;
                                 }
                         }
@@ -256,7 +256,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                                 RECOVER(l, "'define \"argc != 2 in %S\"", exp);
                         l->gc_stack_used = gc_stack_save;
                         return gc_add(l, extend_top(l, car(exp),
-                              eval(l, depth+1, car(cdr(exp)), env)));
+                              eval(l, depth+1, CADR(exp), env)));
                 }
                 if(first == l->Set) {
                         cell *pair, *newval;
@@ -264,7 +264,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                                 RECOVER(l, "'set! \"argc != 2 in %S\"", exp);
                         if(isnil(pair = assoc(car(exp), env)))
                                 RECOVER(l, "'set! \"undefined variable\" '%S", exp);
-                        newval = eval(l, depth+1, car(cdr(exp)), env);
+                        newval = eval(l, depth+1, CADR(exp), env);
                         setcdr(pair, newval);
                         return newval;
                 }
@@ -278,11 +278,11 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                                    RECOVER(l, "'let* \"expected list of length 2: '%S '%S\"",
                                                    car(exp), tmp);
                                 if(first == l->LetRec)
-                                        s = env = extend(l, env, car(car(exp)), l->Nil);
-                                r = env = extend(l, env, car(car(exp)),
-                                        eval(l, depth + 1, car(cdr(car(exp))), env));
+                                        s = env = extend(l, env, CAAR(exp), l->Nil);
+                                r = env = extend(l, env, CAAR(exp),
+                                        eval(l, depth + 1, CADAR(exp), env));
                                 if(first == l->LetRec)
-                                        setcdr(car(s),cdr(car(r)));
+                                        setcdr(car(s), CDAR(r));
                         }
                         return eval(l, depth+1, car(exp), env);
                 }

@@ -3,14 +3,16 @@
 ; be tail recursive, or if looping constructs were added, with
 ; them. 
 
-; These are only defined because they are used elsewhere
-(define cadr   (lambda (x) (car (cdr x))))
+; these are only defined because they are used elsewhere
 (define caar   (lambda (x) (car (car x))))
+(define cadr   (lambda (x) (car (cdr x))))
+(define cdar   (lambda (x) (cdr (car x))))
+(define cddr   (lambda (x) (cdr (cdr x))))
 (define cadar  (lambda (x) (car (cdr (car x)))))
 (define caddr  (lambda (x) (car (cdr (cdr x)))))
 (define caddar (lambda (x) (car (cdr (cdr (car x))))))
 
-; Greatest common divisor
+; greatest common divisor
 (define gcd
  (lambda (x y) 
   (if 
@@ -24,14 +26,14 @@
   (lambda (x y)
     (* (/ x (gcd x y)) y)))
 
-; The factorial function, naive version
+; the factorial function, naive version
 (define factorial
   (lambda (x)
     (if (< x 2)
         1
         (* x (factorial (- x 1))))))
 
-; Substitute all "y" with "x" in list "z"
+; substitute all "y" with "x" in list "z"
 (define subst 
   (lambda (x y z)
     (if (atom? z)
@@ -39,7 +41,7 @@
       (cons (subst x y (car z))
             (subst x y (cdr z))))))
 
-; Characters do not exist in this interpreter but we
+; characters do not exist in this interpreter but we
 ; can treat strings of length one as characters
 (define char? 
   (lambda (x)
@@ -55,14 +57,17 @@
   (lambda (x y)
     (and (not x) (not y))))
 
+; is x zero?
 (define zero? 
   (lambda (x)
     (if (= x 0) t nil)))
 
+; maximum of two arithmetic types or string
 (define max
   (lambda (x y)
     (if (> x y) x y)))
 
+; minimum of two arithmetic types or string
 (define min
   (lambda (x y)
     (if (< x y) x y)))
@@ -72,7 +77,7 @@
   (lambda (x)
     (if (> 0 x) (* x -1) x)))
 
-; The signum function
+; the signum function
 (define signum
   (lambda (x)
     (cond
@@ -188,6 +193,7 @@
 ; the simplest flambda expression
 (define print-me (flambda (x) x))
 
+; turn a string into a list of characters
 (define explode
   (lambda (s)
     (coerce *cons* s)))
@@ -200,6 +206,7 @@
       (scons (car s) "")
       (scons (car s) (implode (cdr s))))))
 
+; get a single line from an input port
 (define get-line
   (lambda (in)
     (get-delim in "\n")))
@@ -229,7 +236,7 @@
       (t (cons (car lat)
                   (remove-member a (cdr lat)))))))
 
-; Returns 't if str matches the pattern
+; returns 't if str matches the pattern
 (define regex 
   (lambda (pattern str)
     (car (regex-span pattern str))))
@@ -249,7 +256,7 @@
                 (cons (func (car l)) nil))))
           (mapper (eval body)))))
 
-; Example of a "flambda" expression
+; example of a "flambda" expression
 (define newline
   (flambda (x)
         (cond ((= (length x) 1) 
@@ -307,11 +314,12 @@
     (if (list? x)
       (let*
         (ll (% (abs (random)) (length x)))
-        (sublist x ll ll))
+        (car (sublist x ll ll)))
       x)))
 
-; walk two isomorphic trees apply a function to each pair
-; of elements in each tree
+; Walk two isomorphic trees and apply a function to each pair
+; of elements in each tree. It would be nice to make this function
+; more generic than it already is.
 (define tree-walk
   (lambda (f x y)
         (cond 

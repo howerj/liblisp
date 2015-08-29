@@ -90,10 +90,10 @@ ISX_LIST
 static cell *subr_pow (lisp *l, cell *args) {
         cell *xo, *yo;
         double x, y;
-        if(!cklen(args, 2) || !isarith(car(args)) || !isarith(car(cdr(args))))
+        if(!cklen(args, 2) || !isarith(car(args)) || !isarith(CADR(args)))
                 RECOVER(l, "\"expected (number number)\" '%S", args);
         xo = car(args);
-        yo = car(cdr(args));
+        yo = CADR(args);
         x = isfloat(xo) ? floatval(xo) : intval(xo);
         y = isfloat(yo) ? floatval(yo) : intval(yo);
         return mkfloat(l, pow(x, y));
@@ -177,9 +177,9 @@ static int ud_tcc_print(io *o, unsigned depth, cell *f) {
 static cell* subr_compile(lisp *l, cell *args) {
         if(!cklen(args, 3) 
         || !isusertype(car(args), ud_tcc)
-        || !isasciiz(car(cdr(args))) || !isstr(car(cdr(cdr(args)))))
+        || !isasciiz(CADR(args)) || !isstr(CADDR(args)))
                 RECOVER(l, "\"expected (compile-state string string\" '%S", args);
-        char *fname = strval(car(cdr(args))), *prog = strval(car(cdr(cdr(args))));
+        char *fname = strval(CADR(args)), *prog = strval(CADDR(args));
         subr func;
         TCCState *st = userval(car(args));
         if(tcc_compile_string(st, prog) < 0)
