@@ -302,11 +302,8 @@
   (flambda (x)
      (let* (out (eval (car x)))
      (if (output? out) 
-       (begin 
-         (print out (append (date) (cdr x)))
-         (put out "\n")
-         (append '(logged) (cdr x)))
-       'error))))
+       (format out "%S\n" (append (date) (cdr x)))
+       (begin (put "expected output port\n") 'error)))))
 
 ; pick a random element from a list
 (define random-element

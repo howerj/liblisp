@@ -944,10 +944,10 @@ static cell *subr_split(lisp *l, cell *args) {
 }
 
 static cell *subr_format(lisp *l, cell *args) {
-        io *o = NULL;
+        cell *cret;
+        io *o = NULL, *t;
         char *fmt, c;
-        int ret = 0, color, pretty;
-#define RESTORE_IO_STATE(IO) do { color = IO->color; pretty = o->pretty; } while(0)
+        int ret = 0;
         if(cklen(args, 0)) return mknil();
         if(isout(car(args))) {
                 o = ioval(car(args));
@@ -955,43 +955,44 @@ static cell *subr_format(lisp *l, cell *args) {
         } else {
                 o = l->ofp;
         }
-        color  = o->color;
-        pretty = o->pretty;
-        o->color = o->pretty = 0;
-        if(!isasciiz(car(args))) {
-                RESTORE_IO_STATE(o);
+        if(!isasciiz(car(args)))
                 RECOVER(l, "\"expected () (io string expr...) (string expr...)\" %S", args);
-        }
+        if(!(t = io_sout(calloc(2, 1), 2)))
+                HALT(l, "\"%s\"", "out of memory");
         fmt = strval(car(args));
         args = cdr(args);
         while((c = *fmt++))
-                if(ret == EOF) return mkerror();
+                if(ret == EOF) goto fail;
                 else if('%' == c) {
                         switch((c = *fmt++)) {
-                        case '\0': o->color  = color;
-                                   o->pretty = pretty;
-                                   return mkerror();
-                        case '%':  ret = io_putc(c, o); 
+                        case '\0': goto fail;
+                        case '%':  ret = io_putc(c, t); 
                                    break;
-                      /*case 'f':  break;
-                        case 'd':  break;
-                        case 's':  break;*/
-                        case 'S':  if(isnil(args)) {
-                                           RESTORE_IO_STATE(o);
-                                           RECOVER(l, "\"\" %S", args);
-                                   }
-                                   ret = printer(l, o, car(args), 0); 
+                        case 's':  if(isnil(args) || !isasciiz(car(args)))
+                                           goto fail;
+                                   ret = io_puts(strval(car(args)), t);
                                    args = cdr(args);
                                    break;
-                        default:   o->color  = color;
-                                   o->pretty = pretty;
-                                   return mkerror();
+                        case 'S':  if(isnil(args))
+                                           goto fail;
+                                   ret = printer(l, t, car(args), 0); 
+                                   args = cdr(args);
+                                   break;
+                        default:   goto fail;
                         }
                 } else {
-                        ret = io_putc(c, o);
+                        ret = io_putc(c, t);
                 }
-        RESTORE_IO_STATE(o);
+        if(!isnil(args))
+                goto fail;
+        io_puts(t->p.str, o);
+        cret = mkstr(l, t->p.str); /*t->p.str is not freed by io_close*/
+        io_close(t);
+        return cret;
+fail:   free(t->p.str);
+        io_close(t);
+        RECOVER(l, "\"format error\" %S", args);
+        return mkerror();
 #undef  RESTORE_IO_STATE
-        return mktee();
 }
 

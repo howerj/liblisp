@@ -1671,8 +1671,6 @@ Print out a list of expressions based on a format string.
         # (format IO STRING EXPRS)
         # (format STRING EXPRS)
 
-
-
 * regex-span
 
         # (regex-span STRING STRING)
@@ -1682,6 +1680,114 @@ Print out a list of expressions based on a format string.
 Raise a signal.
 
         # (signal INTEGER)
+
+isalnum?
+
+Returns 't if argument is alphanumeric, nil otherwise. This function can be used on
+integers or strings.
+
+        # (isalnum? INTEGER)
+        # (isalnum? STRING)
+        > (isalnum? "")
+        ()
+        > (isalnum? "abcABC123")
+        t
+        > (isalnum? 97) # True if using ASCII, 97 == ASCII 'a'
+        t
+
+isalpha?
+
+Returns 't if argument consists of alphabetic characters, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (isalpha? INTEGER)
+        # (isalpha? STRING)
+        > (isalpha? "abcABC")
+        t
+
+iscntrl?
+
+Returns 't if argument consists of control characters, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (iscntrl? INTEGER)
+        # (iscntrl? STRING)
+
+
+isdigit?
+
+Returns 't if argument consists of digits, nil otherwise. This function can be 
+used on integers or strings.
+
+        # (isdigit? INTEGER)
+        # (isdigit? STRING)
+        > (isdigit? "0123")
+        t
+
+isgraph?
+
+Returns 't if argument consists of printable characters (excluding space), 
+nil otherwise. This function can be used on integers or strings.
+
+        # (isgraph? INTEGER)
+        # (isgraph? STRING)
+        > (isgraph? "1aAB2.#")
+        t
+
+islower?
+
+Returns 't if argument consists of lower case characters, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (islower? INTEGER)
+        # (islower? STRING)
+        > (islower? "abc")
+        t
+
+isprint?
+
+Returns 't if argument consists of printable characters, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (isprint? INTEGER)
+        # (isprint? STRING)
+        > (isgraph? "1a AB2.#")
+        t
+
+ispunct?
+
+Returns 't if argument consists of punctuation characters, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (ispunct? INTEGER)
+        # (ispunct? STRING)
+
+
+isspace?
+
+Returns 't if argument consists of whitespace, nil otherwise. This function 
+can be used on integers or strings.
+
+        # (isspace? INTEGER)
+        # (isspace? STRING)
+
+
+isupper?
+
+Returns 't if argument consists of upper case characters, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (isupper? INTEGER)
+        # (isupper? STRING)
+
+
+isxdigit?
+
+Returns 't if argument consists of hexadecimal digits, nil otherwise. 
+This function can be used on integers or strings.
+
+        # (isxdigit? INTEGER)
+        # (isxdigit? STRING)
 
 ##### Additional functions
 
@@ -1908,114 +2014,6 @@ integer and fractional parts, returning a cons of the two values.
         (-3.000000 . -0.500000)
         > (modf -0.4)
         (-0.000000 . -0.400000)
-
-isalnum?
-
-Returns 't if argument is alphanumeric, nil otherwise. This function can be used on
-integers or strings.
-
-        # (isalnum? INTEGER)
-        # (isalnum? STRING)
-        > (isalnum? "")
-        ()
-        > (isalnum? "abcABC123")
-        t
-        > (isalnum? 97) # True if using ASCII, 97 == ASCII 'a'
-        t
-
-isalpha?
-
-Returns 't if argument consists of alphabetic characters, nil otherwise. 
-This function can be used on integers or strings.
-
-        # (isalpha? INTEGER)
-        # (isalpha? STRING)
-        > (isalpha? "abcABC")
-        t
-
-iscntrl?
-
-Returns 't if argument consists of control characters, nil otherwise. 
-This function can be used on integers or strings.
-
-        # (iscntrl? INTEGER)
-        # (iscntrl? STRING)
-
-
-isdigit?
-
-Returns 't if argument consists of digits, nil otherwise. This function can be 
-used on integers or strings.
-
-        # (isdigit? INTEGER)
-        # (isdigit? STRING)
-        > (isdigit? "0123")
-        t
-
-isgraph?
-
-Returns 't if argument consists of printable characters (excluding space), 
-nil otherwise. This function can be used on integers or strings.
-
-        # (isgraph? INTEGER)
-        # (isgraph? STRING)
-        > (isgraph? "1aAB2.#")
-        t
-
-islower?
-
-Returns 't if argument consists of lower case characters, nil otherwise. 
-This function can be used on integers or strings.
-
-        # (islower? INTEGER)
-        # (islower? STRING)
-        > (islower? "abc")
-        t
-
-isprint?
-
-Returns 't if argument consists of printable characters, nil otherwise. 
-This function can be used on integers or strings.
-
-        # (isprint? INTEGER)
-        # (isprint? STRING)
-        > (isgraph? "1a AB2.#")
-        t
-
-ispunct?
-
-Returns 't if argument consists of punctuation characters, nil otherwise. 
-This function can be used on integers or strings.
-
-        # (ispunct? INTEGER)
-        # (ispunct? STRING)
-
-
-isspace?
-
-Returns 't if argument consists of whitespace, nil otherwise. This function 
-can be used on integers or strings.
-
-        # (isspace? INTEGER)
-        # (isspace? STRING)
-
-
-isupper?
-
-Returns 't if argument consists of upper case characters, nil otherwise. 
-This function can be used on integers or strings.
-
-        # (isupper? INTEGER)
-        # (isupper? STRING)
-
-
-isxdigit?
-
-Returns 't if argument consists of hexadecimal digits, nil otherwise. 
-This function can be used on integers or strings.
-
-        # (isxdigit? INTEGER)
-        # (isxdigit? STRING)
 
 * line-editor-mode
 
@@ -2338,6 +2336,17 @@ Glossary of all of defined subroutine primitives and variables.
         format             Print out a list of objects based on a format string
         regex              Match a regular expression on a string
         raise              Raise a signal
+        isalnum?           is string or integer alphanumeric only?
+        isalpha?           is string or integer alphabetic only?
+        iscntrl?           is string or integer control character?
+        isdigit?           is string or integer digits?
+        isgraph?           is string or integer printable (except space)?
+        islower?           is string or integer is lower case?
+        isprint?           is string or integer is printable?
+        ispunct?           is string or integer is punctuation?
+        isspace?           is string or integer is white space?
+        isupper?           is string or integer is upper case?
+        isxdigit?          is string or integer is a hex digit?
 
 ##### math.h
 
@@ -2359,20 +2368,6 @@ Glossary of all of defined subroutine primitives and variables.
         floor              Round downwards
         pow                Computer X raised to the Y
         modf               Split a value into integer and fractional parts
-
-##### ctype.h
-
-        isalnum?           is string or integer alphanumeric only?
-        isalpha?           is string or integer alphabetic only?
-        iscntrl?           is string or integer control character?
-        isdigit?           is string or integer digits?
-        isgraph?           is string or integer printable (except space)?
-        islower?           is string or integer is lower case?
-        isprint?           is string or integer is printable?
-        ispunct?           is string or integer is punctuation?
-        isspace?           is string or integer is white space?
-        isupper?           is string or integer is upper case?
-        isxdigit?          is string or integer is a hex digit?
 
 ##### line-editor (optional)
 

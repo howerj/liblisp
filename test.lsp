@@ -28,11 +28,7 @@
       (compare expr result)
       t
       (begin 
-        (put "Test failed: ")
-        (print expr)
-        (put " != ")
-        (print result)
-        (put "\n")
+        (format "Test failed: %S != %S\n" expr result)
         (exit)))))
 
 (subst 'm 'b '(a b (a b c) d))
@@ -79,8 +75,7 @@
   (begin 
     (test = (line-editor-mode t) t)
     (test = (clear-screen) t)
-    (put "Line editor test passed")
-    (newline)
+    (put "Line editor test passed\n")
     (clear-screen)
     t)
   nil)

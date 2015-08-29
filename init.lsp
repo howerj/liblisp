@@ -10,17 +10,6 @@
 ;   off neat stuff.
 ;
 
-; doesn't work correctly yet
-(define assert
-  (flambda (test)
-    (let* (te (begin (print (env)) (eval (car test) (env))))
-      (if te
-        nil
-        (begin (put "Assertion failed:\n\t")
-               (print (car test))
-               (put "\n")
-               (throw -1))))))
-
 (define type?      (lambda (type-enum x) (eq type-enum (type-of x))))
 (define list?      (lambda (x) (type? *cons* x)))
 (define atom?      (lambda (x) (if (list? x) nil t)))

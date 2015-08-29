@@ -63,13 +63,14 @@ int io_putc(char c, io *o) { assert(o);
                 return r;
         }
         if(o->type == SOUT) {
-                if(o->position >= o->max) { /*grow the "file"*/
-                        maxt = o->max * 2;
+                if(o->position >= (o->max - 1)) { /*grow the "file"*/
+                        maxt = (o->max+1) * 2;
                         if(maxt < o->position) /*overflow*/
                                 return o->eof = 1, EOF;
                         o->max = maxt;       
                         if(!(p = realloc(o->p.str, maxt)))
                                 return o->eof = 1, EOF;
+                        memset(p + o->position, 0, maxt - o->position);
                         o->p.str = p;
                 }
                 o->p.str[o->position++] = c;
@@ -91,17 +92,17 @@ int io_puts(const char *s, io *o) { assert(s && o);
                 return r;
         }
         if(o->type == SOUT) {
-                size_t len, newpos;
-                if(o->position >= o->max) { /*grow the "file"*/
-                        maxt = o->position * 2;
+                size_t len = strlen(s), newpos;
+                if(o->position + len >= (o->max - 1)) { /*grow the "file"*/
+                        maxt = (o->position + len) * 2;
                         if(maxt < o->position) /*overflow*/
                                 return o->eof = 1, EOF;
                         o->max = maxt;       
                         if(!(p = realloc(o->p.str, maxt)))
                                 return o->eof = 1, EOF;
+                        memset(p + o->position, 0, maxt - o->position);
                         o->p.str = p;
                 }
-                len = strlen(s);
                 newpos = o->position + len;
                 if(newpos >= o->max)
                         len = newpos - o->max;
