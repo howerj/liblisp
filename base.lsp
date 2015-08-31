@@ -175,9 +175,6 @@
       (fabs (- x y))
       0.00001)))
 
-; exit the interpreter
-(define exit (lambda () (error -1)))
-
 ; rewind an IO port to point to the beginning of its input or output
 (define rewind (lambda (port) (seek port 0 *seek-set*)))
 

@@ -25,7 +25,7 @@ help:
 	@echo "     install     install the example executable, library and man pages"
 	@echo "     uninstall   uninstall the example executable, library and man pages"
 	@echo "     ${TARGET}        build the example executable"
-	@#echo "     lib${TARGET}.so  build the library (dynamic)"
+	@echo "     lib${TARGET}.so  build the library (dynamic)"
 	@echo "     lib${TARGET}.a   build the library (static)"
 	@echo "     run         make the example executable and run it"
 	@echo "     help        this help message"
@@ -40,9 +40,8 @@ OBJFILES=hash.o io.o util.o gc.o read.o print.o subr.o repl.o eval.o lisp.o
 lib$(TARGET).a: $(OBJFILES)
 	ar rcs $@ $^
 
-# lib$(TARGET).so: $(OBJFILES) lib$(TARGET).h private.h
-# 	$(CC) $(CFLAGS) $(OBJFILES) -c -fpic -o $@
-# 	$(CC) -shared -fPIC $< -o $@
+lib$(TARGET).so: $(OBJFILES) lib$(TARGET).h private.h
+	$(CC) -shared -fPIC $(OBJFILES) -o $@
  
 %.o: %.c lib$(TARGET).h private.h
 	$(CC) $(CFLAGS) $< -c -o $@
@@ -50,11 +49,11 @@ lib$(TARGET).a: $(OBJFILES)
 VCS_DEFINES=-DVCS_ORIGIN="${VCS_ORIGIN}" -DVCS_COMMIT="${VCS_COMMIT}" -DVERSION="${VERSION}" 
 # Always rebuilds as libline.h is .PHONY, it has to be.
 main.o: main.c lib$(TARGET).h libline/libline.h
-	$(CC) $(CFLAGS) ${DEFINES} ${VCS_DEFINES} $< -c -o $@
+	$(CC) $(CFLAGS_RELAXED) ${DEFINES} ${VCS_DEFINES} $< -c -o $@
 
 # Always rebuilds as libline.a is .PHONY, it has to be.
 $(TARGET): main.o lib$(TARGET).a libline/libline.a 
-	$(CC) $(CFLAGS) $^ -lm ${LINK} -o $@
+	$(CC) $(CFLAGS) -Wl,-E $^ -lm ${LINK} -o $@
 
 # Work around so the makefile initializes submodules. This requires
 # the full liblisp git repository to be available.
@@ -92,12 +91,12 @@ doxygen:
 ### distribution and installation ############################################
 
 # "space :=" and "space +=" are a hack along with "subst" to stop
-# make adding spaces to things when it should not.
+# 'make' adding spaces to things when it should not.
 space := 
 space +=
 TARBALL=$(subst $(space),,${TARGET}-${VERSION}.tgz) # Remove spaces 
-# make distribution tarball, lib${TARGET}.so is not included at the moment...
-dist: ${TARGET} lib${TARGET}.[ah3] lib${TARGET}.htm ${TARGET}.1
+# make distribution tarball
+dist: ${TARGET} lib${TARGET}.[ah3] lib${TARGET}.so lib${TARGET}.htm ${TARGET}.1
 	tar -zcf ${TARBALL} $^
 
 install: all 

@@ -58,45 +58,56 @@
 ; (eval-file STRING)
 ; (eval-file INPUT-PORT)
 (define eval-file
-  (lambda (file)
+  (lambda (file on-error-fn)
     ; This bit does the evaluation of a file input object
     (letrec 
       (eval-file-inner
-       (lambda (S)
+       (lambda (S on-error-fn)
         (if (eof? S) 
           nil
           (let* 
             (x (read S))
             (if (eq x 'error) 
-              nil
+              (on-error-fn S)
               (begin 
                 (print (eval x))
                 (put "\n")
-                (eval-file-inner S)))))))
+                (eval-file-inner S on-error-fn)))))))
     (cond 
       ; If we have been given a potential file name, try to open it
       ((or (string? file) (symbol? file))
         (let* (file-handle (open *file-in* file))
           (if (input? file-handle)
-            (begin (eval-file-inner file-handle)
+            (begin (eval-file-inner file-handle on-error-fn)
                    (close file-handle) ; Close file!
                    nil)
             (begin (put "could not open file for reading\n")
                    'error))))
       ; We must have been passed an input file port
       ((input? file)
-       (eval-file-inner file)) ; Do not close file!
+       (eval-file-inner file on-error-fn)) ; Do not close file!
       ; User error
       (t 
         (begin 
           (put "Not a file name or a output IO type\n") 
           'error))))))
 
+; exit the interpreter
+(define exit (lambda () (error -1)))
+
+(define exit-if-not-eof 
+  (lambda (in) 
+    (if 
+      (not (eof? in))
+      (exit)
+      nil)))
+
 ; Evaluate a series of "modules", they are just files with defines in them,
 ; a proper module system nor ways of representing dependencies between them
 ; has been devised yet. They must be executed in order.
-(eval-file 'base.lsp)
-(eval-file 'sets.lsp)
-(eval-file 'diff.lsp)
-(eval-file 'test.lsp)
+(eval-file 'base.lsp exit-if-not-eof)
+(eval-file 'sets.lsp exit-if-not-eof)
+(eval-file 'diff.lsp exit-if-not-eof)
+(if *have-compile* (eval-file 'c.lsp exit-if-not-eof) nil)
+(eval-file 'test.lsp exit-if-not-eof)
 

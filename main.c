@@ -171,7 +171,7 @@ static void ud_tcc_free(cell *f) {
 }
 
 static int ud_tcc_print(io *o, unsigned depth, cell *f) {
-        return printerf(NULL, o, depth, "<COMPILE-STATE:%d>", userval(f));
+        return printerf(NULL, o, depth, "%B<COMPILE-STATE:%d>%t", userval(f));
 }
 
 static cell* subr_compile(lisp *l, cell *args) {
@@ -188,6 +188,73 @@ static cell* subr_compile(lisp *l, cell *args) {
                 return mkerror();
         func = (subr)tcc_get_symbol(st, fname);
         return mksubr(l, func);
+}
+
+static cell* subr_link(lisp *l, cell *args) {
+        if(!cklen(args, 2) 
+        || !isusertype(car(args), ud_tcc) || !isasciiz(CADR(args)))
+                RECOVER(l, "\"expected (compile-state string)\" '%S", args);
+        return mkint(l, tcc_add_library(userval(car(args)), strval(CADR(args))));
+}
+
+static cell* subr_compile_file(lisp *l, cell *args) {
+        if(!cklen(args, 2)
+        || !isusertype(car(args), ud_tcc) || !isasciiz(CADR(args)))
+                RECOVER(l, "\"expected (compile-state string)\" '%S", args);
+        if(tcc_add_file(userval(car(args)), strval(CADR(args))) < 0)
+                return mkerror();
+        if(tcc_relocate(userval(car(args)), TCC_RELOCATE_AUTO) < 0)
+                return mkerror();
+        return mktee();
+}
+
+static cell* subr_get_subr(lisp *l, cell *args) {
+        subr func;
+        if(!cklen(args, 2)
+        || !isusertype(car(args), ud_tcc) || !isasciiz(CADR(args)))
+                RECOVER(l, "\"expected (compile-state string)\" '%S", args);
+        if(!(func = tcc_get_symbol(userval(car(args)), strval(CADR(args)))))
+                return mkerror();
+        else
+                return mksubr(l, func);
+}
+#endif
+
+#ifdef USE_DL
+#include <dlfcn.h>
+static int ud_dl = 0;
+
+static void ud_dl_free(cell *f) {
+        dlclose(userval(f));
+        free(f);
+}
+
+static int ud_dl_print(io *o, unsigned depth, cell *f) {
+        return printerf(NULL, o, depth, "%B<DYNAMIC-MODULE:%d>%t", userval(f));
+}
+
+static cell *subr_dlopen(lisp *l, cell *args) {
+        void *handle;
+        if(!cklen(args, 1) || !isasciiz(car(args)))
+                RECOVER(l, "\"expected (string)\" '%S", args);
+        if(!(handle = dlopen(strval(car(args)), RTLD_NOW)))
+                return mkstr(l, lstrdup(dlerror()));
+        return mkuser(l, handle, ud_dl);
+}
+
+static cell *subr_dlsym(lisp *l, cell *args) {
+        subr func;
+        if(!cklen(args, 2) || !isusertype(car(args), ud_dl) || !isasciiz(CADR(args)))
+                RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
+        if(!(func = dlsym(userval(car(args)), strval(CADR(args)))))
+                return mkerror();
+        return mksubr(l, func);
+}
+
+static cell *subr_dlerror(lisp *l, cell *args) {
+        if(!cklen(args, 1) || !isusertype(car(args), ud_dl))
+                RECOVER(l, "\"expected (dynamic-module)\" '%S", args);
+        return mkerror();
 }
 #endif
 
@@ -210,40 +277,44 @@ MATH_UNARY_LIST
 #define X(FUNC) lisp_add_subr(l, # FUNC "?", subr_ ## FUNC);
 ISX_LIST
 #undef X
-
         lisp_add_cell(l, "*version*",           mkstr(l, lstrdup(XSTRINGIFY(VERSION))));
         lisp_add_cell(l, "*commit*",            mkstr(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
         lisp_add_cell(l, "*repository-origin*", mkstr(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));
 
 #ifdef USE_TCC
-        /** Tiny C compiler library
-         * The interface to libtcc needs a lot of work to make it useful, but
-         * it does work. All of the symbols needed by the libtcc would need
-         * to be added. Perhaps "tcc_add_file" could be used to add the headers
-         * and symbols automatically to TCCState?
+        /** Tiny C compiler library interface, special care has to be taken 
+         *  when compiling and linking all of the C files within the liblisp
+         *  project so the symbols in it are available to libtcc.
          *
-         * This example create a function that returns the integer "3" from
+         * This example creates a function that returns the integer "3" from
          * within the interpreter:
          *
          * > (define three-func 
          *      (compile *compile-state* "p" 
-         *        "cell *p(void *l, void *a) { return (void*)mkint(l, 3); }"))
+         *        "void *p(void *l, void *a) { return (void*)mkint(l, 3); }"))
          * <SUBR:35097280>
          * > (three-func)
          * 3
          *
-         * However it requires that "mkint" be added to TCCState before hand, 
-         * so using "mkfloat" (for example) will not
-         * work.**/
+         ***/
         ud_tcc = newuserdef(l, ud_tcc_free, NULL, NULL, ud_tcc_print);
         TCCState *st = tcc_new();
-        tcc_add_symbol(st, "mkint", mkint); /*required for the example*/
         tcc_set_output_type(st, TCC_OUTPUT_MEMORY);
         lisp_add_cell(l, "*compile-state*", mkuser(l, st, ud_tcc));
-        lisp_add_subr(l, "compile", subr_compile);
+        lisp_add_subr(l, "compile",        subr_compile);
+        lisp_add_subr(l, "link",           subr_link);
+        lisp_add_subr(l, "compile-file",   subr_compile_file);
+        lisp_add_subr(l, "get-subroutine", subr_get_subr);
         lisp_add_cell(l, "*have-compile*", mktee());
 #else
         lisp_add_cell(l, "*have-compile*", mknil());
+#endif
+
+#ifdef USE_DL
+        ud_dl = newuserdef(l, ud_dl_free, NULL, NULL, ud_dl_print);
+        lisp_add_subr(l, "dynamic-open", subr_dlopen);
+        lisp_add_subr(l, "dynamic-symbol", subr_dlsym);
+        lisp_add_subr(l, "dynamic-error", subr_dlerror);
 #endif
 
 #ifdef USE_LINE 

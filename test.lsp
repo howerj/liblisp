@@ -81,8 +81,7 @@
   nil)
 
 ; clear the screen
-(if *have-line* (clear-screen) t)
+; (if *have-line* (clear-screen) t)
 
 ;(mapcar (lambda (x) (if (regex "hash" x) x nil)) 
 ;        (mapcar (lambda (x) (coerce *string* x)) (coerce *cons* (all-symbols))))
-
