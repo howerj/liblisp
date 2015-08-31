@@ -1666,10 +1666,29 @@ Join a list of strings together with a separator between them.
 
 * format
 
-Print out a list of expressions based on a format string.
+Print out a list of expressions based on a format string. The format string is
+the first argument, it is quite simple (for now).
+
+        %%      print out a percent character '%'
+        %s      print out a string, expects a string argument
+        %c      print out a character, argument can either be an integer
+                or string of length one
+        %S      print out an expression
+
+Any other character is printed out. If an argument is mismatched, there are too
+few arguments, or there are too many, an error is thrown.
 
         # (format IO STRING EXPRS)
         # (format STRING EXPRS)
+        > (format "examples: %S %s\n" '(a b (c d)) "a string!")
+        examples: (a b (c d)) a string!
+        "examples: (a b (c d)) a string!\n"
+        > (format "%c %c\n" 104 "h")
+        h h
+        "h h\n"
+        > (format "percent %%\n")
+        percent %
+        "percent %\n"
 
 * regex-span
 

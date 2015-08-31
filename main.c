@@ -194,7 +194,7 @@ static cell* subr_link(lisp *l, cell *args) {
         if(!cklen(args, 2) 
         || !isusertype(car(args), ud_tcc) || !isasciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        return mkint(l, tcc_add_library(userval(car(args)), strval(CADR(args))));
+        return tcc_add_library(userval(car(args)), strval(CADR(args))) < 0 ? mkerror() : mknil();
 }
 
 static cell* subr_compile_file(lisp *l, cell *args) {
@@ -286,16 +286,12 @@ ISX_LIST
          *  when compiling and linking all of the C files within the liblisp
          *  project so the symbols in it are available to libtcc.
          *
-         * This example creates a function that returns the integer "3" from
-         * within the interpreter:
-         *
-         * > (define three-func 
-         *      (compile *compile-state* "p" 
-         *        "void *p(void *l, void *a) { return (void*)mkint(l, 3); }"))
-         * <SUBR:35097280>
-         * > (three-func)
-         * 3
-         *
+         *  Possible improvements:
+         *  * Modification of libtcc so it can accept S-Expressions frmo
+         *    the interpreter.
+         *  * Add more functions from libtcc
+         *  * Separate out tcc_get_symbol from tcc_compile_string
+         *  * Find out why link does not work
          ***/
         ud_tcc = newuserdef(l, ud_tcc_free, NULL, NULL, ud_tcc_print);
         TCCState *st = tcc_new();

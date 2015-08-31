@@ -113,6 +113,8 @@ install: all
 	mkdir -p ${DESTDIR}${PREFIX}/lib
 	cp -f lib${TARGET}.a ${DESTDIR}${PREFIX}/lib
 	chmod 755 ${DESTDIR}${PREFIX}/lib/lib${TARGET}.a
+	cp -f lib${TARGET}.so ${DESTDIR}${PREFIX}/lib
+	chmod 755 ${DESTDIR}${PREFIX}/lib/lib${TARGET}.so
 	cp -f lib${TARGET}.h ${DESTDIR}${PREFIX}/include
 	chmod 644 ${DESTDIR}${PREFIX}/include/lib${TARGET}.h
 	@echo "installation complete"

@@ -2,6 +2,10 @@
 ;; This module gives example of a crude method of compiling
 ;; strings into functional "built-in" subroutines using the
 ;; Tiny C Compiler
+;;
+;; It would be better to pass in an S-Expression representing
+;; the program to be compiled instead of strings, which are
+;; clunky.
 
 ; Begin C functions definitions
 (define square
@@ -19,11 +23,11 @@
           else
               return mkint(l, intval(car(args)) * intval(car(args)));
     }"))
-(define a
-  (compile *compile-state*
-    "a"
-    "#include <liblisp.h>
-    cell *a(lisp *l, cell *args) {
-            return mkfloat(l, 3.1);
-    }
-    "))
+;(define a
+;  (compile *compile-state*
+;    "a"
+;    "#include <liblisp.h>
+;    cell *a(lisp *l, cell *args) {
+;            return mkfloat(l, 3.1);
+;    }
+;    "))

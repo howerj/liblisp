@@ -30,7 +30,7 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 ### USE_TCC      Add support for libtcc, for compiling C code within the
 ###              interpreter. LINK must be set to "-ltcc -ldl" for this
 ###              to work.
-### USE_DL	 Add support for dlopen
-DEFINES ?= -DUSE_LINE -DUSE_DL -DUSE_TCC
-LINK    ?= -ltcc -ldl
+### USE_DL	 Add support for dlopen, requires "-ldl".
+DEFINES ?= -DUSE_LINE 
+LINK    ?= 
 #LINK    ?= 

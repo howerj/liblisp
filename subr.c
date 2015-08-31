@@ -947,7 +947,7 @@ static cell *subr_format(lisp *l, cell *args) {
         cell *cret;
         io *o = NULL, *t;
         char *fmt, c;
-        int ret = 0;
+        int ret = 0, pchar;
         if(cklen(args, 0)) return mknil();
         if(isout(car(args))) {
                 o = ioval(car(args));
@@ -967,6 +967,18 @@ static cell *subr_format(lisp *l, cell *args) {
                         switch((c = *fmt++)) {
                         case '\0': goto fail;
                         case '%':  ret = io_putc(c, t); 
+                                   break;
+                        case 'c':  if(isnil(args) || (!isasciiz(car(args)) && !isint(car(args))))
+                                           goto fail;
+                                   if(isint(car(args))) {
+                                           pchar = intval(car(args));
+                                   } else { /*must be a character*/
+                                        if(!cklen(car(args), 1))
+                                                goto fail;
+                                        pchar = strval(car(args))[0];
+                                   }
+                                   ret = io_putc(pchar, t);
+                                   args = cdr(args);
                                    break;
                         case 's':  if(isnil(args) || !isasciiz(car(args)))
                                            goto fail;
