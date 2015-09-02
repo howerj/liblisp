@@ -31,6 +31,6 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 ###              interpreter. LINK must be set to "-ltcc -ldl" for this
 ###              to work.
 ### USE_DL	 Add support for dlopen, requires "-ldl".
-DEFINES ?= -DUSE_LINE 
-LINK    ?= 
+DEFINES ?= -DUSE_LINE -DUSE_DL -DUSE_TCC
+LINK    ?= -ltcc -ldl
 #LINK    ?= 

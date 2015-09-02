@@ -2,7 +2,14 @@
  *  @brief      An S-Expression parser for liblisp
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com **/
+ *  @email      howe.r.j.89@gmail.com 
+ *  
+ *  An S-Expression parser, it takes it's input from a generic input
+ *  port that can be set up to read from a string or a file. It would
+ *  be nice if this S-Expression parser could be made so parsing of
+ *  different things could be turned on or off, such as strings. This
+ *  parser needs rewriting as well, parts of it are quite ugly.
+ *  **/
  
 
 #include "liblisp.h"
@@ -17,7 +24,7 @@ static int comment(io *i) { /**@brief process a comment from I/O stream**/
         return c; 
 } 
 
-static void add_char(lisp *l, char ch)  {
+static void add_char(lisp *l, char ch)  { /**< add a char to the token buffer*/
         char *tmp; 
         if(l->buf_used > l->buf_allocated - 1) {
                 l->buf_allocated = l->buf_used * 2;
@@ -30,19 +37,19 @@ static void add_char(lisp *l, char ch)  {
         l->buf[l->buf_used++] = ch; 
 }
 
-static char *new_token(lisp *l) {
+static char *new_token(lisp *l) { /**< allocate a new token*/
         char *s;
         l->buf[l->buf_used++] = '\0';
         if(!(s = lstrdup(l->buf))) HALT(l, "%s", "out of memory");
         return s;
 }
 
-static void ungettok(lisp *l, char *token) { 
+static void ungettok(lisp *l, char *token) { /**< push back a token*/
         l->token = token; 
         l->ungettok = 1; 
 }
 
-static char *gettoken(lisp *l, io *i) { 
+static char *gettoken(lisp *l, io *i) { /**< lexer*/
         int ch, end = 0;
         l->buf_used = 0;
         if(l->ungettok)
@@ -68,7 +75,7 @@ static char *gettoken(lisp *l, io *i) {
         }
 }
 
-static cell *readstring(lisp *l, io* i) {
+static cell *readstring(lisp *l, io* i) { /**< handle parsing a string*/
         int ch;
         l->buf_used = 0;
         for(;;) {
@@ -94,7 +101,7 @@ static cell *readstring(lisp *l, io* i) {
 }
 
 static cell *readlist(lisp *l, io *i);
-cell *reader(lisp *l, io *i) { /**< read in s-expr, this should be rewritten*/
+cell *reader(lisp *l, io *i) { /*read in s-expr, this should be rewritten*/
         char *token = gettoken(l, i), *fltend = NULL;
         double flt; 
         cell *ret;
@@ -124,7 +131,7 @@ cell *reader(lisp *l, io *i) { /**< read in s-expr, this should be rewritten*/
         return mknil();
 }
 
-static cell *readlist(lisp *l, io *i) {
+static cell *readlist(lisp *l, io *i) { /**< read in a list*/
         char *token = gettoken(l, i), *stok;
         cell *tmp;
         if(!token) return NULL;

@@ -2,13 +2,16 @@
 # A lisp library and interpreter
 # Released under the LGPL license
 #
+# It would be nice to have one portable makefile, but it is not to be so, this
+# makefile requires GNU Make.
+#
 
 include config.mk
 
 TARGET = lisp
 .PHONY: all clean dist doc doxygen valgrind run libline/libline.a
 
-all: $(TARGET)
+all: $(TARGET) lib$(TARGET).so
 
 help:
 	@echo ""
@@ -124,6 +127,7 @@ uninstall:
 	@rm -vf ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
 	@rm -vf ${DESTDIR}${PREFIX}/bin/${TARGET}
 	@rm -vf ${DESTDIR}${PREFIX}/lib/lib${TARGET}.a
+	@rm -vf ${DESTDIR}${PREFIX}/lib/lib${TARGET}.so
 	@rm -vf ${DESTDIR}${PREFIX}/include/lib${TARGET}.h
 
 ### clean up #################################################################

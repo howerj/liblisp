@@ -2,7 +2,11 @@
  *  @brief      The evaluator for the lisp interpreter
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com**/
+ *  @email      howe.r.j.89@gmail.com
+ *
+ *  This is the main evaluator and associated function, the built in
+ *  subroutines for the interpreter are defined elsewhere.
+ **/
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
@@ -339,7 +343,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
         return exp; 
 }
 
-static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env) {
+static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env) { /**< evaluate a list*/
         size_t i;
         cell *op, *head;
         if(isnil(exps)) return l->Nil;

@@ -173,7 +173,9 @@ There are several issues that need resolving with the interpreter.
 * Environment lookup should be split into top level hash and cons
 list for efficiency.
 * Linear probing should be used for the hash function instead of
-chained hashing
+chained hashing, experimental code has been added for a fully working
+linear probing hash implementation, but the lisp interpreter is dependent
+on the internal representation of the hash functionality.
 * The "struct hack" could be applied strings and other types, as
 well as the length field being encoded in the variable length
 section of the object.
@@ -184,16 +186,11 @@ be added as well. freopen and/or opening in append mode need to be
 added as well.
 * Needed primitives; apply, loop, tr. 
 * Anonymous recursion would be a good thing to have.
-* The semantics of the default IO port to **read** or **print** to need
-to be worked out.
-* There is currently no decent way of handling binary data, also string
-  handling could be improved a lot.
-* Bignum branch
-* A branch where liblisp.c is split up like it should be.
-* The memory layout of cells could be improved greatly. Other Lisps tend to use
-  knowledge about the pointer layout use spare bits, the lower two bits will
-  always be zero as the pointer should be aligned, so a pointer cannot have
-  those bits set. This can be used to mark what is and what is not a pointer.
+* The semantics of the default IO port to **print** and **format**
+to be worked out when it comes to printing color and pretty printing.
+* There is currently no decent way of handling binary data.
+* A branch that makes use of arbitrary precision arithmetic
+  (replacing floating point numbers *and* integers) could be made.
 
 #### main.c
 
@@ -1310,10 +1307,14 @@ Called "ozy.txt":
 * read
 
 Read in an S-Expression, if no input port is given it will use the standard IO
-input port. This returns an S-Expression, not a string.
+input port. This returns an S-Expression, not a string. A string can be read as
+well.
 
-        (read)
-        (read IN)
+        # (read)
+        # (read IN)
+        # (read STRING)
+        > (read "(+ 2 2)")
+        (+ 2 2)
 
 * put
 

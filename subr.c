@@ -1,3 +1,23 @@
+/** @file       subr.c
+ *  @brief      The liblisp interpreter built in subroutines
+ *  @author     Richard Howe (2015)
+ *  @license    LGPL v2.1 or Later
+ *  @email      howe.r.j.89@gmail.com
+ *
+ *  This file is the largest one in the project, this normally would be a
+ *  problem, however all of the functions (apart from lisp_init and related
+ *  functions) follow the same pattern, apart from a very few exceptions they
+ *  do not call each other. All of the functions named subr_X (X being the rest
+ *  of the function name) abide by the same interface as they are built in
+ *  subroutines for the lisp interpreter.
+ *
+ *  This file is uses X-Macros to populated tables of subroutines and variables
+ *  along with their associated names.
+ *
+ *  Assertions should be added throughout these routines to make sure
+ *  operations do not go above bounds.
+ **/
+
 #include "liblisp.h"
 #include "private.h"
 #include <locale.h>
@@ -5,6 +25,7 @@
 #include <string.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <assert.h>
 
 /*X-Macro of primitive functions and their names; basic built in subr*/
 #define SUBROUTINE_XLIST\
@@ -19,7 +40,7 @@
         X(subr_list,    "list")           X(subr_match,     "match")\
         X(subr_scons,   "scons")          X(subr_scar,      "scar")\
         X(subr_scdr,    "scdr")           X(subr_eval,      "eval")\
-        X(subr_trace,   "trace-level!")   X(subr_gc,        "gc")\
+        X(subr_gc,      "gc")             X(subr_trace_level,   "trace-level!")\
         X(subr_length,  "length")         X(subr_typeof,    "type-of")\
         X(subr_inp,     "input?")         X(subr_outp,      "output?")\
         X(subr_eofp,    "eof?")           X(subr_flush,     "flush")\
@@ -39,7 +60,8 @@
         X(subr_eval_time, "timed-eval")   X(subr_reverse,   "reverse")\
         X(subr_join,    "join")           X(subr_regexspan, "regex-span")\
         X(subr_raise,   "raise")          X(subr_split,     "split")\
-        X(subr_hcreate, "hash-create")    X(subr_format,    "format")
+        X(subr_hcreate, "hash-create")    X(subr_format,    "format")\
+        X(subr_substring, "substring")
 
 #define X(SUBR, NAME) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
@@ -52,6 +74,7 @@ static struct subr_list { subr p; char *name; } primitives[] = {
 };
 #undef X
 
+/**< X-Macros of all built in integers*/
 #define INTEGER_XLIST\
         X("*seek-cur*",     SEEK_CUR)     X("*seek-set*",    SEEK_SET)\
         X("*seek-end*",     SEEK_END)     X("*random-max*",  INTPTR_MAX)\
@@ -125,10 +148,12 @@ CELL_XLIST
         for(i = 0; i < DEFAULT_LEN; i++) /*discard first N numbers*/
                 (void)xorshift128plus(l->random_state);
 
+        /* The lisp init function is now ready to add built in subroutines
+         * and other variables, the order in which is does this matters. */
+
         if(!(l->all_symbols = mkhash(l, hash_create(LARGE_DEFAULT_LEN)))) goto fail;
         if(!(l->top_env = cons(l, cons(l, mknil(), mknil()), mknil()))) goto fail;
 
-        /*it would be nice if this was all statically allocated*/
         for(i = 0; special_cells[i].internal; i++) /*add special cells*/
                 if(!lisp_intern(l, special_cells[i].internal))
                         goto fail;
@@ -148,43 +173,42 @@ CELL_XLIST
         for(i = 0; primitives[i].p; i++) /*add all primitives*/
                 if(!lisp_add_subr(l, primitives[i].name, primitives[i].p))
                         goto fail;
-
         return l;
 fail:   lisp_destroy(l);
         return NULL;
 }
 
-static cell *subr_band(lisp *l, cell *args) {
+static cell *subr_band(lisp *l, cell *args) { /**< bitwise and of two integers*/
         if(!cklen(args, 2) || !isint(car(args)) || !isint(CADR(args)))
                 RECOVER(l, "\"expected (int int)\" '%S", args);
         return mkint(l, intval(car(args)) & intval(CADR(args)));
 }
 
-static cell *subr_bor(lisp *l, cell *args) {
+static cell *subr_bor(lisp *l, cell *args) { /**< bitwise or of two integers*/
         if(!cklen(args, 2) || !isint(car(args)) || !isint(CADR(args)))
                 RECOVER(l, "\"expected (int int)\" '%S", args);
         return mkint(l, intval(car(args)) | intval(CADR(args)));
 }
 
-static cell *subr_bxor(lisp *l, cell *args) {
+static cell *subr_bxor(lisp *l, cell *args) { /**< bitwise x-or of two integers*/
         if(!cklen(args, 2) || !isint(car(args)) || !isint(CADR(args)))
                 RECOVER(l, "\"expected (int int)\" '%S", args);
         return mkint(l, intval(car(args)) ^ intval(CADR(args)));
 }
 
-static cell *subr_binv(lisp *l, cell *args) {
+static cell *subr_binv(lisp *l, cell *args) { /**< bitwise inversion of integer*/
         if(!cklen(args, 1) || !isint(car(args)))
                 RECOVER(l, "\"expected (int)\" '%S", args);
         return mkint(l, ~intval(car(args)));
 }
 
-static cell *subr_binlog(lisp *l, cell *args) {
+static cell *subr_binlog(lisp *l, cell *args) { /**< binary logarithm of integer*/
         if(!cklen(args, 1) || !isint(car(args)))
                 RECOVER(l, "\"expected (int)\" '%S", args);
         return mkint(l, binlog(intval(car(args))));
 }
 
-static cell *subr_sum(lisp *l, cell *args) {
+static cell *subr_sum(lisp *l, cell *args) { /**< add two numbers*/
         if(!cklen(args, 2)) 
                 RECOVER(l, "\"argument count not equal 2\" '%S", args);
         cell *x = car(args), *y = CADR(args);
@@ -199,7 +223,7 @@ static cell *subr_sum(lisp *l, cell *args) {
         return mkerror();
 }
 
-static cell *subr_sub(lisp *l, cell *args) {
+static cell *subr_sub(lisp *l, cell *args) { /**< take one number away from another*/
         if(!cklen(args, 2)) 
                 RECOVER(l, "\"argument count not equal 2\" '%S", args);
         cell *x = car(args), *y = CADR(args);
@@ -214,7 +238,7 @@ static cell *subr_sub(lisp *l, cell *args) {
         return mkerror(); 
 }
 
-static cell *subr_prod(lisp *l, cell *args) {
+static cell *subr_prod(lisp *l, cell *args) { /*multiply two numbers*/
         if(!cklen(args, 2)) 
                 RECOVER(l, "\"argument count not equal 2\" '%S", args);
         cell *x = car(args), *y = CADR(args);
@@ -229,7 +253,7 @@ static cell *subr_prod(lisp *l, cell *args) {
         return mkerror();
 }
 
-static cell *subr_mod(lisp *l, cell *args) {
+static cell *subr_mod(lisp *l, cell *args) { /*modulo operation*/
         intptr_t dividend, divisor;
         if(!cklen(args, 2) || !isint(car(args)) || !isint(CADR(args)))
                 RECOVER(l, "\"argument count not equal 2\" '%S", args);
@@ -240,7 +264,7 @@ static cell *subr_mod(lisp *l, cell *args) {
         return mkint(l, dividend % divisor);
 }
 
-static cell *subr_div(lisp *l, cell *args) {
+static cell *subr_div(lisp *l, cell *args) { /**< division*/
         if(!cklen(args, 2))
                 RECOVER(l, "\"argument count not equal 2\" '%S", args);
         if(isint(car(args)) && isarith(CADR(args))) {
@@ -266,7 +290,7 @@ static cell *subr_div(lisp *l, cell *args) {
         return mkerror();
 }
 
-static cell *subr_greater(lisp *l, cell *args) {
+static cell *subr_greater(lisp *l, cell *args) { /**< number or string comparison; greater */
         cell *x, *y;
         if(!cklen(args, 2))
                 RECOVER(l, "\"expected (number number) or (string string)\" '%S", args);
@@ -281,7 +305,7 @@ static cell *subr_greater(lisp *l, cell *args) {
         return mkerror();
 }
 
-static cell *subr_less(lisp *l, cell *args) {
+static cell *subr_less(lisp *l, cell *args) { /**< number or string comparison; less */
         cell *x, *y;
         if(!cklen(args, 2))
                 RECOVER(l, "\"expected (number number) or (string string)\" '%S", args);
@@ -296,7 +320,7 @@ static cell *subr_less(lisp *l, cell *args) {
         return mkerror();
 }
 
-static cell *subr_eq(lisp *l, cell *args) {
+static cell *subr_eq(lisp *l, cell *args) { /**< equality of two atoms*/
         cell *x, *y;
         if(!cklen(args, 2))
                 RECOVER(l, "'arg-count \"argc != 2 in %S\"", args);
@@ -313,25 +337,25 @@ static cell *subr_eq(lisp *l, cell *args) {
         return mknil();
 }
 
-static cell *subr_cons(lisp *l, cell *args) { 
+static cell *subr_cons(lisp *l, cell *args) { /**< allocate a new cons cell*/
         if(!cklen(args, 2))
                 RECOVER(l, "\"expected (expr expr)\" '%S", args);
         return cons(l, car(args), CADR(args)); 
 }
 
-static cell *subr_car(lisp *l, cell *args) { 
+static cell *subr_car(lisp *l, cell *args) { /**< get first element of cons cell*/
         if(!cklen(args, 1) || !iscons(car(args)))
                 RECOVER(l, "\"expect (list)\" '%S", args);
         return CAAR(args); 
 }
 
-static cell *subr_cdr(lisp *l, cell *args) { 
+static cell *subr_cdr(lisp *l, cell *args) { /**< get second element of cons cell*/
         if(!cklen(args, 1) || !iscons(car(args)))
                 RECOVER(l, "\"argument count not equal 1 or not a list\" '%S", args);
         return CDAR(args); 
 }
 
-static cell *subr_list(lisp *l, cell *args) {
+static cell *subr_list(lisp *l, cell *args) { /**< create list out of arguments*/
         size_t i;
         cell *op, *head;
         if(cklen(args, 0))
@@ -345,15 +369,16 @@ static cell *subr_list(lisp *l, cell *args) {
         return head;
 }
 
-static cell *subr_match(lisp *l, cell *args) { 
+static cell *subr_match(lisp *l, cell *args) { /**< very simple match operation on string given pattern*/
         if(!cklen(args, 2) 
         || !isasciiz(car(args)) || !isasciiz(CADR(args))) 
                 RECOVER(l, "\"expected (string string)\" '%S", args);
         return match(symval(car(args)), symval(CADR(args))) ? mktee() : mknil(); 
 }
 
-static cell *subr_scons(lisp *l, cell *args) {
+static cell *subr_scons(lisp *l, cell *args) { /**< concatenate two strings */
         char *ret;
+        /**@todo add support for prepending or appending integer-character*/
         if(!cklen(args, 2) 
         || !isasciiz(car(args)) || !isasciiz(CADR(args)))
                 RECOVER(l, "\"expected (string string)\" '%S", args);
@@ -361,7 +386,7 @@ static cell *subr_scons(lisp *l, cell *args) {
         return mkstr(l, ret);
 }
 
-static cell *subr_scar(lisp *l, cell *args) {
+static cell *subr_scar(lisp *l, cell *args) { /**< get first character of string*/
         char c[2] = {'\0', '\0'};
         if(!cklen(args, 1) || !isasciiz(car(args)))
                 RECOVER(l, "\"expected (string-or-symbol)\" '%S", args);
@@ -370,14 +395,15 @@ static cell *subr_scar(lisp *l, cell *args) {
 }
 
 
-static cell *subr_scdr(lisp *l, cell *args) {
+static cell *subr_scdr(lisp *l, cell *args) { /**< get all but first character of string*/
         if(!cklen(args, 1) || !isasciiz(car(args)))
                 RECOVER(l, "\"expected (string-or-symbol)\" '%S", args);
         if(!(strval(car(args))[0])) mkstr(l, lstrdup(""));
         return mkstr(l, lstrdup(&strval(car(args))[1]));;
 }
 
-static cell *subr_eval(lisp *l, cell *args) { /**@bug allows unlimited recursion!**/
+static cell *subr_eval(lisp *l, cell *args) { /**< evaluate a lisp expression*/
+        /**@bug allows unlimited recursion!**/
         cell *ob = NULL;
         int restore_used, r;
         jmp_buf restore;
@@ -403,7 +429,7 @@ static cell *subr_eval(lisp *l, cell *args) { /**@bug allows unlimited recursion
         return ob;
 }
 
-static cell *subr_trace(lisp *l, cell *args) {
+static cell *subr_trace_level(lisp *l, cell *args) { /**< set global tracing level*/
         if(cklen(args, 1)) {
                 if(isint(car(args))) {
                         switch(intval(car(args))) {
@@ -418,7 +444,7 @@ static cell *subr_trace(lisp *l, cell *args) {
         return mkint(l, l->trace);
 }
 
-static cell *subr_trace_cell(lisp *l, cell *args) {
+static cell *subr_trace_cell(lisp *l, cell *args) { /**< trace a specific cell if level allows*/
         if(cklen(args, 1)) {
                 return (car(args)->trace) ? mktee() : mknil();
         } else if (cklen(args, 2)) {
@@ -434,7 +460,7 @@ static cell *subr_trace_cell(lisp *l, cell *args) {
         return mkerror();
 }
 
-static cell *subr_gc(lisp *l, cell *args) {
+static cell *subr_gc(lisp *l, cell *args) { /**< control the garbage collector*/
         if(cklen(args, 0))
                 gc_mark_and_sweep(l);
         if(cklen(args, 1) && isint(car(args))) {
@@ -454,22 +480,22 @@ fail:   RECOVER(l, "\"garbage collection permanently off\" '%S", args);
         return mkerror();
 }
 
-static cell *subr_length(lisp *l, cell *args) {
+static cell *subr_length(lisp *l, cell *args) { /**< length of list or string*/
         if(!cklen(args, 1)) RECOVER(l, "\"argument count is not 1\" '%S", args);
         return mkint(l, (intptr_t)car(args)->len);
 }
 
-static cell* subr_inp(lisp *l, cell *args) {
+static cell* subr_inp(lisp *l, cell *args) { /**< is input port?*/
         if(!cklen(args, 1)) RECOVER(l, "\"argument count is not 1\" '%S", args);
         return isin(car(args)) ? mktee() : mknil();
 }
 
-static cell* subr_outp(lisp *l, cell *args) {
+static cell* subr_outp(lisp *l, cell *args) { /**< is output port?*/
         if(!cklen(args, 1)) RECOVER(l, "\"argument count is not 1\" '%S", args);
         return isout(car(args)) ? mktee() : mknil();
 }
 
-static cell* subr_open(lisp *l, cell *args) {
+static cell* subr_open(lisp *l, cell *args) { /**< open a port*/
         io *ret = NULL;
         char *file;
         if(!cklen(args, 2) || !isint(car(args)) || !isasciiz(CADR(args))) 
@@ -485,8 +511,7 @@ static cell* subr_open(lisp *l, cell *args) {
         return ret == NULL ? mknil() : mkio(l, ret);
 }
 
-static cell* subr_getchar(lisp *l, cell *args) {
-
+static cell* subr_getchar(lisp *l, cell *args) { /**< get a character*/
         if(cklen(args, 0)) return mkint(l, io_getc(l->ifp));
         if(cklen(args, 1) && isin(car(args)))
                 return mkint(l, io_getc(ioval(car(args))));
@@ -509,10 +534,11 @@ static cell* subr_getdelim(lisp *l, cell *args) {
         return mkerror();
 }
 
-static cell* subr_read(lisp *l, cell *args) {
+static cell* subr_read(lisp *l, cell *args) { /**< read in an S-Expression*/
         cell *ob = NULL;
         int restore_used, r;
         jmp_buf restore;
+        char *s = NULL;
         if(l->recover_init) {
                 memcpy(restore, l->recover, sizeof(jmp_buf));
                 restore_used = 1;
@@ -525,14 +551,25 @@ static cell* subr_read(lisp *l, cell *args) {
 
         if(cklen(args, 0))
                 ob = (ob = reader(l, l->ifp)) ? ob : mkerror();
-        if(cklen(args, 1) && isin(car(args)))
-                ob = (ob = reader(l, ioval(car(args)))) ? ob : mkerror();
+        if(cklen(args, 1) && (isin(car(args)) || isstr(car(args)))) {
+                io *i = NULL;
+                if(isin(car(args))){
+                        i = ioval(car(args));
+                } else {
+                        s = strval(car(args));
+                        if(!(i = io_sin(s)))
+                                HALT(l, "\"%s\"", "out of memory");
+                }
+                ob = (ob = reader(l, i)) ? ob : mkerror();
+                if(s) io_close(i);
+
+        }
         RECOVER_RESTORE(restore_used, l, restore); 
         if(!ob) RECOVER(l, "\"expected () or (input)\" '%S", args);
         return ob;
 }
 
-static cell* subr_puts(lisp *l, cell *args) {
+static cell* subr_puts(lisp *l, cell *args) { /**< print a string (raw)*/
         if(cklen(args, 1) && isasciiz(car(args)))
                 return io_puts(strval(car(args)),l->ofp) < 0 ? mknil() : car(args);
         if(cklen(args, 2) && isout(car(args)) && isasciiz(CADR(args)))
@@ -542,7 +579,7 @@ static cell* subr_puts(lisp *l, cell *args) {
         return mkerror();
 }
 
-static cell* subr_putchar(lisp *l, cell *args) {
+static cell* subr_putchar(lisp *l, cell *args) { /**< print a single character*/
         if(cklen(args, 1) && isint(car(args)))
                 return io_putc(intval(car(args)),l->ofp) < 0 ? mknil() : car(args);
         if(cklen(args, 2) && isout(car(args)) && isint(CADR(args)))
@@ -552,7 +589,7 @@ static cell* subr_putchar(lisp *l, cell *args) {
         return mkerror();
 }
 
-static cell* subr_print(lisp *l, cell *args) {
+static cell* subr_print(lisp *l, cell *args) { /**< print out a single S-Expression*/
         if(cklen(args, 1)) 
                 return printer(l, l->ofp, car(args), 0) < 0 ? mknil() : car(args); 
         if(cklen(args, 2) && isout(car(args))) 
@@ -562,7 +599,7 @@ static cell* subr_print(lisp *l, cell *args) {
         return mkerror();
 }
 
-static cell* subr_flush(lisp *l, cell *args) {
+static cell* subr_flush(lisp *l, cell *args) { /**< flush an output port*/
         if(cklen(args, 0)) return mkint(l, fflush(NULL));
         if(cklen(args, 1) && isio(car(args))) 
                 return io_flush(ioval(car(args))) ? mknil() : mktee();
@@ -570,14 +607,14 @@ static cell* subr_flush(lisp *l, cell *args) {
         return mkerror();
 }
 
-static cell* subr_tell(lisp *l, cell *args) {
+static cell* subr_tell(lisp *l, cell *args) { /**< get offset of port*/
         if(cklen(args, 1) && isio(car(args)))
                 return mkint(l, io_tell(ioval(car(args))));
         RECOVER(l, "\"expected (io)\" '%S", args);
         return mkerror();
 }
 
-static cell* subr_seek(lisp *l, cell *args) { 
+static cell* subr_seek(lisp *l, cell *args) { /**< set offset of port*/
         if(cklen(args, 3) && isio(car(args)) 
                 && isint(CADR(args)) && isint(CADR(cdr(args)))) {
                 switch (intval(CADR(cdr(args)))) {
@@ -591,21 +628,21 @@ static cell* subr_seek(lisp *l, cell *args) {
         return mkerror();
 }
 
-static cell* subr_eofp(lisp *l, cell *args) {
+static cell* subr_eofp(lisp *l, cell *args) { /**< is port at the end of the stream?*/
         if(cklen(args, 1) && isio(car(args)))
                 return io_eof(ioval(car(args))) ? mktee() : mknil();
         RECOVER(l, "\"expected (io)\" '%S", args);
         return mkerror();
 }
 
-static cell* subr_ferror(lisp *l, cell *args) {
+static cell* subr_ferror(lisp *l, cell *args) { /**< did an error occur on a port?*/
         if(cklen(args, 1) && isio(car(args)))
                 return io_error(ioval(car(args))) ? mktee() : mknil();
         RECOVER(l, "\"expected (io)\" '%S", args);
         return mkerror();
 }
 
-static cell* subr_system(lisp *l, cell *args) {
+static cell* subr_system(lisp *l, cell *args) { /**< execute command with system command interpreter*/
         if(cklen(args, 0))
                 return mkint(l, system(NULL));
         if(cklen(args, 1) && isasciiz(car(args)))
@@ -620,14 +657,14 @@ static cell* subr_remove(lisp *l, cell *args) {
         return remove(strval(car(args))) ? mknil() : mktee() ;
 }
 
-static cell* subr_rename(lisp *l, cell *args) {
+static cell* subr_rename(lisp *l, cell *args) { /**< rename a file in file system*/
         if(!cklen(args, 2) 
         || !isasciiz(car(args)) || !isasciiz(CADR(args))) 
                 RECOVER(l, "\"expected (string string)\" '%S", args);
         return rename(strval(car(args)), strval(CADR(args))) ? mknil() : mktee();
 }
 
-static cell* subr_hlookup(lisp *l, cell *args) {
+static cell* subr_hlookup(lisp *l, cell *args) { /**< lookup key in hash*/
         cell *ob;
         if(!cklen(args, 2) || !ishash(car(args)) || !isasciiz(CADR(args)))
                 RECOVER(l, "\"expected (hash symbol-or-string)\" %S", args);
@@ -635,7 +672,7 @@ static cell* subr_hlookup(lisp *l, cell *args) {
                                 symval(CADR(args)))) ? ob : mknil(); 
 }
 
-static cell* subr_hinsert(lisp *l, cell *args) {
+static cell* subr_hinsert(lisp *l, cell *args) { /**< insert key into hash*/
         if(!cklen(args, 3) || !ishash(car(args)) || !isasciiz(CADR(args)))
                 RECOVER(l, "\"expected (hash symbol expression)\" %S", args);
         if(hash_insert(hashval(car(args)), 
@@ -645,7 +682,7 @@ static cell* subr_hinsert(lisp *l, cell *args) {
         return car(args); 
 }
 
-static cell* subr_hcreate(lisp *l, cell *args) { 
+static cell* subr_hcreate(lisp *l, cell *args) { /**< create a new hash*/
         hashtable *ht;
         if(args->len % 2)
                 RECOVER(l, "\"expected even number of arguments\" '%S", args);
@@ -657,7 +694,7 @@ static cell* subr_hcreate(lisp *l, cell *args) {
         return mkhash(l, ht); 
 }
 
-static cell* subr_coerce(lisp *l, cell *args) { 
+static cell* subr_coerce(lisp *l, cell *args) { /**< coerce one type into another*/
         char *fltend = NULL;
         intptr_t d = 0;
         size_t i = 0, j;
@@ -740,15 +777,17 @@ fail:   RECOVER(l, "\"invalid conversion or argument length not 2\" %S", args);
         return mkerror();
 }
 
-static cell* subr_time(lisp *l, cell *args) {
+static cell* subr_time(lisp *l, cell *args) { /**< get the time*/
         if(!cklen(args, 0))
                 RECOVER(l, "\"expected ()\" %S", args);
         return mkint(l, time(NULL));
 }
 
-static cell* subr_date(lisp *l, cell *args) { /*not thread safe, also only GMT*/
+static cell* subr_date(lisp *l, cell *args) { /**< get the current date*/
         time_t raw;
-        struct tm *gt;
+        struct tm *gt; 
+        /*@warning This function is not thread safe, also only it 
+         *         only provided GMT time*/
         if(!cklen(args, 0))
                 RECOVER(l, "\"expected ()\" %S", args);
         time(&raw);
@@ -761,20 +800,20 @@ static cell* subr_date(lisp *l, cell *args) { /*not thread safe, also only GMT*/
                 cons(l, mkint(l, gt->tm_sec), mknil()))))));
 }
 
-static cell* subr_getenv(lisp *l, cell *args) {
+static cell* subr_getenv(lisp *l, cell *args) { /**< get an environment string*/
         char *ret;
         if(!cklen(args, 1) || !isasciiz(car(args)))
                 RECOVER(l, "\"expected (string)\" '%S", args);
         return (ret = getenv(strval(car(args)))) ? mkstr(l, lstrdup(ret)) : mknil();
 }
 
-static cell *subr_rand(lisp *l, cell *args) {
+static cell *subr_rand(lisp *l, cell *args) { /**< get a (pseudo) random number*/
         if(!cklen(args, 0))
                 RECOVER(l, "\"expected ()\" %S", args);
         return mkint(l, xorshift128plus(l->random_state));
 }
 
-static cell *subr_seed(lisp *l, cell *args) {
+static cell *subr_seed(lisp *l, cell *args) { /**< seed the PRNG*/
         if(!cklen(args, 2) || !isint(car(args)) || !isint(CADR(args)))
                 RECOVER(l, "\"expected (integer integer)\" %S", args);
         l->random_state[0] = intval(car(args));
@@ -782,14 +821,15 @@ static cell *subr_seed(lisp *l, cell *args) {
         return mktee();
 }
 
-static cell* subr_assoc(lisp *l, cell *args) {
+static cell* subr_assoc(lisp *l, cell *args) { /**< associate a value with a key*/
         if(!cklen(args, 2) || !iscons(CADR(args)))
                 RECOVER(l, "\"expected (val a-list)\" '%S", args);
         return assoc(car(args), CADR(args));
 }
 
-static cell *subr_setlocale(lisp *l, cell *args) {
-        char *ret = NULL; /*this function is not reentrant, also should have more options*/
+static cell *subr_setlocale(lisp *l, cell *args) { /**< set locale*/
+        char *ret = NULL; 
+        /** @warning this function affect the global state of the program*/
         if(!cklen(args, 2) || !isint(car(args)) || !isasciiz(CADR(args)))
                 RECOVER(l, "\"expected (int string-or-symbol)\" '%S", args);
         switch(intval(car(args))) {
@@ -803,13 +843,13 @@ static cell *subr_setlocale(lisp *l, cell *args) {
         return mkstr(l, lstrdup(ret));
 }
 
-static cell *subr_typeof(lisp *l, cell *args) {
+static cell *subr_typeof(lisp *l, cell *args) { /**< get type specifier of argument*/
         if(!cklen(args, 1))
                 RECOVER(l, "\"expected (expr)\" %S", args);
         return mkint(l, car(args)->type);
 }
 
-static cell *subr_close(lisp *l, cell *args) {
+static cell *subr_close(lisp *l, cell *args) { /**< close port*/
         cell *x;
         if(!cklen(args, 1) || !isio(car(args)))
                 RECOVER(l, "\"expected (io)\" %S", args);
@@ -819,7 +859,7 @@ static cell *subr_close(lisp *l, cell *args) {
         return x;
 }
 
-static cell *subr_eval_time(lisp *l, cell *args) {
+static cell *subr_eval_time(lisp *l, cell *args) { /**< time an evaluation */
         clock_t start, end;
         lfloat used;
         cell *x;
@@ -830,7 +870,7 @@ static cell *subr_eval_time(lisp *l, cell *args) {
         return cons(l, mkfloat(l, used), x);
 }
 
-static cell *subr_reverse(lisp *l, cell *args) {
+static cell *subr_reverse(lisp *l, cell *args) { /**< reverse an object*/
         if(!cklen(args, 1)) goto fail;
         if(mknil() == car(args)) return mknil();
         switch(car(args)->type) {
@@ -867,7 +907,7 @@ fail:   RECOVER(l, "\"expected () (string) (list) (hash)\" %S", args);
         return mkerror();
 }
 
-static cell *subr_join(lisp *l, cell *args) {
+static cell *subr_join(lisp *l, cell *args) { /**< join a list of strings together*/
         char *sep = "", *r, *tmp;
         if(args->len < 2 || !isasciiz(car(args))) 
                 goto fail;
@@ -898,7 +938,7 @@ fail:   RECOVER(l, "\"expected (string string...) or (string (string ...))\" %S"
         return mkerror();
 }
 
-static cell *subr_regexspan(lisp *l, cell *args) {
+static cell *subr_regexspan(lisp *l, cell *args) { /**< get the span of a regex match*/
         regex_result rr;
         cell *m = mknil();
         if(!cklen(args, 2) || !isasciiz(car(args)) || !isasciiz(CADR(args)))
@@ -912,13 +952,13 @@ static cell *subr_regexspan(lisp *l, cell *args) {
                 cons(l, mkint(l, rr.end   - strval(CADR(args))), mknil())));
 }
 
-static cell *subr_raise(lisp *l, cell *args) {
+static cell *subr_raise(lisp *l, cell *args) { /**< raise a signal*/
         if(!cklen(args, 1) || !isint(car(args)))
                 RECOVER(l, "\"expected (integer)\" %S", args);
         return raise(intval(car(args))) ? (cell*)mknil(): (cell*)mktee();
 }
 
-static cell *subr_split(lisp *l, cell *args) {
+static cell *subr_split(lisp *l, cell *args) { /**< split a string based on a regex*/
         char *pat, *s, *f;
         cell *op = mknil(), *head;
         regex_result rr;
@@ -943,7 +983,44 @@ static cell *subr_split(lisp *l, cell *args) {
         return cdr(head);
 }
 
-static cell *subr_format(lisp *l, cell *args) {
+static cell *subr_substring(lisp *l, cell *args) { /**< get a subset of a string*/
+        intptr_t min, max, tmp;
+        char *subs;
+        if(!(args->len == 2 || args->len == 3) || !isasciiz(car(args)) || !isint(CADR(args)))
+                RECOVER(l, "\"expected (string int int?)\" '%S", args);
+        if(args->len == 3 && !isint(CADDR(args)))
+                RECOVER(l, "\"expected (string int int?)\" '%S", args);
+        min = intval(CADR(args));
+        if(args->len == 2) {
+                if(min > 0) {
+                        min = MIN(min, car(args)->len);
+                        return mkstr(l, lstrdup(strval(car(args))+min));
+                } else if (min < 0) {
+                        min = car(args)->len + min;
+                        min = MAX(0, min);
+                        if(!(subs = calloc(min + 1, 1)))
+                                HALT(l, "\"%s\"", "out of memory");
+                        memcpy(subs, strval(car(args)) + min, car(args)->len - min);
+                        return mkstr(l, subs);
+                } else {
+                        return mkstr(l, lstrdup(""));
+                }
+        }
+        if(((max = intval(CADDR(args))) < 0) || min < 0)
+                RECOVER(l, "\"substring lengths must positive for three arguments\" '%S", args);
+        min = MIN(min, car(args)->len);
+        if((min + max) >= car(args)->len) {
+                tmp = (max + min) - car(args)->len;
+                max = max - tmp;
+                assert((min + max) <= car(args)->len);
+        }
+        if(!(subs = calloc(max + 1, 1)))
+                HALT(l, "\"%s\"", "out of memory");
+        memcpy(subs, strval(car(args)) + min, max);
+        return mkstr(l, subs);
+}
+
+static cell *subr_format(lisp *l, cell *args) { /**<print out arguments based on format string*/
         cell *cret;
         io *o = NULL, *t;
         char *fmt, c;

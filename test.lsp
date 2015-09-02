@@ -58,6 +58,7 @@
         (test = (regex "^a" "a")        t)
         (test = (regex "^a" "ab")       t)
         (test = (regex "^a" "ba")       nil)
+        (test = (substring "hello, world" 2 12) "llo, world")
         (test (lambda 
                 (tst pat) 
                 (match pat tst)) 

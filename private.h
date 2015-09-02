@@ -24,8 +24,6 @@ extern "C" {
 #define MAX_USER_TYPES     (256)   /**< max number of user defined types*/
 #define COLLECTION_POINT   (1<<20) /**< run gc after this many allocs*/
 #define UNUSED(X)          ((void)(X)) /**< unused variable*/
-#define MAX(X, Y)    ((X)>(Y)?(X):(Y)) /**< largest of two values*/
-#define MIN(X, Y)    ((X)>(Y)?(Y):(X)) /**< smallest of two values*/
 
 #define CELL_XLIST /**< list of all special cells for initializer*/ \
         X(Nil,     "nil")       X(Tee,     "t")\

@@ -774,6 +774,25 @@ int main_lisp_env(lisp *l, int argc, char **argv);
  * X      Test to perform**/
 #define ASSERT(X) do { if(!(X)) FATAL("assertion failed: " # X ); } while(0)
 
+/**@brief Swap two values, with a specified type. For example to swap
+ *        two integers values 'a' and 'b': SWAP(a, b, int);
+ * @param X    variable X
+ * @param Y    variable Y
+ * @param TYPE type of variables**/
+#define SWAP(X, Y, TYPE) do { TYPE SWAP = X; X = Y; Y = SWAP; } while(0);
+
+#ifndef ABS
+#define ABS(X) ((X) < 0 ? -(X) : (X)) /**< absolute value*/
+#endif
+
+#ifndef MAX
+#define MAX(X, Y)    ((X)>(Y)?(X):(Y)) /**< largest of two values*/
+#endif
+
+#ifndef MIN
+#define MIN(X, Y)    ((X)>(Y)?(Y):(X)) /**< smallest of two values*/
+#endif
+
 /* The following macros are helper macros for lisp list access */
 #define CAAR(X)  car(car((X)))
 #define CADR(X)  car(cdr((X)))
