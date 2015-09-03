@@ -66,7 +66,7 @@ int printerf(lisp*l, io *o, unsigned depth, char *fmt, ...) {
                               for(cur = ht->table[i]; cur; cur = cur->next) {
                                 io_putc(' ', o);
                                 print_escaped_string(l, o, depth, cur->key);
-                                if(iscons(cur->val)) /**@warning messy hash stuff*/
+                                if(is_cons(cur->val)) /**@warning messy hash stuff*/
                                         printerf(l, o, depth, "%t '%S", cdr(cur->val));
                                 else    printerf(l, o, depth, "%t '%S", cur->val);
                               }
@@ -115,7 +115,7 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
                       io_putc('(', o);
                       for(;;) {
                               printer(l, o, car(op), depth + 1);
-                              if(isnil(cdr(op))) {
+                              if(is_nil(cdr(op))) {
                                       io_putc(')', o);
                                       break;
                               }
@@ -127,7 +127,7 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
                               io_putc(' ', o);
                       }
                       break;
-        case SYMBOL:  if(isnil(op)) printerf(l, o, depth, "%r()");
+        case SYMBOL:  if(is_nil(op)) printerf(l, o, depth, "%r()");
                       else          printerf(l, o, depth, "%y%s", symval(op));
                       break;
         case STRING:  print_escaped_string(l, o, depth, strval(op));     break;
@@ -141,7 +141,7 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
         case HASH:    printerf(l, o, depth, "%H",             hashval(op)); break;
         case IO:      printerf(l, o, depth, "%B<IO:%s:%d>",  
                                       op->close? "CLOSED" : 
-                                      (isin(op)? "IN": "OUT"), intval(op)); break;
+                                      (is_in(op)? "IN": "OUT"), intval(op)); break;
         case USERDEF: if(l && l->ufuncs[op->userdef].print)
                               (l->ufuncs[op->userdef].print)(o, depth, op);
                       else printerf(l, o, depth, "<USER:%d:%d>",

@@ -247,12 +247,12 @@ void hash_print(hashtable *h);
 /** @brief  check whether IO channel is input channel
  *  @param  i   IO channel to check
  *  @return int non zero if channel is input channel**/
-int io_isin(io *i);
+int is_isin(io *i);
 
 /** @brief  check whether IO channel is an output channel
  *  @param  o   IO channel to check
  *  @return int non zero if channel is output channel**/
-int io_isout(io *o);
+int io_is_out(io *o);
 
 /** @brief  check whether IO channel is using a file
  *  @param  f   IO channel to check
@@ -262,7 +262,7 @@ int io_isfile(io *f);
 /** @brief  check whether IO channel is using a string
  *  @param  s   IO channel to check
  *  @return int non zero if channel is using a string for IO **/
-int io_isstring(io *s);
+int io_is_string(io *s);
 
 /** @brief  check whether IO channel is using a null IO device
  *  @param  n   IO channel to check
@@ -401,23 +401,23 @@ cell *findsym(lisp *l, char *name); /**@brief find a previously used symbol**/
 cell *intern(lisp *l, char *name); /**@brief add a new symbol**/
 intptr_t intval(cell *x); /**@brief cast lisp cell to integer**/
 io*  ioval(cell *x);    /**@brief cast lisp cell to I/O stream**/
-int  isnil(cell *x);    /**@brief true if 'x' is equal to nil**/
-int  isint(cell *x);    /**@brief true if 'x' is a integer **/
-int  isfloat(cell *x);  /**@brief true if 'x' is a floating point number**/
-int  iscons(cell *x);   /**@brief true if 'x' is a cons cell**/
-int  isio(cell *x);     /**@brief true if 'x' is a I/O type**/
-int  isproc(cell *x);   /**@brief true if 'x' is a lambda procedure**/
-int  isfproc(cell *x);  /**@brief true if 'x' is a flambda procedure**/
-int  isstr(cell *x);    /**@brief true if 'x' is a string**/
-int  issym(cell *x);    /**@brief true if 'x' is a symbol**/
-int  issubr(cell *x); /**@brief true if 'x' is a language primitive**/
-int  isasciiz(cell *x); /**@brief true if 'x' is a ASCII nul delimited string**/
-int  isarith(cell *x);  /**@brief true if 'x' is integer or float**/
-int  isin(cell *x);     /**@brief true if 'x' is an input I/O type*/
-int  isout(cell *x);    /**@brief true if 'x' is an output I/O type*/
-int  ishash(cell *x);   /**@brief true if 'x' is a hash table type*/
-int  isuserdef(cell *x); /**@brief true if 'x' is a user defined type*/
-int  isusertype(cell *x, int type); /**@brief is a specific user defined type**/
+int  is_nil(cell *x);    /**@brief true if 'x' is equal to nil**/
+int  is_int(cell *x);    /**@brief true if 'x' is a integer **/
+int  is_floatval(cell *x);  /**@brief true if 'x' is a floating point number**/
+int  is_cons(cell *x);   /**@brief true if 'x' is a cons cell**/
+int  is_io(cell *x);     /**@brief true if 'x' is a I/O type**/
+int  is_proc(cell *x);   /**@brief true if 'x' is a lambda procedure**/
+int  is_fproc(cell *x);  /**@brief true if 'x' is a flambda procedure**/
+int  is_str(cell *x);    /**@brief true if 'x' is a string**/
+int  is_sym(cell *x);    /**@brief true if 'x' is a symbol**/
+int  is_subr(cell *x); /**@brief true if 'x' is a language primitive**/
+int  is_asciiz(cell *x); /**@brief true if 'x' is a ASCII nul delimited string**/
+int  is_arith(cell *x);  /**@brief true if 'x' is integer or float**/
+int  is_in(cell *x);     /**@brief true if 'x' is an input I/O type*/
+int  is_out(cell *x);    /**@brief true if 'x' is an output I/O type*/
+int  is_hash(cell *x);   /**@brief true if 'x' is a hash table type*/
+int  is_userdef(cell *x); /**@brief true if 'x' is a user defined type*/
+int  is_usertype(cell *x, int type); /**@brief is a specific user defined type**/
 cell *mkint(lisp *l, intptr_t d); /**@brief make a lisp cell from an integer**/
 cell *mkfloat(lisp *l, lfloat f); /**@brief make a lisp cell from a float**/
 cell *mkio(lisp *l, io *x); /**@brief make lisp cell from an I/O stream**/
@@ -459,15 +459,15 @@ int newuserdef(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p);
  *        matches "(+|-)?(0[xX][0-9a-fA-F]+|0[0-7]*|[1-9][0-9]+)" 
  * @param  buf ascii delimited string to check if it is a number
  * @return 0 if it is not a number, non zero if it is**/
-int isnumber(const char *buf);
+int is_number(const char *buf);
 
-/**@brief  this is much like isnumber, but for floating point numbers
+/**@brief  this is much like is_number, but for floating point numbers
  *         matches "[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?", and
  *         excludes valid conversions added in c99 (such as "inf" or
  *         "nan").
  * @param  buf ascii delimited string to check if it is a float
  * @return 0 if it is not a float, non zero if it is**/
-int isfnumber(const char *buf);
+int is_fnumber(const char *buf);
 
 /*********** functions for implementing an interpreter environment ***********/
 

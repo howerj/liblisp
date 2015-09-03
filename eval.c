@@ -47,29 +47,29 @@ cell* cons(lisp *l, cell *x, cell *y) {
         cell *z = mk(l, CONS, 2, x, y);
         if(!x || !y || !z) return NULL;
         if(y->type == CONS) z->len = y->len + 1;
-        if(isnil(y)) z->len++;
+        if(is_nil(y)) z->len++;
         return z;
 }
 
 intptr_t intval(cell *x)     { return !x ? 0 : (intptr_t)(x->p[0].v); }
-int  isnil(cell *x)          { return x == mknil(); }
-int  isint(cell *x)          { return !x ? 0 : x->type == INTEGER; }
-int  isfloat(cell *x)        { return !x ? 0 : x->type == FLOAT; }
-int  isio(cell *x)           { return !x ? 0 : x->type == IO && !x->close; }
-int  iscons(cell *x)         { return !x ? 0 : x->type == CONS; }
-int  isproc(cell *x)         { return !x ? 0 : x->type == PROC; }
-int  isfproc(cell *x)        { return !x ? 0 : x->type == FPROC; }
-int  isstr(cell *x)          { return !x ? 0 : x->type == STRING; }
-int  issym(cell *x)          { return !x ? 0 : x->type == SYMBOL; }
-int  issubr(cell *x)         { return !x ? 0 : x->type == SUBR; }
-int  ishash(cell *x)         { return !x ? 0 : x->type == HASH; }
-int  isuserdef(cell *x)      { return !x ? 0 : x->type == USERDEF; }
-int  isusertype(cell *x, int type) {
+int  is_nil(cell *x)          { return x == mknil(); }
+int  is_int(cell *x)          { return !x ? 0 : x->type == INTEGER; }
+int  is_floatval(cell *x)        { return !x ? 0 : x->type == FLOAT; }
+int  is_io(cell *x)           { return !x ? 0 : x->type == IO && !x->close; }
+int  is_cons(cell *x)         { return !x ? 0 : x->type == CONS; }
+int  is_proc(cell *x)         { return !x ? 0 : x->type == PROC; }
+int  is_fproc(cell *x)        { return !x ? 0 : x->type == FPROC; }
+int  is_str(cell *x)          { return !x ? 0 : x->type == STRING; }
+int  is_sym(cell *x)          { return !x ? 0 : x->type == SYMBOL; }
+int  is_subr(cell *x)         { return !x ? 0 : x->type == SUBR; }
+int  is_hash(cell *x)         { return !x ? 0 : x->type == HASH; }
+int  is_userdef(cell *x)      { return !x ? 0 : x->type == USERDEF; }
+int  is_usertype(cell *x, int type) {
         if(!x) return 0;
         return x->type == USERDEF && x->userdef == type;
 }
-int  isasciiz(cell *x)       { return isstr(x) || issym(x); }
-int  isarith(cell *x)        { return isint(x) || isfloat(x); }
+int  is_asciiz(cell *x)       { return is_str(x) || is_sym(x); }
+int  is_arith(cell *x)        { return is_int(x) || is_floatval(x); }
 cell *mkint(lisp *l, intptr_t d) { return mk(l, INTEGER, 1, (cell*) d); }
 cell *mkio(lisp *l, io *x)   { return mk(l, IO, 1, (cell*)x); }
 cell *mksubr(lisp *l, subr p) { return mk(l, SUBR, 1, p); }
@@ -118,14 +118,14 @@ int newuserdef(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p) {
         return l->userdef_used++;
 }
 
-int isin(cell *x) {
-        if(!x || !isio(x) 
+int is_in(cell *x) {
+        if(!x || !is_io(x) 
               || (ioval(x)->type != FIN && ioval(x)->type != SIN)) return 0;
         return 1;
 }
 
-int isout(cell *x) { 
-        if(!x || !isio(x) 
+int is_out(cell *x) { 
+        if(!x || !is_io(x) 
               ||    (ioval(x)->type != SOUT 
                  &&  ioval(x)->type != FOUT 
                  &&  ioval(x)->type != NULLOUT)) return 0;
@@ -148,7 +148,7 @@ cell *intern(lisp *l, char *name) { assert(name);
 
 static cell *multiple_extend(lisp *l, cell *env, cell *syms, cell *vals) {
         if(!env || !syms || !vals) return NULL;
-        for(;!isnil(syms); syms = cdr(syms), vals = cdr(vals))
+        for(;!is_nil(syms); syms = cdr(syms), vals = cdr(vals))
                 env = extend(l, env, car(syms), car(vals));
         return env;
 }
@@ -164,11 +164,11 @@ cell *assoc(cell *key, cell *alist) {
          *      the interpreter down, speeding this up will greatly help*/
         cell *lookup;
         if(!key || !alist) return NULL;
-        for(;!isnil(alist); alist = cdr(alist))
-                if(iscons(car(alist))) { /*normal assoc*/
+        for(;!is_nil(alist); alist = cdr(alist))
+                if(is_cons(car(alist))) { /*normal assoc*/
                         if(intval(CAAR(alist)) == intval(key)) 
                                 return car(alist);
-                } else if(ishash(car(alist)) && isasciiz(key)) { /*assoc extended with hashes*/
+                } else if(is_hash(car(alist)) && is_asciiz(key)) { /*assoc extended with hashes*/
                         if((lookup = hash_lookup(hashval(car(alist)), strval(key))))
                                 return lookup; 
                 }
@@ -205,7 +205,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
         case IO:      case HASH: case FPROC: case USERDEF:
                 return exp; /*self evaluating types*/
         case SYMBOL:   
-                if(isnil(tmp = assoc(exp, env)))
+                if(is_nil(tmp = assoc(exp, env)))
                         RECOVER(l, "\"unbound symbol\" '%s", symval(exp));
                 return cdr(tmp);
         case CONS:
@@ -214,7 +214,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 if(first == l->If) {
                         if(!cklen(exp, 3))
                                 RECOVER(l, "'if \"argc != 3 in %S\"", exp);
-                        exp = !isnil(eval(l, depth+1, car(exp), env)) ?
+                        exp = !is_nil(eval(l, depth+1, car(exp), env)) ?
                                 CADR(exp) :
                                 CADDR(exp);
                         goto tail;
@@ -236,10 +236,10 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 }
                 if(first == l->Cond) {
                         if(cklen(exp, 0)) return l->Nil;
-                        for(tmp = l->Nil; isnil(tmp) && !isnil(exp); exp=cdr(exp)) {
-                                if(!iscons(car(exp))) return l->Nil;
+                        for(tmp = l->Nil; is_nil(tmp) && !is_nil(exp); exp=cdr(exp)) {
+                                if(!is_cons(car(exp))) return l->Nil;
                                 tmp = eval(l, depth+1, CAAR(exp), env);
-                                if(!isnil(tmp)) {
+                                if(!is_nil(tmp)) {
                                         exp = CADAR(exp);
                                         goto tail;
                                 }
@@ -249,7 +249,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 if(first == l->Env)   return env;
                 if(first == l->Quote) return car(exp);
                 if(first == l->Error) {
-                        if(cklen(exp, 1) && isint(car(exp)))
+                        if(cklen(exp, 1) && is_int(car(exp)))
                                 lisp_throw(l, intval(car(exp)));
                         if(cklen(exp, 0))
                                 lisp_throw(l, -1);
@@ -266,7 +266,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                         cell *pair, *newval;
                         if(!cklen(exp, 2))
                                 RECOVER(l, "'set! \"argc != 2 in %S\"", exp);
-                        if(isnil(pair = assoc(car(exp), env)))
+                        if(is_nil(pair = assoc(car(exp), env)))
                                 RECOVER(l, "'set! \"undefined variable\" '%S", exp);
                         newval = eval(l, depth+1, CADR(exp), env);
                         setcdr(pair, newval);
@@ -277,8 +277,8 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                         if(exp->len < 2)
                                 RECOVER(l, "'let* \"argc < 2 in %S\"", exp);
                         tmp = exp;
-                        for(; !isnil(cdr(exp)); exp = cdr(exp)) {
-                                if(!iscons(car(exp)) || !cklen(car(exp), 2))
+                        for(; !is_nil(cdr(exp)); exp = cdr(exp)) {
+                                if(!is_cons(car(exp)) || !cklen(car(exp), 2))
                                    RECOVER(l, "'let* \"expected list of length 2: '%S '%S\"",
                                                    car(exp), tmp);
                                 if(first == l->LetRec)
@@ -291,9 +291,9 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                         return eval(l, depth+1, car(exp), env);
                 }
                 if(first == l->Begin) { /**@todo Add looping constructs here*/
-                        if(isnil(exp)) return l->Nil;
+                        if(is_nil(exp)) return l->Nil;
                         for(;;) {
-                                if(isnil(cdr(exp))) {
+                                if(is_nil(cdr(exp))) {
                                       exp = car(exp);
                                       goto tail;
                                 }
@@ -303,28 +303,28 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 }
 
                 proc = eval(l, depth + 1, first, env);
-                if(isproc(proc) || issubr(proc)) { /*eval their args*/
+                if(is_proc(proc) || is_subr(proc)) { /*eval their args*/
                         vals = evlis(l, depth + 1, exp, env);
-                } else if(isfproc(proc)) { /*f-expr do not eval their args*/
+                } else if(is_fproc(proc)) { /*f-expr do not eval their args*/
                         vals = cons(l, exp, l->Nil);
-                } else if(isin(proc)) { /*special behavior for input ports*/
+                } else if(is_in(proc)) { /*special behavior for input ports*/
                         char *s;
                         if(!cklen(exp, 0))
                                 RECOVER(l, "\"incorrect application of input port\" %S", exp);
                         if(!(s = io_getline(ioval(proc)))) return l->Error;
                         else return mkstr(l, s);
-              /*} else if(isout(proc)) { // todo? */
+              /*} else if(is_out(proc)) { // todo? */
                 } else { 
                         RECOVER(l, "\"not a procedure\" '%S", first);
                 }
 
-                if(issubr(proc)) {
+                if(is_subr(proc)) {
                         l->gc_stack_used = gc_stack_save;
                         gc_add(l, proc);
                         gc_add(l, vals);
                         return (*subrval(proc))(l, vals);
                 }
-                if(isproc(proc) || isfproc(proc)) {
+                if(is_proc(proc) || is_fproc(proc)) {
                         if(procargs(proc)->len != vals->len)
                                 RECOVER(l, "'proc \"expected %S\" '%S", 
                                                 procargs(proc), vals);
@@ -346,11 +346,11 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
 static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env) { /**< evaluate a list*/
         size_t i;
         cell *op, *head;
-        if(isnil(exps)) return l->Nil;
+        if(is_nil(exps)) return l->Nil;
         op = car(exps);
         exps = cdr(exps);
         head = op = cons(l, eval(l, depth+1, op, env), l->Nil);
-        for(i = 1; !isnil(exps); exps = cdr(exps), op = cdr(op), i++)
+        for(i = 1; !is_nil(exps); exps = cdr(exps), op = cdr(op), i++)
                 setcdr(op, cons(l, eval(l, depth+1, car(exps), env), l->Nil));
         head->len = i;
         return head;

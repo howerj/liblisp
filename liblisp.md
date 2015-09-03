@@ -1653,7 +1653,7 @@ Reverse a string, a list, or a hash (exchanging keys for values).
 
 * split
 
-Split a string based on a pattern.
+Split a string based on a regular expression.
 
         # (split STRING)
         # (split STRING STRING)
@@ -1664,6 +1664,15 @@ Join a list of strings together with a separator between them.
 
         # (join STRING STRING...)
         # (join STRING (STRING...))
+
+* substring
+
+Create a substring from a string. There are two forms of this function, the
+first can accept any integer, positive or negative (including zero), the second
+form can accept two positive integers (including zero). 
+
+        # (substring STRING INTEGER)
+        # (substring STRING INTEGER INTEGER)
 
 * format
 
@@ -1697,7 +1706,8 @@ few arguments, or there are too many, an error is thrown.
 
 * raise
 
-Raise a signal.
+Raise a signal, this function affects the entire program and can cause it to
+halt.
 
         # (signal INTEGER)
 
@@ -2064,6 +2074,8 @@ printed and then the prompt if that option is set.
         > (clear-screen)
         t
 
+
+
 #### Predefined variables
 
 These are predefined variables used throughout the system, they often directly
@@ -2270,6 +2282,10 @@ stable.
 This is 't if the line editor functions and variables are available,
 it is '() otherwise.
 
+* \*have-dynamic-loader\*
+
+This is 't if the dynamic loader is available, it is '() otherwise.
+
 * pi
 
 Roughly "3.14159...".
@@ -2353,6 +2369,7 @@ Glossary of all of defined subroutine primitives and variables.
         reverse            Reverse a string, a list or a hash
         split              Split a string based
         join               Join a list of strings together
+        substring          Make a substring from a string
         format             Print out a list of objects based on a format string
         regex              Match a regular expression on a string
         raise              Raise a signal
@@ -2433,7 +2450,9 @@ Glossary of all of defined subroutine primitives and variables.
         *eof*              End-Of-File marker
         *args*             Command line options passed into the interpreter
         *history-file*     If using libline, it contains the history file name
+        *have-compile*     't if the C compiler is available, '() otherwise
         *have-line*        't if the line editor is available, '() otherwise
+        *have-dynamic-loader* 't if the dynamic loader is available, '() otherwise
         *version*          The version of this interpreter if known
         *commit*           Commit version
         *repository-origin* Origin of the lisp interpreters repository

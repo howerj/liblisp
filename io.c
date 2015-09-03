@@ -11,11 +11,11 @@
 #include <stdio.h>
 #include <string.h>
 
-int io_isin(io *i) { assert(i);
+int is_isin(io *i) { assert(i);
         return (i->type == FIN || i->type == SIN); 
 }
 
-int io_isout(io *o) { assert(o); 
+int io_is_out(io *o) { assert(o); 
         return (o->type == FOUT || o->type == SOUT || o->type == NULLOUT); 
 }
 
@@ -23,7 +23,7 @@ int io_isfile(io *f) { assert(f);
         return (f->type == FIN || f->type == FOUT);
 }
 
-int io_isstring(io *s) { assert(s);
+int io_is_string(io *s) { assert(s);
         return (s->type == SIN || s->type == SOUT);
 }
 

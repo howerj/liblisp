@@ -108,19 +108,19 @@ cell *lisp_eval_string(lisp *l, char *evalme) { assert(l && evalme);
 }
 
 int lisp_set_input(lisp *l, io *in) { assert(l && in);
-        if(!io_isin(in)) return -1;
+        if(!is_isin(in)) return -1;
         l->ifp = in;
         return 0;
 }
 
 int lisp_set_output(lisp *l, io *out) { assert(l && out);
-        if(!io_isout(out)) return -1;
+        if(!io_is_out(out)) return -1;
         l->ofp = out;
         return 0;
 }
 
 int lisp_set_logging(lisp *l, io *logging) { assert(l && logging);
-        if(!io_isout(logging)) return -1;
+        if(!io_is_out(logging)) return -1;
         l->efp = logging;
         return 0;
 }

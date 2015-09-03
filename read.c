@@ -112,12 +112,12 @@ cell *reader(lisp *l, io *i) { /*read in s-expr, this should be rewritten*/
         case '(':  free(token); return readlist(l, i);
         case '"':  free(token); return readstring(l, i);
         case '\'': free(token); return cons(l, mkquote(), cons(l, reader(l,i), mknil()));
-        default:   if(isnumber(token)) {
+        default:   if(is_number(token)) {
                            ret = mkint(l, strtol(token, NULL, 0));
                            free(token);
                            return ret;
                    }
-                   if(isfnumber(token)) {
+                   if(is_fnumber(token)) {
                         flt = strtod(token, &fltend);
                         if(!fltend[0]) {
                                 free(token);

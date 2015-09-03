@@ -185,7 +185,7 @@ int balance(const char *sexpr) { assert(sexpr);
         return bal;
 }
 
-int isnumber(const char *buf) { assert(buf);
+int is_number(const char *buf) { assert(buf);
         char conv[] = "0123456789abcdefABCDEF";
         if(!buf[0]) return 0;
         if(buf[0] == '-' || buf[0] == '+') buf++;
@@ -198,7 +198,7 @@ int isnumber(const char *buf) { assert(buf);
         return buf[strspn(buf, conv)] == '\0';
 }
 
-int isfnumber(const char *buf) { 
+int is_fnumber(const char *buf) { 
         size_t i;
         char conv[] = "0123456789";
         if(!buf[0]) return 0;

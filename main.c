@@ -47,9 +47,9 @@ static void sig_int_handler(int sig) {
  * @param NAME name of math function such as "log", "sin", etc.*/
 #define SUBR_MATH_UNARY(NAME)\
 static cell *subr_ ## NAME (lisp *l, cell *args) {\
-        if(!cklen(args, 1) || !isarith(car(args)))\
+        if(!cklen(args, 1) || !is_arith(car(args)))\
                 RECOVER(l, "\"expected (number)\" '%S", args);\
-        return mkfloat(l, NAME (isfloat(car(args)) ? floatval(car(args)) :\
+        return mkfloat(l, NAME (is_floatval(car(args)) ? floatval(car(args)) :\
                                   (double) intval(car(args))));\
 }
 
@@ -65,9 +65,9 @@ MATH_UNARY_LIST
 #define SUBR_ISX(NAME)\
 static cell *subr_ ## NAME (lisp *l, cell *args) {\
         char *s, c;\
-        if(cklen(args, 1) && isint(car(args)))\
+        if(cklen(args, 1) && is_int(car(args)))\
                 return NAME (intval(car(args))) ? mktee() : (cell*)mknil();\
-        if(!cklen(args, 1) || !isasciiz(car(args)))\
+        if(!cklen(args, 1) || !is_asciiz(car(args)))\
                 RECOVER(l, "\"expected (string)\" %S", args);\
         s = strval(car(args));\
         if(!s[0]) return mknil();\
@@ -90,31 +90,31 @@ ISX_LIST
 static cell *subr_pow (lisp *l, cell *args) {
         cell *xo, *yo;
         double x, y;
-        if(!cklen(args, 2) || !isarith(car(args)) || !isarith(CADR(args)))
+        if(!cklen(args, 2) || !is_arith(car(args)) || !is_arith(CADR(args)))
                 RECOVER(l, "\"expected (number number)\" '%S", args);
         xo = car(args);
         yo = CADR(args);
-        x = isfloat(xo) ? floatval(xo) : intval(xo);
-        y = isfloat(yo) ? floatval(yo) : intval(yo);
+        x = is_floatval(xo) ? floatval(xo) : intval(xo);
+        y = is_floatval(yo) ? floatval(yo) : intval(yo);
         return mkfloat(l, pow(x, y));
 }
 
 static cell *subr_modf(lisp *l, cell *args) {
         cell *xo;
         double x, fracpart, intpart = 0;
-        if(!cklen(args, 1) || !isarith(car(args)))
+        if(!cklen(args, 1) || !is_arith(car(args)))
                 RECOVER(l, "\"expected (number)\" '%S", args);
         xo = car(args);
-        x = isfloat(xo) ? floatval(xo) : intval(xo);
+        x = is_floatval(xo) ? floatval(xo) : intval(xo);
         fracpart = modf(x, &intpart);
         return cons(l, mkfloat(l, intpart), mkfloat(l, fracpart));
 }
 
 #ifdef USE_LINE
+/*libline: line editing and history functionality*/
 #include "libline/libline.h"
 static char *histfile = ".list";
 
-/*line editing and history functionality*/
 static char *line_editing_function(const char *prompt) {
         static int warned = 0; /**< have we warned the user we cannot write to
                                     the history file?*/
@@ -138,14 +138,14 @@ static char *line_editing_function(const char *prompt) {
 static cell *subr_line_editor_mode(lisp *l, cell *args) {
         (void)l;
         if(cklen(args, 1)) {
-                line_set_vi_mode(isnil(car(args)) ? 0 : 1);
+                line_set_vi_mode(is_nil(car(args)) ? 0 : 1);
                 return mktee();
         }
         return line_get_vi_mode() ? mktee(): (cell*)mknil();
 }
 
 static cell *subr_hist_len(lisp *l, cell *args) {
-        if(!cklen(args, 1) || !isint(car(args)))
+        if(!cklen(args, 1) || !is_int(car(args)))
                 RECOVER(l, "\"expected (integer)\" '%S", args);
         if(!line_history_set_maxlen((int)intval(car(args))))
                 HALT(l, "\"%s\"", "out of memory");
@@ -162,6 +162,8 @@ static cell *subr_clear_screen(lisp *l, cell *args) {
 #endif
 
 #ifdef USE_TCC
+/* Tiny C Compiler; for compiling and adding C code to the interpreter after
+ * liblisp has been built. */
 #include <libtcc.h>
 static int ud_tcc = 0;
 
@@ -176,8 +178,8 @@ static int ud_tcc_print(io *o, unsigned depth, cell *f) {
 
 static cell* subr_compile(lisp *l, cell *args) {
         if(!cklen(args, 3) 
-        || !isusertype(car(args), ud_tcc)
-        || !isasciiz(CADR(args)) || !isstr(CADDR(args)))
+        || !is_usertype(car(args), ud_tcc)
+        || !is_asciiz(CADR(args)) || !is_str(CADDR(args)))
                 RECOVER(l, "\"expected (compile-state string string\" '%S", args);
         char *fname = strval(CADR(args)), *prog = strval(CADDR(args));
         subr func;
@@ -192,14 +194,14 @@ static cell* subr_compile(lisp *l, cell *args) {
 
 static cell* subr_link(lisp *l, cell *args) {
         if(!cklen(args, 2) 
-        || !isusertype(car(args), ud_tcc) || !isasciiz(CADR(args)))
+        || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
         return tcc_add_library(userval(car(args)), strval(CADR(args))) < 0 ? mkerror() : mknil();
 }
 
 static cell* subr_compile_file(lisp *l, cell *args) {
         if(!cklen(args, 2)
-        || !isusertype(car(args), ud_tcc) || !isasciiz(CADR(args)))
+        || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
         if(tcc_add_file(userval(car(args)), strval(CADR(args))) < 0)
                 return mkerror();
@@ -211,16 +213,39 @@ static cell* subr_compile_file(lisp *l, cell *args) {
 static cell* subr_get_subr(lisp *l, cell *args) {
         subr func;
         if(!cklen(args, 2)
-        || !isusertype(car(args), ud_tcc) || !isasciiz(CADR(args)))
+        || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
         if(!(func = tcc_get_symbol(userval(car(args)), strval(CADR(args)))))
                 return mkerror();
         else
                 return mksubr(l, func);
 }
+
+static cell* subr_add_include_path(lisp *l, cell *args) {
+        if(!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
+                RECOVER(l, "\"expected (compile-state string)\" '%S", args);
+        return tcc_add_include_path(userval(car(args)), strval(CADR(args))) < 0 ? mkerror() : mktee();
+}
+
+static cell* subr_add_sysinclude_path(lisp *l, cell *args) {
+        if(!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
+                RECOVER(l, "\"expected (compile-state string)\" '%S", args);
+        return tcc_add_sysinclude_path(userval(car(args)), strval(CADR(args))) < 0 ? mkerror() : mktee();
+}
+
+static cell* subr_set_lib_path(lisp *l, cell *args) {
+        if(!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
+                RECOVER(l, "\"expected (compile-state string)\" '%S", args);
+        tcc_set_lib_path(userval(car(args)), strval(CADR(args)));
+        return mktee();
+}
+
 #endif
 
 #ifdef USE_DL
+/* Module loader using dlopen, all functions acquired with dlsym must be of the
+ * "subr" function type as they will be used as internal lisp subroutines by
+ * the interpreter. */
 #include <dlfcn.h>
 static int ud_dl = 0;
 
@@ -235,7 +260,7 @@ static int ud_dl_print(io *o, unsigned depth, cell *f) {
 
 static cell *subr_dlopen(lisp *l, cell *args) {
         void *handle;
-        if(!cklen(args, 1) || !isasciiz(car(args)))
+        if(!cklen(args, 1) || !is_asciiz(car(args)))
                 RECOVER(l, "\"expected (string)\" '%S", args);
         if(!(handle = dlopen(strval(car(args)), RTLD_NOW)))
                 return mkstr(l, lstrdup(dlerror()));
@@ -244,7 +269,7 @@ static cell *subr_dlopen(lisp *l, cell *args) {
 
 static cell *subr_dlsym(lisp *l, cell *args) {
         subr func;
-        if(!cklen(args, 2) || !isusertype(car(args), ud_dl) || !isasciiz(CADR(args)))
+        if(!cklen(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
         if(!(func = dlsym(userval(car(args)), strval(CADR(args)))))
                 return mkerror();
@@ -252,7 +277,7 @@ static cell *subr_dlsym(lisp *l, cell *args) {
 }
 
 static cell *subr_dlerror(lisp *l, cell *args) {
-        if(!cklen(args, 1) || !isusertype(car(args), ud_dl))
+        if(!cklen(args, 1) || !is_usertype(car(args), ud_dl))
                 RECOVER(l, "\"expected (dynamic-module)\" '%S", args);
         return mkerror();
 }
@@ -287,12 +312,12 @@ ISX_LIST
          *  project so the symbols in it are available to libtcc.
          *
          *  Possible improvements:
-         *  * Modification of libtcc so it can accept S-Expressions frmo
-         *    the interpreter.
+         *  * Modification of libtcc so it can accept S-Expressions from
+         *    the interpreter. This would be a significant undertaking.
          *  * Add more functions from libtcc
          *  * Separate out tcc_get_symbol from tcc_compile_string
          *  * Find out why link does not work
-         ***/
+         **/
         ud_tcc = newuserdef(l, ud_tcc_free, NULL, NULL, ud_tcc_print);
         TCCState *st = tcc_new();
         tcc_set_output_type(st, TCC_OUTPUT_MEMORY);
@@ -301,6 +326,9 @@ ISX_LIST
         lisp_add_subr(l, "link",           subr_link);
         lisp_add_subr(l, "compile-file",   subr_compile_file);
         lisp_add_subr(l, "get-subroutine", subr_get_subr);
+        lisp_add_subr(l, "add-include-path", subr_add_include_path);
+        lisp_add_subr(l, "add-system-include-path", subr_add_sysinclude_path);
+        lisp_add_subr(l, "set-library-path", subr_set_lib_path);
         lisp_add_cell(l, "*have-compile*", mktee());
 #else
         lisp_add_cell(l, "*have-compile*", mknil());
@@ -311,6 +339,9 @@ ISX_LIST
         lisp_add_subr(l, "dynamic-open", subr_dlopen);
         lisp_add_subr(l, "dynamic-symbol", subr_dlsym);
         lisp_add_subr(l, "dynamic-error", subr_dlerror);
+        lisp_add_cell(l, "*have-dynamic-loader*", mktee());
+#else
+        lisp_add_cell(l, "*have-dynamic-loader*", mknil());
 #endif
 
 #ifdef USE_LINE 
