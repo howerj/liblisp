@@ -16,12 +16,13 @@
 
 static cell *mk(lisp *l, lisp_type type, size_t count, ...) 
 { /**@brief make new lisp cells and perform garbage bookkeeping/collection*/
+        assert(l && type != INVALID && count);
         cell *ret;
         gc_list *node; /**< new node in linked list of all allocations*/
         va_list ap;
         size_t i;
 
-        if(l->gc_collectp++ > COLLECTION_POINT) /*Set to 1 for testing*/
+        if(l->gc_collectp++ > COLLECTION_POINT) /*set to 1 for testing*/
                 if(l->gc_state == GC_ON) /*only collect when gc is on*/
                         gc_mark_and_sweep(l);
 
@@ -32,9 +33,9 @@ static cell *mk(lisp *l, lisp_type type, size_t count, ...)
                 HALT(l, "%s", "out of memory");
         ret->type = type;
         for(i = 0; i < count; i++) 
-                if     (FLOAT == type)  ret->p[i].f =    va_arg(ap, double);
-                else if(SUBR == type)   ret->p[i].prim = va_arg(ap, subr);
-                else                    ret->p[i].v =    va_arg(ap, void*);
+                if     (FLOAT == type) ret->p[i].f    = va_arg(ap, double);
+                else if(SUBR == type)  ret->p[i].prim = va_arg(ap, subr);
+                else                   ret->p[i].v    = va_arg(ap, void*);
         va_end(ap);
         node->ref = ret;
         node->next = l->gc_head;
@@ -45,45 +46,46 @@ static cell *mk(lisp *l, lisp_type type, size_t count, ...)
 
 cell* cons(lisp *l, cell *x, cell *y) {
         cell *z = mk(l, CONS, 2, x, y);
-        if(!x || !y || !z) return NULL;
+        assert(l /*&& x && y*/);
+        if(!z || !x || !y) return NULL;
         if(y->type == CONS) z->len = y->len + 1;
         if(is_nil(y)) z->len++;
         return z;
 }
 
-intptr_t intval(cell *x)     { return !x ? 0 : (intptr_t)(x->p[0].v); }
-int  is_nil(cell *x)          { return x == mknil(); }
-int  is_int(cell *x)          { return !x ? 0 : x->type == INTEGER; }
-int  is_floatval(cell *x)        { return !x ? 0 : x->type == FLOAT; }
-int  is_io(cell *x)           { return !x ? 0 : x->type == IO && !x->close; }
-int  is_cons(cell *x)         { return !x ? 0 : x->type == CONS; }
-int  is_proc(cell *x)         { return !x ? 0 : x->type == PROC; }
-int  is_fproc(cell *x)        { return !x ? 0 : x->type == FPROC; }
-int  is_str(cell *x)          { return !x ? 0 : x->type == STRING; }
-int  is_sym(cell *x)          { return !x ? 0 : x->type == SYMBOL; }
-int  is_subr(cell *x)         { return !x ? 0 : x->type == SUBR; }
-int  is_hash(cell *x)         { return !x ? 0 : x->type == HASH; }
-int  is_userdef(cell *x)      { return !x ? 0 : x->type == USERDEF; }
-int  is_usertype(cell *x, int type) {
-        if(!x) return 0;
+intptr_t intval(cell *x)      { return !x ? 0 : (intptr_t)(x->p[0].v); }
+int  is_nil(cell *x)          { assert(x); return x == mknil(); }
+int  is_int(cell *x)          { assert(x); return x->type == INTEGER; }
+int  is_floatval(cell *x)     { assert(x); return x->type == FLOAT; }
+int  is_io(cell *x)           { assert(x); return x->type == IO && !x->close; }
+int  is_cons(cell *x)         { assert(x); return x->type == CONS; }
+int  is_proc(cell *x)         { assert(x); return x->type == PROC; }
+int  is_fproc(cell *x)        { assert(x); return x->type == FPROC; }
+int  is_str(cell *x)          { assert(x); return x->type == STRING; }
+int  is_sym(cell *x)          { assert(x); return x->type == SYMBOL; }
+int  is_subr(cell *x)         { assert(x); return x->type == SUBR; }
+int  is_hash(cell *x)         { assert(x); return x->type == HASH; }
+int  is_userdef(cell *x)      { assert(x); return x->type == USERDEF; }
+int  is_usertype(cell *x, int type) { assert(x);
         return x->type == USERDEF && x->userdef == type;
 }
-int  is_asciiz(cell *x)       { return is_str(x) || is_sym(x); }
-int  is_arith(cell *x)        { return is_int(x) || is_floatval(x); }
+int  is_asciiz(cell *x)       { assert(x); return is_str(x) || is_sym(x); }
+int  is_arith(cell *x)        { assert(x); return is_int(x) || is_floatval(x); }
+int  is_func(cell *x)         { assert(x); return is_proc(x) || is_fproc(x) || is_subr(x); }
 cell *mkint(lisp *l, intptr_t d) { return mk(l, INTEGER, 1, (cell*) d); }
-cell *mkio(lisp *l, io *x)   { return mk(l, IO, 1, (cell*)x); }
-cell *mksubr(lisp *l, subr p) { return mk(l, SUBR, 1, p); }
-cell *mkproc(lisp *l, cell *x, cell *y, cell *z)  { return mk(l,PROC,3,x,y,z); }
-cell *mkfproc(lisp *l, cell *x, cell *y, cell *z) { return mk(l,FPROC,3,x,y,z); }
+cell *mkio(lisp *l, io *x)    { assert(x); return mk(l, IO, 1, (cell*)x); }
+cell *mksubr(lisp *l, subr p) { assert(p); return mk(l, SUBR, 1, p); }
+cell *mkproc(lisp *l, cell *x, cell *y, cell *z)  { assert(x); return mk(l,PROC,3,x,y,z); }
+cell *mkfproc(lisp *l, cell *x, cell *y, cell *z) { assert(x); return mk(l,FPROC,3,x,y,z); }
 cell *mkfloat(lisp *l, lfloat f) { return mk(l, FLOAT, 1, f); }
-cell *mkuser(lisp *l, void *x, int type) {
+cell *mkuser(lisp *l, void *x, int type) { assert(l && x);
         cell *ret = mk(l, USERDEF, 1, x);
         ret->userdef = type;
         return ret;
 }
 
-static cell *mkasciiz(lisp *l, char *s, lisp_type type) {  
-        assert(s && (type == STRING || type == SYMBOL));
+static cell *mkasciiz(lisp *l, char *s, lisp_type type) { 
+        assert(l && s && (type == STRING || type == SYMBOL));
         cell *x = mk(l, type, 1, (cell *)s); 
         if(!x) return NULL;
         x->len = strlen(s);
@@ -93,21 +95,21 @@ static cell *mkasciiz(lisp *l, char *s, lisp_type type) {
 cell *mkstr(lisp *l, char *s) { return mkasciiz(l, s, STRING); }
 cell *mksym(lisp *l, char *s) { return mkasciiz(l, s, SYMBOL); }
 cell *mkhash(lisp *l, hashtable *h) { return mk(l, HASH, 1, (cell *)h); }
-subr subrval(cell *x)         { return !x ? NULL : x->p[0].prim; }
-cell *procargs(cell *x)       { return !x ? NULL : x->p[0].v; }
-cell *proccode(cell *x)       { return !x ? NULL : x->p[1].v; }
-cell *procenv(cell *x)        { return !x ? NULL : x->p[2].v; }
-cell *car(cell *x)            { return !x ? NULL : x->p[0].v; }
-cell *cdr(cell *x)            { return !x ? NULL : x->p[1].v; }
-io*  ioval(cell *x)           { return !x ? NULL : (io*)(x->p[0].v); }
-void setcar(cell *x, cell *y) { if(!x||!y) return;  x->p[0].v = y; }
-void setcdr(cell *x, cell *y) { if(!x||!y) return;  x->p[1].v = y; }
-char *symval(cell *x)         { return !x ? NULL : (char *)(x->p[0].v); }
-char *strval(cell *x)         { return !x ? NULL : (char *)(x->p[0].v); }
-void *userval(cell *x)        { return !x ? NULL : (void *)(x->p[0].v); }
-hashtable *hashval(cell *x)   { return !x ? NULL : (hashtable *)(x->p[0].v); }
-int  cklen(cell *x, size_t expect)  { return !x ? 0 : (x->len) == expect; }
-lfloat floatval(cell *x)      { return !x ? 0.f : x->p[0].f; }
+subr subrval(cell *x)         { assert(x); return x->p[0].prim; }
+cell *procargs(cell *x)       { assert(x); return x->p[0].v; }
+cell *proccode(cell *x)       { assert(x); return x->p[1].v; }
+cell *procenv(cell *x)        { assert(x); return x->p[2].v; }
+cell *car(cell *x)            { assert(x); return x->p[0].v; }
+cell *cdr(cell *x)            { assert(x); return x->p[1].v; }
+io*  ioval(cell *x)           { assert(x); return (io*)(x->p[0].v); }
+void setcar(cell *x, cell *y) { assert(x && y); x->p[0].v = y; }
+void setcdr(cell *x, cell *y) { assert(x && y); x->p[1].v = y; }
+char *symval(cell *x)         { assert(x); return (char *)(x->p[0].v); }
+char *strval(cell *x)         { assert(x); return (char *)(x->p[0].v); }
+void *userval(cell *x)        { assert(x); return (void *)(x->p[0].v); }
+hashtable *hashval(cell *x)   { assert(x); return (hashtable *)(x->p[0].v); }
+int  cklen(cell *x, size_t expect)  { assert(x); return (x->len) == expect; }
+lfloat floatval(cell *x)      { assert(x); return x->p[0].f; }
 
 int newuserdef(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p) {
         if(l->userdef_used >= MAX_USER_TYPES) return -1;
@@ -118,13 +120,13 @@ int newuserdef(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p) {
         return l->userdef_used++;
 }
 
-int is_in(cell *x) {
+int is_in(cell *x) { assert(x);
         if(!x || !is_io(x) 
               || (ioval(x)->type != FIN && ioval(x)->type != SIN)) return 0;
         return 1;
 }
 
-int is_out(cell *x) { 
+int is_out(cell *x) { assert(x);
         if(!x || !is_io(x) 
               ||    (ioval(x)->type != SOUT 
                  &&  ioval(x)->type != FOUT 
@@ -136,7 +138,7 @@ cell *extend(lisp *l, cell *env, cell *sym, cell *val) {
         return cons(l, cons(l, sym, val), env); 
 }
 
-cell *intern(lisp *l, char *name) { assert(name);
+cell *intern(lisp *l, char *name) { assert(l && name);
         cell *op = hash_lookup(hashval(l->all_symbols), name);
         if(op) return op;
         op = mksym(l, name);
@@ -147,23 +149,21 @@ cell *intern(lisp *l, char *name) { assert(name);
 /***************************** environment ************************************/
 
 static cell *multiple_extend(lisp *l, cell *env, cell *syms, cell *vals) {
-        if(!env || !syms || !vals) return NULL;
+        assert(l && env && syms && vals);
         for(;!is_nil(syms); syms = cdr(syms), vals = cdr(vals))
                 env = extend(l, env, car(syms), car(vals));
         return env;
 }
 
-cell *extend_top(lisp *l, cell *sym, cell *val) {
-        if(!sym || !val) return NULL;
+cell *extend_top(lisp *l, cell *sym, cell *val) { assert(l && sym && val);
         setcdr(l->top_env, cons(l, cons(l, sym, val), cdr(l->top_env)));
         return val;
 }
 
-cell *assoc(cell *key, cell *alist) {
+cell *assoc(cell *key, cell *alist) { assert(key && alist);
         /*@note assoc is the main offender when it comes to slowing
          *      the interpreter down, speeding this up will greatly help*/
         cell *lookup;
-        if(!key || !alist) return NULL;
         for(;!is_nil(alist); alist = cdr(alist))
                 if(is_cons(car(alist))) { /*normal assoc*/
                         if(intval(CAAR(alist)) == intval(key)) 
@@ -178,23 +178,22 @@ cell *assoc(cell *key, cell *alist) {
 /******************************** evaluator ***********************************/
 
 static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env);
-cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { 
+cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
         size_t gc_stack_save = l->gc_stack_used;
-        cell *tmp, *first, *proc, *vals = l->Nil;
-        if(!exp || !env) return NULL;
+        cell *tmp, *first, *proc, *vals = mknil();
         if(depth > l->max_depth)
                 RECOVER(l, "'recursion-depth-reached %d", depth);
         gc_add(l, exp);
         gc_add(l, env);
-
         tail:
+        if(!exp || !env) return NULL;
         if(l->trace != TRACE_OFF) { /*print out expressions for debugging*/
                 if(l->trace == TRACE_ALL || (l->trace == TRACE_MARKED && exp->trace))
                         printerf(l, l->efp, 1, "(%ytrace%t %S)\n", exp); 
                 else if(l->trace != TRACE_MARKED)
                         HALT(l, "\"invalid trace level\" %d", l->trace);
         }
-        if(exp == l->Nil) return l->Nil;
+        if(is_nil(exp)) return mknil();
         if(l->sig) {
                 l->sig = 0;
                 lisp_throw(l, 1);
@@ -317,11 +316,11 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
                 } else { 
                         RECOVER(l, "\"not a procedure\" '%S", first);
                 }
-
                 if(is_subr(proc)) {
                         l->gc_stack_used = gc_stack_save;
                         gc_add(l, proc);
                         gc_add(l, vals);
+                        l->cur_depth = depth; /*tucked away for subr use*/
                         return (*subrval(proc))(l, vals);
                 }
                 if(is_proc(proc) || is_fproc(proc)) {
@@ -346,6 +345,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) {
 static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env) { /**< evaluate a list*/
         size_t i;
         cell *op, *head;
+        assert(l && exps && env);
         if(is_nil(exps)) return l->Nil;
         op = car(exps);
         exps = cdr(exps);

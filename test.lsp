@@ -1,5 +1,3 @@
-#!./lisp init.lsp
-
 ; random floating point number between zero and one
 (define frandom (lambda () (fabs (/ (coerce *float* (random)) *random-max*))))
 (define sum-of-squares (lambda (x y) (+ (* x x) (* y y))))

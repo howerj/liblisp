@@ -6,9 +6,10 @@
 
 #include "liblisp.h"
 #include "private.h"
+#include <assert.h>
 #include <stdlib.h>
 
-static void gc_free(lisp *l, cell *ob) { /**< free a lisp cell*/
+static void gc_free(lisp *l, cell *ob) { assert(ob); /**< free a lisp cell*/
         if(ob->uncollectable) return;
         switch(ob->type) {
         case INTEGER: case CONS: case FLOAT:
@@ -27,9 +28,9 @@ static void gc_free(lisp *l, cell *ob) { /**< free a lisp cell*/
         }
 }
 
-static void gc_mark(lisp *l, cell* op) { /**<recursively mark reachable cells*/
+static void gc_mark(lisp *l, cell* op) { assert(op); /**<recursively mark reachable cells*/
         if(l->gc_state != GC_ON) return;
-        if(!op || op->uncollectable || op->mark) return;
+        if(op->uncollectable || op->mark) return;
         op->mark = 1;
         switch(op->type) {
         case INTEGER: case SYMBOL: case SUBR: 

@@ -87,7 +87,6 @@ is only one document to maintain, as opposed to it and a [liblisp.3][] to keep i
 sync. The [liblisp.3][] that is present simply points the user to the [liblisp.h][]
 header.
 
-
 <div id='Building'/>
 ## Building
 
@@ -95,19 +94,20 @@ To build the interpreter a C compiler for a hosted platform is needed. It has
 no other dependencies apart from the C library. A makefile is provided, but the
 following commands should all work for their respective compilers:
 
-        gcc   liblisp.c main.c -lm -o lisp
-        tcc   liblisp.c main.c -lm -o lisp
-        clang liblisp.c main.c -lm -o lisp
+        gcc   *.c -lm -o lisp
+        tcc   *.c -lm -o lisp
+        clang *.c -lm -o lisp
 
 The preprocessor defines that add or change functionality are:
 
-        USE_LINE        Add a line editor, must be linked with libline.a
-        NDEBUG          The interpreter liberally uses assertions
+        USE_LINE  Add a line editor, must be linked with libline.a
+        USE_TCC   Add the Tiny C Compiler for run time code generation
+        USE_DL    Add the dynamic loader interface
+        NDEBUG    The interpreter liberally uses assertions
 
 Using the makefile instead (either "make" or "make all") will build the "lisp"
-executable as well as the "liblisp.a" library. It will not build "liblisp.so"
-by default, instead "make liblisp.so" will do that. The libraries will be built
-with debugging symbols.
+executable as well as the "liblisp.a" library. It will also build "liblisp.so"
+The libraries will be built with debugging symbols.
 
 The line editing library is limited to Unix systems which support a
 [VT220][] terminal emulator (or are lucky enough to the actual terminal
@@ -1711,7 +1711,7 @@ halt.
 
         # (signal INTEGER)
 
-isalnum?
+* isalnum?
 
 Returns 't if argument is alphanumeric, nil otherwise. This function can be used on
 integers or strings.
@@ -1725,7 +1725,7 @@ integers or strings.
         > (isalnum? 97) # True if using ASCII, 97 == ASCII 'a'
         t
 
-isalpha?
+* isalpha?
 
 Returns 't if argument consists of alphabetic characters, nil otherwise. 
 This function can be used on integers or strings.
@@ -1735,7 +1735,7 @@ This function can be used on integers or strings.
         > (isalpha? "abcABC")
         t
 
-iscntrl?
+* iscntrl?
 
 Returns 't if argument consists of control characters, nil otherwise. 
 This function can be used on integers or strings.
@@ -1744,7 +1744,7 @@ This function can be used on integers or strings.
         # (iscntrl? STRING)
 
 
-isdigit?
+* isdigit?
 
 Returns 't if argument consists of digits, nil otherwise. This function can be 
 used on integers or strings.
@@ -1754,7 +1754,7 @@ used on integers or strings.
         > (isdigit? "0123")
         t
 
-isgraph?
+* isgraph?
 
 Returns 't if argument consists of printable characters (excluding space), 
 nil otherwise. This function can be used on integers or strings.
@@ -1764,7 +1764,7 @@ nil otherwise. This function can be used on integers or strings.
         > (isgraph? "1aAB2.#")
         t
 
-islower?
+* islower?
 
 Returns 't if argument consists of lower case characters, nil otherwise. 
 This function can be used on integers or strings.
@@ -1774,7 +1774,7 @@ This function can be used on integers or strings.
         > (islower? "abc")
         t
 
-isprint?
+* isprint?
 
 Returns 't if argument consists of printable characters, nil otherwise. 
 This function can be used on integers or strings.
@@ -1784,7 +1784,7 @@ This function can be used on integers or strings.
         > (isgraph? "1a AB2.#")
         t
 
-ispunct?
+* ispunct?
 
 Returns 't if argument consists of punctuation characters, nil otherwise. 
 This function can be used on integers or strings.
@@ -1793,7 +1793,7 @@ This function can be used on integers or strings.
         # (ispunct? STRING)
 
 
-isspace?
+* isspace?
 
 Returns 't if argument consists of whitespace, nil otherwise. This function 
 can be used on integers or strings.
@@ -1802,7 +1802,7 @@ can be used on integers or strings.
         # (isspace? STRING)
 
 
-isupper?
+* isupper?
 
 Returns 't if argument consists of upper case characters, nil otherwise. 
 This function can be used on integers or strings.
@@ -1811,13 +1811,42 @@ This function can be used on integers or strings.
         # (isupper? STRING)
 
 
-isxdigit?
+* isxdigit?
 
 Returns 't if argument consists of hexadecimal digits, nil otherwise. 
 This function can be used on integers or strings.
 
         # (isxdigit? INTEGER)
         # (isxdigit? STRING)
+
+* tr
+
+Translate a string given a mode and two sets. This function is similar to the
+"tr" program available in Unix environments and the C functions that back this
+subroutine can be used to implement that program. The lisp interface is a bit
+clunky, but it is a useful subroutine.
+
+The mode string, the first argument, determines how the conversion should
+proceed. Some of the arguments are mutually exclusive.
+
+       ''  (empty string) normal translation
+       'x' normal translation
+       'c' compliment set 1
+       's' squeeze repeated character run
+       'd' delete characters (s2 should be NULL)
+       't' truncate set 1 to the size of set 2
+
+        # (tr STRING STRING STRING STRING)
+        #       ^      ^      ^      ^
+        #      mode  set-1  set-2  string
+        > (tr "x" "abc" "def" "aaaabbaaaccc") 
+        "ddddeedddfff"
+        > (tr "t" "abc" "def" "aaaabbaaaccc") 
+        "ddddeedddfff"
+        > (tr "s" "abc" "def" "aaaabbaaaccc") 
+        "dedf"
+        > (tr "ts" "abc" "de" "aaaabbaaaccc") 
+        "dedccc"
 
 ##### Additional functions
 
@@ -2073,8 +2102,6 @@ printed and then the prompt if that option is set.
         # (clear-screen)
         > (clear-screen)
         t
-
-
 
 #### Predefined variables
 
@@ -2384,6 +2411,7 @@ Glossary of all of defined subroutine primitives and variables.
         isspace?           is string or integer is white space?
         isupper?           is string or integer is upper case?
         isxdigit?          is string or integer is a hex digit?
+        tr                 translate a string
 
 ##### math.h
 
@@ -2505,6 +2533,7 @@ other lisp interpreters people have made.
 9.  <http://www.schemers.org/Documents/Standards/R5RS/>
 10. <https://news.ycombinator.com/item?id=869141>
 11. <http://shrager.org/llisp/>
+12. <https://github.com/darius/ichbins>
 
 ### Garbage Collection
 

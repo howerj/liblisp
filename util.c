@@ -18,7 +18,7 @@ static int matchstar(regex_result *r, int literal, int c, char *regexp, char *te
 
 void pfatal(char *msg, char *file, long line) {
         fprintf(stderr, "(error \"%s\" \"%s\" %ld)\n", msg, file, line);
-        exit(-1);
+        abort();
 }
 
 char *lstrdup(const char *s) { assert(s);
@@ -29,19 +29,24 @@ char *lstrdup(const char *s) { assert(s);
         return str;
 }
 
-int match(char *pat, char *str) { /**@todo add max depth check and other checks*/
+int matcher(char *pat, char *str, size_t depth) { 
+        ASSERT(depth); /*crude method of protection*/
         if(!str) return 0;
 again:  switch(*pat) {
         case '\0': return !*str;
-        case '*':  return match(pat+1, str) || (*str && match(pat, str+1));
+        case '*':  return matcher(pat+1, str, depth-1) || (*str && matcher(pat, str+1, depth-1));
         case '.':  if(!*str)        return  0; pat++; str++; goto again;
         case '\\': if(!*(pat+1))    return -1; if(!*str) return 0; pat++; /*fall through*/
         default:   if(*pat != *str) return  0; pat++; str++; goto again;
         }
 }
 
+int match(char *pat, char *str) { assert(pat && str);
+        return matcher(pat, str, LARGE_DEFAULT_LEN);
+}
+
 /*This regex engine is a bit of a mess and needs to be rewritten*/
-regex_result regex_match(char *regexp, char *text) { 
+regex_result regex_match(char *regexp, char *text) { assert(regexp && text);
         regex_result rr = {text, text, 0};
         size_t depth = 0;
         if (regexp[0] == '^')
@@ -198,7 +203,7 @@ int is_number(const char *buf) { assert(buf);
         return buf[strspn(buf, conv)] == '\0';
 }
 
-int is_fnumber(const char *buf) { 
+int is_fnumber(const char *buf) { assert(buf);
         size_t i;
         char conv[] = "0123456789";
         if(!buf[0]) return 0;

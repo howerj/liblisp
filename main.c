@@ -7,7 +7,6 @@
 
 #include "liblisp.h"
 #include <assert.h>
-#include <ctype.h>
 #include <math.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -60,31 +59,6 @@ static cell *subr_ ## NAME (lisp *l, cell *args) {\
 
 #define X(FUNC) SUBR_MATH_UNARY(FUNC)
 MATH_UNARY_LIST
-#undef X
-
-#define SUBR_ISX(NAME)\
-static cell *subr_ ## NAME (lisp *l, cell *args) {\
-        char *s, c;\
-        if(cklen(args, 1) && is_int(car(args)))\
-                return NAME (intval(car(args))) ? mktee() : (cell*)mknil();\
-        if(!cklen(args, 1) || !is_asciiz(car(args)))\
-                RECOVER(l, "\"expected (string)\" %S", args);\
-        s = strval(car(args));\
-        if(!s[0]) return mknil();\
-        while((c = *s++)) \
-                if(! NAME (c))\
-                        return mknil();\
-        return mktee();\
-}
-
-#define ISX_LIST\
-        X(isalnum) X(isalpha) X(iscntrl)\
-        X(isdigit) X(isgraph) X(islower)\
-        X(isprint) X(ispunct) X(isspace)\
-        X(isupper) X(isxdigit)
-
-#define X(FUNC) SUBR_ISX(FUNC)
-ISX_LIST
 #undef X
 
 static cell *subr_pow (lisp *l, cell *args) {
@@ -299,9 +273,6 @@ MATH_UNARY_LIST
         lisp_add_subr(l, "modf", subr_modf);
         lisp_add_cell(l, "*have-math*", mktee());
 
-#define X(FUNC) lisp_add_subr(l, # FUNC "?", subr_ ## FUNC);
-ISX_LIST
-#undef X
         lisp_add_cell(l, "*version*",           mkstr(l, lstrdup(XSTRINGIFY(VERSION))));
         lisp_add_cell(l, "*commit*",            mkstr(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
         lisp_add_cell(l, "*repository-origin*", mkstr(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));

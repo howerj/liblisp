@@ -16,9 +16,9 @@
     ; This is a simple C test function, it will square a number
     "#include <liblisp.h> /*liblisp needs to be installed and on include path*/
     cell *square(lisp *l, cell *args) { /*simple test function*/
-          if(!cklen(args, 1) || !isarith(car(args)))
+          if(!cklen(args, 1) || !is_arith(car(args)))
                   RECOVER(l, \"\\\"expected (number)\\\" '%S \", args);
-          if(isfloat(car(args)))
+          if(is_float(car(args)))
               return mkfloat(l, floatval(car(args)) * floatval(car(args)));
           else
               return mkint(l, intval(car(args)) * intval(car(args)));

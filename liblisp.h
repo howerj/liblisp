@@ -10,6 +10,9 @@
  *
  *  See <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> for the
  *  license.
+ *
+ *  Do not pass NULL to any of these functions unless they specifically mention
+ *  that you can. They "assert()" their inputs.
 **/
 #ifndef LIBLISP_H
 #define LIBLISP_H
@@ -26,18 +29,19 @@ extern "C" {
  *  functions. They should be opaque types if possible to hide the
  *  implementation details. **/
 
-typedef double lfloat;                  /**<float type used by this lisp*/
-typedef struct io io;                   /**<generic I/O to files, strings, ...*/
-typedef struct hashtable hashtable;     /**<standard hash table implementation */
-typedef struct cell cell;               /**<a lisp object, or "cell"*/
-typedef struct lisp lisp;               /**<a full lisp environment*/
-typedef cell *(*subr)(lisp *, cell*);   /**<lisp primitive operations*/
-typedef void *(*hash_func)(const char *key, void *val); /**<for hash foreach*/
+typedef double lfloat;                /**< float type used by this lisp*/
+typedef struct io io;                 /**< generic I/O to files, strings, ...*/
+typedef struct hashtable hashtable;   /**< standard hash table implementation */
+typedef struct tr_state tr_state;     /**< state for translation functions */
+typedef struct cell cell;             /**< a lisp object, or "cell" */
+typedef struct lisp lisp;             /**< a full lisp environment */
+typedef cell *(*subr)(lisp *, cell*); /**< lisp primitive operations */
+typedef void *(*hash_func)(const char *key, void *val); /**< for hash foreach */
 
-typedef void (*ud_free)(cell*);     /**<function to free a user type*/
-typedef void (*ud_mark)(cell*);     /**<marking function for user types*/
-typedef int  (*ud_equal)(cell*, cell*);  /**<equality function for user types*/
-typedef int  (*ud_print)(io*, unsigned, cell*); /**<print out user def types*/
+typedef void (*ud_free)(cell*);       /**< function to free a user type*/
+typedef void (*ud_mark)(cell*);       /**< marking function for user types*/
+typedef int  (*ud_equal)(cell*, cell*);  /**< equality function for user types*/
+typedef int  (*ud_print)(io*, unsigned, cell*); /**< print out user def types*/
 
 /**@brief This is a prototype for the (optional) line editing functionality
  *        that the REPL can use. The editor function should accept a prompt
@@ -50,6 +54,12 @@ typedef struct {
         char *end;   /**< where the match ended*/
         int result;  /**< the result, -1 on error, 0 on no match, 1 on match*/
 } regex_result; /**< a structure representing a regex result*/
+
+typedef enum tr_errors { 
+        TR_OK      =  0, /**< no error*/
+        TR_EINVAL  = -1, /**< invalid mode sequence*/
+        TR_DELMODE = -2  /**< set 2 string should be NULL in delete mode*/
+} tr_errors; /**< possible error values returned by tr_init*/
 
 /************************** useful functions *********************************/
 
@@ -386,63 +396,109 @@ void io_color(io *out, int color_on);
  *                   zero for false**/
 void io_pretty(io *out, int pretty_on);
 
+/********************* translate or delete characters ************************/
+
+/** @brief  create a new tr state for use in character translation
+ *  @return a new tr state or NULL**/
+tr_state *tr_new(void);
+
+/** @brief destroy a tr state
+ *  @param st tr state to delete**/
+void tr_delete(tr_state *st);
+
+/** @brief initialize a translation state 
+ *  
+ *  The initialization routine does the work of deciding what characters
+ *  should be mapped to, or deleted, from one block to another. Valid mode
+ *  characters include the following:
+ *
+ *      ''  (empty string) normal translation
+ *      'x' normal translation
+ *      'c' compliment set 1
+ *      's' squeeze repeated character run
+ *      'd' delete characters (s2 should be NULL)
+ *      't' truncate set 1 to the size of set 2
+ *
+ *  @param  tr   tr state to initialize
+ *  @param  mode translate mode
+ *  @param  s1   character set 1
+ *  @param  s2   character set 2
+ *  @return int  negative on failure, zero on success **/
+int tr_init(tr_state *tr, char *mode, uint8_t *s1, uint8_t *s2);
+
+/** @brief translate a single character given a translation state
+ *  @param  tr  translation state
+ *  @param  c   character to translate
+ *  @return int negative if the character should be deleted, greater or equal to
+ *              zero is the new character **/
+int tr_char(tr_state *tr, uint8_t c);
+
+/** @brief translate a block of memory given an initialized tr state
+ *  @param  tr     tr state
+ *  @param  in     input buffer
+ *  @param  out    output buffer
+ *  @param  len    length of both the input and output buffer
+ *  @return size_t number of characters written to the output buffer**/
+size_t tr_block(tr_state *tr, uint8_t *in, uint8_t *out, size_t len);
+
 /******************* functions for manipulating lisp cell ********************/
 
 /* This module is used by the internals of the lisp interpreter
  * for manipulating lisp cells; for accessing them, creating new
  * cells and testing their type. */
 
-cell *car(cell *x); /**@brief get car cell from cons**/
-cell *cdr(cell *x); /**@brief get cdr cell from cons**/
-int  cklen(cell *x, size_t expect); /**@brief get length of list**/
-cell *cons(lisp *l, cell *x, cell *y); /**@brief create a new cons cell**/
+cell *car(cell *x); /**< get car cell from cons**/
+cell *cdr(cell *x); /**< get cdr cell from cons**/
+int  cklen(cell *x, size_t expect); /**< get length of list**/
+cell *cons(lisp *l, cell *x, cell *y); /**< create a new cons cell**/
 cell *extend(lisp *l, cell *env, cell *sym, cell *val);
-cell *findsym(lisp *l, char *name); /**@brief find a previously used symbol**/
-cell *intern(lisp *l, char *name); /**@brief add a new symbol**/
-intptr_t intval(cell *x); /**@brief cast lisp cell to integer**/
-io*  ioval(cell *x);    /**@brief cast lisp cell to I/O stream**/
-int  is_nil(cell *x);    /**@brief true if 'x' is equal to nil**/
-int  is_int(cell *x);    /**@brief true if 'x' is a integer **/
-int  is_floatval(cell *x);  /**@brief true if 'x' is a floating point number**/
-int  is_cons(cell *x);   /**@brief true if 'x' is a cons cell**/
-int  is_io(cell *x);     /**@brief true if 'x' is a I/O type**/
-int  is_proc(cell *x);   /**@brief true if 'x' is a lambda procedure**/
-int  is_fproc(cell *x);  /**@brief true if 'x' is a flambda procedure**/
-int  is_str(cell *x);    /**@brief true if 'x' is a string**/
-int  is_sym(cell *x);    /**@brief true if 'x' is a symbol**/
-int  is_subr(cell *x); /**@brief true if 'x' is a language primitive**/
-int  is_asciiz(cell *x); /**@brief true if 'x' is a ASCII nul delimited string**/
-int  is_arith(cell *x);  /**@brief true if 'x' is integer or float**/
-int  is_in(cell *x);     /**@brief true if 'x' is an input I/O type*/
-int  is_out(cell *x);    /**@brief true if 'x' is an output I/O type*/
-int  is_hash(cell *x);   /**@brief true if 'x' is a hash table type*/
-int  is_userdef(cell *x); /**@brief true if 'x' is a user defined type*/
-int  is_usertype(cell *x, int type); /**@brief is a specific user defined type**/
-cell *mkint(lisp *l, intptr_t d); /**@brief make a lisp cell from an integer**/
-cell *mkfloat(lisp *l, lfloat f); /**@brief make a lisp cell from a float**/
-cell *mkio(lisp *l, io *x); /**@brief make lisp cell from an I/O stream**/
-cell *mksubr(lisp *l, subr p); /**@brief make a lisp cell from a primitive**/
-cell *mkproc(lisp *l, cell *x, cell *y, cell *z); /**@brief make a lisp cell/proc**/
-cell *mkfproc(lisp *l, cell *x, cell *y, cell *z); /**@brief make a lisp cell/fproc**/
-cell *mkstr(lisp *l, char *s); /**@brief make lisp cell (string) from a string**/
+cell *findsym(lisp *l, char *name); /**< find a previously used symbol**/
+cell *intern(lisp *l, char *name); /**< add a new symbol**/
+intptr_t intval(cell *x); /**< cast lisp cell to integer**/
+io*  ioval(cell *x);    /**< cast lisp cell to I/O stream**/
+int  is_nil(cell *x);    /**< true if 'x' is equal to nil**/
+int  is_int(cell *x);    /**< true if 'x' is a integer **/
+int  is_floatval(cell *x);  /**< true if 'x' is a floating point number**/
+int  is_cons(cell *x);   /**< true if 'x' is a cons cell**/
+int  is_io(cell *x);     /**< true if 'x' is a I/O type**/
+int  is_proc(cell *x);   /**< true if 'x' is a lambda procedure**/
+int  is_fproc(cell *x);  /**< true if 'x' is a flambda procedure**/
+int  is_str(cell *x);    /**< true if 'x' is a string**/
+int  is_sym(cell *x);    /**< true if 'x' is a symbol**/
+int  is_subr(cell *x);   /**< true if 'x' is a language primitive**/
+int  is_asciiz(cell *x); /**< true if 'x' is a ASCII nul delimited string**/
+int  is_arith(cell *x);  /**< true if 'x' is integer or float**/
+int  is_in(cell *x);     /**< true if 'x' is an input I/O type*/
+int  is_out(cell *x);    /**< true if 'x' is an output I/O type*/
+int  is_hash(cell *x);   /**< true if 'x' is a hash table type*/
+int  is_userdef(cell *x); /**< true if 'x' is a user defined type*/
+int  is_usertype(cell *x, int type); /**< is a specific user defined type**/
+int  is_func(cell *x);   /**< true if 'x' can be applied (is a function) */
+cell *mkint(lisp *l, intptr_t d); /**< make a lisp cell from an integer**/
+cell *mkfloat(lisp *l, lfloat f); /**< make a lisp cell from a float**/
+cell *mkio(lisp *l, io *x); /**< make lisp cell from an I/O stream**/
+cell *mksubr(lisp *l, subr p); /**< make a lisp cell from a primitive**/
+cell *mkproc(lisp *l, cell *x, cell *y, cell *z); /**< make a lisp cell/proc**/
+cell *mkfproc(lisp *l, cell *x, cell *y, cell *z); /**< make a lisp cell/fproc**/
+cell *mkstr(lisp *l, char *s); /**< make lisp cell (string) from a string**/
 /*cell *mksym(lisp *l, char *s); use intern instead to get a unique symbol*/
-cell *mkhash(lisp *l, hashtable *h); /**@brief make lisp cell from hash**/
-cell *mkuser(lisp *l, void *x, int type); /**@brief make a user defined type**/
-subr subrval(cell *x); /**@brief cast a lisp cell to a primitive func ptr**/
-cell *procargs(cell *x); /**@brief get args to a procedure**/
-cell *proccode(cell *x); /**@brief get code from a proccode**/
-cell *procenv(cell *x);  /**@brief get procedure environment**/
-void setcar(cell *x, cell *y); /**@brief set cdr cell of a cons cell**/
-void setcdr(cell *x, cell *y); /**@brief set car cell of a cons cell**/
-char *strval(cell *x); /**@brief get string from a lisp cell**/
-char *symval(cell *x); /**@brief get string (symbol) from a lisp cell**/
-void *userval(cell *x); /**@brief get data from user defined type**/
-lfloat floatval(cell *x); /**@brief get floating point val from lisp cell**/
-hashtable *hashval(cell *x); /**@brief get hash table from a lisp cell**/
-cell *mkerror(void); /**@brief return the error cell**/
-cell *mknil(void);   /**@brief return the nil cell**/
-cell *mktee(void);   /**@brief return the tee cell**/
-cell *mkquote(void); /**@brief return the quote cell**/
+cell *mkhash(lisp *l, hashtable *h); /**< make lisp cell from hash**/
+cell *mkuser(lisp *l, void *x, int type); /**< make a user defined type**/
+subr subrval(cell *x); /**< cast a lisp cell to a primitive func ptr**/
+cell *procargs(cell *x); /**< get args to a procedure**/
+cell *proccode(cell *x); /**< get code from a proccode**/
+cell *procenv(cell *x);  /**< get procedure environment**/
+void setcar(cell *x, cell *y); /**< set cdr cell of a cons cell**/
+void setcdr(cell *x, cell *y); /**< set car cell of a cons cell**/
+char *strval(cell *x); /**< get string from a lisp cell**/
+char *symval(cell *x); /**< get string (symbol) from a lisp cell**/
+void *userval(cell *x); /**< get data from user defined type**/
+lfloat floatval(cell *x); /**< get floating point val from lisp cell**/
+hashtable *hashval(cell *x); /**< get hash table from a lisp cell**/
+cell *mkerror(void); /**< return the error cell**/
+cell *mknil(void);   /**< return the nil cell**/
+cell *mktee(void);   /**< return the tee cell**/
+cell *mkquote(void); /**< return the quote cell**/
 
 /**@brief  return a new token representing a new type
  * @param  l lisp environment to put the new type in
@@ -495,7 +551,6 @@ int is_fnumber(const char *buf);
  *             one signals an error occurred, but it can be recovered
  *             from**/
 void lisp_throw(lisp *l, int ret);
-
 
 /** @brief Formatted printing of lisp cells, colorized if color enabled on
  *         output stream, it can print out s-expression trees generated by
@@ -794,12 +849,13 @@ int main_lisp_env(lisp *l, int argc, char **argv);
 #endif
 
 /* The following macros are helper macros for lisp list access */
-#define CAAR(X)  car(car((X)))
-#define CADR(X)  car(cdr((X)))
-#define CDAR(X)  cdr(car((X)))
-#define CDDR(X)  cdr(cdr((X)))
-#define CADAR(X) car(cdr(car((X))))
-#define CADDR(X) car(cdr(cdr((X))))
+#define CAAR(X)   car(car((X)))
+#define CADR(X)   car(cdr((X)))
+#define CDAR(X)   cdr(car((X)))
+#define CDDR(X)   cdr(cdr((X)))
+#define CADAR(X)  car(cdr(car((X))))
+#define CADDR(X)  car(cdr(cdr((X))))
+#define CADDDR(X) car(cdr(cdr(cdr((X)))))
 
 #ifdef __cplusplus
 }

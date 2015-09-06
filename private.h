@@ -116,6 +116,17 @@ struct io {
         char c; /**< one character of push back*/
 };
 
+struct tr_state {
+        int set_squ[256],    /**< squeeze a character sequence?*/
+            set_del[256],    /**< delete a character?*/
+            compliment_seq,  /**< compliment sequence*/
+            squeeze_seq,     /**< squeeze sequence*/
+            delete_seq,      /**< delete a sequence of character*/
+            truncate_seq;    /**< truncate s1 to length of s2*/
+        uint8_t set_tr[256], /**< mapping from one character set to another*/
+                previous_char; /**< previous translation char, used for squeeze*/
+};
+
 typedef struct gc_list { 
         cell *ref; /**< reference to cell for the garbage collector to act on*/
         struct gc_list *next; /**< next in list*/
@@ -144,7 +155,8 @@ struct lisp {
                gc_stack_allocated,    /**< length of buffer of GC stack*/
                gc_stack_used,         /**< elements used in GC stack*/
                gc_collectp,     /**< collection counter, collect after it goes too high*/
-               max_depth        /**< max recursion depth*/;
+               max_depth,        /**< max recursion depth*/
+               cur_depth         /**< current depth*/;
         uint64_t random_state[2] /**< PRNG state*/;
         int sig;   /**< set by signal handlers or other threads*/
         int trace; /**< trace level for eval*/

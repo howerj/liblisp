@@ -151,7 +151,7 @@
 ; sort a list, super inefficiently
 (define sort 
   (letrec
-   (*sort-insert (lambda (x l)
+   (sort-insert (lambda (x l)
     (if 
      (null? l)
       (list x)
@@ -160,11 +160,11 @@
          (cons x l)
          (cons 
           (car l)
-          (*sort-insert x (cdr l)))))))
+          (sort-insert x (cdr l)))))))
   (lambda (l)
     (if (null? l)
       nil
-      (*sort-insert 
+      (sort-insert 
         (car l) 
         (sort (cdr l)))))))
 
@@ -252,7 +252,7 @@
                   (mapper (cdr l)))
                 (cons (func (car l)) nil))))
           (mapper (eval body)))))
-
+ 
 ; example of a "flambda" expression
 (define newline
   (flambda (x)
@@ -340,4 +340,20 @@
 (define type-iso?
   (lambda (x y)
     (tree-walk (lambda (x y) (eq (type-of x) (type-of y))) x y)))
+
+(define inc (lambda (x) (+ x 1))) ; increment a value
+(define dec (lambda (x) (- x 1))) ; decrement a value
+
+(define gensym-counter 0) ; counter for gensym
+(define gensym ; generate a new *unique* symbol
+  (lambda ()
+    (begin
+      (set! gensym-counter (inc gensym-counter))
+      (coerce *symbol*
+        (join
+          "-"
+          "GENSYM"
+          (coerce *string* gensym-counter)
+;         (coerce *string* (abs (random)))
+              )))))
 

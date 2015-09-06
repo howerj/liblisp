@@ -15,17 +15,22 @@
  *  along with their associated names.
  *
  *  Assertions should be added throughout these routines to make sure
- *  operations do not go above bounds.
+ *  operations do not go out of bounds.
+ *
+ *  While each function has a very short description about what it does the
+ *  manual (which should be called something like "liblisp.md") describes
+ *  what each subroutine primitive does within the context of the interpreter.
  **/
 
 #include "liblisp.h"
 #include "private.h"
+#include <assert.h>
+#include <ctype.h>
 #include <locale.h>
-#include <time.h>
-#include <string.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <string.h>
+#include <time.h>
 
 /*X-Macro of primitive functions and their names; basic built in subr*/
 #define SUBROUTINE_XLIST\
@@ -57,18 +62,18 @@
         X(subr_seed,    "seed")           X(subr_date,      "date")\
         X(subr_assoc,   "assoc")          X(subr_setlocale, "locale!")\
         X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")\
-        X(subr_eval_time, "timed-eval")   X(subr_reverse,   "reverse")\
+        X(subr_timed_eval, "timed-eval")  X(subr_reverse,   "reverse")\
         X(subr_join,    "join")           X(subr_regexspan, "regex-span")\
         X(subr_raise,   "raise")          X(subr_split,     "split")\
         X(subr_hcreate, "hash-create")    X(subr_format,    "format")\
-        X(subr_substring, "substring")
+        X(subr_substring, "substring")    X(subr_tr,        "tr")
 
 #define X(SUBR, NAME) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
 #undef X
 
 #define X(SUBR, NAME) { SUBR, NAME },
-static struct subr_list { subr p; char *name; } primitives[] = {
+static struct all_subroutines { subr p; char *name; } primitives[] = {
         SUBROUTINE_XLIST /*all of the subr functions*/
         {NULL, NULL} /*must be terminated with NULLs*/
 };
@@ -120,6 +125,31 @@ static struct special_cell_list { cell *internal; } special_cells[] = {
 };
 #undef X
 
+#define SUBR_ISX(NAME)\
+static cell *subr_ ## NAME (lisp *l, cell *args) {\
+        char *s, c;\
+        if(cklen(args, 1) && is_int(car(args)))\
+                return NAME (intval(car(args))) ? mktee() : (cell*)mknil();\
+        if(!cklen(args, 1) || !is_asciiz(car(args)))\
+                RECOVER(l, "\"expected (string)\" %S", args);\
+        s = strval(car(args));\
+        if(!s[0]) return mknil();\
+        while((c = *s++)) \
+                if(! NAME (c))\
+                        return mknil();\
+        return mktee();\
+}
+
+#define ISX_LIST\
+        X(isalnum) X(isalpha) X(iscntrl)\
+        X(isdigit) X(isgraph) X(islower)\
+        X(isprint) X(ispunct) X(isspace)\
+        X(isupper) X(isxdigit)
+
+#define X(FUNC) SUBR_ISX(FUNC)
+ISX_LIST
+#undef X
+
 /**@todo create accessor functions for all special symbols from X-Macro and
  *       rename accessor functions to gsym_X */
 cell *mkerror(void)          { return Error; }
@@ -147,7 +177,7 @@ CELL_XLIST
 
         l->random_state[0] = 0xCAFE; /*Are these good seeds?*/
         l->random_state[1] = 0xBABE; 
-        for(i = 0; i < DEFAULT_LEN; i++) /*discard first N numbers*/
+        for(i = 0; i < LARGE_DEFAULT_LEN; i++) /*discard first N numbers*/
                 (void)xorshift128plus(l->random_state);
 
         /* The lisp init function is now ready to add built in subroutines
@@ -175,6 +205,11 @@ CELL_XLIST
         for(i = 0; primitives[i].p; i++) /*add all primitives*/
                 if(!lisp_add_subr(l, primitives[i].name, primitives[i].p))
                         goto fail;
+
+#define X(FUNC) if(!lisp_add_subr(l, # FUNC "?", subr_ ## FUNC)) goto fail;
+ISX_LIST
+#undef X
+
         return l;
 fail:   lisp_destroy(l);
         return NULL;
@@ -284,7 +319,7 @@ static cell *subr_div(lisp *l, cell *args) { /**< divis_ion*/
                 divisor = is_floatval(CADR(args)) ? 
                         floatval(CADR(args)) : 
                         intval(CADR(args));
-                if(divisor == 0.f)
+                if(divisor == 0.)
                         RECOVER(l, "\"divis_ion by zero in %S\"", args);
                 return mkfloat(l, dividend / divisor);
         }
@@ -405,7 +440,6 @@ static cell *subr_scdr(lisp *l, cell *args) { /**< get all but first character o
 }
 
 static cell *subr_eval(lisp *l, cell *args) { /**< evaluate a lisp expression*/
-        /**@bug allows unlimited recursion!**/
         cell *ob = NULL;
         int restore_used, r;
         jmp_buf restore;
@@ -419,11 +453,11 @@ static cell *subr_eval(lisp *l, cell *args) { /**< evaluate a lisp expression*/
                 return mkerror();
         }
 
-        if(cklen(args, 1)) ob = eval(l, 0, car(args), l->top_env);
+        if(cklen(args, 1)) ob = eval(l, l->cur_depth, car(args), l->top_env);
         if(cklen(args, 2)) {
                 if(!is_cons(CADR(args)))
                         RECOVER(l, "\"expected a-list\" '%S", args);
-                ob = eval(l, 0, car(args), CADR(args));
+                ob = eval(l, l->cur_depth, car(args), CADR(args));
         }
 
         RECOVER_RESTORE(restore_used, l, restore); 
@@ -861,7 +895,7 @@ static cell *subr_close(lisp *l, cell *args) { /**< close port*/
         return x;
 }
 
-static cell *subr_eval_time(lisp *l, cell *args) { /**< time an evaluation */
+static cell *subr_timed_eval(lisp *l, cell *args) { /**< time an evaluation */
         clock_t start, end;
         lfloat used;
         cell *x;
@@ -910,6 +944,7 @@ fail:   RECOVER(l, "\"expected () (string) (list) (hash)\" %S", args);
 }
 
 static cell *subr_join(lisp *l, cell *args) { /**< join a list of strings together*/
+        /**@todo add support for joining integers as character strings*/
         char *sep = "", *r, *tmp;
         if(args->len < 2 || !is_asciiz(car(args))) 
                 goto fail;
@@ -996,6 +1031,7 @@ static cell *subr_substring(lisp *l, cell *args) { /**< get a subset of a string
         if(args->len == 2) {
                 if(min >= 0) {
                         min = MIN(min, car(args)->len);
+                        assert(min < car(args)->len);
                         return mkstr(l, lstrdup(strval(car(args))+min));
                 } else if (min < 0) {
                         min = car(args)->len + min;
@@ -1033,7 +1069,7 @@ static cell *subr_format(lisp *l, cell *args) { /**<print out arguments based on
                 o = l->ofp;
         }
         if(!is_asciiz(car(args)))
-                RECOVER(l, "\"expected () (io string expr...) (string expr...)\" %S", args);
+                RECOVER(l, "\"expected () (io string expr...) (string expr...)\" '%S", args);
         if(!(t = io_sout(calloc(2, 1), 2)))
                 HALT(l, "\"%s\"", "out of memory");
         fmt = strval(car(args));
@@ -1083,5 +1119,37 @@ fail:   free(t->p.str);
         RECOVER(l, "\"format error\" %S", args);
         return mkerror();
 #undef  RESTORE_IO_STATE
+}
+
+static cell *subr_tr(lisp *l, cell *args) { /**< translate characters*/
+        /**@todo this function needs a lot of improvement, as does the
+         *       functions that implement the translation routines*/
+        tr_state st;
+        char *mode, *s1, *s2, *tr, *ret; 
+        size_t len;
+        if(cklen(args, 4)) {
+                cell *t = args;
+                for(int i = 0; !is_nil(t) && i < 4; i++, t = cdr(t)) 
+                        if(!is_str(car(args))) 
+                                goto fail;
+        } else goto fail;
+        mode = strval(car(args));
+        s1   = strval(CADR(args));
+        s2   = strval(CADDR(args));
+        tr   = strval(CADDDR(args));
+        len  = CADDDR(args)->len;
+        memset(&st, 0, sizeof(st));
+        switch(tr_init(&st, mode, (uint8_t*)s1, (uint8_t*)s2)) {
+                case TR_OK:      break;
+                case TR_EINVAL:  RECOVER(l, "\"invalid mode\" \"%s\"", mode);
+                case TR_DELMODE: RECOVER(l, "\"set 2 not NULL in deleted mode\" '%S", args);
+                default:         RECOVER(l, "\"unknown tr error\" '%S", args);
+        }
+        if(!(ret = calloc(len + 1, 1)))
+                HALT(l, "\"%s\"", "out of memory");
+        tr_block(&st, (uint8_t*)tr, (uint8_t*)ret, len);  
+        return mkstr(l, ret);
+fail:   RECOVER(l, "\"expected (string string string string)\" '%S", args);
+        return mkerror();
 }
 
