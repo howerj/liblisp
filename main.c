@@ -237,7 +237,7 @@ static cell *subr_dlopen(lisp *l, cell *args) {
         if(!cklen(args, 1) || !is_asciiz(car(args)))
                 RECOVER(l, "\"expected (string)\" '%S", args);
         if(!(handle = dlopen(strval(car(args)), RTLD_NOW)))
-                return mkstr(l, lstrdup(dlerror()));
+                return mkerror();
         return mkuser(l, handle, ud_dl);
 }
 
@@ -251,9 +251,10 @@ static cell *subr_dlsym(lisp *l, cell *args) {
 }
 
 static cell *subr_dlerror(lisp *l, cell *args) {
-        if(!cklen(args, 1) || !is_usertype(car(args), ud_dl))
-                RECOVER(l, "\"expected (dynamic-module)\" '%S", args);
-        return mkerror();
+        char *s;
+        if(!cklen(args, 0))
+                RECOVER(l, "\"expected ()\" '%S", args);
+        return mkstr(l, lstrdup((s = dlerror()) ? s : ""));
 }
 #endif
 

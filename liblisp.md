@@ -33,9 +33,9 @@ A summary of the design goals:
 
 The following functionality would be nice to put in to the core interpreter;
 Support for matrices and complex numbers (c99 \_Complex), UTF-8 support, text
-processing (diff, tr, grep, sed, à la perl), map and looping constructs
+processing (diff, grep, sed, à la perl), map and looping constructs
 from scheme, doc-strings, optional parsing of strings and float, apply,
-gensym, proper constant and a prolog engine.
+proper constant and a prolog engine.
 
 But this is more of a wish list than anything. Complex number support has
 been added in a branch of the [git][] repository. Another interesting
@@ -184,7 +184,9 @@ cut down on the amount of code needed in the primitives subroutines.
 * File operations on strings could be improved. An append mode should
 be added as well. freopen and/or opening in append mode need to be
 added as well.
-* Needed primitives; apply, loop, tr. 
+* Needed primitives; apply, loop. 
+* Input, output and error IO ports should be added, these are different
+  from *stdin*, *stdout* and *stdout*.
 * Anonymous recursion would be a good thing to have.
 * The semantics of the default IO port to **print** and **format**
 to be worked out when it comes to printing color and pretty printing.
@@ -2433,6 +2435,83 @@ Glossary of all of defined subroutine primitives and variables.
         floor              Round downwards
         pow                Computer X raised to the Y
         modf               Split a value into integer and fractional parts
+
+##### compiler 
+
+* compile
+
+* link
+
+* compile-file
+
+* get-subroutine
+
+* add-include-path
+
+* add-system-include-path
+
+* set-library-path
+
+##### dynamic loader
+
+This is the interface to the dynamic module loader. This can be used to load
+compiled modules at run time so the interpreter can access compiled subroutines
+after the interpreter itself has been compiled. This interface does not
+implement a way to close loaded modules as there is no way to invalidate
+previously acquired subroutines.
+
+* dynamic-open
+
+Open up a module for use, it returns a user defined type representing the
+shared library handle that can be used with *dynamic-symbol*.
+
+* dynamic-symbol
+
+Get a symbol from a compiled module, the symbol should be a function abiding by
+the function type of all the built in subroutines. The following C typedef is
+how the returned subroutine should look like:
+
+        typedef cell *(*subr)(lisp *, cell*);
+
+This function will return 'error if the subroutine could not be found (or there
+was another error, which one can be found with dynamic-error).
+
+Below is an example, given a shared module "libexample.so", with the example
+code:
+
+        #include <liblisp.h>
+        cell* subr_example(lisp *l, cell *args) {
+                if(!cklen(args, 1))
+                        RECOVER(l, "\"expected (int)\" '%S", args);
+                return mkint(l, intval(car(args)) * 2);
+        }
+
+Make sure ldconfig has been run after installing libexample.so into a directory
+that the loader can find it, the following code in the interpreter will load
+that shared library and allow the function to be run.
+
+        # (dynamic-symbol DYNAMIC-MODULE STRING)
+        > (define a-module (dynamic-open "libexample.so"))
+        <DYNAMIC-MODULE:34437120>
+        > (define example-subr (dynamic-symbol a-module "subr_example"))
+        <SUBR:47982636828560>
+        > (example-subr 4)
+        8
+        > (example-subr -4)
+        -8
+        
+* dynamic-error
+
+This function returns an error string representing the latest error to occur
+(if any) resulting from an error with the dynamic loader. 
+
+        > (define a-module (dynamic-open "libexample.so"))
+        <DYNAMIC-MODULE:34437120>
+        > (dynamic-symbol a-module "subr_does_not_exist")
+        error
+        > (dynamic-error)
+        "libdoesnotexist.so: cannot open shared object file: No such file or directory"
+
 
 ##### line-editor (optional)
 

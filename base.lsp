@@ -104,12 +104,12 @@
   (lambda (x)
     (not (even? x))))
 
-; get the nth element of a list
+; get the nth element of a list or a string
 (define nth
   (lambda (i x)
     (if (zero? i)
-      (car x)
-      (nth (- i 1) (cdr x)))))
+      (if (string? x) (scar x) (car x))
+      (nth (- i 1) (if (string? x) (scdr x) (cdr x))))))
 
 ; append two lists
 (define append
@@ -343,6 +343,9 @@
 
 (define inc (lambda (x) (+ x 1))) ; increment a value
 (define dec (lambda (x) (- x 1))) ; decrement a value
+
+(define bye  (lambda () (exit)))  ; quit the interpreter
+(define quit (lambda () (exit)))  ; quit the interpreter
 
 (define gensym-counter 0) ; counter for gensym
 (define gensym ; generate a new *unique* symbol

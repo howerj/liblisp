@@ -107,7 +107,7 @@
 ; has been devised yet. They must be executed in order.
 (eval-file 'base.lsp exit-if-not-eof)
 (eval-file 'sets.lsp exit-if-not-eof)
-(eval-file 'diff.lsp exit-if-not-eof)
+(eval-file 'symb.lsp exit-if-not-eof)
 (if *have-compile* (eval-file 'c.lsp exit-if-not-eof) nil)
 (eval-file 'test.lsp exit-if-not-eof)
 
