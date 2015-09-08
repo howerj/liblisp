@@ -120,7 +120,7 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
                                       break;
                               }
                               op = cdr(op);
-                              if(op->type != CONS) {
+                              if(!is_cons(op)) {
                                       printerf(l, o, depth, " . %S)", op);
                                       break;
                               }
@@ -128,7 +128,7 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
                       }
                       break;
         case SYMBOL:  if(is_nil(op)) printerf(l, o, depth, "%r()");
-                      else          printerf(l, o, depth, "%y%s", symval(op));
+                      else           printerf(l, o, depth, "%y%s", symval(op));
                       break;
         case STRING:  print_escaped_string(l, o, depth, strval(op));     break;
         case SUBR:    printerf(l, o, depth, "%B<SUBR:%d>", intval(op));  break;

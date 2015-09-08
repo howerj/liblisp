@@ -53,3 +53,4 @@ Doxyfile.bak
 *.tar.gz
 *.profile
 core
+*.core

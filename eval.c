@@ -6,6 +6,7 @@
  *
  *  This is the main evaluator and associated function, the built in
  *  subroutines for the interpreter are defined elsewhere.
+ *
  **/
 #include "liblisp.h"
 #include "private.h"
@@ -344,14 +345,19 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
 
 static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env) { /**< evaluate a list*/
         size_t i;
-        cell *op, *head;
+        cell *op, *head, *start = exps;
         assert(l && exps && env);
         if(is_nil(exps)) return l->Nil;
         op = car(exps);
         exps = cdr(exps);
         head = op = cons(l, eval(l, depth+1, op, env), l->Nil);
-        for(i = 1; !is_nil(exps); exps = cdr(exps), op = cdr(op), i++)
+        if(!is_nil(exps) && !is_cons(exps)) /*is there a better way of doing this?*/
+                RECOVER(l, "\"evlis cannot eval dotted pairs\" '%S", start);
+        for(i = 1; !is_nil(exps); exps = cdr(exps), op = cdr(op), i++) {
+                if(!is_nil(cdr(exps)) && !is_cons(cdr(exps)))
+                        RECOVER(l, "\"evlis cannot eval dotted pairs\"'%S", start);
                 setcdr(op, cons(l, eval(l, depth+1, car(exps), env), l->Nil));
+        }
         head->len = i;
         return head;
 }
