@@ -83,7 +83,7 @@ int lisp_repl(lisp *l, char *prompt, int editor_on) {
 
 int main_lisp_env(lisp *l, int argc, char **argv) {
         int i, stdin_off = 0;
-        cell *ob = l->Nil;
+        cell *ob = l->nil;
         if(!l) return -1;
         for(i = argc - 1; i + 1 ; i--) /*add command line args to list*/
                 if(!(ob = cons(l, mkstr(l, lstrdup(argv[i])), ob))) 

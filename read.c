@@ -97,7 +97,7 @@ static cell *readstring(lisp *l, io* i) { /**< handle parsing a string*/
                         return mkstr(l, new_token(l));
                 add_char(l, ch);
         }
-        return mknil();
+        return gsym_nil();
 }
 
 static cell *readlist(lisp *l, io *i);
@@ -111,7 +111,7 @@ cell *reader(lisp *l, io *i) { /*read in s-expr, this should be rewritten*/
                    RECOVER(l, "\"unmatched %s\"", "')");
         case '(':  free(token); return readlist(l, i);
         case '"':  free(token); return readstring(l, i);
-        case '\'': free(token); return cons(l, mkquote(), cons(l, reader(l,i), mknil()));
+        case '\'': free(token); return cons(l, gsym_quote(), cons(l, reader(l,i), gsym_nil()));
         default:   if(is_number(token)) {
                            ret = mkint(l, strtol(token, NULL, 0));
                            free(token);
@@ -128,7 +128,7 @@ cell *reader(lisp *l, io *i) { /*read in s-expr, this should be rewritten*/
                    if(symval(ret) != token) free(token);
                    return ret;
         }
-        return mknil();
+        return gsym_nil();
 }
 
 static cell *readlist(lisp *l, io *i) { /**< read in a list*/
@@ -136,7 +136,7 @@ static cell *readlist(lisp *l, io *i) { /**< read in a list*/
         cell *tmp;
         if(!token) return NULL;
         switch(token[0]){
-        case ')': return free(token), mknil();
+        case ')': return free(token), gsym_nil();
         case '.': if(!(tmp = reader(l, i))) return NULL;
                   if(!(stok = gettoken(l, i))) return NULL;
                   if(strcmp(stok, ")")) {

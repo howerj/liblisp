@@ -25,7 +25,7 @@
 #define VCS_ORIGIN unknown /**< Version control repository origin*/
 #endif
 
-static lisp *lglobal; /**< used for signal handler*/
+lisp *lglobal; /**< used for signal handler and modules*/
 static int running; /**< only handle errors when the lisp interpreter is running*/
 
 /** @brief This function tells a running lisp REPL to halt if it is reading
@@ -113,9 +113,9 @@ static cell *subr_line_editor_mode(lisp *l, cell *args) {
         (void)l;
         if(cklen(args, 1)) {
                 line_set_vi_mode(is_nil(car(args)) ? 0 : 1);
-                return mktee();
+                return gsym_tee();
         }
-        return line_get_vi_mode() ? mktee(): (cell*)mknil();
+        return line_get_vi_mode() ? gsym_tee(): (cell*)gsym_nil();
 }
 
 static cell *subr_hist_len(lisp *l, cell *args) {
@@ -123,7 +123,7 @@ static cell *subr_hist_len(lisp *l, cell *args) {
                 RECOVER(l, "\"expected (integer)\" '%S", args);
         if(!line_history_set_maxlen((int)intval(car(args))))
                 HALT(l, "\"%s\"", "out of memory");
-        return mktee();
+        return gsym_tee();
 }
 
 static cell *subr_clear_screen(lisp *l, cell *args) {
@@ -131,7 +131,7 @@ static cell *subr_clear_screen(lisp *l, cell *args) {
         if(!cklen(args, 0))
                 RECOVER(l, "\"expected ()\" '%S", args);
         line_clearscreen();
-        return mktee();
+        return gsym_tee();
 }
 #endif
 
@@ -159,9 +159,9 @@ static cell* subr_compile(lisp *l, cell *args) {
         subr func;
         TCCState *st = userval(car(args));
         if(tcc_compile_string(st, prog) < 0)
-                return mkerror();
+                return gsym_error();
         if(tcc_relocate(st, TCC_RELOCATE_AUTO) < 0)
-                return mkerror();
+                return gsym_error();
         func = (subr)tcc_get_symbol(st, fname);
         return mksubr(l, func);
 }
@@ -170,7 +170,7 @@ static cell* subr_link(lisp *l, cell *args) {
         if(!cklen(args, 2) 
         || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        return tcc_add_library(userval(car(args)), strval(CADR(args))) < 0 ? mkerror() : mknil();
+        return tcc_add_library(userval(car(args)), strval(CADR(args))) < 0 ? gsym_error() : gsym_nil();
 }
 
 static cell* subr_compile_file(lisp *l, cell *args) {
@@ -178,10 +178,10 @@ static cell* subr_compile_file(lisp *l, cell *args) {
         || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
         if(tcc_add_file(userval(car(args)), strval(CADR(args))) < 0)
-                return mkerror();
+                return gsym_error();
         if(tcc_relocate(userval(car(args)), TCC_RELOCATE_AUTO) < 0)
-                return mkerror();
-        return mktee();
+                return gsym_error();
+        return gsym_tee();
 }
 
 static cell* subr_get_subr(lisp *l, cell *args) {
@@ -190,7 +190,7 @@ static cell* subr_get_subr(lisp *l, cell *args) {
         || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
         if(!(func = tcc_get_symbol(userval(car(args)), strval(CADR(args)))))
-                return mkerror();
+                return gsym_error();
         else
                 return mksubr(l, func);
 }
@@ -198,20 +198,20 @@ static cell* subr_get_subr(lisp *l, cell *args) {
 static cell* subr_add_include_path(lisp *l, cell *args) {
         if(!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        return tcc_add_include_path(userval(car(args)), strval(CADR(args))) < 0 ? mkerror() : mktee();
+        return tcc_add_include_path(userval(car(args)), strval(CADR(args))) < 0 ? gsym_error() : gsym_tee();
 }
 
 static cell* subr_add_sysinclude_path(lisp *l, cell *args) {
         if(!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        return tcc_add_sysinclude_path(userval(car(args)), strval(CADR(args))) < 0 ? mkerror() : mktee();
+        return tcc_add_sysinclude_path(userval(car(args)), strval(CADR(args))) < 0 ? gsym_error() : gsym_tee();
 }
 
 static cell* subr_set_lib_path(lisp *l, cell *args) {
         if(!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
         tcc_set_lib_path(userval(car(args)), strval(CADR(args)));
-        return mktee();
+        return gsym_tee();
 }
 
 #endif
@@ -237,7 +237,7 @@ static cell *subr_dlopen(lisp *l, cell *args) {
         if(!cklen(args, 1) || !is_asciiz(car(args)))
                 RECOVER(l, "\"expected (string)\" '%S", args);
         if(!(handle = dlopen(strval(car(args)), RTLD_NOW)))
-                return mkerror();
+                return gsym_error();
         return mkuser(l, handle, ud_dl);
 }
 
@@ -246,7 +246,7 @@ static cell *subr_dlsym(lisp *l, cell *args) {
         if(!cklen(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
         if(!(func = dlsym(userval(car(args)), strval(CADR(args)))))
-                return mkerror();
+                return gsym_error();
         return mksubr(l, func);
 }
 
@@ -272,7 +272,7 @@ MATH_UNARY_LIST
 #undef X
         lisp_add_subr(l, "pow",  subr_pow);
         lisp_add_subr(l, "modf", subr_modf);
-        lisp_add_cell(l, "*have-math*", mktee());
+        lisp_add_cell(l, "*have-math*", gsym_tee());
 
         lisp_add_cell(l, "*version*",           mkstr(l, lstrdup(XSTRINGIFY(VERSION))));
         lisp_add_cell(l, "*commit*",            mkstr(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
@@ -301,19 +301,19 @@ MATH_UNARY_LIST
         lisp_add_subr(l, "add-include-path", subr_add_include_path);
         lisp_add_subr(l, "add-system-include-path", subr_add_sysinclude_path);
         lisp_add_subr(l, "set-library-path", subr_set_lib_path);
-        lisp_add_cell(l, "*have-compile*", mktee());
+        lisp_add_cell(l, "*have-compile*", gsym_tee());
 #else
-        lisp_add_cell(l, "*have-compile*", mknil());
+        lisp_add_cell(l, "*have-compile*", gsym_nil());
 #endif
 
 #ifdef USE_DL
         ud_dl = newuserdef(l, ud_dl_free, NULL, NULL, ud_dl_print);
-        lisp_add_subr(l, "dynamic-open", subr_dlopen);
+        lisp_add_subr(l, "dynamic-open",   subr_dlopen);
         lisp_add_subr(l, "dynamic-symbol", subr_dlsym);
-        lisp_add_subr(l, "dynamic-error", subr_dlerror);
-        lisp_add_cell(l, "*have-dynamic-loader*", mktee());
+        lisp_add_subr(l, "dynamic-error",  subr_dlerror);
+        lisp_add_cell(l, "*have-dynamic-loader*", gsym_tee());
 #else
-        lisp_add_cell(l, "*have-dynamic-loader*", mknil());
+        lisp_add_cell(l, "*have-dynamic-loader*", gsym_nil());
 #endif
 
 #ifdef USE_LINE 
@@ -332,9 +332,9 @@ MATH_UNARY_LIST
         lisp_add_subr(l, "clear-screen",     subr_clear_screen);
         lisp_add_subr(l, "history-length",   subr_hist_len);
         lisp_add_cell(l, "*history-file*",   mkstr(l, lstrdup(histfile)));
-        lisp_add_cell(l, "*have-line*",      mktee());
+        lisp_add_cell(l, "*have-line*",      gsym_tee());
 #else
-        lisp_add_cell(l, "*have-line*",      mknil());
+        lisp_add_cell(l, "*have-line*",      gsym_nil());
 #endif
         r = main_lisp_env(l, argc, argv);
 #ifdef USE_LINE

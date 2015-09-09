@@ -53,7 +53,12 @@ typedef struct {
         char *start; /**< where the match started*/
         char *end;   /**< where the match ended*/
         int result;  /**< the result, -1 on error, 0 on no match, 1 on match*/
-} regex_result; /**< a structure representing a regex result*/
+} regex_result;      /**< a structure representing a regex result*/
+
+typedef struct {
+        size_t max;  /**< maximum number of bits in the bitfield*/
+        unsigned char field[]; /**< the bitfield*/
+} bitfield; /**< a structure representing a bitfield*/
 
 typedef enum tr_errors { 
         TR_OK      =  0, /**< no error*/
@@ -206,6 +211,35 @@ uint64_t xorshift128plus(uint64_t s[2]);
  *  @return int  positive more '(', negative more ')', zero == balanced**/ 
 int balance(const char *sexpr);
 
+/* These bit field functions have been adapted from this post on stackoverflow:
+ * https://stackoverflow.com/questions/1590893/error-trying-to-define-a-1-024-bit-128-byte-bit-field */
+
+/** @brief create a new bit field that can hold at least maxbits
+ *  @param  maxbits   maximum bits in bit field
+ *  @return bitfield* new bit field or NULL**/
+bitfield *new_bitfield(size_t maxbits);
+
+/** @brief set a bit in a bit field
+ *  @param bf  bit field to set a bit in
+ *  @param idx which bit to set**/
+void setbit(bitfield *bf, size_t idx);
+
+/** @brief clear a bit in a bit field
+ *  @param bf  bit field to clear a bit in
+ *  @param idx which bit to clear**/
+void unsetbit(bitfield *bf, size_t idx);
+
+/** @brief toggle a bit in a bit field
+ *  @param bf  bit field to toggle a bit in
+ *  @param idx which bit to toggle**/
+void togglebit(bitfield *bf, size_t idx);
+
+/** @brief  check if a bit is set in a bit field
+ *  @param  bf  bit field to check bit status in
+ *  @param  idx which bit to check
+ *  @return int status of bit set**/
+int isbitset(bitfield *bf, size_t idx);
+
 /************************** hash library *************************************/
 
 /* A small hash library implementation, all state needed for it is held 
@@ -345,6 +379,10 @@ io *io_sout(char *out, size_t len);
  *  @param  fout an already opened file handle, opened with "w" or "wb"
  *  @return io*  an initialized I/O stream (for writing) or NULL**/
 io *io_fout(FILE *fout);
+
+/** @brief  return a null output device, output goes no where
+ *  @return a null output port**/
+io *io_nout(void);
 
 /** @brief  close a file, the stdin, stderr and stdout file streams
  *          will not be closed if associated with this I/O stream
@@ -495,10 +533,10 @@ char *symval(cell *x); /**< get string (symbol) from a lisp cell**/
 void *userval(cell *x); /**< get data from user defined type**/
 lfloat floatval(cell *x); /**< get floating point val from lisp cell**/
 hashtable *hashval(cell *x); /**< get hash table from a lisp cell**/
-cell *mkerror(void); /**< return the error cell**/
-cell *mknil(void);   /**< return the nil cell**/
-cell *mktee(void);   /**< return the tee cell**/
-cell *mkquote(void); /**< return the quote cell**/
+cell *gsym_error(void); /**< return the error cell**/
+cell *gsym_nil(void);   /**< return the nil cell**/
+cell *gsym_tee(void);   /**< return the tee cell**/
+cell *gsym_quote(void); /**< return the quote cell**/
 
 /**@brief  return a new token representing a new type
  * @param  l lisp environment to put the new type in

@@ -55,7 +55,7 @@ cell* cons(lisp *l, cell *x, cell *y) {
 }
 
 intptr_t intval(cell *x)      { return !x ? 0 : (intptr_t)(x->p[0].v); }
-int  is_nil(cell *x)          { assert(x); return x == mknil(); }
+int  is_nil(cell *x)          { assert(x); return x == gsym_nil(); }
 int  is_int(cell *x)          { assert(x); return x->type == INTEGER; }
 int  is_floatval(cell *x)     { assert(x); return x->type == FLOAT; }
 int  is_io(cell *x)           { assert(x); return x->type == IO && !x->close; }
@@ -173,7 +173,7 @@ cell *assoc(cell *key, cell *alist) { assert(key && alist);
                         if((lookup = hash_lookup(hashval(car(alist)), strval(key))))
                                 return lookup; 
                 }
-        return mknil();
+        return gsym_nil();
 }
 
 /******************************** evaluator ***********************************/
@@ -181,7 +181,7 @@ cell *assoc(cell *key, cell *alist) { assert(key && alist);
 static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env);
 cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
         size_t gc_stack_save = l->gc_stack_used;
-        cell *tmp, *first, *proc, *vals = mknil();
+        cell *tmp, *first, *proc, *vals = gsym_nil();
         if(depth > l->max_depth)
                 RECOVER(l, "'recursion-depth-reached %d", depth);
         gc_add(l, exp);
@@ -194,7 +194,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 else if(l->trace != TRACE_MARKED)
                         HALT(l, "\"invalid trace level\" %d", l->trace);
         }
-        if(is_nil(exp)) return mknil();
+        if(is_nil(exp)) return gsym_nil();
         if(l->sig) {
                 l->sig = 0;
                 lisp_throw(l, 1);
@@ -211,7 +211,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
         case CONS:
                 first = car(exp);
                 exp   = cdr(exp);
-                if(first == l->If) {
+                if(first == l->iif) {
                         if(!cklen(exp, 3))
                                 RECOVER(l, "'if \"argc != 3 in %S\"", exp);
                         exp = !is_nil(eval(l, depth+1, car(exp), env)) ?
@@ -219,14 +219,14 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                                 CADDR(exp);
                         goto tail;
                 }
-                if(first == l->Lambda) {
+                if(first == l->lambda) {
                         if(!cklen(exp, 2))
                                 RECOVER(l, "'lambda \"argc != 2 in %S\"", exp);
                         l->gc_stack_used = gc_stack_save;
                         tmp = mkproc(l, car(exp), cdr(exp), env);
                         return gc_add(l, tmp);
                 }
-                if(first == l->Flambda) {
+                if(first == l->flambda) {
                         if(!cklen(exp, 2)) 
                                 RECOVER(l, "'flambda \"argc != 2 in %S\"", exp);
                         if(!cklen(car(exp), 1)) 
@@ -234,35 +234,35 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         l->gc_stack_used = gc_stack_save;
                         return gc_add(l, mkfproc(l, car(exp), cdr(exp), env));
                 }
-                if(first == l->Cond) {
-                        if(cklen(exp, 0)) return l->Nil;
-                        for(tmp = l->Nil; is_nil(tmp) && !is_nil(exp); exp=cdr(exp)) {
-                                if(!is_cons(car(exp))) return l->Nil;
+                if(first == l->cond) {
+                        if(cklen(exp, 0)) return l->nil;
+                        for(tmp = l->nil; is_nil(tmp) && !is_nil(exp); exp=cdr(exp)) {
+                                if(!is_cons(car(exp))) return l->nil;
                                 tmp = eval(l, depth+1, CAAR(exp), env);
                                 if(!is_nil(tmp)) {
                                         exp = CADAR(exp);
                                         goto tail;
                                 }
                         }
-                        return l->Nil;
+                        return l->nil;
                 }
-                if(first == l->Env)   return env;
-                if(first == l->Quote) return car(exp);
-                if(first == l->Error) {
+                if(first == l->env)   return env;
+                if(first == l->quote) return car(exp);
+                if(first == l->error) {
                         if(cklen(exp, 1) && is_int(car(exp)))
                                 lisp_throw(l, intval(car(exp)));
                         if(cklen(exp, 0))
                                 lisp_throw(l, -1);
                         RECOVER(l, "'throw \"expected () or (int)\" '%S", exp); 
                 }
-                if(first == l->Define) {
+                if(first == l->define) {
                         if(!cklen(exp, 2))
                                 RECOVER(l, "'define \"argc != 2 in %S\"", exp);
                         l->gc_stack_used = gc_stack_save;
                         return gc_add(l, extend_top(l, car(exp),
                               eval(l, depth+1, CADR(exp), env)));
                 }
-                if(first == l->Set) {
+                if(first == l->set) {
                         cell *pair, *newval;
                         if(!cklen(exp, 2))
                                 RECOVER(l, "'set! \"argc != 2 in %S\"", exp);
@@ -272,7 +272,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         setcdr(pair, newval);
                         return newval;
                 }
-                if(first == l->LetS || first == l->LetRec) {
+                if(first == l->lets || first == l->letrec) {
                         cell *r = NULL, *s = NULL;
                         if(exp->len < 2)
                                 RECOVER(l, "'let* \"argc < 2 in %S\"", exp);
@@ -281,17 +281,17 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                                 if(!is_cons(car(exp)) || !cklen(car(exp), 2))
                                    RECOVER(l, "'let* \"expected list of length 2: '%S '%S\"",
                                                    car(exp), tmp);
-                                if(first == l->LetRec)
-                                        s = env = extend(l, env, CAAR(exp), l->Nil);
+                                if(first == l->letrec)
+                                        s = env = extend(l, env, CAAR(exp), l->nil);
                                 r = env = extend(l, env, CAAR(exp),
                                         eval(l, depth + 1, CADAR(exp), env));
-                                if(first == l->LetRec)
+                                if(first == l->letrec)
                                         setcdr(car(s), CDAR(r));
                         }
                         return eval(l, depth+1, car(exp), env);
                 }
-                if(first == l->Begin) { /**@todo Add looping constructs here*/
-                        if(is_nil(exp)) return l->Nil;
+                if(first == l->begin) { /**@todo Add looping constructs here*/
+                        if(is_nil(exp)) return l->nil;
                         for(;;) {
                                 if(is_nil(cdr(exp))) {
                                       exp = car(exp);
@@ -306,12 +306,12 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 if(is_proc(proc) || is_subr(proc)) { /*eval their args*/
                         vals = evlis(l, depth + 1, exp, env);
                 } else if(is_fproc(proc)) { /*f-expr do not eval their args*/
-                        vals = cons(l, exp, l->Nil);
+                        vals = cons(l, exp, l->nil);
                 } else if(is_in(proc)) { /*special behavior for input ports*/
                         char *s;
                         if(!cklen(exp, 0))
                                 RECOVER(l, "\"incorrect application of input port\" %S", exp);
-                        if(!(s = io_getline(ioval(proc)))) return l->Error;
+                        if(!(s = io_getline(ioval(proc)))) return l->error;
                         else return mkstr(l, s);
               /*} else if(is_out(proc)) { // todo? */
                 } else { 
@@ -332,7 +332,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                                 env = multiple_extend(l, 
                                         l->dynamic ? env : procenv(proc), 
                                         procargs(proc), vals);
-                        exp = cons(l, l->Begin, proccode(proc));
+                        exp = cons(l, l->begin, proccode(proc));
                         goto tail;
                 }
                 RECOVER(l, "\"not a procedure\" '%S", first);
@@ -347,16 +347,16 @@ static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env) { /**< evalua
         size_t i;
         cell *op, *head, *start = exps;
         assert(l && exps && env);
-        if(is_nil(exps)) return l->Nil;
+        if(is_nil(exps)) return l->nil;
         op = car(exps);
         exps = cdr(exps);
-        head = op = cons(l, eval(l, depth+1, op, env), l->Nil);
+        head = op = cons(l, eval(l, depth+1, op, env), l->nil);
         if(!is_nil(exps) && !is_cons(exps)) /*is there a better way of doing this?*/
                 RECOVER(l, "\"evlis cannot eval dotted pairs\" '%S", start);
         for(i = 1; !is_nil(exps); exps = cdr(exps), op = cdr(op), i++) {
                 if(!is_nil(cdr(exps)) && !is_cons(cdr(exps)))
                         RECOVER(l, "\"evlis cannot eval dotted pairs\"'%S", start);
-                setcdr(op, cons(l, eval(l, depth+1, car(exps), env), l->Nil));
+                setcdr(op, cons(l, eval(l, depth+1, car(exps), env), l->nil));
         }
         head->len = i;
         return head;

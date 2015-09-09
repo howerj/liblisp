@@ -8,6 +8,7 @@
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -223,5 +224,30 @@ expon:  buf = buf + i + 1;
         i = strspn(buf, conv);
         if(buf[i] == '\0') return 1;
         return 0;
+}
+
+bitfield *new_bitfield(size_t maxbits) {
+        bitfield *bf;
+        size_t al = (maxbits / CHAR_BIT) + !!(maxbits % CHAR_BIT);
+        if(!(bf = calloc(sizeof(*bf) + al, 1))) 
+                return NULL;
+        bf->max = maxbits;
+        return bf;
+}
+
+void setbit(bitfield *bf, size_t idx) { assert(bf && idx < bf->max);
+        bf->field[idx / CHAR_BIT] |= 1u << (idx % CHAR_BIT); 
+}
+
+void unsetbit(bitfield *bf, size_t idx) { assert(bf && idx < bf->max);
+        bf->field[idx / CHAR_BIT] &= ~(1u << (idx % CHAR_BIT)); 
+}
+
+void togglebit(bitfield *bf, size_t idx) { assert(bf && idx < bf->max);
+        bf->field[idx / CHAR_BIT] ^= 1u << (idx % CHAR_BIT); 
+}
+
+int isbitset(bitfield *bf, size_t idx) { assert(bf && (idx < bf->max));
+        return bf->field[idx / CHAR_BIT] & (1u << (idx % CHAR_BIT)) ? 1 : 0; 
 }
 

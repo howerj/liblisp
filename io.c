@@ -198,6 +198,13 @@ io *io_fout(FILE *fout) {
         return o;
 }
 
+io *io_nout(void) {
+        io *o;
+        if(!(o = calloc(1, sizeof(*o)))) return NULL;
+        o->type = NULLOUT;
+        return o;
+}
+
 int io_close(io *c) {
         int ret = 0;
         if(!c) return -1;

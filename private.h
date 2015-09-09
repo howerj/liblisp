@@ -18,21 +18,21 @@ extern "C" {
 #include <inttypes.h>
 #include <stdio.h>
 
-#define DEFAULT_LEN        (256)   /**< just an arbitrary smallish number*/
-#define LARGE_DEFAULT_LEN  (4096)  /**< just another arbitrary number*/
-#define REGEX_MAX_DEPTH    (8192)  /**< max recursion depth of a regex*/
-#define MAX_USER_TYPES     (256)   /**< max number of user defined types*/
-#define COLLECTION_POINT   (1<<20) /**< run gc after this many allocs*/
-#define UNUSED(X)          ((void)(X)) /**< unused variable*/
+#define DEFAULT_LEN       (256)   /**< just an arbitrary smallish number*/
+#define LARGE_DEFAULT_LEN (4096)  /**< just another arbitrary number*/
+#define REGEX_MAX_DEPTH   (8192)  /**< max recursion depth of a regex*/
+#define MAX_USER_TYPES    (256)   /**< max number of user defined types*/
+#define COLLECTION_POINT  (1<<20) /**< run gc after this many allocs*/
+#define UNUSED(X)         ((void)(X)) /**< unused variable*/
 
 #define CELL_XLIST /**< list of all special cells for initializer*/ \
-        X(Nil,     "nil")       X(Tee,     "t")\
-        X(Quote,   "quote")     X(If,      "if")\
-        X(Lambda,  "lambda")    X(Flambda, "flambda")\
-        X(Define,  "define")    X(Set,     "set!")\
-        X(Begin,   "begin")     X(Cond,    "cond")\
-        X(Error,   "error")     X(Env,     "environment")\
-        X(LetS,    "let*")      X(LetRec,  "letrec")
+        X(nil,     "nil")    X(tee,     "t")\
+        X(quote,   "quote")  X(iif,     "if")\
+        X(lambda,  "lambda") X(flambda, "flambda")\
+        X(define,  "define") X(set,     "set!")\
+        X(begin,   "begin")  X(cond,    "cond")\
+        X(error,   "error")  X(env,     "environment")\
+        X(lets,    "let*")   X(letrec,  "letrec")
 
 /**@brief This restores a jmp_buf stored in lisp environment if it
  *        has been copied out to make way for another jmp_buf.
@@ -155,8 +155,8 @@ struct lisp {
                gc_stack_allocated,    /**< length of buffer of GC stack*/
                gc_stack_used,         /**< elements used in GC stack*/
                gc_collectp,     /**< collection counter, collect after it goes too high*/
-               max_depth,        /**< max recursion depth*/
-               cur_depth         /**< current depth*/;
+               max_depth,       /**< max recursion depth*/
+               cur_depth        /**< current depth*/;
         uint64_t random_state[2] /**< PRNG state*/;
         int sig;   /**< set by signal handlers or other threads*/
         int trace; /**< trace level for eval*/
@@ -225,7 +225,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env);
  * @param  key    key to search for
  * @param  alist  association list
  * @return if key is found it returns a cons of the key and the associated
- *         value, if not found it returns Nil**/
+ *         value, if not found it returns nil**/
 cell *assoc(cell *key, cell *alist);
 
 /**@brief  Extend the top level lisp environment with a key value pair

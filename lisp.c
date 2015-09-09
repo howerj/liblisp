@@ -26,7 +26,7 @@ cell *lisp_add_subr(lisp *l, char *name, subr func) { assert(l && func && name);
 
 cell *lisp_intern(lisp *l, cell *ob) { assert(l && ob);
         if(hash_insert(hashval(l->all_symbols), symval(ob) , ob)) return NULL;
-        return l->Tee;
+        return l->tee;
 }
 
 cell *lisp_add_cell(lisp *l, char *sym, cell *val) { assert(l && sym && val);
@@ -53,7 +53,7 @@ cell *lisp_read(lisp *l, io *i) { assert(l && i);
         }
         if((r = setjmp(l->recover))) { 
                 RECOVER_RESTORE(restore_used, l, restore); 
-                return r > 0 ? l->Error : NULL;
+                return r > 0 ? l->error : NULL;
         }
         l->recover_init = 1;
         ret = reader(l, i);
@@ -77,7 +77,7 @@ cell *lisp_eval(lisp *l, cell *exp) { assert(l && exp);
         }
         if((r = setjmp(l->recover))) {
                 RECOVER_RESTORE(restore_used, l, restore); 
-                return r > 0 ? l->Error : NULL;
+                return r > 0 ? l->error : NULL;
         }
         l->recover_init = 1;
         ret = eval(l, 0, exp, l->top_env);
@@ -98,7 +98,7 @@ cell *lisp_eval_string(lisp *l, char *evalme) { assert(l && evalme);
         if((r = setjmp(l->recover))) {
                 io_close(in);
                 RECOVER_RESTORE(restore_used, l, restore); 
-                return r > 0 ? l->Error : NULL;
+                return r > 0 ? l->error : NULL;
         }
         l->recover_init = 1;
         ret = eval(l, 0, reader(l, in), l->top_env);
