@@ -1,14 +1,14 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -std=c99 -pedantic -fPIC
-MODULES=modsql.so
+MODULES=libmodsql.so
 
 all: $(MODULES)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@
 
-%.so: %.o
-	$(CC) $(CFLAGS) -shared $^ -o $@
+libmodsql.so: libmodsql.o
+	$(CC) $(CFLAGS) -shared $^ -lsqlite3 -o $@
 
 help:
 	@echo ""

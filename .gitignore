@@ -54,3 +54,4 @@ Doxyfile.bak
 *.profile
 core
 *.core
+*.db
