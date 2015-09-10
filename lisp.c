@@ -132,3 +132,6 @@ io *lisp_get_input(lisp *l)   { assert(l); return l->ifp; }
 io *lisp_get_output(lisp *l)  { assert(l); return l->ofp; }
 io *lisp_get_logging(lisp *l) { assert(l); return l->efp; }
 
+int  lisp_is_cell_closed(cell *f) { assert(f); return f->close; }
+void lisp_close_cell(cell *f) { assert(f); f->close = 1; }
+

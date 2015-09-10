@@ -766,6 +766,19 @@ io *lisp_get_output(lisp *l);
  *  @return io* pointer to error channel or NULL on failure**/
 io *lisp_get_logging(lisp *l);
 
+/** @brief  Check if a lisp cell has been "closed", that is that it's
+ *          data field has been freed or invalidated, meaning the object
+ *          should not be used anymore. The only built in type to use
+ *          this field is the IO port objects, user defined values can
+ *          use this field as well.
+ *  @param  f cell to check
+ *  @return zero if not set, one if set (and the object is now invalid).**/
+int lisp_is_cell_closed(cell *f);
+
+/** @brief  close and invalidate a cell
+ *  @param  f cell to invalidate **/
+void lisp_close_cell(cell *f);
+
 /************************ test environment ***********************************/
 
 /** @brief  A full lisp interpreter environment in a function call. It will
