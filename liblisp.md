@@ -2300,12 +2300,6 @@ repository, if this is not available it will be set to "unknown".
         pi                 The mathematical constant pi
         e                  Euler's number
 
-* \*have-compile\*
-
-This is 't if the run time C compiler is available (backed by the Tiny C
-Compiler), this is '() if it is not available. This feature currently is not
-stable.
-
 * \*have-line\*
 
 This is 't if the line editor functions and variables are available,
@@ -2435,22 +2429,6 @@ Glossary of all of defined subroutine primitives and variables.
         floor              Round downwards
         pow                Computer X raised to the Y
         modf               Split a value into integer and fractional parts
-
-##### compiler 
-
-* compile
-
-* link
-
-* compile-file
-
-* get-subroutine
-
-* add-include-path
-
-* add-system-include-path
-
-* set-library-path
 
 ##### dynamic loader
 

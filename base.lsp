@@ -229,7 +229,7 @@
   (lambda (a lat)
     (cond
       ((null? lat) nil)
-      ((equal (car lat) a) (cdr lat))
+      ((equal (car lat) a) (remove-member a (cdr lat)))
       (t (cons (car lat)
                   (remove-member a (cdr lat)))))))
 

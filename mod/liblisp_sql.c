@@ -73,10 +73,14 @@ static cell *subr_sqlclose(lisp *l, cell *args) {
 }
 
 static void construct(void) {
+        assert(lglobal);
         ud_sql = newuserdef(lglobal, ud_sql_free, NULL, NULL, ud_sql_print);
-        lisp_add_subr(lglobal, "sql",       subr_sql);
-        lisp_add_subr(lglobal, "sql-open",  subr_sqlopen);
-        lisp_add_subr(lglobal, "sql-close", subr_sqlclose);
+        if(!lisp_add_subr(lglobal, "sql",       subr_sql)) goto fail;
+        if(!lisp_add_subr(lglobal, "sql-open",  subr_sqlopen)) goto fail;
+        if(!lisp_add_subr(lglobal, "sql-close", subr_sqlclose)) goto fail;
+        printerf(lglobal, lisp_get_logging(lglobal), 0, "SQL module loaded successfully\n");
+        return;
+fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "SQL module loading failed\n");
 }
 
 static void destruct(void) {

@@ -134,4 +134,5 @@ io *lisp_get_logging(lisp *l) { assert(l); return l->efp; }
 
 int  lisp_is_cell_closed(cell *f) { assert(f); return f->close; }
 void lisp_close_cell(cell *f) { assert(f); f->close = 1; }
+int  lisp_get_cell_length(cell *c) { assert(c); return c->len; }
 

@@ -779,6 +779,11 @@ int lisp_is_cell_closed(cell *f);
  *  @param  f cell to invalidate **/
 void lisp_close_cell(cell *f);
 
+/** @brief  get the length of a cell objects internal data
+ *  @param  c   cell to get length of
+ *  @return int length of cell**/
+int  lisp_get_cell_length(cell *c);
+
 /************************ test environment ***********************************/
 
 /** @brief  A full lisp interpreter environment in a function call. It will

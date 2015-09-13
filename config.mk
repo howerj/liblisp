@@ -27,10 +27,7 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 ## CPP defines:
 ### NDEBUG       Disable asserts
 ### USE_LINE     Add line editing capability, requires libline
-### USE_TCC      Add support for libtcc, for compiling C code within the
-###              interpreter. LINK must be set to "-ltcc -ldl" for this
-###              to work.
 ### USE_DL	 Add support for dlopen, requires "-ldl".
-DEFINES ?= -DUSE_LINE -DUSE_DL -DUSE_TCC
-LINK    ?= -ltcc -ldl
+DEFINES ?= -DUSE_LINE -DUSE_DL 
+LINK    ?= -ldl
 #LINK    ?= 

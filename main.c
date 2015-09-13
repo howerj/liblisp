@@ -135,87 +135,6 @@ static cell *subr_clear_screen(lisp *l, cell *args) {
 }
 #endif
 
-#ifdef USE_TCC
-/* Tiny C Compiler; for compiling and adding C code to the interpreter after
- * liblisp has been built. */
-#include <libtcc.h>
-static int ud_tcc = 0;
-
-static void ud_tcc_free(cell *f) {
-        tcc_delete(userval(f));
-        free(f);
-}
-
-static int ud_tcc_print(io *o, unsigned depth, cell *f) {
-        return printerf(NULL, o, depth, "%B<COMPILE-STATE:%d>%t", userval(f));
-}
-
-static cell* subr_compile(lisp *l, cell *args) {
-        if(!cklen(args, 3) 
-        || !is_usertype(car(args), ud_tcc)
-        || !is_asciiz(CADR(args)) || !is_str(CADDR(args)))
-                RECOVER(l, "\"expected (compile-state string string\" '%S", args);
-        char *fname = strval(CADR(args)), *prog = strval(CADDR(args));
-        subr func;
-        TCCState *st = userval(car(args));
-        if(tcc_compile_string(st, prog) < 0)
-                return gsym_error();
-        if(tcc_relocate(st, TCC_RELOCATE_AUTO) < 0)
-                return gsym_error();
-        func = (subr)tcc_get_symbol(st, fname);
-        return mksubr(l, func);
-}
-
-static cell* subr_link(lisp *l, cell *args) {
-        if(!cklen(args, 2) 
-        || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
-                RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        return tcc_add_library(userval(car(args)), strval(CADR(args))) < 0 ? gsym_error() : gsym_nil();
-}
-
-static cell* subr_compile_file(lisp *l, cell *args) {
-        if(!cklen(args, 2)
-        || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
-                RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        if(tcc_add_file(userval(car(args)), strval(CADR(args))) < 0)
-                return gsym_error();
-        if(tcc_relocate(userval(car(args)), TCC_RELOCATE_AUTO) < 0)
-                return gsym_error();
-        return gsym_tee();
-}
-
-static cell* subr_get_subr(lisp *l, cell *args) {
-        subr func;
-        if(!cklen(args, 2)
-        || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
-                RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        if(!(func = tcc_get_symbol(userval(car(args)), strval(CADR(args)))))
-                return gsym_error();
-        else
-                return mksubr(l, func);
-}
-
-static cell* subr_add_include_path(lisp *l, cell *args) {
-        if(!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
-                RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        return tcc_add_include_path(userval(car(args)), strval(CADR(args))) < 0 ? gsym_error() : gsym_tee();
-}
-
-static cell* subr_add_sysinclude_path(lisp *l, cell *args) {
-        if(!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
-                RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        return tcc_add_sysinclude_path(userval(car(args)), strval(CADR(args))) < 0 ? gsym_error() : gsym_tee();
-}
-
-static cell* subr_set_lib_path(lisp *l, cell *args) {
-        if(!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
-                RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        tcc_set_lib_path(userval(car(args)), strval(CADR(args)));
-        return gsym_tee();
-}
-
-#endif
-
 #ifdef USE_DL
 /* Module loader using dlopen, all functions acquired with dlsym must be of the
  * "subr" function type as they will be used as internal lisp subroutines by
@@ -277,34 +196,6 @@ MATH_UNARY_LIST
         lisp_add_cell(l, "*version*",           mkstr(l, lstrdup(XSTRINGIFY(VERSION))));
         lisp_add_cell(l, "*commit*",            mkstr(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
         lisp_add_cell(l, "*repository-origin*", mkstr(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));
-
-#ifdef USE_TCC
-        /** Tiny C compiler library interface, special care has to be taken 
-         *  when compiling and linking all of the C files within the liblisp
-         *  project so the symbols in it are available to libtcc.
-         *
-         *  Possible improvements:
-         *  * Modification of libtcc so it can accept S-Expressions from
-         *    the interpreter. This would be a significant undertaking.
-         *  * Add more functions from libtcc
-         *  * Separate out tcc_get_symbol from tcc_compile_string
-         *  * Find out why link does not work
-         **/
-        ud_tcc = newuserdef(l, ud_tcc_free, NULL, NULL, ud_tcc_print);
-        TCCState *st = tcc_new();
-        tcc_set_output_type(st, TCC_OUTPUT_MEMORY);
-        lisp_add_cell(l, "*compile-state*", mkuser(l, st, ud_tcc));
-        lisp_add_subr(l, "compile",        subr_compile);
-        lisp_add_subr(l, "link",           subr_link);
-        lisp_add_subr(l, "compile-file",   subr_compile_file);
-        lisp_add_subr(l, "get-subroutine", subr_get_subr);
-        lisp_add_subr(l, "add-include-path", subr_add_include_path);
-        lisp_add_subr(l, "add-system-include-path", subr_add_sysinclude_path);
-        lisp_add_subr(l, "set-library-path", subr_set_lib_path);
-        lisp_add_cell(l, "*have-compile*", gsym_tee());
-#else
-        lisp_add_cell(l, "*have-compile*", gsym_nil());
-#endif
 
 #ifdef USE_DL
         ud_dl = newuserdef(l, ud_dl_free, NULL, NULL, ud_dl_print);
