@@ -102,12 +102,35 @@
       (exit)
       nil)))
 
+(if *have-dynamic-loader*
+  (begin
+    (if (not (= (dynamic-open "liblisp_os.so") 'error))
+      (define *have-os* t)
+      (define *have-os* nil))
+    (if (not (= (dynamic-open "liblisp_sql.so") 'error))
+      (define *have-sql* t)
+      (define *have-sql* nil))
+    (if (not (= (dynamic-open "liblisp_tcc.so") 'error))
+      (define *have-tcc* t)
+      (define *have-tcc* nil))
+    (if (not (= (dynamic-open "liblisp_crc.so") 'error))
+      (define *have-crc* t)
+      (define *have-crc* nil))
+    (if (not (= (dynamic-open "liblisp_line.so") 'error))
+      (define *have-line* t)
+      (define *have-line* nil))
+    (if (not (= (dynamic-open "liblisp_math.so") 'error))
+      (define *have-math* t)
+      (define *have-math* nil))
+    t) nil)
+
 ; Evaluate a series of "modules", they are just files with defines in them,
 ; a proper module system nor ways of representing dependencies between them
 ; has been devised yet. They must be executed in order.
 (eval-file 'base.lsp exit-if-not-eof)
 (eval-file 'sets.lsp exit-if-not-eof)
 (eval-file 'symb.lsp exit-if-not-eof)
-; (if *have-compile* (eval-file 'c.lsp exit-if-not-eof) nil)
 (eval-file 'test.lsp exit-if-not-eof)
+
+;(if *have-tcc* (eval-file "mod/c.lsp" exit-if-not-eof) nil)
 

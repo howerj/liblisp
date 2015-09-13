@@ -1,3 +1,9 @@
+/** @file       liblisp_os.c
+ *  @brief      OS module interface module for liblisp
+ *  @author     Richard Howe (2015)
+ *  @license    LGPL v2.1 or Later 
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @email      howe.r.j.89@gmail.com**/
 #define _GNU_SOURCE
 #include <assert.h>
 #include <liblisp.h>
@@ -181,9 +187,9 @@ static void construct(void) {
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
                 if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
                         goto fail;
-        printerf(lglobal, lisp_get_output(lglobal), 0, "OS module loaded successfully\n");
+        printerf(lglobal, lisp_get_output(lglobal), 0, "module: OS loaded\n");
         return;
-fail:   printerf(lglobal, lisp_get_output(lglobal), 0, "OS module loading failed\n");
+fail:   printerf(lglobal, lisp_get_output(lglobal), 0, "module: OS loading failure\n");
 }
 
 static void destruct(void) {

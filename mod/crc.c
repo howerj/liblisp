@@ -1,7 +1,8 @@
-/* This code has been swiped from the PNG specification: 
- * <http://www.libpng.org/pub/png/spec/1.2/PNG-CRCAppendix.html>
- * It is a CRC-32 algorithm used in PNG, Ethernet, Gzip, ... 
- */
+/** @file       crc.c
+ *  @brief      CRC routines
+ *  This code has been swiped from the PNG specification: 
+ *  <http://www.libpng.org/pub/png/spec/1.2/PNG-CRCAppendix.html>
+ *  It is a CRC-32 algorithm used in PNG, Ethernet, Gzip, ... **/
 #include "crc.h"
 
 static uint32_t crc_table[256]; /* Table of CRCs of all 8-bit messages. */
@@ -54,3 +55,4 @@ uint32_t crc_init(uint8_t *abuf, size_t len){
 uint32_t crc_final(uint32_t crc){
         return crc ^ 0xffffffffL;
 }
+

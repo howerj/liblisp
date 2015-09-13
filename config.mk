@@ -28,6 +28,6 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 ### NDEBUG       Disable asserts
 ### USE_LINE     Add line editing capability, requires libline
 ### USE_DL	 Add support for dlopen, requires "-ldl".
-DEFINES ?= -DUSE_LINE -DUSE_DL 
+DEFINES ?= -DUSE_DL 
 LINK    ?= -ldl
 #LINK    ?= 

@@ -1,3 +1,7 @@
+/** @file       crc.h
+ *  @brief      CRC module interface
+ *  @email      howe.r.j.89@gmail.com**/
+
 #include <stdint.h>   
 #include <stddef.h>
 

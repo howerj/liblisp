@@ -1,3 +1,10 @@
+/** @file       liblisp_crc.c
+ *  @brief      CRC module
+ *  @author     Richard Howe (2015)
+ *  @license    LGPL v2.1 or Later 
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @email      howe.r.j.89@gmail.com**/
+
 #include "crc.h"
 #include <assert.h>
 #include <liblisp.h>
@@ -17,9 +24,9 @@ static cell* subr_crc(lisp *l, cell *args) {
 
 static void construct(void) {
         if(!(lisp_add_subr(lglobal, "crc", subr_crc))) goto fail;
-        printerf(lglobal, lisp_get_logging(lglobal), 0, "crc module loaded successfully\n");
+        printerf(lglobal, lisp_get_logging(lglobal), 0, "module: crc loaded\n");
         return;
-fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "crc module loading failed\n");
+fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "module: crc load failure\n");
 }
 
 static void destruct(void) {

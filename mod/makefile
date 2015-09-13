@@ -1,8 +1,9 @@
-CC=gcc
-CFLAGS=-Wall -Wextra -std=gnu99 -g -fPIC 
-MODULES=liblisp_sql.so liblisp_os.so liblisp_crc.so liblisp_tcc.so
+CC?=gcc
+CFLAGS?=-Wall -Wextra -std=gnu99 -g -O2 -fPIC 
+MODULES=liblisp_sql.so liblisp_os.so liblisp_crc.so\
+       	liblisp_tcc.so liblisp_math.so liblisp_line.so
 
-all: $(MODULES)
+all: help $(MODULES)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@
@@ -19,6 +20,12 @@ liblisp_crc.so: crc.o liblisp_crc.o
 liblisp_tcc.so: liblisp_tcc.o
 	$(CC) $(CFLAGS) -shared $^ -ltcc -o $@
 
+liblisp_math.so: liblisp_math.o
+	$(CC) $(CFLAGS) -shared $^ -lm -o $@
+
+liblisp_line.so: liblisp_line.o
+	$(CC) $(CFLAGS) -shared $^ -lline -o $@
+
 help:
 	@echo ""
 	@echo "This makefile builds lisp modules for the liblisp library."
@@ -26,6 +33,10 @@ help:
 	@echo "The modules can be loaded at run time by the lisp interpreter"
 	@echo "and the modules will automatically add the functions and variables"
 	@echo "they contain to the lisp interpreter."
+	@echo ""
+	@echo "Remember to run 'make install' for both the main interpreters"
+	@echo "makefile and to run 'ldconfig' after running 'make install' for"
+	@echo "this makefile."
 	@echo ""
 	@echo "make (option)*"
 	@echo ""
@@ -35,6 +46,8 @@ help:
 	@echo "     liblisp_os.so    OS module"
 	@echo "     liblisp_crc.so   CRC module"
 	@echo "     liblisp_tcc.so   Tiny C Compiler module"
+	@echo "     liblisp_math.so  Math module"
+	@echo "     liblisp_line.so  Line editor module"
 	@echo "     install          Install all of the modules"
 	@echo "     clean            Remove all compiled files"
 	@echo ""

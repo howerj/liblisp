@@ -9,7 +9,7 @@
 include config.mk
 
 TARGET = lisp
-.PHONY: all clean dist doc doxygen valgrind run libline/libline.a
+.PHONY: all clean dist doc doxygen valgrind run 
 
 all: $(TARGET) lib$(TARGET).so
 
@@ -50,12 +50,11 @@ lib$(TARGET).so: $(OBJFILES) lib$(TARGET).h private.h
 	$(CC) $(CFLAGS) $< -c -o $@
 
 VCS_DEFINES=-DVCS_ORIGIN="${VCS_ORIGIN}" -DVCS_COMMIT="${VCS_COMMIT}" -DVERSION="${VERSION}" 
-# Always rebuilds as libline.h is .PHONY, it has to be.
-main.o: main.c lib$(TARGET).h libline/libline.h
+
+main.o: main.c lib$(TARGET).h 
 	$(CC) $(CFLAGS_RELAXED) ${DEFINES} ${VCS_DEFINES} $< -c -o $@
 
-# Always rebuilds as libline.a is .PHONY, it has to be.
-$(TARGET): main.o lib$(TARGET).a libline/libline.a 
+$(TARGET): main.o lib$(TARGET).a 
 	$(CC) $(CFLAGS) -Wl,-E $^ -lm ${LINK} -o $@
 
 # Work around so the makefile initializes submodules. This requires

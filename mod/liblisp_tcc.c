@@ -1,7 +1,9 @@
-/* Tiny C Compiler; for compiling and adding C code to the interpreter after
- * liblisp has been built. 
- *
- * @bug SEGFAULTs on garbage collection!*/
+/** @file       liblisp_tcc.c
+ *  @brief      Tiny C Compiler liblisp module
+ *  @author     Richard Howe (2015)
+ *  @license    LGPL v2.1 or Later 
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @email      howe.r.j.89@gmail.com**/
 #include <assert.h>
 #include <libtcc.h>
 #include <liblisp.h>
@@ -129,9 +131,9 @@ static void construct(void) {
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
                 if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
                         goto fail;
-        printerf(lglobal, lisp_get_logging(lglobal), 0, "TCC module loaded successfully\n");
+        printerf(lglobal, lisp_get_logging(lglobal), 0, "module: TCC loaded\n");
         return;
-fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "TCC module loading failed\n");
+fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "module: TCC load failure\n");
 }
 
 static void destruct(void) {

@@ -1,4 +1,9 @@
-/* sql module, not completed*/
+/** @file       liblisp_sql.c
+ *  @brief      SQL (sqlite3) interface module for liblisp
+ *  @author     Richard Howe (2015)
+ *  @license    LGPL v2.1 or Later 
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @email      howe.r.j.89@gmail.com**/
 #include <assert.h>
 #include <liblisp.h>
 #include <sqlite3.h>
@@ -78,9 +83,9 @@ static void construct(void) {
         if(!lisp_add_subr(lglobal, "sql",       subr_sql)) goto fail;
         if(!lisp_add_subr(lglobal, "sql-open",  subr_sqlopen)) goto fail;
         if(!lisp_add_subr(lglobal, "sql-close", subr_sqlclose)) goto fail;
-        printerf(lglobal, lisp_get_logging(lglobal), 0, "SQL module loaded successfully\n");
+        printerf(lglobal, lisp_get_logging(lglobal), 0, "module: sqlite3 loaded\n");
         return;
-fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "SQL module loading failed\n");
+fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "module: sqlite3 load failure\n");
 }
 
 static void destruct(void) {

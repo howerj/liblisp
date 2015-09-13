@@ -58,7 +58,6 @@
           (match pat tst))
         (coerce *string* 1.0) 
          "1\\.0*")
-    (test float-equal (cos (/ pi 3)) 0.5)
     (test = (cdr (assoc 'x '((x . a) (y . b)))) 'a)
     (test = (eval 'x '((x a) (y b))) '(a))
     (test equal (pair '(x y z) '(a b c)) '((x a) (y b) (z c)))
