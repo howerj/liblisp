@@ -11,7 +11,7 @@ include config.mk
 TARGET = lisp
 .PHONY: all clean dist doc doxygen valgrind run 
 
-all: $(TARGET) lib$(TARGET).so
+all: help $(TARGET) lib$(TARGET).so
 
 help:
 	@echo ""
@@ -35,6 +35,7 @@ help:
 	@echo "     valgrind    make the example executable and run it with valgrind"
 	@echo "     clean       remove all build artifacts and targets"
 	@echo "     doc         make html and doxygen documentation"
+	@echo ""
 
 ### building #################################################################
 
@@ -77,7 +78,7 @@ run: $(TARGET)
 
 valgrind: $(TARGET)
 	@echo running the executable through leak detection program, valgrind
-	valgrind --leak-check=full ./$^ -Epc init.lsp -
+	valgrind --leak-check=full --show-reachable=yes ./$^ -Epc init.lsp -
 
 ### documentation ############################################################
 
@@ -140,3 +141,4 @@ clean:
 	rm -rf *.log *.out *.bak *.tgz *~
 
 ##############################################################################
+

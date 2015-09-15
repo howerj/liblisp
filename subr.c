@@ -66,7 +66,8 @@
         X(subr_join,    "join")           X(subr_regexspan, "regex-span")\
         X(subr_raise,   "raise")          X(subr_split,     "split")\
         X(subr_hcreate, "hash-create")    X(subr_format,    "format")\
-        X(subr_substring, "substring")    X(subr_tr,        "tr")
+        X(subr_substring, "substring")    X(subr_tr,        "tr")\
+        X(subr_define_eval, "define-eval")
 
 #define X(SUBR, NAME) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
@@ -1149,5 +1150,11 @@ static cell *subr_tr(lisp *l, cell *args) { /**< translate characters*/
         return mkstr(l, ret);
 fail:   RECOVER(l, "\"expected (string string string string)\" '%S", args);
         return gsym_error();
+}
+
+static cell *subr_define_eval(lisp *l, cell *args) {
+        if(!cklen(args, 2) || !is_sym(car(args)))
+                RECOVER(l, "\"expected (symbol expr)\" '%S", args);
+        return extend_top(l, car(args), CADR(args));
 }
 

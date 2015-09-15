@@ -33,6 +33,25 @@ lisp *lglobal; /**< used for signal handler and modules*/
 #include <dlfcn.h>
 static int ud_dl = 0;
 
+struct dllist;
+typedef struct dllist {
+        void* handle;
+        struct dllist* next;
+} dllist;
+
+dllist *head;
+
+static void dlclose_atexit(void) {
+        dllist *t;
+        if(!head) return;
+        do {
+                dlclose(head->handle);
+                t = head;
+                head = head->next;
+                free(t);
+        } while(head);
+}
+
 static void ud_dl_free(cell *f) {
         /** @bug There is a problem with closing modules that contain 
          *       callbacks like these for freeing user defined types 
@@ -50,10 +69,16 @@ static int ud_dl_print(io *o, unsigned depth, cell *f) {
 
 static cell *subr_dlopen(lisp *l, cell *args) {
         void *handle;
+        dllist *h;
         if(!cklen(args, 1) || !is_asciiz(car(args)))
                 RECOVER(l, "\"expected (string)\" '%S", args);
         if(!(handle = dlopen(strval(car(args)), RTLD_NOW)))
                 return gsym_error();
+        if(!(h = calloc(1, sizeof(*h))))
+                HALT(l, "\"%s\"", "out of memory");
+        h->handle = handle;
+        h->next = head;
+        head = h;
         return mkuser(l, handle, ud_dl);
 }
 
@@ -91,6 +116,7 @@ int main(int argc, char **argv) {
         lisp_add_subr(l, "dynamic-symbol", subr_dlsym);
         lisp_add_subr(l, "dynamic-error",  subr_dlerror);
         lisp_add_cell(l, "*have-dynamic-loader*", gsym_tee());
+        atexit(dlclose_atexit);
 #else
         lisp_add_cell(l, "*have-dynamic-loader*", gsym_nil());
 #endif

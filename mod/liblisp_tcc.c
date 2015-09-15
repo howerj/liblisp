@@ -131,9 +131,9 @@ static void construct(void) {
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
                 if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
                         goto fail;
-        printerf(lglobal, lisp_get_logging(lglobal), 0, "module: TCC loaded\n");
+        printerf(lglobal, lisp_get_logging(lglobal), 0, "module: tcc loaded\n");
         return;
-fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "module: TCC load failure\n");
+fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "module: tcc load failure\n");
 }
 
 static void destruct(void) {

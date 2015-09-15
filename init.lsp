@@ -102,27 +102,26 @@
       (exit)
       nil)))
 
+(define string-to-symbol 
+  (lambda (sym)
+    (coerce *symbol* sym)))
+
+(define load-module
+  (lambda (name)
+    (if (not (= (dynamic-open (string-to-symbol (join "" "liblisp_" name ".so"))) 'error))
+      (define-eval (string-to-symbol (join "" "*have-" name "*")) t)
+      (define-eval (string-to-symbol (join "" "*have-" name "*")) nil))))
+
 (if *have-dynamic-loader*
   (begin
-    (if (not (= (dynamic-open "liblisp_os.so") 'error))
-      (define *have-os* t)
-      (define *have-os* nil))
-    (if (not (= (dynamic-open "liblisp_sql.so") 'error))
-      (define *have-sql* t)
-      (define *have-sql* nil))
-    (if (not (= (dynamic-open "liblisp_tcc.so") 'error))
-      (define *have-tcc* t)
-      (define *have-tcc* nil))
-    (if (not (= (dynamic-open "liblisp_crc.so") 'error))
-      (define *have-crc* t)
-      (define *have-crc* nil))
-    (if (not (= (dynamic-open "liblisp_line.so") 'error))
-      (define *have-line* t)
-      (define *have-line* nil))
-    (if (not (= (dynamic-open "liblisp_math.so") 'error))
-      (define *have-math* t)
-      (define *have-math* nil))
-    t) nil)
+    (load-module "os")
+    (load-module "sql")
+    (load-module "tcc")
+    (load-module "crc")
+    (load-module "line")
+    (load-module "math")
+  (begin (put "module loading complete\n")  t)) 
+  (begin (put "module loader not implemented\n") nil))
 
 ; Evaluate a series of "modules", they are just files with defines in them,
 ; a proper module system nor ways of representing dependencies between them

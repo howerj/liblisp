@@ -32,7 +32,7 @@ extern "C" {
         X(define,  "define") X(set,     "set!")\
         X(begin,   "begin")  X(cond,    "cond")\
         X(error,   "error")  X(env,     "environment")\
-        X(lets,    "let*")   X(letrec,  "letrec")
+        X(lets,    "let*")   X(letrec,  "letrec")\
 
 /**@brief This restores a jmp_buf stored in lisp environment if it
  *        has been copied out to make way for another jmp_buf.

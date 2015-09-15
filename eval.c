@@ -256,8 +256,8 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         RECOVER(l, "'throw \"expected () or (int)\" '%S", exp); 
                 }
                 if(first == l->define) {
-                        if(!cklen(exp, 2))
-                                RECOVER(l, "'define \"argc != 2 in %S\"", exp);
+                        if(!cklen(exp, 2) || !is_sym(car(exp)))
+                                RECOVER(l, "'define \"argc != 2 in %S or is not a symbol\"", exp);
                         l->gc_stack_used = gc_stack_save;
                         return gc_add(l, extend_top(l, car(exp),
                               eval(l, depth+1, CADR(exp), env)));
