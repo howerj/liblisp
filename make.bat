@@ -36,11 +36,9 @@ tcc -DNDEBUG -Wall -Wextra print.c -c -o print.o   || goto :error
 tcc -DNDEBUG -Wall -Wextra repl.c  -c -o repl.o    || goto :error
 tcc -DNDEBUG -Wall -Wextra read.c  -c -o read.o    || goto :error
 tcc -DNDEBUG -Wall -Wextra tr.c    -c -o tr.o      || goto :error
+tcc -DNDEBUG -Wall -Wextra valid.c -c -o valid.o   || goto :error
 
-REM built without asserts as its easier
-REM built without libline as it has not been ported to Windows
-REM built with "math.h" functions added
-tcc -DNDEBUG -DUSE_MATH -Wall -Wextra lisp.o hash.o io.o util.o gc.o eval.o repl.o subr.o read.o print.o tr.o main.c -o lisp.exe || goto :error
+tcc -DNDEBUG -Wall -Wextra lisp.o hash.o io.o util.o gc.o eval.o repl.o subr.o read.o print.o tr.o valid.o main.c -o lisp.exe || goto :error
 exit /b 0
 
 :run
