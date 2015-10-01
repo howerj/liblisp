@@ -69,10 +69,10 @@ int lisp_repl(lisp *l, char *prompt, int editor_on) {
                 }
         } else { /*read from stdin with no special handling, or a file*/
                 for(;;){
-                        printerf(l, l->ofp, 0, "%s", prompt);
+                        lisp_printf(l, l->ofp, 0, "%s", prompt);
                         if(!(ret = reader(l, l->ifp))) break;
                         if(!(ret = eval(l, 0, ret, l->top_env))) break;
-                        printerf(l, l->ofp, 0, "%S\n", ret);
+                        lisp_printf(l, l->ofp, 0, "%S\n", ret);
                         l->gc_stack_used = 0;
                 }
         }

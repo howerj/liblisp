@@ -5,7 +5,11 @@
  *              should not be used outside the project.
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com**/
+ *  @email      howe.r.j.89@gmail.com
+ *  
+ *  @todo Remove unnecessary bit fields in the cell structure (such as the
+ *        trace bit, or the userdef field for non user defined functions).
+ *  @todo Find a better name for lisp_union **/
 
 #ifndef PRIVATE_H
 #define PRIVATE_H

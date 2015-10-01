@@ -1,5 +1,11 @@
 # "dwm" from <http://suckless.org/> inspired config file
 
+## misc
+RM    ?= rm
+CP    ?= cp
+CHMOD ?= chmod
+PRELOAD ?= LD_LIBRARY_PATH="`pwd`/mod" 
+
 # Version control variables and information
 
 ## These commands will depend on what version control is being run, or
@@ -16,18 +22,20 @@ MANPREFIX ?= ${PREFIX}/share/man
 
 # Compiler and compiler flags
 
-CC      ?= gcc
+AR       ?= ar
+AR_FLAGS ?= rcs
+CC       ?= gcc
 # The CFLAGS_RELAXED is used to compile main.c, main.c uses
 # several libraries that require a cast from "void*" to a
 # function pointer, which causes warnings which are unnecessary.
 CFLAGS_RELAXED ?= -Wall -Wextra -g -fwrapv -std=c99 -O2 -fPIC
 CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
+
 # Compilation options
 
-## CPP defines:
+## CPP defines of use
 ### NDEBUG       Disable asserts
-### USE_LINE     Add line editing capability, requires libline
 ### USE_DL	 Add support for dlopen, requires "-ldl".
 DEFINES ?= -DUSE_DL 
 LINK    ?= -ldl
-#LINK    ?= 
+

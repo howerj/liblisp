@@ -15,7 +15,7 @@ all: help $(TARGET) lib$(TARGET).so
 
 help:
 	@echo ""
-	@echo "project:     lib${TARGET}"
+	@echo "project:     lib$(TARGET)"
 	@echo "description: A small lisp library and example implementation"
 	@echo "version:     $(VERSION)"
 	@echo "commit:      $(VCS_COMMIT)"
@@ -27,9 +27,9 @@ help:
 	@echo "     dist        make a distribution tar.gz file"
 	@echo "     install     install the example executable, library and man pages"
 	@echo "     uninstall   uninstall the example executable, library and man pages"
-	@echo "     ${TARGET}        build the example executable"
-	@echo "     lib${TARGET}.so  build the library (dynamic)"
-	@echo "     lib${TARGET}.a   build the library (static)"
+	@echo "     $(TARGET)        build the example executable"
+	@echo "     lib$(TARGET).so  build the library (dynamic)"
+	@echo "     lib$(TARGET).a   build the library (static)"
 	@echo "     run         make the example executable and run it"
 	@echo "     help        this help message"
 	@echo "     valgrind    make the example executable and run it with valgrind"
@@ -39,10 +39,10 @@ help:
 
 ### building #################################################################
 
-OBJFILES=hash.o io.o util.o gc.o read.o print.o subr.o repl.o eval.o lisp.o tr.o
+OBJFILES=hash.o io.o util.o gc.o read.o print.o subr.o repl.o eval.o lisp.o tr.o valid.o
 
 lib$(TARGET).a: $(OBJFILES)
-	ar rcs $@ $^
+	$(AR) $(AR_FLAGS) $@ $^
 
 lib$(TARGET).so: $(OBJFILES) lib$(TARGET).h private.h
 	$(CC) -shared -fPIC $(OBJFILES) -o $@
@@ -74,11 +74,11 @@ libline/libline.a: libline/.git
 
 run: $(TARGET)
 	@echo running the executable with default arguments
-	./$^ -Epc init.lsp -
+	$(PRELOAD) ./$^ -Epc init.lsp -
 
 valgrind: $(TARGET)
 	@echo running the executable through leak detection program, valgrind
-	valgrind --leak-check=full --show-reachable=yes ./$^ -Epc init.lsp -
+	$(PRELOAD) valgrind --leak-check=full --show-reachable=yes ./$^ -Epc init.lsp -
 
 ### documentation ############################################################
 
@@ -104,41 +104,40 @@ dist: ${TARGET} lib${TARGET}.[ah3] lib${TARGET}.so lib${TARGET}.htm ${TARGET}.1
 
 install: all 
 	@echo "installing executable ${TARGET} to ${DESTDIR}${PREFIX}/bin"
-	mkdir -p ${DESTDIR}${PREFIX}/bin
-	cp -f ${TARGET} ${DESTDIR}${PREFIX}/bin
-	chmod 755 ${DESTDIR}${PREFIX}/bin/${TARGET}
+	$(CP) -f ${TARGET} ${DESTDIR}${PREFIX}/bin
 	@echo "installing manual pages to ${DESTDIR}${MANPREFIX}/man1"
+	mkdir -p ${DESTDIR}${PREFIX}/bin
 	mkdir -p ${DESTDIR}${MANPREFIX}/man1
+	mkdir -p ${DESTDIR}${PREFIX}/lib
 	@echo "updating manual page version"
 	sed "s/VERSION/${VERSION}/g" < ${TARGET}.1 > ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
-	chmod 644 ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
 	@echo "install library files"
-	mkdir -p ${DESTDIR}${PREFIX}/lib
-	cp -f lib${TARGET}.a ${DESTDIR}${PREFIX}/lib
-	chmod 755 ${DESTDIR}${PREFIX}/lib/lib${TARGET}.a
-	cp -f lib${TARGET}.so ${DESTDIR}${PREFIX}/lib
-	chmod 755 ${DESTDIR}${PREFIX}/lib/lib${TARGET}.so
-	cp -f lib${TARGET}.h ${DESTDIR}${PREFIX}/include
-	chmod 644 ${DESTDIR}${PREFIX}/include/lib${TARGET}.h
+	$(CP) -f lib${TARGET}.a ${DESTDIR}${PREFIX}/lib
+	$(CP) -f lib${TARGET}.so ${DESTDIR}${PREFIX}/lib
+	$(CP) -f lib${TARGET}.h ${DESTDIR}${PREFIX}/include
+	$(CHMOD) 755 ${DESTDIR}${PREFIX}/bin/${TARGET}
+	$(CHMOD) 644 ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
+	$(CHMOD) 755 ${DESTDIR}${PREFIX}/lib/lib${TARGET}.a
+	$(CHMOD) 755 ${DESTDIR}${PREFIX}/lib/lib${TARGET}.so
+	$(CHMOD) 644 ${DESTDIR}${PREFIX}/include/lib${TARGET}.h
 	@echo "installation complete"
 
 uninstall:
 	@echo uninstalling ${TARGET}
-	@rm -vf ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
-	@rm -vf ${DESTDIR}${PREFIX}/bin/${TARGET}
-	@rm -vf ${DESTDIR}${PREFIX}/lib/lib${TARGET}.a
-	@rm -vf ${DESTDIR}${PREFIX}/lib/lib${TARGET}.so
-	@rm -vf ${DESTDIR}${PREFIX}/include/lib${TARGET}.h
+	@$(RM) -vf ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
+	@$(RM) -vf ${DESTDIR}${PREFIX}/bin/${TARGET}
+	@$(RM) -vf ${DESTDIR}${PREFIX}/lib/lib${TARGET}.a
+	@$(RM) -vf ${DESTDIR}${PREFIX}/lib/lib${TARGET}.so
+	@$(RM) -vf ${DESTDIR}${PREFIX}/include/lib${TARGET}.h
 
 ### clean up #################################################################
+
+CLEAN_LIST = *.a *.so *.o *.html Doxyfile $(TARGET) *.tgz *~ *.log html latex
 
 clean:
 	@echo Cleaning repository.
 	if [ -f libline/makefile ]; then cd libline && make clean; fi
-	rm -rf $(TARGET) *.a *.so *.o 
-	rm -rf html latex *.bak doxygen *.htm *.html Doxyfile
-	rm -rf .list
-	rm -rf *.log *.out *.bak *.tgz *~
+	$(RM) -rf $(CLEAN_LIST)
 
 ##############################################################################
 

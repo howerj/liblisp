@@ -31,40 +31,40 @@ lisp *lglobal; /**< used for signal handler and modules*/
  * "subr" function type as they will be used as internal lisp subroutines by
  * the interpreter. */
 #include <dlfcn.h>
-static int ud_dl = 0;
+static int ud_dl = 0; /**< User defined type value for DLL handles*/
 
-struct dllist;
+struct dllist; /**< linked list of all DLL handles*/
 typedef struct dllist {
-        void* handle;
-        struct dllist* next;
+        void *handle;        /**< DLL handle, closed on exit*/
+        struct dllist *next; /**< next node in linked list*/
 } dllist;
 
-dllist *head;
+dllist *head; /**< *GLOBAL* list of all DLL handles for dlclose_atexit*/
 
+/** @brief close all of the open DLLs when the program exits **/
 static void dlclose_atexit(void) {
-        dllist *t;
-        if(!head) return;
-        do {
+        dllist *t; 
+        while(head) {
                 dlclose(head->handle);
                 t = head;
                 head = head->next;
                 free(t);
-        } while(head);
+        }
 }
 
 static void ud_dl_free(cell *f) {
-        /** @bug There is a problem with closing modules that contain 
-         *       callbacks like these for freeing user defined types 
-         *       made within those modules. If dlclose is called before
-         *       before the callback in the closed module is called the
-         *       program will SEGFAULT as the callback no longer is mapped
-         *       into the program space. **/
+      /* There is a problem with closing modules that contain 
+       * callbacks like these for freeing user defined types 
+       * made within those modules. If dlclose is called before
+       * before the callback in the closed module is called the
+       * program will SEGFAULT as the callback no longer is mapped
+       * into the program space. This is resolved with dlclose_atexit */
       /*dlclose(userval(f));*/
         free(f);
 }
 
 static int ud_dl_print(io *o, unsigned depth, cell *f) {
-        return printerf(NULL, o, depth, "%B<DYNAMIC-MODULE:%d>%t", userval(f));
+        return lisp_printf(NULL, o, depth, "%B<DYNAMIC-MODULE:%d>%t", userval(f));
 }
 
 static cell *subr_dlopen(lisp *l, cell *args) {

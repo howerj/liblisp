@@ -1556,14 +1556,15 @@ Seed the random number generator.
 
 * date
 
-Return a list representing the date.
+Return a list representing the date. 
 
         # (date)
         > (date)
-        (2015 8 2 20 18 47)
-        > (date)
-        (2015 8 2 20 18 50)
-
+        (2015 8 4 17 20 50 52)
+        # (year month week-day month-day hours minutes seconds)
+        # month (since January)    : 0-11
+        # week-day (since Sunday)  : 0-6
+         
 * assoc
 
 Find an atom within an association list, an association list is a list

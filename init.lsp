@@ -7,8 +7,7 @@
 ; To-do
 ; * unify, prolog interpreter, statistics package, symbolic manipulation
 ;   of sets, logic and state machine minimization routines and all kinds
-;   off neat stuff.
-;
+;   of neat stuff.
 
 (define type?      (lambda (type-enum x) (eq type-enum (type-of x))))
 (define list?      (lambda (x) (type? *cons* x)))
@@ -114,12 +113,13 @@
 
 (if *have-dynamic-loader*
   (begin
-    (load-module "os")
-    (load-module "sql")
-    (load-module "tcc")
-    (load-module "crc")
-    (load-module "line")
-    (load-module "math")
+    (load-module "os")    ; operating system module
+    (load-module "sql")   ; sql interface
+    (load-module "tcc")   ; tiny c compiler
+    (load-module "crc")   ; crc module
+    (load-module "line")  ; line editing library and module
+    (load-module "math")  ; math module
+;   (load-module "x11")   ; x11 window module
   (begin (put "module loading complete\n")  t)) 
   (begin (put "module loader not implemented\n") nil))
 

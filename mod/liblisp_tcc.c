@@ -43,7 +43,7 @@ static void ud_tcc_free(cell *f) {
 }
 
 static int ud_tcc_print(io *o, unsigned depth, cell *f) {
-        return printerf(NULL, o, depth, "%B<COMPILE-STATE:%d>%t", userval(f));
+        return lisp_printf(NULL, o, depth, "%B<COMPILE-STATE:%d>%t", userval(f));
 }
 
 static cell* subr_compile(lisp *l, cell *args) {
@@ -131,9 +131,9 @@ static void construct(void) {
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
                 if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
                         goto fail;
-        printerf(lglobal, lisp_get_logging(lglobal), 0, "module: tcc loaded\n");
+        lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: tcc loaded\n");
         return;
-fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "module: tcc load failure\n");
+fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: tcc load failure\n");
 }
 
 static void destruct(void) {

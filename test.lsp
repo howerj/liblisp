@@ -1,3 +1,8 @@
+; This is a simple test suite, far more tests should be added here
+; to fully test all aspects of the interpreter. Every single primitive
+; should be tested here to both document functionality and make the
+; test suite as comprehensive as possible.
+
 ; random floating point number between zero and one
 (define frandom (lambda () (fabs (/ (coerce *float* (random)) *random-max*))))
 (define sum-of-squares (lambda (x y) (+ (* x x) (* y y))))

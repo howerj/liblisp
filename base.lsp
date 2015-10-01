@@ -10,7 +10,10 @@
 (define cddr   (lambda (x) (cdr (cdr x))))
 (define cadar  (lambda (x) (car (cdr (car x)))))
 (define caddr  (lambda (x) (car (cdr (cdr x)))))
+(define cdddr  (lambda (x) (cdr (cdr (cdr x)))))
+(define cddddr (lambda (x) (cdr (cdr (cdr (cdr x))))))
 (define caddar (lambda (x) (car (cdr (cdr (car x))))))
+(define cadddr (lambda (x) (car (cdr (cdr (cdr x))))))
 
 ; greatest common divisor
 (define gcd
@@ -172,7 +175,7 @@
 (define float-equal
   (lambda (x y)
     (<
-      (fabs (- x y))
+      (abs (- x y))
       0.00001)))
 
 ; rewind an IO port to point to the beginning of its input or output
@@ -268,8 +271,6 @@
                    (put "newline expects () or (IO))")
                    (error 1))))))
 
-
-
 ; exclude all the element from 0 to k in a list
 (define list-tail
   (lambda (l k)
@@ -347,7 +348,9 @@
 (define bye  (lambda () (exit)))  ; quit the interpreter
 (define quit (lambda () (exit)))  ; quit the interpreter
 
-(define gensym-counter 0) ; counter for gensym
+(define make-string (lambda (s) (coerce *string* s)))
+
+(define gensym-counter 0) ; *GLOBAL* counter for gensym
 (define gensym ; generate a new *unique* symbol
   (lambda ()
     (begin
@@ -356,7 +359,49 @@
         (join
           "-"
           "GENSYM"
-          (coerce *string* gensym-counter)
-;         (coerce *string* (abs (random)))
+          (make-string gensym-counter)
+;         (make-string (abs (random)))
               )))))
+
+(define *months* ; months of the year association list
+  '((0 January)  (1 February)  (2 March) 
+    (3 April)    (4 May)       (5 June) 
+    (6 July)     (7 August)    (8 September)
+    (9 October)  (10 November) (11 December)))
+
+(define *week-days* ; days of the week association list
+  '((0 Sunday)  (1 Monday)  (2 Tuesday) (3 Wednesday)
+    (4 Thurday) (5 Friday)  (6 Saturday)))
+
+(define date-string ; make a nicely formatted date string
+  (lambda ()
+    (let* 
+      (d (date))
+      (month (cadr (assoc (cadr d)  *months*)))
+      (wd    (cadr (assoc (caddr d) *week-days*)))
+      (mday  (cadddr d))
+      (hrms  (cddddr d))
+      (hrmss (join ":" (make-string (car hrms)) 
+                       (make-string (cadr hrms)) 
+                       (make-string (caddr hrms))))
+      (join " " (make-string (car d)) month wd (make-string mday) hrmss))))
+
+; association list of type numbers and a description of that type
+(define *type-names* 
+ (pair
+   (list 
+      *integer*     *symbol*    *cons*        
+      *string*      *hash*      *io*          
+      *float*       *procedure* *primitive*   
+      *f-procedure*)
+   (list 
+      "Integer"               "Symbol"               "Cons list" 
+      "String"                "Hash"                 "Input/Output port"    
+      "Floating point number" "Lambda procedure"     "Primitive subroutine" 
+      "F-Expression")))
+
+(define type-name ; Get a string representing the name of a type
+  (lambda (x) 
+    (cadr 
+      (assoc (type-of x) *type-names*))))
 

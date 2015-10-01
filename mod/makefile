@@ -1,7 +1,8 @@
 CC?=gcc
 CFLAGS?=-Wall -Wextra -std=gnu99 -g -O2 -fPIC 
 MODULES=liblisp_sql.so liblisp_os.so liblisp_crc.so\
-       	liblisp_tcc.so liblisp_math.so liblisp_line.so
+       	liblisp_tcc.so liblisp_math.so liblisp_line.so\
+	liblisp_x11.so
 
 all: help $(MODULES)
 
@@ -26,6 +27,9 @@ liblisp_math.so: liblisp_math.o
 liblisp_line.so: liblisp_line.o
 	$(CC) $(CFLAGS) -shared $^ -lline -o $@
 
+liblisp_x11.so: liblisp_x11.o
+	$(CC) $(CFLAGS) -shared $^ -lX11 -o $@
+
 help:
 	@echo ""
 	@echo "This makefile builds lisp modules for the liblisp library."
@@ -48,6 +52,7 @@ help:
 	@echo "     liblisp_tcc.so   Tiny C Compiler module"
 	@echo "     liblisp_math.so  Math module"
 	@echo "     liblisp_line.so  Line editor module"
+	@echo "     liblisp_x11.so   X-Window module"
 	@echo "     install          Install all of the modules"
 	@echo "     clean            Remove all compiled files"
 	@echo ""

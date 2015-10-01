@@ -117,11 +117,12 @@ static void construct(void) {
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
                 if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
                         goto fail;
-        printerf(lglobal, lisp_get_logging(lglobal), 0, "module: line editor loaded\n");
+        lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: line editor loaded\n");
         return;
-fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "module: line editor load failure\n");
+fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: line editor load failure\n");
 }
 
 static void destruct(void) {
+      /*lisp_set_line_editor(lglobal, NULL);*/
         if(homedir) free(histfile);
 }

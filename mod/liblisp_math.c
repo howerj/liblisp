@@ -72,9 +72,9 @@ static void construct(void) {
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
                 if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
                         goto fail;
-        printerf(lglobal, lisp_get_logging(lglobal), 0, "module: math loaded\n");
+        lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: math loaded\n");
         return;
-fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "module: math load failure\n");
+fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: math load failure\n");
 }
 
 static void destruct(void) {

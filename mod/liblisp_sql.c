@@ -22,7 +22,7 @@ static void ud_sql_free(cell *f) {
 }
 
 static int ud_sql_print(io *o, unsigned depth, cell *f) {
-        return printerf(NULL, o, depth, 
+        return lisp_printf(NULL, o, depth, 
                         "%B<SQL-STATE:%d:%s>%t", 
                                 userval(f), lisp_is_cell_closed(f) ? "CLOSED" : "OPEN");
 }
@@ -48,7 +48,7 @@ static cell *subr_sqlopen(lisp *l, cell *args) {
         if(!cklen(args, 1) || !is_asciiz(car(args)))
                RECOVER(l, "\"expected (string)\" '%S", args); 
         if(sqlite3_open(strval(car(args)), &db)) {
-                printerf(l, lisp_get_logging(l), 0, "(sql-error \"%s\")\n", sqlite3_errmsg(db));
+                lisp_printf(l, lisp_get_logging(l), 0, "(sql-error \"%s\")\n", sqlite3_errmsg(db));
                 sqlite3_close(db);
                 return gsym_error();
         }
@@ -62,7 +62,7 @@ static cell *subr_sql(lisp *l, cell *args) {
         if(!cklen(args, 2) || !is_usertype(car(args), ud_sql) || !is_asciiz(CADR(args)) || lisp_is_cell_closed(car(args)))
                 RECOVER(l, "\"expected (sql-database string)\" '%S", args); 
         if(sqlite3_exec(userval(car(args)), strval(CADR(args)), sql_callback, &head, &errmsg) != SQLITE_OK) {
-                printerf(l, lisp_get_logging(l), 0, "(sql-error \"%s\")\n", errmsg);
+                lisp_printf(l, lisp_get_logging(l), 0, "(sql-error \"%s\")\n", errmsg);
                 sqlite3_free(errmsg);
                 return gsym_error();
         }
@@ -83,9 +83,9 @@ static void construct(void) {
         if(!lisp_add_subr(lglobal, "sql",       subr_sql)) goto fail;
         if(!lisp_add_subr(lglobal, "sql-open",  subr_sqlopen)) goto fail;
         if(!lisp_add_subr(lglobal, "sql-close", subr_sqlclose)) goto fail;
-        printerf(lglobal, lisp_get_logging(lglobal), 0, "module: sqlite3 loaded\n");
+        lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: sqlite3 loaded\n");
         return;
-fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "module: sqlite3 load failure\n");
+fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: sqlite3 load failure\n");
 }
 
 static void destruct(void) {

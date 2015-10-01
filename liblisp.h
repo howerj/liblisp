@@ -523,9 +523,13 @@ cell *mkstr(lisp *l, char *s); /**< make lisp cell (string) from a string**/
 cell *mkhash(lisp *l, hashtable *h); /**< make lisp cell from hash**/
 cell *mkuser(lisp *l, void *x, int type); /**< make a user defined type**/
 subr subrval(cell *x); /**< cast a lisp cell to a primitive func ptr**/
-cell *procargs(cell *x); /**< get args to a procedure**/
-cell *proccode(cell *x); /**< get code from a proccode**/
-cell *procenv(cell *x);  /**< get procedure environment**/
+char *subrtype(cell *x);   /**< get the type validation string for a subroutine*/
+char *subrdocstr(cell *x); /**< get the documentation string for a subroutine*/ 
+cell *procargs(cell *x);   /**< get args to a procedure/f-expr **/
+cell *proccode(cell *x);   /**< get code from a procedure/f-expr **/
+cell *procenv(cell *x);    /**< get procedure/f-expr environment**/
+char *proctype(cell *x);   /**< get the type validation string for a procedure/f-expr */
+char *procdocstr(cell *x); /**< get the documentation string for a procedure/f-expr */
 void setcar(cell *x, cell *y); /**< set cdr cell of a cons cell**/
 void setcdr(cell *x, cell *y); /**< set car cell of a cons cell**/
 char *strval(cell *x); /**< get string from a lisp cell**/
@@ -629,7 +633,7 @@ void lisp_throw(lisp *l, int ret);
  *  @param  fmt    format string
  *  @param  ...    any arguments
  *  @return int    >= 0 on success, less than 0 on failure**/
-int printerf(lisp *l, io *o, unsigned depth, char *fmt, ...);
+int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...);
 
 /** @brief  add a symbol to the list of all symbols
  *  @param  l    lisp environment to add cell to
@@ -784,6 +788,22 @@ void lisp_close_cell(cell *f);
  *  @return int length of cell**/
 int  lisp_get_cell_length(cell *c);
 
+/** @brief validate an arguments list against a format string, this can either
+ *         longjmp to an error handler if recover is non zero or return a
+ *         integer (non zero if "args" type and length are correct).
+ *
+ *         The format string expected is as follows:
+ *
+ *
+ *  @param l       lisp environment for error handling
+ *  @param len     length of arguments list
+ *  @param fmt     expected format of arguments
+ *  @param args    argument cons list to validate
+ *  @param recover if non zero this will longjmp to an error handler instead
+ *                 of returning.
+ *  @return 0 if invalid (or lonjmp if recover is non zero), 1 if valid**/
+int lisp_validate(lisp *l, unsigned len, char *fmt, cell* args, int recover);
+
 /************************ test environment ***********************************/
 
 /** @brief  A full lisp interpreter environment in a function call. It will
@@ -845,7 +865,7 @@ int main_lisp_env(lisp *l, int argc, char **argv);
  * @param FMT  Format string printing error messages
  * @param ...  Arguments for format string**/
 #define FAILPRINTER(LISP, RET, FMT, ...) do{\
-        printerf((LISP), lisp_get_logging((LISP)), 0,\
+        lisp_printf((LISP), lisp_get_logging((LISP)), 0,\
                         "(error '%s " FMT " \"%s\" %d)\n",\
                        __func__, __VA_ARGS__, __FILE__, (intptr_t)__LINE__);\
         lisp_throw((LISP), RET);\

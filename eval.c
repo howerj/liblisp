@@ -66,16 +66,16 @@ int  is_str(cell *x)          { assert(x); return x->type == STRING; }
 int  is_sym(cell *x)          { assert(x); return x->type == SYMBOL; }
 int  is_subr(cell *x)         { assert(x); return x->type == SUBR; }
 int  is_hash(cell *x)         { assert(x); return x->type == HASH; }
-int  is_userdef(cell *x)      { assert(x); return x->type == USERDEF; }
+int  is_userdef(cell *x)      { assert(x); return x->type == USERDEF && !x->close; }
 int  is_usertype(cell *x, int type) { assert(x);
-        return x->type == USERDEF && x->userdef == type;
+        return x->type == USERDEF && x->userdef == type && !x->close;
 }
 int  is_asciiz(cell *x)       { assert(x); return is_str(x) || is_sym(x); }
 int  is_arith(cell *x)        { assert(x); return is_int(x) || is_floatval(x); }
 int  is_func(cell *x)         { assert(x); return is_proc(x) || is_fproc(x) || is_subr(x); }
 cell *mkint(lisp *l, intptr_t d) { return mk(l, INTEGER, 1, (cell*) d); }
 cell *mkio(lisp *l, io *x)    { assert(x); return mk(l, IO, 1, (cell*)x); }
-cell *mksubr(lisp *l, subr p) { assert(p); return mk(l, SUBR, 1, p); }
+cell *mksubr(lisp *l, subr p) { assert(p); return mk(l, SUBR, 3, p); }
 cell *mkproc(lisp *l, cell *x, cell *y, cell *z)  { assert(x); return mk(l,PROC,3,x,y,z); }
 cell *mkfproc(lisp *l, cell *x, cell *y, cell *z) { assert(x); return mk(l,FPROC,3,x,y,z); }
 cell *mkfloat(lisp *l, lfloat f) { return mk(l, FLOAT, 1, f); }
@@ -96,10 +96,14 @@ static cell *mkasciiz(lisp *l, char *s, lisp_type type) {
 cell *mkstr(lisp *l, char *s) { return mkasciiz(l, s, STRING); }
 cell *mksym(lisp *l, char *s) { return mkasciiz(l, s, SYMBOL); }
 cell *mkhash(lisp *l, hashtable *h) { return mk(l, HASH, 1, (cell *)h); }
-subr subrval(cell *x)         { assert(x); return x->p[0].prim; }
+subr  subrval(cell *x)        { assert(x); return x->p[0].prim; }
+char *subrtype(cell *x)       { assert(x); return (char *) x->p[1].v; }
+char *subrdocstr(cell *x)     { assert(x); return (char *) x->p[2].v; }
 cell *procargs(cell *x)       { assert(x); return x->p[0].v; }
 cell *proccode(cell *x)       { assert(x); return x->p[1].v; }
 cell *procenv(cell *x)        { assert(x); return x->p[2].v; }
+char *proctype(cell *x)       { assert(x); return (char *) x->p[3].v; }
+char *procdocstr(cell *x)     { assert(x); return (char *) x->p[4].v; }
 cell *car(cell *x)            { assert(x); return x->p[0].v; }
 cell *cdr(cell *x)            { assert(x); return x->p[1].v; }
 io*  ioval(cell *x)           { assert(x); return (io*)(x->p[0].v); }
@@ -190,7 +194,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
         if(!exp || !env) return NULL;
         if(l->trace != TRACE_OFF) { /*print out expressions for debugging*/
                 if(l->trace == TRACE_ALL || (l->trace == TRACE_MARKED && exp->trace))
-                        printerf(l, l->efp, 1, "(%ytrace%t %S)\n", exp); 
+                        lisp_printf(l, l->efp, 1, "(%ytrace%t %S)\n", exp); 
                 else if(l->trace != TRACE_MARKED)
                         HALT(l, "\"invalid trace level\" %d", l->trace);
         }

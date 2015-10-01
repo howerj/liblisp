@@ -23,11 +23,13 @@ static cell* subr_crc(lisp *l, cell *args) {
 }
 
 static void construct(void) {
+        assert(lglobal);
         if(!(lisp_add_subr(lglobal, "crc", subr_crc))) goto fail;
-        printerf(lglobal, lisp_get_logging(lglobal), 0, "module: crc loaded\n");
+        lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: crc loaded\n");
         return;
-fail:   printerf(lglobal, lisp_get_logging(lglobal), 0, "module: crc load failure\n");
+fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: crc load failure\n");
 }
 
 static void destruct(void) {
 }
+
