@@ -153,7 +153,7 @@
 
 ; sort a list, super inefficiently
 (define sort 
-  (letrec
+  (let
    (sort-insert (lambda (x l)
     (if 
      (null? l)
@@ -189,9 +189,6 @@
       ((atom? l) (list l))
       (t (append (flatten (car l))
                  (flatten (cdr l)))))))
-
-; the simplest flambda expression
-(define print-me (flambda (x) x))
 
 ; turn a string into a list of characters
 (define explode
@@ -241,35 +238,8 @@
   (lambda (pattern str)
     (car (regex-span pattern str))))
 
-; apply a function to all the car elements of a list, returning
-; a list made up of all of those evaluated arguments
-(define mapcar 
-  (flambda (args)
-        (letrec
-          (func (eval (car args)))
-          (body (cadr args))
-          (mapper (lambda (l)
-              (if (cdr l)
-                (cons
-                  (func (car l))
-                  (mapper (cdr l)))
-                (cons (func (car l)) nil))))
-          (mapper (eval body)))))
- 
-; example of a "flambda" expression
-(define newline
-  (flambda (x)
-        (cond ((= (length x) 1) 
-               (if (output? (eval (car x) (environment)))
-                   (put (eval (car x) (environment)) "\n")
-                   (begin
-                     (put "newline expects (IO)\n")
-                     (error 1))))
-              ((= (length x) 0)
-               (put "\n"))
-              (t (begin 
-                   (put "newline expects () or (IO))")
-                   (error 1))))))
+; print a newline
+(define newline (lambda () (put "\n")))
 
 ; exclude all the element from 0 to k in a list
 (define list-tail
@@ -290,24 +260,11 @@
   (lambda (l start end)
     (list-tail (list-head l end) start)))
 
-; Test whether a variable is defined or not
-(define defined?
-  (flambda (x)
-    (let* (ret (assoc (car x) (environment))) (if ret (cdr ret) nil))))
-
-; log a message to an output port
-(define log-msg
-  (flambda (x)
-     (let* (out (eval (car x)))
-     (if (output? out) 
-       (format out "%S\n" (append (date) (cdr x)))
-       (begin (put "expected output port\n") 'error)))))
-
 ; pick a random element from a list
 (define random-element
   (lambda (x)
     (if (list? x)
-      (let*
+      (let
         (ll (% (abs (random)) (length x)))
         (car (sublist x ll ll)))
       x)))
@@ -375,7 +332,7 @@
 
 (define date-string ; make a nicely formatted date string
   (lambda ()
-    (let* 
+    (let 
       (d (date))
       (month (cadr (assoc (cadr d)  *months*)))
       (wd    (cadr (assoc (caddr d) *week-days*)))

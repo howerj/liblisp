@@ -61,7 +61,7 @@
         X(subr_list,    "list")           X(subr_match,     "match")\
         X(subr_scons,   "scons")          X(subr_scar,      "scar")\
         X(subr_scdr,    "scdr")           X(subr_eval,      "eval")\
-        X(subr_gc,      "gc")             X(subr_trace_level, "trace-level!")\
+        X(subr_gc,      "gc")             X(subr_trace,     "trace!")\
         X(subr_length,  "length")         X(subr_typeof,    "type-of")\
         X(subr_inp,     "input?")         X(subr_outp,      "output?")\
         X(subr_eofp,    "eof?")           X(subr_flush,     "flush")\
@@ -77,13 +77,12 @@
         X(subr_getenv,  "getenv")         X(subr_rand,      "random")\
         X(subr_seed,    "seed")           X(subr_date,      "date")\
         X(subr_assoc,   "assoc")          X(subr_setlocale, "locale!")\
-        X(subr_trace_cell, "trace")       X(subr_binlog,    "binary-logarithm")\
         X(subr_timed_eval, "timed-eval")  X(subr_reverse,   "reverse")\
         X(subr_join,    "join")           X(subr_regexspan, "regex-span")\
         X(subr_raise,   "raise")          X(subr_split,     "split")\
         X(subr_hcreate, "hash-create")    X(subr_format,    "format")\
         X(subr_substring, "substring")    X(subr_tr,        "tr")\
-        X(subr_define_eval, "define-eval")
+        X(subr_define_eval, "define-eval") X(subr_binlog,   "binary-logarithm")
 
 #define X(SUBR, NAME) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
@@ -111,10 +110,7 @@ static struct all_subroutines { subr p; char *name; } primitives[] = {
         X("*lc-all*",       LC_ALL)       X("*lc-collate*",  LC_COLLATE)\
         X("*lc-ctype*",     LC_CTYPE)     X("*lc-monetary*", LC_MONETARY)\
         X("*lc-numeric*",   LC_NUMERIC)   X("*lc-time*",     LC_TIME)\
-        X("*user-defined*", USERDEF)      X("*trace-off*",   TRACE_OFF)\
-        X("*trace-marked*", TRACE_MARKED) X("*trace-all*",   TRACE_ALL)\
-        X("*gc-on*",        GC_ON)        X("*gc-postpone*", GC_POSTPONE)\
-        X("*gc-off*",       GC_OFF)       X("*eof*",         EOF)\
+        X("*user-defined*", USERDEF)      X("*eof*",         EOF)\
         X("*sig-abrt*",     SIGABRT)      X("*sig-fpe*",     SIGFPE)\
         X("*sig-ill*",      SIGILL)       X("*sig-int*",     SIGINT)\
         X("*sig-segv*",     SIGSEGV)      X("*sig-term*",    SIGTERM)
@@ -126,7 +122,7 @@ static struct integer_list { char *name; intptr_t val; } integers[] = {
 };
 #undef X
 
-#define X(CNAME, LNAME) static cell _ ## CNAME = { SYMBOL, 0, 0, 1, 0, 0, 0, .p[0].v = LNAME};
+#define X(CNAME, LNAME) static cell _ ## CNAME = { SYMBOL, 0, 0, 1, 0, 0, .p[0].v = LNAME};
 CELL_XLIST /*structs for special cells*/
 #undef X
 
@@ -222,7 +218,7 @@ CELL_XLIST
                         goto fail;
 
 #define X(FUNC) if(!lisp_add_subr(l, # FUNC "?", subr_ ## FUNC)) goto fail;
-ISX_LIST
+ISX_LIST /*add all of the subroutines for string character class testing*/
 #undef X
 
         return l;
@@ -461,52 +457,16 @@ static cell *subr_eval(lisp *l, cell *args) { /**< evaluate a lisp expression*/
         return ob;
 }
 
-static cell *subr_trace_level(lisp *l, cell *args) { /**< set global tracing level*/
-        if(cklen(args, 1) && lisp_validate(l, 1, "d", args, 1)) {
-                switch(intval(car(args))) {
-                case TRACE_OFF:    l->trace = TRACE_OFF; break;
-                case TRACE_MARKED: l->trace = TRACE_MARKED; break;
-                case TRACE_ALL:    l->trace = TRACE_ALL; break;
-                default: RECOVER(l, "\"invalid trace level\" '%S", car(args));
-                }
-        }
-        return mkint(l, l->trace);
+static cell *subr_trace(lisp *l, cell *args) { /**< set tracing on/off */
+        if(cklen(args, 1) && lisp_validate(l, 1, "b", args, 1)) 
+                l->trace = is_nil(car(args)) ? 0 : 1;
+        return l->trace ? gsym_tee() : gsym_nil();
 }
 
-static cell *subr_trace_cell(lisp *l, cell *args) { /**< trace a specific cell if level allows*/
-        if(cklen(args, 1)) {
-                return (car(args)->trace) ? gsym_tee() : gsym_nil();
-        } else if (cklen(args, 2)) {
-                if(is_nil(CADR(args))) {
-                        car(args)->trace = 0;
-                        return gsym_nil();
-                } else if(CADR(args) == gsym_tee()) {
-                        car(args)->trace = 1;
-                        return gsym_tee();
-                } 
-        } 
-        RECOVER(l, "\"expected (cell) or (cell t-or-nil)\", '%S", args);
-        return gsym_error();
-}
-
-static cell *subr_gc(lisp *l, cell *args) { /**< control the garbage collector*/
-        if(cklen(args, 0))
-                gc_mark_and_sweep(l);
-        if(cklen(args, 1) && is_int(car(args))) {
-                switch(intval(car(args))) {
-                case GC_ON:       if(l->gc_state == GC_OFF) goto fail;
-                                  else l->gc_state = GC_ON;
-                                  break;
-                case GC_POSTPONE: if(l->gc_state == GC_OFF) goto fail;
-                                  else l->gc_state = GC_POSTPONE; 
-                                  break;
-                case GC_OFF:      l->gc_state = GC_OFF;      break;
-                default: RECOVER(l, "\"invalid GC option\" '%S", args);
-                }
-        }
-        return mkint(l, l->gc_state);
-fail:   RECOVER(l, "\"garbage collection permanently off\" '%S", args);
-        return gsym_error();
+static cell *subr_gc(lisp *l, cell *args) {
+        lisp_validate(l, 0, "", args, 1);
+        gc_mark_and_sweep(l);
+        return gsym_tee();
 }
 
 static cell *subr_length(lisp *l, cell *args) { /**< length of list or string*/
@@ -636,38 +596,27 @@ static cell* subr_flush(lisp *l, cell *args) { /**< flush an output port*/
 }
 
 static cell* subr_tell(lisp *l, cell *args) { /**< get offset of port*/
-        if(cklen(args, 1) && is_io(car(args)))
-                return mkint(l, io_tell(ioval(car(args))));
-        RECOVER(l, "\"expected (io)\" '%S", args);
-        return gsym_error();
+        lisp_validate(l, 1, "P", args, 1);
+        return mkint(l, io_tell(ioval(car(args))));
 }
 
 static cell* subr_seek(lisp *l, cell *args) { /**< set offset of port*/
-        if(cklen(args, 3) && is_io(car(args)) 
-                && is_int(CADR(args)) && is_int(CADR(cdr(args)))) {
-                switch (intval(CADR(cdr(args)))) {
-                case SEEK_SET: case SEEK_CUR: case SEEK_END: break;
-                default: RECOVER(l, "\"invalid enum option\" '%S", args);
-                }
-                return mkint(l,io_seek(ioval(car(args)),intval(CADR(args)),
-                                        intval(CADR(cdr(args)))));
+        lisp_validate(l, 3, "P d d", args, 1);
+        switch (intval(CADR(cdr(args)))) {
+        case SEEK_SET: case SEEK_CUR: case SEEK_END: break;
+        default: RECOVER(l, "\"invalid enum option\" '%S", args);
         }
-        RECOVER(l, "\"expected (io integer integer)\" '%S", args);
-        return gsym_error();
+        return mkint(l, io_seek(ioval(car(args)), intval(CADR(args)), intval(CADR(cdr(args)))));
 }
 
 static cell* subr_eofp(lisp *l, cell *args) { /**< is port at the end of the stream?*/
-        if(cklen(args, 1) && is_io(car(args)))
-                return io_eof(ioval(car(args))) ? gsym_tee() : gsym_nil();
-        RECOVER(l, "\"expected (io)\" '%S", args);
-        return gsym_error();
+        lisp_validate(l, 1, "P", args, 1);
+        return io_eof(ioval(car(args))) ? gsym_tee() : gsym_nil();
 }
 
 static cell* subr_ferror(lisp *l, cell *args) { /**< did an error occur on a port?*/
-        if(cklen(args, 1) && is_io(car(args)))
-                return io_error(ioval(car(args))) ? gsym_tee() : gsym_nil();
-        RECOVER(l, "\"expected (io)\" '%S", args);
-        return gsym_error();
+        lisp_validate(l, 1, "P", args, 1);
+        return io_error(ioval(car(args))) ? gsym_tee() : gsym_nil();
 }
 
 static cell* subr_system(lisp *l, cell *args) { /**< execute command with system command interpreter*/
@@ -680,8 +629,7 @@ static cell* subr_system(lisp *l, cell *args) { /**< execute command with system
 }
 
 static cell* subr_remove(lisp *l, cell *args) {
-        if(!cklen(args, 1) || !is_asciiz(car(args)))
-                RECOVER(l, "\"expected (string)\" '%S", args);
+        lisp_validate(l, 1, "Z", args, 1);
         return remove(strval(car(args))) ? gsym_nil() : gsym_tee() ;
 }
 
@@ -723,7 +671,7 @@ static cell* subr_coerce(lisp *l, cell *args) { /**< coerce one type into anothe
         intptr_t d = 0;
         size_t i = 0, j;
         cell *convfrom, *x, *y, *head;
-        if(!cklen(args, 2) && is_sym(car(args))) goto fail;
+        if(!cklen(args, 2) && !is_int(car(args))) goto fail;
         convfrom = CADR(args);
         if(intval(car(args)) == convfrom->type) return convfrom;
         switch(intval(car(args))) {
@@ -970,8 +918,6 @@ static cell *subr_regexspan(lisp *l, cell *args) { /**< get the span of a regex 
 
 static cell *subr_raise(lisp *l, cell *args) { /**< raise a signal*/
         lisp_validate(l, 1, "d", args, 1);
-        if(!cklen(args, 1) || !is_int(car(args)))
-                RECOVER(l, "\"expected (integer)\" %S", args);
         return raise(intval(car(args))) ? (cell*)gsym_nil(): (cell*)gsym_tee();
 }
 

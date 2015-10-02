@@ -11,7 +11,7 @@
 ; more iterations creates a better approximation
 (define monte-carlo-pi
   (lambda (iter)
-    (letrec
+    (let
         (inner ; hit?
           (lambda ()
             (if (<= (sum-of-squares (frandom) (frandom)) 1)
@@ -26,7 +26,7 @@
 
 ; This is a series of simple tests that is not comprehensive
 ; at the moment.
-(let*
+(let
   (test (lambda
     (compare expr result)
     (if 
@@ -36,7 +36,7 @@
         (format "Test failed: %S != %S\n" expr result)
         (exit)))))
   (begin
-    (test = (let* (a 3) (b -4) (+ a b)) -1)
+    (test = (let (a 3) (b -4) (+ a b)) -1)
     (test = (if 'a 'b 'c)          'b)
     (test = (if  0 'b 'c)          'b)
     (test = (if () 'b 'c)          'c)

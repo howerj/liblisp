@@ -8,8 +8,7 @@
  *  @email      howe.r.j.89@gmail.com
  *  
  *  @todo Remove unnecessary bit fields in the cell structure (such as the
- *        trace bit, or the userdef field for non user defined functions).
- *  @todo Find a better name for lisp_union **/
+ *        trace bit, or the userdef field for non user defined functions).**/
 
 #ifndef PRIVATE_H
 #define PRIVATE_H
@@ -36,7 +35,7 @@ extern "C" {
         X(define,  "define") X(set,     "set!")\
         X(begin,   "begin")  X(cond,    "cond")\
         X(error,   "error")  X(env,     "environment")\
-        X(lets,    "let*")   X(letrec,  "letrec")\
+        X(let,     "let")
 
 /**@brief This restores a jmp_buf stored in lisp environment if it
  *        has been copied out to make way for another jmp_buf.
@@ -62,33 +61,20 @@ typedef enum lisp_type {
         USERDEF  /**< User defined types*/
 } lisp_type;     /**< A lisp object*/
 
-typedef enum trace_level { 
-        TRACE_OFF,    /**< tracing is off (default)*/
-        TRACE_MARKED, /**< trace only cells that have their trace field set*/
-        TRACE_ALL     /**< trace everything*/
-} trace_level; /**< level of debug printing to do when evaluating objects*/
-
-typedef enum gc_control { /**< Garbage collection control enumeration*/
-        GC_ON,       /**< Garbage collection is on (default)*/
-        GC_POSTPONE, /**< Temporarily postpone garbage collection*/
-        GC_OFF       /**< *Permanently turn garbage collection off*/
-} gc_control; /**< enum for l->gc_state */
-
-typedef union lisp_union { /**< ideally we would use void * for everything*/
+typedef union cell_data { /**< ideally we would use void* for everything*/
         void *v;     /**< use this for integers and points to cells*/
         lfloat f;    /**< if lfloat is double it could be bigger than *v */ 
         subr prim;   /**< function pointers are not guaranteed to fit into a void**/
-} lisp_union; /**< a union of all the different C datatypes used*/
+} cell_data; /**< a union of all the different C datatypes used*/
 
 struct cell {
         unsigned type:    4,        /**< Type of the lisp object*/
-                 userdef: 8,        /**< if type is USERDEF, the this determines which USERDEF*/
+                 userdef: 8,        /**< if type is USERDEF then this identifies which one*/
                  mark:    1,        /**< mark for garbage collection*/
                  uncollectable: 1,  /**< set if the object cannot, or should not, be freed*/
-                 trace:   1,        /**< set if object is to be traced for debugging*/
                  close:   1,        /**< set if the objects data field is now invalid/freed*/
                  len:     32;       /**< length of data p*/
-        lisp_union p[1]; /**< uses the "struct hack", c99 does not quite work here*/
+        cell_data p[1]; /**< uses the "struct hack", c99 does not quite work here*/
 }; /**< a tagged object representing all possible lisp objects*/
 
 typedef struct hashentry {      /**< linked list of entries in a bin*/
@@ -171,7 +157,6 @@ struct lisp {
                  color_on:     1, /**< REPL Colorize output*/
                  prompt_on:    1, /**< REPL '>' Turn prompt on*/
                  editor_on:    1; /**< REPL Turn the line editor on*/
-        gc_control gc_state /**< gc on (default), suspended or permanently off*/;
         userdef_funcs ufuncs[MAX_USER_TYPES]; /**< functions for user defined types*/
         int userdef_used;   /**< number of user defined types allocated*/
         editor_func editor; /**< line editor to use, optional*/

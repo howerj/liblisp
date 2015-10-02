@@ -24,11 +24,10 @@ static cell *mk(lisp *l, lisp_type type, size_t count, ...)
         size_t i;
 
         if(l->gc_collectp++ > COLLECTION_POINT) /*set to 1 for testing*/
-                if(l->gc_state == GC_ON) /*only collect when gc is on*/
-                        gc_mark_and_sweep(l);
+                gc_mark_and_sweep(l);
 
         va_start(ap, count);
-        if(!(ret = calloc(1, sizeof(cell) + (count - 1) * sizeof(lisp_union))))
+        if(!(ret = calloc(1, sizeof(cell) + (count - 1) * sizeof(cell_data))))
                 HALT(l, "%s", "out of memory");
         if(!(node = calloc(1, sizeof(gc_list))))
                 HALT(l, "%s", "out of memory");
@@ -192,12 +191,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
         gc_add(l, env);
         tail:
         if(!exp || !env) return NULL;
-        if(l->trace != TRACE_OFF) { /*print out expressions for debugging*/
-                if(l->trace == TRACE_ALL || (l->trace == TRACE_MARKED && exp->trace))
-                        lisp_printf(l, l->efp, 1, "(%ytrace%t %S)\n", exp); 
-                else if(l->trace != TRACE_MARKED)
-                        HALT(l, "\"invalid trace level\" %d", l->trace);
-        }
+        if(l->trace) lisp_printf(l, l->efp, 1, "(%ytrace%t %S)\n", exp); 
         if(is_nil(exp)) return gsym_nil();
         if(l->sig) {
                 l->sig = 0;
@@ -216,23 +210,22 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 first = car(exp);
                 exp   = cdr(exp);
                 if(first == l->iif) {
-                        if(!cklen(exp, 3))
-                                RECOVER(l, "'if \"argc != 3 in %S\"", exp);
+                        lisp_validate(l, 3, "A A A", exp, 1);
                         exp = !is_nil(eval(l, depth+1, car(exp), env)) ?
                                 CADR(exp) :
                                 CADDR(exp);
                         goto tail;
                 }
                 if(first == l->lambda) {
-                        if(!cklen(exp, 2))
-                                RECOVER(l, "'lambda \"argc != 2 in %S\"", exp);
+                        if(exp->len < 2)
+                                RECOVER(l, "'lambda \"argc < 2 in %S\"", exp);
                         l->gc_stack_used = gc_stack_save;
                         tmp = mkproc(l, car(exp), cdr(exp), env);
                         return gc_add(l, tmp);
                 }
                 if(first == l->flambda) {
-                        if(!cklen(exp, 2)) 
-                                RECOVER(l, "'flambda \"argc != 2 in %S\"", exp);
+                        if(exp->len < 2)
+                                RECOVER(l, "'flambda \"argc < 2 in %S\"", exp);
                         if(!cklen(car(exp), 1)) 
                                 RECOVER(l, "'flambda \"only one argument allowed %S\"", exp);
                         l->gc_stack_used = gc_stack_save;
@@ -252,31 +245,22 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 }
                 if(first == l->env)   return env;
                 if(first == l->quote) return car(exp);
-                if(first == l->error) {
-                        if(cklen(exp, 1) && is_int(car(exp)))
-                                lisp_throw(l, intval(car(exp)));
-                        if(cklen(exp, 0))
-                                lisp_throw(l, -1);
-                        RECOVER(l, "'throw \"expected () or (int)\" '%S", exp); 
-                }
                 if(first == l->define) {
-                        if(!cklen(exp, 2) || !is_sym(car(exp)))
-                                RECOVER(l, "'define \"argc != 2 in %S or is not a symbol\"", exp);
+                        lisp_validate(l, 2, "s A", exp, 1);
                         l->gc_stack_used = gc_stack_save;
                         return gc_add(l, extend_top(l, car(exp),
                               eval(l, depth+1, CADR(exp), env)));
                 }
                 if(first == l->set) {
                         cell *pair, *newval;
-                        if(!cklen(exp, 2))
-                                RECOVER(l, "'set! \"argc != 2 in %S\"", exp);
+                        lisp_validate(l, 2, "s A", exp, 1);
                         if(is_nil(pair = assoc(car(exp), env)))
                                 RECOVER(l, "'set! \"undefined variable\" '%S", exp);
                         newval = eval(l, depth+1, CADR(exp), env);
                         setcdr(pair, newval);
                         return newval;
                 }
-                if(first == l->lets || first == l->letrec) {
+                if(first == l->let) {
                         cell *r = NULL, *s = NULL;
                         if(exp->len < 2)
                                 RECOVER(l, "'let* \"argc < 2 in %S\"", exp);
@@ -285,12 +269,10 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                                 if(!is_cons(car(exp)) || !cklen(car(exp), 2))
                                    RECOVER(l, "'let* \"expected list of length 2: '%S '%S\"",
                                                    car(exp), tmp);
-                                if(first == l->letrec)
-                                        s = env = extend(l, env, CAAR(exp), l->nil);
+                                s = env = extend(l, env, CAAR(exp), l->nil);
                                 r = env = extend(l, env, CAAR(exp),
                                         eval(l, depth + 1, CADAR(exp), env));
-                                if(first == l->letrec)
-                                        setcdr(car(s), CDAR(r));
+                                setcdr(car(s), CDAR(r));
                         }
                         return eval(l, depth+1, car(exp), env);
                 }

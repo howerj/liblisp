@@ -29,7 +29,6 @@ static void gc_free(lisp *l, cell *ob) { assert(ob); /**< free a lisp cell*/
 }
 
 static void gc_mark(lisp *l, cell* op) { assert(op); /**<recursively mark reachable cells*/
-        if(l->gc_state != GC_ON) return;
         if(op->uncollectable || op->mark) return;
         op->mark = 1;
         switch(op->type) {
@@ -63,7 +62,6 @@ static void gc_mark(lisp *l, cell* op) { assert(op); /**<recursively mark reacha
 
 void gc_sweep_only(lisp *l) { /*linked list versus dynamic array?*/
         gc_list *v, **p;
-        if(l->gc_state != GC_ON) return;
         for(p = &l->gc_head; *p != NULL;) { 
                 v = *p;
                 if(v->ref->mark) {
@@ -79,7 +77,6 @@ void gc_sweep_only(lisp *l) { /*linked list versus dynamic array?*/
 
 cell *gc_add(lisp *l, cell* op) { /**< add a cell to the working set*/
         cell **olist;
-        if(l->gc_state == GC_OFF) return op;
         if(l->gc_stack_used++ > l->gc_stack_allocated - 1) {
                 l->gc_stack_allocated = l->gc_stack_used * 2;
                 if(l->gc_stack_allocated < l->gc_stack_used) 

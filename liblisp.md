@@ -618,114 +618,7 @@ As much useful information about the object will be printed.
 
 #### Tracing
 
-Tracing objects as they are evaluated is off by default. It can be turned on
-with the *trace-level!* primitive. There are currently three different trace
-levels defined; off (the default), trace only symbols that have been marked for
-tracing and trace everything.
-
-        > (trace 'foo)      # is the symbol 'foo' marked for tracing?
-        > (trace 'foo t)    # mark the symbol 'foo' for tracing
-        > (trace 'foo nil)  # clear the symbol 'foo' of tracing mark
-
-        > (trace foo)       # is the evaluated expression 'foo' marked for tracing?
-        > (trace foo t)     # mark the evaluated expression 'foo' for tracing
-        > (trace foo nil)   # clear the evaluated expression 'foo' of tracing mark
-
-        > (trace-level! *trace-off*)    # turn tracing off
-        > (trace-level! *trace-marked*) # turn on tracing for marked objects
-        > (trace-level! *trace-all*)    # trace all objects, marked or not
-
-Everything can be marked for tracing but doing so does not necessarily produce
-anything useful. The tracing used is very simple and is to get a rough idea of
-the control flow when it is applied to specific objects. Tracing everything
-produces much more verbose output.
-
-As an example:
-
-        # A naive factorial implementation
-        > (define factorial
-         (lambda
-          (x)
-           (if
-            (< x 2) 1
-            (* x
-             (factorial
-             (- x 1)))))
-
-        # turn full tracing on
-        > (trace-level! *trace-all*)
-
-        > (factorial 3)
-        (trace
-         (factorial 3))
-        (trace factorial)
-        (trace 3)
-        (trace (begin (if (< x 2) 1 (* x (factorial (- x 1))))))
-        (trace (if (< x 2) 1 (* x (factorial (- x 1)))))
-        (trace (< x 2))
-        # ... lot of trace output ...
-        (trace (< x 2))
-        (trace <)
-        (trace x)
-        (trace 2)
-        (trace 1) # tracing ends here
-        6 # The result of (factorial 3)
-
-Whereas with tracing of specific symbols we can tell when they are called:
-
-        > (trace-level! *trace-marked*)
-        > (trace '* t)
-        > (trace 'factorial t)
-        > (trace 'x t)
-        > (factorial 3)
-        # The complete trace output
-        (trace factorial)
-        (trace x)
-        (trace *)
-        (trace x)
-        (trace factorial)
-        (trace x)
-        (trace x)
-        (trace *)
-        (trace x)
-        (trace factorial)
-        (trace x)
-        (trace x)
-        6 # The result
-
-It should not be expected that the trace output is the same as the above,
-functionality may be arbitrarily added or removed as it is purely for use as a
-debugging aide, one that is bound to be improved upon.
-
 #### Error messages
-
-The error messages printed are quite succinct, although to be fully useful the
-C source would have to be referred to and decoded.
-
-        > (+ 2 2)
-        4
-        > (+ 2)
-        (error 'subr_sum "argument count not equal 2" '(2)" "liblisp.c" 1337)
-        error # The returned value. (error ... ) is the error message printed.
-        # Calling open with arguments around
-        > (open "file.log" *file-in*)
-        (error 'subr_open "expected (integer string)" '("file.log" 1) "liblisp.c" 1600)
-        error
-
-The error message format is *usually* as follows:
-
-        (error PRIM MSG ARGS C-FILE C-LINE)
-
-        PRIM:   The C-level function the error occurred in.
-        MSG:    An arbitrary, but hopefully useful message,
-                often containing information on the number
-                and type of arguments expected
-        ARGS:   The actual arguments passed into our function.
-        C-FILE: The C-file the error occurred in.
-        C-LINE: The line of the C-file the error occurred in.
-
-The format of what occurs in an error message should not be counted on, it is
-purely for the users benefit.
 
 ### List of primitives, special forms and predefined symbols
 
@@ -746,8 +639,7 @@ library and their behavior.
         begin              Evaluate a sequence of S-Expression, return the last
         cond               Conditional evaluation
         environment        Return a list of all in scope variables
-        let*               Create a new variable scope
-        letrec             Create a new variable scope, allowing recursion
+        let                Create a new variable scope, allowing recursion
         error              Error, an object representing an error
 
 ##### Special variables
@@ -937,30 +829,18 @@ association list.
          (pi . 3.141593)
          (t . t))
 
-* let\*
+* let
 
 Creates new temporary local bindings for variables and evaluates expressions
-with them. The format is:
-
-        (let (SYMBOL VALUE) (SYMBOL VALUE) ... EXPR)
-
-        # Examples:
-        > (let* (x 3) (y (+ x x)) y)
-        6
-        > (define baz (lambda (y) (let* (foo -2) (bar 2) (+ (* foo y) bar))))
-        > (baz 5)
-        -8
-
-* letrec
-
-This is like let\*, but the SYMBOL is defined first, then the VALUE is
+with them. The SYMBOL is defined first, then the VALUE is
 evaluated, which is then bound to the SYMBOL. The upshot of all that is now
-recursive procedures can be given local scope.
+recursive procedures can be given local scope. In other dialects of lisp this
+special form would be called *letrec* instead.
 
         (let (SYMBOL VALUE) (SYMBOL VALUE) ... EXPR)
 
         # Examples:
-        > (letrec
+        > (let
            (factorial (lambda
             (x)
             (if
@@ -971,7 +851,7 @@ recursive procedures can be given local scope.
            (factorial 6))
         720
         > (define f
-           (letrec
+           (let
             (factorial (lambda
              (x)
              (if
@@ -1187,31 +1067,21 @@ craft association list.
         (eval EXPR)
         (eval EXPR A-LIST)
 
-* trace-level!
+* trace!
 
-Set the level of "tracing" to be done in the environment, whether tracing is
-off, on only for marked objects or on for all objects evaluated.
+Turn tracing on ('t) or off (nil), with tracing on all expressions will be
+printed as they are evaluated.
 
-        (trace-level! ENUM)
+        # (trace! T-OR-NIL)
+        > (trace! t)
+        > (trace! nil)
 
 * gc
 
-Control garbage collection. If given no arguments this routine will force the
-collection of garbage now, otherwise an enumeration can be passed in to change
-when garbage is collected, if at all.
+Force garbage collection. This should have no visible side effects.
 
-The garbage collector is on by default, or in the \*gc-on\* state. Garbage
-collection can be postponed with the \*gc-postpone\* enumeration, in this state
-the collector will not run but cells will still be added to the list of all
-variables to collect, the collector can be turned on at a later date.
-
-The collector can be turned off completely, *this will leak memory*, after
-references are lost they are lost permanently. The collector cannot be turned
-back on after this, the enumeration to do this is \*gc-off\*.
-
-
-        (gc)
-        (gc ENUM)
+        > (gc)
+        t
 
 * length
 
@@ -1593,14 +1463,6 @@ Set the locale string.
 
         (locale! ENUM STRING)
 
-* trace
-
-Check whether an expression has its trace mark set, or set the trace mark on an
-expression on or off.
-
-        (trace EXPR)
-        (trace EXPR T-or-NIL)
-
 * binary-logarithm
 
 Calculate the binary logarithm of an integer.
@@ -1978,43 +1840,6 @@ scanf and printf, although this should not affect the interpreter.
 
 An option for *locale*. Affects strftime, which is not used in the interpreter.
 
-* \*trace-off\*
-
-An option for *trace-level!*. Tracing is turned off for all objects.
-
-        > (trace-level! *trace-off*)
-
-* \*trace-marked\*
-
-An option for *trace-level!*. Only marked objects will be traced.
-
-        > (trace-level! *trace-marked*)
-
-* \*trace-all\*
-
-An option for *trace-level!*. All objects will be traced.
-
-        > (trace-level! *trace-all*)
-
-* \*gc-on\*
-
-An option for *gc*. Turn the garbage collection back on if it was postponed.
-
-        > (gc *gc-on*)
-
-* \*gc-postpone\*
-
-An option for *gc*. Postpone garbage collection.
-
-        > (gc *gc-postpone*)
-
-* \*gc-off\*
-
-An option for *gc*. Turn off the garbage collector and **leak memory**.
-
-        > (gc *gc-off*)
-
-
 * \*eof\*
 
 Represents the End-Of-File marker, can be passed into "get-delim" as a
@@ -2111,7 +1936,7 @@ Glossary of all of defined subroutine primitives and variables.
         scar               Get the first character in a string
         scdr               Get a string excluding the first character
         eval               Evaluate an expression
-        trace-level!       Set the trace level
+        trace!             Turn tracing on or off 
         gc                 Control the garbage collector
         length             Get the length of an expression or string
         input?             Check if an IO object is set up for reading
@@ -2143,7 +1968,6 @@ Glossary of all of defined subroutine primitives and variables.
         date               Return a list of integers representing the date
         assoc              Find a value in an association list
         locale!            Set the locale
-        trace              Control the tracing of an object
         binary-logarithm   Calculate the binary logarithm of an integer
         close              Close an IO object
         type-of            Return an integer-enum for the type of an object
@@ -2264,12 +2088,6 @@ This function returns an error string representing the latest error to occur
         *lc-monetary*      Locale money formatting option for locale!
         *lc-numeric*       Locale numeric option for locale!
         *lc-time*          Locale time option for locale!
-        *trace-off*        Option for trace, turn it off
-        *trace-marked*     Option for trace, trace only marked objects
-        *trace-all*        Option for trace, trace all expression evaluations
-        *gc-on*            Option for gc, Turn Garbage Collection on
-        *gc-postpone*      Option for gc, Postpone Garbage Collection, temporarily
-        *gc-off*           Option for gc, Turn off Garbage Collection permanently
         *eof*              End-Of-File marker
         *args*             Command line options passed into the interpreter
         *history-file*     If using libline, it contains the history file name

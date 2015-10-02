@@ -59,12 +59,12 @@
 (define eval-file
   (lambda (file on-error-fn)
     ; This bit does the evaluation of a file input object
-    (letrec 
+    (let 
       (eval-file-inner
        (lambda (S on-error-fn)
         (if (eof? S) 
           nil
-          (let* 
+          (let 
             (x (read S))
             (if (eq x 'error) 
               (on-error-fn S)
@@ -75,7 +75,7 @@
     (cond 
       ; If we have been given a potential file name, try to open it
       ((or (string? file) (symbol? file))
-        (let* (file-handle (open *file-in* file))
+        (let (file-handle (open *file-in* file))
           (if (input? file-handle)
             (begin (eval-file-inner file-handle on-error-fn)
                    (close file-handle) ; Close file!

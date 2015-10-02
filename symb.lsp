@@ -123,7 +123,7 @@
 ; Repeatedly apply simplify1 until there is no change
 (define simplify
   (lambda (poly)
-    (let* (poly1 (simplify1 poly))
+    (let (poly1 (simplify1 poly))
       (cond 
         ((nil? poly1) poly)
         ((equal poly poly1)

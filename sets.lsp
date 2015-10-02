@@ -13,7 +13,7 @@
 
 ; Make a set from a list (remove repeated elements)
 (define make-set 
-  (letrec
+  (let
    (*make-set ; Does the work of making a set from a list
      (lambda (lat)
        (cond

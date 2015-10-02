@@ -133,11 +133,11 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
         case STRING:  print_escaped_string(l, o, depth, strval(op));     break;
         case SUBR:    lisp_printf(l, o, depth, "%B<SUBR:%d>", intval(op));  break;
         case PROC:    lisp_printf(l, o, depth+1, "(%ylambda%t %S %S)", 
-                                      procargs(op), car(proccode(op)));
-                      break;
+                                      procargs(op), proccode(op));
+                      break; /**@bug prints out extra () for function body*/
         case FPROC:   lisp_printf(l, o, depth+1, "(%yflambda%t %S %S)", 
-                                      procargs(op), car(proccode(op)));
-                      break;
+                                      procargs(op), proccode(op));
+                      break; /**@bug prints out extra () for function body*/
         case HASH:    lisp_printf(l, o, depth, "%H",             hashval(op)); break;
         case IO:      lisp_printf(l, o, depth, "%B<IO:%s:%d>",  
                                       op->close? "CLOSED" : 
