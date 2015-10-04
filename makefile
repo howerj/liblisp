@@ -35,6 +35,7 @@ help:
 	@echo "     valgrind    make the example executable and run it with valgrind"
 	@echo "     clean       remove all build artifacts and targets"
 	@echo "     doc         make html and doxygen documentation"
+	@echo "     TAGS        update project tags table (ctags)"
 	@echo ""
 
 ### building #################################################################
@@ -130,9 +131,12 @@ uninstall:
 	@$(RM) -vf ${DESTDIR}${PREFIX}/lib/lib${TARGET}.so
 	@$(RM) -vf ${DESTDIR}${PREFIX}/include/lib${TARGET}.h
 
+TAGS:
+	ctags -R .
+
 ### clean up #################################################################
 
-CLEAN_LIST = *.a *.so *.o *.html Doxyfile $(TARGET) *.tgz *~ *.log html latex
+CLEAN_LIST = *.a *.so *.o *.html Doxyfile $(TARGET) *.tgz *~ *.log *.out html latex
 
 clean:
 	@echo Cleaning repository.

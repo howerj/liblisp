@@ -636,11 +636,13 @@ library and their behavior.
         flambda            Create an "fexpr"
         define             Define a new variable with a value
         set!               Change an already defined variables value
-        begin              Evaluate a sequence of S-Expression, return the last
+        progn              Evaluate a sequence of S-Expression, return the last
         cond               Conditional evaluation
         environment        Return a list of all in scope variables
         let                Create a new variable scope, allowing recursion
         error              Error, an object representing an error
+        loop               Jump back to beginning of a progn
+        return             Return early from a progn
 
 ##### Special variables
 
@@ -865,17 +867,9 @@ special form would be called *letrec* instead.
 
 * error
 
-The error special form can be used to throw errors, it is also used as a
-representation of an error returned from primitive functions.
+* loop
 
-        (error)
-        (error INTEGER)
-
-        > (error 1)
-        error
-        > (error -1) # The error message here does not make much sense.
-        (error 'lisp_repl "invalid or incomplete line" "liblisp.c" 2265)
-
+* return
 
 #### Built in subroutines
 

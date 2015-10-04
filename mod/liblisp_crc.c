@@ -19,7 +19,7 @@ static cell* subr_crc(lisp *l, cell *args) {
         if(!cklen(args, 1) || !is_asciiz(car(args)))
                 RECOVER(l, "\"expected (string)\" '%S", args);
         c = crc_final(crc_init((uint8_t*)strval(car(args)), lisp_get_cell_length(car(args))));
-        return mkint(lglobal, c);
+        return mk_int(lglobal, c);
 }
 
 static void construct(void) {

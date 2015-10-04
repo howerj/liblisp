@@ -33,9 +33,10 @@ extern "C" {
         X(quote,   "quote")  X(iif,     "if")\
         X(lambda,  "lambda") X(flambda, "flambda")\
         X(define,  "define") X(set,     "set!")\
-        X(begin,   "begin")  X(cond,    "cond")\
+        X(progn,   "progn")  X(cond,    "cond")\
         X(error,   "error")  X(env,     "environment")\
-        X(let,     "let")
+        X(let,     "let")    X(ret,     "return")\
+        X(loop,    "loop")
 
 /**@brief This restores a jmp_buf stored in lisp environment if it
  *        has been copied out to make way for another jmp_buf.
@@ -69,7 +70,6 @@ typedef union cell_data { /**< ideally we would use void* for everything*/
 
 struct cell {
         unsigned type:    4,        /**< Type of the lisp object*/
-                 userdef: 8,        /**< if type is USERDEF then this identifies which one*/
                  mark:    1,        /**< mark for garbage collection*/
                  uncollectable: 1,  /**< set if the object cannot, or should not, be freed*/
                  close:   1,        /**< set if the objects data field is now invalid/freed*/

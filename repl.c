@@ -86,7 +86,7 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
         cell *ob = l->nil;
         if(!l) return -1;
         for(i = argc - 1; i + 1 ; i--) /*add command line args to list*/
-                if(!(ob = cons(l, mkstr(l, lstrdup(argv[i])), ob))) 
+                if(!(ob = cons(l, mk_str(l, lstrdup(argv[i])), ob))) 
                         return -1; 
         if(!extend_top(l, intern(l, lstrdup("args")), ob))
                 return -1;

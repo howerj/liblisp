@@ -20,7 +20,7 @@ static void destruct(void) __attribute__((destructor));
 static cell *subr_ ## NAME (lisp *l, cell *args) {\
         if(!cklen(args, 1) || !is_arith(car(args)))\
                 RECOVER(l, "\"expected (number)\" '%S", args);\
-        return mkfloat(l, NAME (is_floatval(car(args)) ? floatval(car(args)) :\
+        return mk_float(l, NAME (is_floatval(car(args)) ? floatval(car(args)) :\
                                   (double) intval(car(args))));\
 }
 
@@ -42,7 +42,7 @@ static cell *subr_pow (lisp *l, cell *args) {
         yo = CADR(args);
         x = is_floatval(xo) ? floatval(xo) : intval(xo);
         y = is_floatval(yo) ? floatval(yo) : intval(yo);
-        return mkfloat(l, pow(x, y));
+        return mk_float(l, pow(x, y));
 }
 
 static cell *subr_modf(lisp *l, cell *args) {
@@ -53,7 +53,7 @@ static cell *subr_modf(lisp *l, cell *args) {
         xo = car(args);
         x = is_floatval(xo) ? floatval(xo) : intval(xo);
         fracpart = modf(x, &intpart);
-        return cons(l, mkfloat(l, intpart), mkfloat(l, fracpart));
+        return cons(l, mk_float(l, intpart), mk_float(l, fracpart));
 }
 
 #define X(SUBR) { subr_ ## SUBR, # SUBR },

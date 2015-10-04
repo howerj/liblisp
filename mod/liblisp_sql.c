@@ -36,8 +36,8 @@ static int sql_callback(void *obin, int argc, char **argv, char **azColName)
         for (i = 0; i < argc; i++)
                 ob = cons(lglobal, 
                                 cons(lglobal, 
-                                        mkstr(lglobal, lstrdup(azColName[i])),
-                                        argv[i] ? mkstr(lglobal, lstrdup(argv[i])) : gsym_nil()), ob);
+                                        mk_str(lglobal, lstrdup(azColName[i])),
+                                        argv[i] ? mk_str(lglobal, lstrdup(argv[i])) : gsym_nil()), ob);
         *((cell **)obin) = ob;
         return 0;
 }
@@ -52,7 +52,7 @@ static cell *subr_sqlopen(lisp *l, cell *args) {
                 sqlite3_close(db);
                 return gsym_error();
         }
-        return mkuser(l, db, ud_sql);
+        return mk_user(l, db, ud_sql);
 }
 
 static cell *subr_sql(lisp *l, cell *args) {

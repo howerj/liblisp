@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int is_isin(io *i) { assert(i);
+int io_is_in(io *i) { assert(i);
         return (i->type == FIN || i->type == SIN); 
 }
 
@@ -19,7 +19,7 @@ int io_is_out(io *o) { assert(o);
         return (o->type == FOUT || o->type == SOUT || o->type == NULLOUT); 
 }
 
-int io_isfile(io *f) { assert(f);
+int io_is_file(io *f) { assert(f);
         return (f->type == FIN || f->type == FOUT);
 }
 
@@ -27,7 +27,7 @@ int io_is_string(io *s) { assert(s);
         return (s->type == SIN || s->type == SOUT);
 }
 
-int io_isnull(io *n) { assert(n);
+int io_is_null(io *n) { assert(n);
         return n->type == NULLOUT;
 }
 

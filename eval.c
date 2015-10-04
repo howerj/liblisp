@@ -67,50 +67,51 @@ int  is_subr(cell *x)         { assert(x); return x->type == SUBR; }
 int  is_hash(cell *x)         { assert(x); return x->type == HASH; }
 int  is_userdef(cell *x)      { assert(x); return x->type == USERDEF && !x->close; }
 int  is_usertype(cell *x, int type) { assert(x);
-        return x->type == USERDEF && x->userdef == type && !x->close;
+        return x->type == USERDEF && user_type(x) == type && !x->close;
 }
 int  is_asciiz(cell *x)       { assert(x); return is_str(x) || is_sym(x); }
 int  is_arith(cell *x)        { assert(x); return is_int(x) || is_floatval(x); }
 int  is_func(cell *x)         { assert(x); return is_proc(x) || is_fproc(x) || is_subr(x); }
-cell *mkint(lisp *l, intptr_t d) { return mk(l, INTEGER, 1, (cell*) d); }
-cell *mkio(lisp *l, io *x)    { assert(x); return mk(l, IO, 1, (cell*)x); }
-cell *mksubr(lisp *l, subr p) { assert(p); return mk(l, SUBR, 3, p); }
-cell *mkproc(lisp *l, cell *x, cell *y, cell *z)  { assert(x); return mk(l,PROC,3,x,y,z); }
-cell *mkfproc(lisp *l, cell *x, cell *y, cell *z) { assert(x); return mk(l,FPROC,3,x,y,z); }
-cell *mkfloat(lisp *l, lfloat f) { return mk(l, FLOAT, 1, f); }
-cell *mkuser(lisp *l, void *x, int type) { assert(l && x);
-        cell *ret = mk(l, USERDEF, 1, x);
-        ret->userdef = type;
-        return ret;
-}
 
-static cell *mkasciiz(lisp *l, char *s, lisp_type type) { 
+static cell *mk_asciiz(lisp *l, char *s, lisp_type type) { 
         assert(l && s && (type == STRING || type == SYMBOL));
         cell *x = mk(l, type, 1, (cell *)s); 
         if(!x) return NULL;
         x->len = strlen(s);
         return x;
 }
+static cell *mk_sym(lisp *l, char *s) { return mk_asciiz(l, s, SYMBOL); }
+cell *mk_int(lisp *l, intptr_t d) { return mk(l, INTEGER, 1, (cell*) d); }
+cell *mk_io(lisp *l, io *x)    { assert(x); return mk(l, IO, 1, (cell*)x); }
+cell *mk_subr(lisp *l, subr p) { assert(p); return mk(l, SUBR, 3, p); }
+cell *mk_proc(lisp *l, cell *x, cell *y, cell *z)  { assert(x); return mk(l,PROC,3,x,y,z); }
+cell *mk_fproc(lisp *l, cell *x, cell *y, cell *z) { assert(x); return mk(l,FPROC,3,x,y,z); }
+cell *mk_float(lisp *l, lfloat f) { return mk(l, FLOAT, 1, f); }
+cell *mk_str(lisp *l, char *s) { return mk_asciiz(l, s, STRING); }
+cell *mk_hash(lisp *l, hashtable *h) { return mk(l, HASH, 1, (cell *)h); }
+cell *mk_user(lisp *l, void *x, intptr_t type) { assert(l && x);
+        cell *ret = mk(l, USERDEF, 2, x);
+        ret->p[1].v = (void*) type;
+        return ret;
+}
 
-cell *mkstr(lisp *l, char *s) { return mkasciiz(l, s, STRING); }
-cell *mksym(lisp *l, char *s) { return mkasciiz(l, s, SYMBOL); }
-cell *mkhash(lisp *l, hashtable *h) { return mk(l, HASH, 1, (cell *)h); }
 subr  subrval(cell *x)        { assert(x); return x->p[0].prim; }
 char *subrtype(cell *x)       { assert(x); return (char *) x->p[1].v; }
 char *subrdocstr(cell *x)     { assert(x); return (char *) x->p[2].v; }
-cell *procargs(cell *x)       { assert(x); return x->p[0].v; }
-cell *proccode(cell *x)       { assert(x); return x->p[1].v; }
-cell *procenv(cell *x)        { assert(x); return x->p[2].v; }
-char *proctype(cell *x)       { assert(x); return (char *) x->p[3].v; }
-char *procdocstr(cell *x)     { assert(x); return (char *) x->p[4].v; }
+cell *proc_args(cell *x)      { assert(x); return x->p[0].v; }
+cell *proc_code(cell *x)      { assert(x); return x->p[1].v; }
+cell *proc_env(cell *x)       { assert(x); return x->p[2].v; }
+char *proc_type(cell *x)      { assert(x); return (char *) x->p[3].v; }
+char *proc_docstr(cell *x)    { assert(x); return (char *) x->p[4].v; }
 cell *car(cell *x)            { assert(x); return x->p[0].v; }
 cell *cdr(cell *x)            { assert(x); return x->p[1].v; }
 io*  ioval(cell *x)           { assert(x); return (io*)(x->p[0].v); }
-void setcar(cell *x, cell *y) { assert(x && y); x->p[0].v = y; }
-void setcdr(cell *x, cell *y) { assert(x && y); x->p[1].v = y; }
+void set_car(cell *x, cell *y) { assert(x && y); x->p[0].v = y; }
+void set_cdr(cell *x, cell *y) { assert(x && y); x->p[1].v = y; }
 char *symval(cell *x)         { assert(x); return (char *)(x->p[0].v); }
 char *strval(cell *x)         { assert(x); return (char *)(x->p[0].v); }
 void *userval(cell *x)        { assert(x); return (void *)(x->p[0].v); }
+intptr_t user_type(cell *x)   { assert(x); return (intptr_t)x->p[1].v; }
 hashtable *hashval(cell *x)   { assert(x); return (hashtable *)(x->p[0].v); }
 int  cklen(cell *x, size_t expect)  { assert(x); return (x->len) == expect; }
 lfloat floatval(cell *x)      { assert(x); return x->p[0].f; }
@@ -145,7 +146,7 @@ cell *extend(lisp *l, cell *env, cell *sym, cell *val) {
 cell *intern(lisp *l, char *name) { assert(l && name);
         cell *op = hash_lookup(hashval(l->all_symbols), name);
         if(op) return op;
-        op = mksym(l, name);
+        op = mk_sym(l, name);
         hash_insert(hashval(l->all_symbols), name, op);
         return op;
 }
@@ -160,7 +161,7 @@ static cell *multiple_extend(lisp *l, cell *env, cell *syms, cell *vals) {
 }
 
 cell *extend_top(lisp *l, cell *sym, cell *val) { assert(l && sym && val);
-        setcdr(l->top_env, cons(l, cons(l, sym, val), cdr(l->top_env)));
+        set_cdr(l->top_env, cons(l, cons(l, sym, val), cdr(l->top_env)));
         return val;
 }
 
@@ -220,7 +221,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         if(exp->len < 2)
                                 RECOVER(l, "'lambda \"argc < 2 in %S\"", exp);
                         l->gc_stack_used = gc_stack_save;
-                        tmp = mkproc(l, car(exp), cdr(exp), env);
+                        tmp = mk_proc(l, car(exp), cdr(exp), env);
                         return gc_add(l, tmp);
                 }
                 if(first == l->flambda) {
@@ -229,7 +230,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         if(!cklen(car(exp), 1)) 
                                 RECOVER(l, "'flambda \"only one argument allowed %S\"", exp);
                         l->gc_stack_used = gc_stack_save;
-                        return gc_add(l, mkfproc(l, car(exp), cdr(exp), env));
+                        return gc_add(l, mk_fproc(l, car(exp), cdr(exp), env));
                 }
                 if(first == l->cond) {
                         if(cklen(exp, 0)) return l->nil;
@@ -245,6 +246,9 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 }
                 if(first == l->env)   return env;
                 if(first == l->quote) return car(exp);
+                if(first == l->ret)   return cons(l, l->ret, 
+                                               cons(l, 
+                                                 eval(l, depth+1, car(exp), env), l->nil));
                 if(first == l->define) {
                         lisp_validate(l, 2, "s A", exp, 1);
                         l->gc_stack_used = gc_stack_save;
@@ -257,7 +261,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         if(is_nil(pair = assoc(car(exp), env)))
                                 RECOVER(l, "'set! \"undefined variable\" '%S", exp);
                         newval = eval(l, depth+1, CADR(exp), env);
-                        setcdr(pair, newval);
+                        set_cdr(pair, newval);
                         return newval;
                 }
                 if(first == l->let) {
@@ -272,18 +276,23 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                                 s = env = extend(l, env, CAAR(exp), l->nil);
                                 r = env = extend(l, env, CAAR(exp),
                                         eval(l, depth + 1, CADAR(exp), env));
-                                setcdr(car(s), CDAR(r));
+                                set_cdr(car(s), CDAR(r));
                         }
                         return eval(l, depth+1, car(exp), env);
                 }
-                if(first == l->begin) { /**@todo Add looping constructs here*/
+                if(first == l->progn) { /**@todo Add looping constructs here*/
+                        cell *head = exp, *tmp;
                         if(is_nil(exp)) return l->nil;
-                        for(;;) {
+                begin:  for(exp = head;;) {
                                 if(is_nil(cdr(exp))) {
                                       exp = car(exp);
                                       goto tail;
                                 }
-                                eval(l, depth + 1, car(exp), env);
+                                l->gc_stack_used = gc_stack_save;
+                                tmp = eval(l, depth + 1, car(exp), env);
+                                if(tmp == l->loop) goto begin;
+                                if(is_cons(tmp) && car(tmp) == l->ret)
+                                        return CADR(tmp);
                                 exp = cdr(exp);
                         }
                 }
@@ -298,7 +307,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         if(!cklen(exp, 0))
                                 RECOVER(l, "\"incorrect application of input port\" %S", exp);
                         if(!(s = io_getline(ioval(proc)))) return l->error;
-                        else return mkstr(l, s);
+                        else return mk_str(l, s);
               /*} else if(is_out(proc)) { // todo? */
                 } else { 
                         RECOVER(l, "\"not a procedure\" '%S", first);
@@ -311,14 +320,14 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         return (*subrval(proc))(l, vals);
                 }
                 if(is_proc(proc) || is_fproc(proc)) {
-                        if(procargs(proc)->len != vals->len)
+                        if(proc_args(proc)->len != vals->len)
                                 RECOVER(l, "'proc \"expected %S\" '%S", 
-                                                procargs(proc), vals);
-                        if(procargs(proc)->len)
+                                                proc_args(proc), vals);
+                        if(proc_args(proc)->len)
                                 env = multiple_extend(l, 
-                                        l->dynamic ? env : procenv(proc), 
-                                        procargs(proc), vals);
-                        exp = cons(l, l->begin, proccode(proc));
+                                        l->dynamic ? env : proc_env(proc), 
+                                        proc_args(proc), vals);
+                        exp = cons(l, l->progn, proc_code(proc));
                         goto tail;
                 }
                 RECOVER(l, "\"not a procedure\" '%S", first);
@@ -342,7 +351,7 @@ static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env) { /**< evalua
         for(i = 1; !is_nil(exps); exps = cdr(exps), op = cdr(op), i++) {
                 if(!is_nil(cdr(exps)) && !is_cons(cdr(exps)))
                         RECOVER(l, "\"evlis cannot eval dotted pairs\"'%S", start);
-                setcdr(op, cons(l, eval(l, depth+1, car(exps), env), l->nil));
+                set_cdr(op, cons(l, eval(l, depth+1, car(exps), env), l->nil));
         }
         head->len = i;
         return head;

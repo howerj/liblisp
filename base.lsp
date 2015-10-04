@@ -1,7 +1,4 @@
 ;;; base software library ;;;
-; A lot of these functions need to be rewritten so as to
-; be tail recursive, or if looping constructs were added, with
-; them. 
 
 ; these are only defined because they are used elsewhere
 (define caar   (lambda (x) (car (car x))))
@@ -310,15 +307,12 @@
 (define gensym-counter 0) ; *GLOBAL* counter for gensym
 (define gensym ; generate a new *unique* symbol
   (lambda ()
-    (begin
       (set! gensym-counter (inc gensym-counter))
       (coerce *symbol*
         (join
           "-"
           "GENSYM"
-          (make-string gensym-counter)
-;         (make-string (abs (random)))
-              )))))
+          (make-string gensym-counter)))))
 
 (define *months* ; months of the year association list
   '((0 January)  (1 February)  (2 March) 

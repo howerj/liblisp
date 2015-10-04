@@ -133,19 +133,19 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
         case STRING:  print_escaped_string(l, o, depth, strval(op));     break;
         case SUBR:    lisp_printf(l, o, depth, "%B<SUBR:%d>", intval(op));  break;
         case PROC:    lisp_printf(l, o, depth+1, "(%ylambda%t %S %S)", 
-                                      procargs(op), proccode(op));
+                                      proc_args(op), proc_code(op));
                       break; /**@bug prints out extra () for function body*/
         case FPROC:   lisp_printf(l, o, depth+1, "(%yflambda%t %S %S)", 
-                                      procargs(op), proccode(op));
+                                      proc_args(op), proc_code(op));
                       break; /**@bug prints out extra () for function body*/
         case HASH:    lisp_printf(l, o, depth, "%H",             hashval(op)); break;
         case IO:      lisp_printf(l, o, depth, "%B<IO:%s:%d>",  
                                       op->close? "CLOSED" : 
                                       (is_in(op)? "IN": "OUT"), intval(op)); break;
-        case USERDEF: if(l && l->ufuncs[op->userdef].print)
-                              (l->ufuncs[op->userdef].print)(o, depth, op);
+        case USERDEF: if(l && l->ufuncs[user_type(op)].print)
+                              (l->ufuncs[user_type(op)].print)(o, depth, op);
                       else lisp_printf(l, o, depth, "<USER:%d:%d>",
-                                (intptr_t)op->userdef, intval(op)); break;
+                                user_type(op), intval(op)); break;
         case INVALID: 
         default:      FATAL("internal inconsistency");
         }

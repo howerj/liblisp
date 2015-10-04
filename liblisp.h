@@ -291,7 +291,7 @@ void hash_print(hashtable *h);
 /** @brief  check whether IO channel is input channel
  *  @param  i   IO channel to check
  *  @return int non zero if channel is input channel**/
-int is_isin(io *i);
+int io_is_in(io *i);
 
 /** @brief  check whether IO channel is an output channel
  *  @param  o   IO channel to check
@@ -301,7 +301,7 @@ int io_is_out(io *o);
 /** @brief  check whether IO channel is using a file
  *  @param  f   IO channel to check
  *  @return int non zero if channel is using a file for IO **/
-int io_isfile(io *f);
+int io_is_file(io *f);
 
 /** @brief  check whether IO channel is using a string
  *  @param  s   IO channel to check
@@ -311,7 +311,7 @@ int io_is_string(io *s);
 /** @brief  check whether IO channel is using a null IO device
  *  @param  n   IO channel to check
  *  @return int non zero if channel is using a null IO device for IO **/
-int io_isnull(io *n);
+int io_is_null(io *n);
 
 /** @brief  get a char from I/O stream
  *  @param  i   I/O stream, must be readable
@@ -512,26 +512,27 @@ int  is_hash(cell *x);   /**< true if 'x' is a hash table type*/
 int  is_userdef(cell *x); /**< true if 'x' is a user defined type*/
 int  is_usertype(cell *x, int type); /**< is a specific user defined type**/
 int  is_func(cell *x);   /**< true if 'x' can be applied (is a function) */
-cell *mkint(lisp *l, intptr_t d); /**< make a lisp cell from an integer**/
-cell *mkfloat(lisp *l, lfloat f); /**< make a lisp cell from a float**/
-cell *mkio(lisp *l, io *x); /**< make lisp cell from an I/O stream**/
-cell *mksubr(lisp *l, subr p); /**< make a lisp cell from a primitive**/
-cell *mkproc(lisp *l, cell *x, cell *y, cell *z); /**< make a lisp cell/proc**/
-cell *mkfproc(lisp *l, cell *x, cell *y, cell *z); /**< make a lisp cell/fproc**/
-cell *mkstr(lisp *l, char *s); /**< make lisp cell (string) from a string**/
+cell *mk_int(lisp *l, intptr_t d); /**< make a lisp cell from an integer**/
+cell *mk_float(lisp *l, lfloat f); /**< make a lisp cell from a float**/
+cell *mk_io(lisp *l, io *x); /**< make lisp cell from an I/O stream**/
+cell *mk_subr(lisp *l, subr p); /**< make a lisp cell from a primitive**/
+cell *mk_proc(lisp *l, cell *x, cell *y, cell *z); /**< make a lisp cell/proc**/
+cell *mk_fproc(lisp *l, cell *x, cell *y, cell *z); /**< make a lisp cell/fproc**/
+cell *mk_str(lisp *l, char *s); /**< make lisp cell (string) from a string**/
 /*cell *mksym(lisp *l, char *s); use intern instead to get a unique symbol*/
-cell *mkhash(lisp *l, hashtable *h); /**< make lisp cell from hash**/
-cell *mkuser(lisp *l, void *x, int type); /**< make a user defined type**/
+cell *mk_hash(lisp *l, hashtable *h); /**< make lisp cell from hash**/
+cell *mk_user(lisp *l, void *x, intptr_t type); /**< make a user defined type**/
 subr subrval(cell *x); /**< cast a lisp cell to a primitive func ptr**/
 char *subrtype(cell *x);   /**< get the type validation string for a subroutine*/
 char *subrdocstr(cell *x); /**< get the documentation string for a subroutine*/ 
-cell *procargs(cell *x);   /**< get args to a procedure/f-expr **/
-cell *proccode(cell *x);   /**< get code from a procedure/f-expr **/
-cell *procenv(cell *x);    /**< get procedure/f-expr environment**/
-char *proctype(cell *x);   /**< get the type validation string for a procedure/f-expr */
-char *procdocstr(cell *x); /**< get the documentation string for a procedure/f-expr */
-void setcar(cell *x, cell *y); /**< set cdr cell of a cons cell**/
-void setcdr(cell *x, cell *y); /**< set car cell of a cons cell**/
+cell *proc_args(cell *x);   /**< get args to a procedure/f-expr **/
+cell *proc_code(cell *x);   /**< get code from a procedure/f-expr **/
+cell *proc_env(cell *x);    /**< get procedure/f-expr environment**/
+char *proc_type(cell *x);   /**< get the type validation string for a procedure/f-expr */
+char *proc_docstr(cell *x); /**< get the documentation string for a procedure/f-expr */
+intptr_t user_type(cell *x); /**< get the user-defined-value identifier*/
+void set_car(cell *x, cell *y); /**< set cdr cell of a cons cell**/
+void set_cdr(cell *x, cell *y); /**< set car cell of a cons cell**/
 char *strval(cell *x); /**< get string from a lisp cell**/
 char *symval(cell *x); /**< get string (symbol) from a lisp cell**/
 void *userval(cell *x); /**< get data from user defined type**/
@@ -931,6 +932,7 @@ int main_lisp_env(lisp *l, int argc, char **argv);
 #define CDDR(X)   cdr(cdr((X)))
 #define CADAR(X)  car(cdr(car((X))))
 #define CADDR(X)  car(cdr(cdr((X))))
+#define CDDDR(X)  cdr(cdr(cdr((X))))
 #define CADDDR(X) car(cdr(cdr(cdr((X)))))
 
 #ifdef __cplusplus

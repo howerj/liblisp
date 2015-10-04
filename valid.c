@@ -62,9 +62,9 @@ static int print_type_string(lisp *l, unsigned len, char *fmt, cell *args) {
 int lisp_validate(lisp *l, unsigned len, char *fmt, cell *args, int recover) {
         int v = 1;
         char c, *fmt_head;
-        cell *head;
+        cell *args_head;
         assert(l && fmt && args);
-        head = args;
+        args_head = args;
         fmt_head = fmt;
         if(!cklen(args, len)) goto fail;
         while((c = *fmt++)) {
@@ -99,7 +99,7 @@ int lisp_validate(lisp *l, unsigned len, char *fmt, cell *args, int recover) {
         }
         if(!v) goto fail;
         return 1;
-fail:   print_type_string(l, len, fmt_head, head);
+fail:   print_type_string(l, len, fmt_head, args_head);
         if(recover)
                 lisp_throw(l, 1);
         return 0;

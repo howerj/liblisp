@@ -112,7 +112,7 @@ static void construct(void) {
         lisp_set_line_editor(lglobal, line_editing_function);
         line_history_load(histfile);
         line_set_vi_mode(1); /*start up in a sane editing mode*/
-        lisp_add_cell(lglobal, "*history-file*",   mkstr(lglobal, lstrdup(histfile)));
+        lisp_add_cell(lglobal, "*history-file*",   mk_str(lglobal, lstrdup(histfile)));
 
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
                 if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))

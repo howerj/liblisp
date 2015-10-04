@@ -1,14 +1,11 @@
 #!./lisp 
 ; Initialization code
 ;
-; These functions come from various sources, such as "The Roots Of Lisp"
-; essay, the book "The little schemer" and fragments from all over.
+; The job of the initialization code is to define enough functionality to
+; sensibly load modules.
+;
 
-; To-do
-; * unify, prolog interpreter, statistics package, symbolic manipulation
-;   of sets, logic and state machine minimization routines and all kinds
-;   of neat stuff.
-
+; type checking information
 (define type?      (lambda (type-enum x) (eq type-enum (type-of x))))
 (define list?      (lambda (x) (type? *cons* x)))
 (define atom?      (lambda (x) (if (list? x) nil t)))
@@ -23,7 +20,6 @@
 (define primitive? (lambda (x) (type? *primitive* x)))
 (define char?      (lambda (x) (and (string? x) (= (length x) 1))))
 (define dotted?    (lambda (x) (and (list? x) (not (list? (cdr x))))))
-
 (define nil? (lambda (x) (if x nil t)))
 
 (define null?
@@ -68,7 +64,7 @@
             (x (read S))
             (if (eq x 'error) 
               (on-error-fn S)
-              (begin 
+              (progn
                 (print (eval x))
                 (put "\n")
                 (eval-file-inner S on-error-fn)))))))
@@ -77,22 +73,22 @@
       ((or (string? file) (symbol? file))
         (let (file-handle (open *file-in* file))
           (if (input? file-handle)
-            (begin (eval-file-inner file-handle on-error-fn)
+            (progn (eval-file-inner file-handle on-error-fn)
                    (close file-handle) ; Close file!
                    nil)
-            (begin (put "could not open file for reading\n")
+            (progn (put "could not open file for reading\n")
                    'error))))
       ; We must have been passed an input file port
       ((input? file)
        (eval-file-inner file on-error-fn)) ; Do not close file!
       ; User error
       (t 
-        (begin 
+        (progn
           (put "Not a file name or a output IO type\n") 
           'error))))))
 
 ; exit the interpreter
-(define exit (lambda () (error -1)))
+(define exit (lambda () (raise *sig-term*)))
 
 (define exit-if-not-eof 
   (lambda (in) 
@@ -107,21 +103,12 @@
 
 (define load-module
   (lambda (name)
-    (if (not (= (dynamic-open (string-to-symbol (join "" "liblisp_" name ".so"))) 'error))
+    (if 
+      (and 
+        *have-dynamic-loader* 
+        (not (= (dynamic-open (string-to-symbol (join "" "liblisp_" name ".so"))) 'error)))
       (define-eval (string-to-symbol (join "" "*have-" name "*")) t)
       (define-eval (string-to-symbol (join "" "*have-" name "*")) nil))))
-
-(if *have-dynamic-loader*
-  (begin
-    (load-module "os")    ; operating system module
-    (load-module "sql")   ; sql interface
-    (load-module "tcc")   ; tiny c compiler
-    (load-module "crc")   ; crc module
-    (load-module "line")  ; line editing library and module
-    (load-module "math")  ; math module
-;   (load-module "x11")   ; x11 window module
-  (begin (put "module loading complete\n")  t)) 
-  (begin (put "module loader not implemented\n") nil))
 
 ; Evaluate a series of "modules", they are just files with defines in them,
 ; a proper module system nor ways of representing dependencies between them
@@ -129,7 +116,16 @@
 (eval-file 'base.lsp exit-if-not-eof)
 (eval-file 'sets.lsp exit-if-not-eof)
 (eval-file 'symb.lsp exit-if-not-eof)
-(eval-file 'test.lsp exit-if-not-eof)
 
-;(if *have-tcc* (eval-file "mod/c.lsp" exit-if-not-eof) nil)
+(progn
+ (load-module "os")    ; operating system module
+ (load-module "sql")   ; sql interface
+ (load-module "tcc")   ; tiny c compiler
+ (load-module "crc")   ; crc module
+ (load-module "line")  ; line editing library and module
+ (load-module "math")  ; math module
+;(load-module "x11")   ; x11 window module
+ ())
+
+(eval-file 'test.lsp exit-if-not-eof)
 

@@ -59,7 +59,7 @@ static cell* subr_compile(lisp *l, cell *args) {
         if(tcc_relocate(st, TCC_RELOCATE_AUTO) < 0)
                 return gsym_error();
         func = (subr)tcc_get_symbol(st, fname);
-        return mksubr(l, func);
+        return mk_subr(l, func);
 }
 
 static cell* subr_link(lisp *l, cell *args) {
@@ -88,7 +88,7 @@ static cell* subr_get_subr(lisp *l, cell *args) {
         if(!(func = tcc_get_symbol(userval(car(args)), strval(CADR(args)))))
                 return gsym_error();
         else
-                return mksubr(l, func);
+                return mk_subr(l, func);
 }
 
 static cell* subr_add_include_path(lisp *l, cell *args) {
@@ -127,7 +127,7 @@ static void construct(void) {
         ud_tcc = newuserdef(lglobal, ud_tcc_free, NULL, NULL, ud_tcc_print);
         TCCState *st = tcc_new();
         tcc_set_output_type(st, TCC_OUTPUT_MEMORY);
-        lisp_add_cell(lglobal, "*compile-state*", mkuser(lglobal, st, ud_tcc));
+        lisp_add_cell(lglobal, "*compile-state*", mk_user(lglobal, st, ud_tcc));
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
                 if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
                         goto fail;

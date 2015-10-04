@@ -18,11 +18,19 @@
               1
               0)))
         (outer ; loop "iter" times
-          (lambda (iter c)
-            (if (<= iter 0)
-              c
-              (outer (- iter 1) (+ (inner) c)))))
-    (* (/ (coerce *float* (outer iter 0)) iter) 4))))
+           (lambda (iter)
+             (let 
+               (i iter)
+               (c 0)
+               (progn
+                 (set! i (- i 1))
+                 (set! c (+ (inner) c))
+                 (if 
+                   (<= i 0)
+                   (return c)
+                   loop)
+                 ()))))
+    (* (/ (coerce *float* (outer iter)) iter) 4))))
 
 ; This is a series of simple tests that is not comprehensive
 ; at the moment.
@@ -32,10 +40,10 @@
     (if 
       (compare expr result)
       t
-      (begin 
+      (progn
         (format "Test failed: %S != %S\n" expr result)
         (exit)))))
-  (begin
+  (progn
     (test = (let (a 3) (b -4) (+ a b)) -1)
     (test = (if 'a 'b 'c)          'b)
     (test = (if  0 'b 'c)          'b)
@@ -71,7 +79,7 @@
     ; module tests
     (if
       *have-line* 
-      (begin 
+      (progn
         (test = (line-editor-mode t) t)
         (test = (clear-screen) t)
         (clear-screen)
@@ -80,5 +88,3 @@
     (put "Self-Test Passed\n")
     t))
 
-;(mapcar (lambda (x) (if (regex "hash" x) x nil)) 
-;        (mapcar (lambda (x) (coerce *string* x)) (coerce *cons* (all-symbols))))

@@ -30,7 +30,7 @@ char *lstrdup(const char *s) { assert(s);
         return str;
 }
 
-int matcher(char *pat, char *str, size_t depth) { 
+static int matcher(char *pat, char *str, size_t depth) { 
         ASSERT(depth); /*crude method of protection*/
         if(!str) return 0;
 again:  switch(*pat) {

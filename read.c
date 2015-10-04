@@ -94,7 +94,7 @@ static cell *readstring(lisp *l, io* i) { /**< handle parsing a string*/
                         }
                 }
                 if(ch == '"')
-                        return mkstr(l, new_token(l));
+                        return mk_str(l, new_token(l));
                 add_char(l, ch);
         }
         return gsym_nil();
@@ -113,7 +113,7 @@ cell *reader(lisp *l, io *i) { /*read in s-expr, this should be rewritten*/
         case '"':  free(token); return readstring(l, i);
         case '\'': free(token); return cons(l, gsym_quote(), cons(l, reader(l,i), gsym_nil()));
         default:   if(is_number(token)) {
-                           ret = mkint(l, strtol(token, NULL, 0));
+                           ret = mk_int(l, strtol(token, NULL, 0));
                            free(token);
                            return ret;
                    }
@@ -121,7 +121,7 @@ cell *reader(lisp *l, io *i) { /*read in s-expr, this should be rewritten*/
                         flt = strtod(token, &fltend);
                         if(!fltend[0]) {
                                 free(token);
-                                return mkfloat(l, flt);
+                                return mk_float(l, flt);
                         }
                    }
                    ret = intern(l, token);

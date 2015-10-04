@@ -71,35 +71,35 @@ static cell *subr_mknod(lisp *l, cell *args) {
         invalid: default: RECOVER(l, "\"invalid node type (not 'c 'u 'b or 'p)\" %s", strval(CADR(args)));
         }
         d = MKDEV(intval(CADDR(args)), intval(CADDDR(args)));
-        return mkint(l, mknod(strval(car(args)), m | S_IRWXU, d));
+        return mk_int(l, mknod(strval(car(args)), m | S_IRWXU, d));
 }
 
 static cell *subr_chmod(lisp *l, cell *args) {
         assert(l == lglobal);
         if(!cklen(args, 2) || !is_asciiz(car(args)) || !is_int(CADR(args)))
                 RECOVER(l, "\"(string integer)\" '%S", args);
-        return mkint(l, chmod(strval(car(args)), intval(CADR(args))));
+        return mk_int(l, chmod(strval(car(args)), intval(CADR(args))));
 }
 
 static cell *subr_mount(lisp *l, cell *args) {
         assert(l == lglobal);
         if(!cklen(args, 3) || !is_asciiz(car(args)) || !is_asciiz(CADR(args)) || !is_asciiz(CADDR(args)))
                 RECOVER(l, "\"(string string string)\" '%S", args);
-        return mkint(l, mount(strval(car(args)), strval(CADR(args)), strval(CADDR(args)), MS_MGC_VAL, NULL));
+        return mk_int(l, mount(strval(car(args)), strval(CADR(args)), strval(CADDR(args)), MS_MGC_VAL, NULL));
 }
 
 static cell *subr_umount(lisp *l, cell *args) {
         assert(l == lglobal);
         if(!cklen(args, 1) || !is_asciiz(car(args)))
                 RECOVER(l, "\"(string)\" '%S", args);
-        return mkint(l, umount(strval(car(args))));
+        return mk_int(l, umount(strval(car(args))));
 }
 
 static cell *subr_chown(lisp *l, cell *args) {
         assert(l == lglobal);
         if(!cklen(args, 3) || !is_asciiz(car(args)) || !is_int(CADR(args)) || !is_int(CADDR(args)))
                 RECOVER(l, "\"expected () or (string int int)\" '%S", args);
-        return mkint(l, chown(strval(car(args)), intval(CADR(args)), intval(CADDR(args))));
+        return mk_int(l, chown(strval(car(args)), intval(CADR(args)), intval(CADDR(args))));
 }
 
 static cell* subr_directory(lisp *l, cell *args) {
@@ -115,7 +115,7 @@ static cell* subr_directory(lisp *l, cell *args) {
         if(!(d = opendir(s)))
                 return gsym_error();
         while((e = readdir(d)))
-                ret = cons(l, mkstr(lglobal, lstrdup(e->d_name)), ret);
+                ret = cons(l, mk_str(lglobal, lstrdup(e->d_name)), ret);
         closedir(d);
         return ret;
 }
@@ -123,7 +123,7 @@ static cell* subr_directory(lisp *l, cell *args) {
 static cell* subr_sleep(lisp *l, cell *args) {
         if(!cklen(args, 1) || !is_int(car(args)))
                 RECOVER(l, "\"expected (integer)\" '%S", args);
-        return mkint(l, sleep(intval(car(args))));
+        return mk_int(l, sleep(intval(car(args))));
 }
 
 static cell *subr_sync(lisp *l, cell *args) {
@@ -136,49 +136,49 @@ static cell *subr_sync(lisp *l, cell *args) {
 static cell *subr_kill(lisp *l, cell *args) {
         if(!cklen(args, 2) || !is_int(car(args)) || !is_int(CADR(args)))
                 RECOVER(l, "\"expected (integer integer)\" '%S", args);
-        return mkint(l, kill(intval(car(args)), intval(CADR(args))));
+        return mk_int(l, kill(intval(car(args)), intval(CADR(args))));
 }
 
 static cell *subr_nice(lisp *l, cell *args) {
         if(!cklen(args, 1) || !is_int(car(args)))
                 RECOVER(l, "\"expected (integer)\" '%S", args);
-        return mkint(l, nice(intval(car(args))));
+        return mk_int(l, nice(intval(car(args))));
 }
 
 static cell *subr_pause(lisp *l, cell *args) {
         if(!cklen(args, 0))
                 RECOVER(l, "\"expected ()\" '%S", args);
-        return mkint(l, pause());
+        return mk_int(l, pause());
 }
 
 static cell *subr_symlink(lisp *l, cell *args) {
         if(!cklen(args, 2) || !is_asciiz(car(args)) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (string string)\" '%S", args);
-        return mkint(l, symlink(strval(car(args)), strval(CADR(args))));
+        return mk_int(l, symlink(strval(car(args)), strval(CADR(args))));
 }
 
 static cell *subr_link(lisp *l, cell *args) {
         if(!cklen(args, 2) || !is_asciiz(car(args)) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (string string)\" '%S", args);
-        return mkint(l, link(strval(car(args)), strval(CADR(args))));
+        return mk_int(l, link(strval(car(args)), strval(CADR(args))));
 }
 
 static cell *subr_chdir(lisp *l, cell *args) {
         if(!cklen(args, 1) || !is_asciiz(car(args)))
                 RECOVER(l, "\"expected (string)\" '%S", args);
-        return mkint(l, chdir(strval(car(args))));
+        return mk_int(l, chdir(strval(car(args))));
 }
 
 static cell *subr_ualarm(lisp *l, cell *args) {
         if(!cklen(args, 2) || !is_int(car(args)) || !is_int(CADR(args)))
                 RECOVER(l, "\"expected (integer integer)\" '%S", args);
-        return mkint(l, ualarm(intval(car(args)), intval(CADR(args))));
+        return mk_int(l, ualarm(intval(car(args)), intval(CADR(args))));
 }
 
 static cell *subr_rmdir(lisp *l, cell *args) {
         if(!cklen(args, 1) || !is_asciiz(car(args)))
                 RECOVER(l, "\"expected (string)\" '%S", args);
-        return mkint(l, rmdir(strval(car(args))));
+        return mk_int(l, rmdir(strval(car(args))));
 }
 
 static void construct(void) {

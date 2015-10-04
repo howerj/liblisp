@@ -19,8 +19,8 @@ static void gc_free(lisp *l, cell *ob) { assert(ob); /**< free a lisp cell*/
         case IO:      if(!ob->close)   io_close(ioval(ob));        
                                                   free(ob); break; 
         case HASH:    hash_destroy(hashval(ob));  free(ob); break;
-        case USERDEF: if(l->ufuncs[ob->userdef].free)
-                              (l->ufuncs[ob->userdef].free)(ob);
+        case USERDEF: if(l->ufuncs[user_type(ob)].free)
+                              (l->ufuncs[user_type(ob)].free)(ob);
                       else free(ob);
                       break;
         case INVALID:
@@ -35,9 +35,9 @@ static void gc_mark(lisp *l, cell* op) { assert(op); /**<recursively mark reacha
         case INTEGER: case SYMBOL: case SUBR: 
         case STRING:  case IO:     case FLOAT:  break;
         case FPROC: case PROC: 
-                   gc_mark(l, procargs(op)); 
-                   gc_mark(l, proccode(op));
-                   gc_mark(l, procenv(op));
+                   gc_mark(l, proc_args(op)); 
+                   gc_mark(l, proc_code(op));
+                   gc_mark(l, proc_env(op));
                    break;
         case CONS: gc_mark(l, car(op));
                    gc_mark(l, cdr(op));
@@ -52,8 +52,8 @@ static void gc_mark(lisp *l, cell* op) { assert(op); /**<recursively mark reacha
                                                 gc_mark(l, cur->val);
                    }
                    break;
-        case USERDEF: if(l->ufuncs[op->userdef].mark)
-                             (l->ufuncs[op->userdef].mark)(op);
+        case USERDEF: if(l->ufuncs[user_type(op)].mark)
+                             (l->ufuncs[user_type(op)].mark)(op);
                       break;
         case INVALID:
         default:   FATAL("internal inconsistency: unknown type");

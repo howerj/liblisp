@@ -79,7 +79,7 @@ static cell *subr_dlopen(lisp *l, cell *args) {
         h->handle = handle;
         h->next = head;
         head = h;
-        return mkuser(l, handle, ud_dl);
+        return mk_user(l, handle, ud_dl);
 }
 
 static cell *subr_dlsym(lisp *l, cell *args) {
@@ -88,14 +88,14 @@ static cell *subr_dlsym(lisp *l, cell *args) {
                 RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
         if(!(func = dlsym(userval(car(args)), strval(CADR(args)))))
                 return gsym_error();
-        return mksubr(l, func);
+        return mk_subr(l, func);
 }
 
 static cell *subr_dlerror(lisp *l, cell *args) {
         char *s;
         if(!cklen(args, 0))
                 RECOVER(l, "\"expected ()\" '%S", args);
-        return mkstr(l, lstrdup((s = dlerror()) ? s : ""));
+        return mk_str(l, lstrdup((s = dlerror()) ? s : ""));
 }
 #endif
 
@@ -106,9 +106,9 @@ int main(int argc, char **argv) {
 
         lglobal = l;
 
-        lisp_add_cell(l, "*version*",           mkstr(l, lstrdup(XSTRINGIFY(VERSION))));
-        lisp_add_cell(l, "*commit*",            mkstr(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
-        lisp_add_cell(l, "*repository-origin*", mkstr(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));
+        lisp_add_cell(l, "*version*",           mk_str(l, lstrdup(XSTRINGIFY(VERSION))));
+        lisp_add_cell(l, "*commit*",            mk_str(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
+        lisp_add_cell(l, "*repository-origin*", mk_str(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));
 
 #ifdef USE_DL
         ud_dl = newuserdef(l, ud_dl_free, NULL, NULL, ud_dl_print);
