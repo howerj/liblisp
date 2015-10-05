@@ -68,7 +68,7 @@ int lisp_validate(lisp *l, unsigned len, char *fmt, cell *args, int recover) {
         fmt_head = fmt;
         if(!cklen(args, len)) goto fail;
         while((c = *fmt++)) {
-                if(is_nil(args) || !v) goto fail;
+                if(is_nil(args) || !v || car(args)->close) goto fail;
                 v = 0;
                 switch(c) {
                 case ' ': v = 1; continue;

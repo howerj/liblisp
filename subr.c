@@ -1082,3 +1082,4 @@ static cell *subr_validate(lisp *l, cell *args) {
         return lisp_validate(l, intval(car(args)), strval(CADR(args)), CADDR(args), 0) ? gsym_tee() : gsym_nil();
 }
 
+

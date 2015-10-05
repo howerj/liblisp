@@ -124,7 +124,7 @@
  (load-module "crc")   ; crc module
  (load-module "line")  ; line editing library and module
  (load-module "math")  ; math module
-;(load-module "x11")   ; x11 window module
+ (load-module "x11")   ; x11 window module
  ())
 
 (eval-file 'test.lsp exit-if-not-eof)

@@ -8,6 +8,7 @@
 #include <libtcc.h>
 #include <liblisp.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 extern lisp *lglobal; /* from main.c */
 
@@ -35,7 +36,7 @@ static struct module_subroutines { subr p; char *name; } primitives[] = {
 };
 #undef X
 
-static int ud_tcc = 0;
+static intptr_t ud_tcc = 0;
 
 static void ud_tcc_free(cell *f) {
         tcc_delete(userval(f));

@@ -26,7 +26,6 @@ extern "C" {
 #define REGEX_MAX_DEPTH   (8192)  /**< max recursion depth of a regex*/
 #define MAX_USER_TYPES    (256)   /**< max number of user defined types*/
 #define COLLECTION_POINT  (1<<20) /**< run gc after this many allocs*/
-#define UNUSED(X)         ((void)(X)) /**< unused variable*/
 
 #define CELL_XLIST /**< list of all special cells for initializer*/ \
         X(nil,     "nil")    X(tee,     "t")\

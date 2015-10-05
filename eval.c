@@ -72,6 +72,7 @@ int  is_usertype(cell *x, int type) { assert(x);
 int  is_asciiz(cell *x)       { assert(x); return is_str(x) || is_sym(x); }
 int  is_arith(cell *x)        { assert(x); return is_int(x) || is_floatval(x); }
 int  is_func(cell *x)         { assert(x); return is_proc(x) || is_fproc(x) || is_subr(x); }
+int  is_closed(cell *x)       { assert(x); return x->close; }
 
 static cell *mk_asciiz(lisp *l, char *s, lisp_type type) { 
         assert(l && s && (type == STRING || type == SYMBOL));
@@ -302,13 +303,6 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         vals = evlis(l, depth + 1, exp, env);
                 } else if(is_fproc(proc)) { /*f-expr do not eval their args*/
                         vals = cons(l, exp, l->nil);
-                } else if(is_in(proc)) { /*special behavior for input ports*/
-                        char *s;
-                        if(!cklen(exp, 0))
-                                RECOVER(l, "\"incorrect application of input port\" %S", exp);
-                        if(!(s = io_getline(ioval(proc)))) return l->error;
-                        else return mk_str(l, s);
-              /*} else if(is_out(proc)) { // todo? */
                 } else { 
                         RECOVER(l, "\"not a procedure\" '%S", first);
                 }

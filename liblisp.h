@@ -512,6 +512,7 @@ int  is_hash(cell *x);   /**< true if 'x' is a hash table type*/
 int  is_userdef(cell *x); /**< true if 'x' is a user defined type*/
 int  is_usertype(cell *x, int type); /**< is a specific user defined type**/
 int  is_func(cell *x);   /**< true if 'x' can be applied (is a function) */
+int  is_closed(cell *x); /**< true if 'x' is 'closed' or invalidated*/
 cell *mk_int(lisp *l, intptr_t d); /**< make a lisp cell from an integer**/
 cell *mk_float(lisp *l, lfloat f); /**< make a lisp cell from a float**/
 cell *mk_io(lisp *l, io *x); /**< make lisp cell from an I/O stream**/
@@ -925,15 +926,18 @@ int main_lisp_env(lisp *l, int argc, char **argv);
 #define MIN(X, Y)    ((X)>(Y)?(Y):(X)) /**< smallest of two values*/
 #endif
 
+#define UNUSED(X)         ((void)(X)) /**< unused variable*/
+
 /* The following macros are helper macros for lisp list access */
-#define CAAR(X)   car(car((X)))
-#define CADR(X)   car(cdr((X)))
-#define CDAR(X)   cdr(car((X)))
-#define CDDR(X)   cdr(cdr((X)))
-#define CADAR(X)  car(cdr(car((X))))
-#define CADDR(X)  car(cdr(cdr((X))))
-#define CDDDR(X)  cdr(cdr(cdr((X))))
-#define CADDDR(X) car(cdr(cdr(cdr((X)))))
+#define CAAR(X)    car(car((X)))
+#define CADR(X)    car(cdr((X)))
+#define CDAR(X)    cdr(car((X)))
+#define CDDR(X)    cdr(cdr((X)))
+#define CADAR(X)   car(cdr(car((X))))
+#define CADDR(X)   car(cdr(cdr((X))))
+#define CDDDR(X)   cdr(cdr(cdr((X))))
+#define CADDDR(X)  car(cdr(cdr(cdr((X)))))
+#define CADDDDR(X) car(cdr(cdr(cdr(cdr((X))))))
 
 #ifdef __cplusplus
 }
