@@ -118,13 +118,16 @@
 (eval-file 'symb.lsp exit-if-not-eof)
 
 (progn
- (load-module "os")    ; operating system module
- (load-module "sql")   ; sql interface
- (load-module "tcc")   ; tiny c compiler
- (load-module "crc")   ; crc module
- (load-module "line")  ; line editing library and module
- (load-module "math")  ; math module
- (load-module "x11")   ; x11 window module
+ (load-module "os")     ; operating system module
+ (load-module "sql")    ; sql interface
+ (load-module "tcc")    ; tiny c compiler
+ (load-module "crc")    ; crc module
+ (load-module "line")   ; line editing library and module
+ (load-module "math")   ; math module
+ (load-module "x11")    ; x11 window module
+ (load-module "diff")   ; diff module
+ (load-module "tsort")  ; tsort module
+ (load-module "bignum") ; bignum module
  ())
 
 (eval-file 'test.lsp exit-if-not-eof)

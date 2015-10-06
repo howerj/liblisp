@@ -79,7 +79,7 @@ run: $(TARGET)
 
 valgrind: $(TARGET)
 	@echo running the executable through leak detection program, valgrind
-	$(PRELOAD) valgrind --leak-check=full --show-reachable=yes ./$^ -Epc init.lsp -
+	$(PRELOAD) valgrind ./$^ -Epc init.lsp -
 
 ### documentation ############################################################
 

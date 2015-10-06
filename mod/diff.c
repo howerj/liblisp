@@ -3,9 +3,9 @@
  *      * Simple optimization of ignoring beginning and end of text
  *      * Turn into library
  * See:
- * https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Longest_common_subsequence
- * http://www.algorithmist.com/index.php/Longest_Common_Subsequence
- * https://en.wikipedia.org/wiki/Longest_common_subsequence_problem
+ * <https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Longest_common_subsequence>
+ * <http://www.algorithmist.com/index.php/Longest_Common_Subsequence>
+ * <https://en.wikipedia.org/wiki/Longest_common_subsequence_problem>
  *
  * XXX BUGS:
  *      * If one file is empty it will not work, instead it returns null
@@ -16,12 +16,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "util.h"
+#include "diff.h"
 
-typedef struct {
-        unsigned *c;    /*2D array of Longest Common Substrings*/
-        size_t m, n;    /*2D array dimensions*/
-} diff;
+#define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
 
 /*
 function LCS(X[1..m], Y[1..n])
@@ -99,7 +96,8 @@ char **fill_array_with_lines(FILE *f, size_t *returned_length)
         char *line = NULL, **s = NULL;
         size_t ignore = 0, nl = 1;
         while(getline(&line, &ignore, f) > 0) {
-                fail_if(!(s = realloc(s,(nl+1)*sizeof(*s))),"realloc");
+                if(!(s = realloc(s,(nl+1)*sizeof(*s))))
+                        return NULL;
                 s[nl-1] = line;
                 s[nl] = NULL;
                 nl++;
@@ -111,7 +109,8 @@ char **fill_array_with_lines(FILE *f, size_t *returned_length)
         return s;
 }
 
-int main_diff(int argc, char **argv) 
+#if 0
+int main(int argc, char **argv) 
 {
         diff *d;
         char **a, **b, *m;
@@ -140,4 +139,4 @@ int main_diff(int argc, char **argv)
         fclose(fb);
         return 0;
 }
-
+#endif

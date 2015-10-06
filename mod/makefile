@@ -2,7 +2,8 @@ CC?=gcc
 CFLAGS?=-Wall -Wextra -std=gnu99 -g -O2 -fPIC 
 MODULES=liblisp_sql.so liblisp_os.so liblisp_crc.so\
        	liblisp_tcc.so liblisp_math.so liblisp_line.so\
-	liblisp_x11.so
+	liblisp_x11.so liblisp_diff.so liblisp_tsort.so\
+	liblisp_bignum.so
 
 all: help $(MODULES)
 
@@ -30,6 +31,15 @@ liblisp_line.so: liblisp_line.o
 liblisp_x11.so: liblisp_x11.o
 	$(CC) $(CFLAGS) -shared $^ -lX11 -o $@
 
+liblisp_diff.so: diff.o liblisp_diff.o
+	$(CC) $(CFLAGS) -shared $^ -o $@
+
+liblisp_tsort.so: tsort.o liblisp_tsort.o
+	$(CC) $(CFLAGS) -shared $^ -o $@
+
+liblisp_bignum.so: bignum.o liblisp_bignum.o
+	$(CC) $(CFLAGS) -shared $^ -o $@
+
 help:
 	@echo ""
 	@echo "This makefile builds lisp modules for the liblisp library."
@@ -44,17 +54,20 @@ help:
 	@echo ""
 	@echo "make (option)*"
 	@echo ""
-	@echo "     all              make all of the modules"
-	@echo "     help             this help message!"
-	@echo "     liblisp_sql.so   SQL module"
-	@echo "     liblisp_os.so    OS module"
-	@echo "     liblisp_crc.so   CRC module"
-	@echo "     liblisp_tcc.so   Tiny C Compiler module"
-	@echo "     liblisp_math.so  Math module"
-	@echo "     liblisp_line.so  Line editor module"
-	@echo "     liblisp_x11.so   X-Window module"
-	@echo "     install          Install all of the modules"
-	@echo "     clean            Remove all compiled files"
+	@echo "     all               make all of the modules"
+	@echo "     help              this help message!"
+	@echo "     liblisp_sql.so    SQL module"
+	@echo "     liblisp_os.so     OS module"
+	@echo "     liblisp_crc.so    CRC module"
+	@echo "     liblisp_tcc.so    Tiny C Compiler module"
+	@echo "     liblisp_math.so   Math module"
+	@echo "     liblisp_line.so   Line editor module"
+	@echo "     liblisp_x11.so    X-Window module"
+	@echo "     liblisp_diff.so   Print-the-difference module"
+	@echo "     liblisp_tsort.so  Topological sorting module"
+	@echo "     liblisp_bignum.so Arbitrary precision arithemtic module"
+	@echo "     install           Install all of the modules"
+	@echo "     clean             Remove all compiled files"
 	@echo ""
 
 install: $(MODULES)
