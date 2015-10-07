@@ -24,18 +24,55 @@
 #define VCS_ORIGIN unknown /**< Version control repository origin*/
 #endif
 
-lisp *lglobal; /**< used for signal handler and modules*/
+#ifdef __unix__
+char *os = "unix";
+#elif _WIN32
+#include <windows.h>
+char *os = "windows";
+#else
+char *os = "unknown";
+#endif
 
 #ifdef USE_DL
-/* Module loader using dlopen, all functions acquired with dlsym must be of the
- * "subr" function type as they will be used as internal lisp subroutines by
- * the interpreter. */
+/* Module loader using dlopen/LoadLibrary, all functions acquired with 
+ * dlsym/GetProcAddress must be of the "subr" function type as they will 
+ * be used as internal lisp subroutines by the interpreter. */
+
+#ifdef __unix__
+
 #include <dlfcn.h>
+typedef void* handle_t;
+
+#define DL_OPEN(NAME)        dlopen((NAME), RTLD_NOW)
+#define DL_CLOSE(HANDLE)     dlclose((HANDLE))
+#define DL_SYM(HANDLE, NAME) dlsym((HANDLE), (NAME))
+#define DL_ERROR()	     dlerror()
+
+#elif _WIN32
+
+typedef HMODULE handle_t;
+
+#define DL_OPEN(NAME)        LoadLibrary((NAME))
+#define DL_CLOSE(HANDLE)     FreeLibrary((HANDLE))
+#define DL_SYM(HANDLE, NAME) (subr)GetProcAddress((HMODULE)(HANDLE), (NAME))
+#define DL_ERROR()           win_dlerror()
+
+static char *win_dlerror(void) {
+        static char buf[256] = "";
+        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), 
+              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 256, NULL);
+        return buf;
+}
+
+#else
+#error "Unrecognized platform"
+#endif
+
 static int ud_dl = 0; /**< User defined type value for DLL handles*/
 
 struct dllist; /**< linked list of all DLL handles*/
 typedef struct dllist {
-        void *handle;        /**< DLL handle, closed on exit*/
+        handle_t handle;
         struct dllist *next; /**< next node in linked list*/
 } dllist;
 
@@ -45,7 +82,7 @@ dllist *head; /**< *GLOBAL* list of all DLL handles for dlclose_atexit*/
 static void dlclose_atexit(void) {
         dllist *t; 
         while(head) {
-                dlclose(head->handle);
+                DL_CLOSE(head->handle);
                 t = head;
                 head = head->next;
                 free(t);
@@ -59,7 +96,7 @@ static void ud_dl_free(cell *f) {
        * before the callback in the closed module is called the
        * program will SEGFAULT as the callback no longer is mapped
        * into the program space. This is resolved with dlclose_atexit */
-      /*dlclose(userval(f));*/
+      /*DL_CLOSE(userval(f));*/
         free(f);
 }
 
@@ -68,11 +105,11 @@ static int ud_dl_print(io *o, unsigned depth, cell *f) {
 }
 
 static cell *subr_dlopen(lisp *l, cell *args) {
-        void *handle;
+	handle_t handle;
         dllist *h;
         if(!cklen(args, 1) || !is_asciiz(car(args)))
                 RECOVER(l, "\"expected (string)\" '%S", args);
-        if(!(handle = dlopen(strval(car(args)), RTLD_NOW)))
+        if(!(handle = DL_OPEN(strval(car(args)))))
                 return gsym_error();
         if(!(h = calloc(1, sizeof(*h))))
                 HALT(l, "\"%s\"", "out of memory");
@@ -86,7 +123,7 @@ static cell *subr_dlsym(lisp *l, cell *args) {
         subr func;
         if(!cklen(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
-        if(!(func = dlsym(userval(car(args)), strval(CADR(args)))))
+        if(!(func = DL_SYM(userval(car(args)), strval(CADR(args)))))
                 return gsym_error();
         return mk_subr(l, func);
 }
@@ -95,7 +132,7 @@ static cell *subr_dlerror(lisp *l, cell *args) {
         char *s;
         if(!cklen(args, 0))
                 RECOVER(l, "\"expected ()\" '%S", args);
-        return mk_str(l, lstrdup((s = dlerror()) ? s : ""));
+        return mk_str(l, lstrdup((s = DL_ERROR()) ? s : ""));
 }
 #endif
 
@@ -109,6 +146,7 @@ int main(int argc, char **argv) {
         lisp_add_cell(l, "*version*",           mk_str(l, lstrdup(XSTRINGIFY(VERSION))));
         lisp_add_cell(l, "*commit*",            mk_str(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
         lisp_add_cell(l, "*repository-origin*", mk_str(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));
+	lisp_add_cell(l, "os", mk_str(l, lstrdup(os)));
 
 #ifdef USE_DL
         ud_dl = newuserdef(l, ud_dl_free, NULL, NULL, ud_dl_print);

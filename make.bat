@@ -25,20 +25,9 @@ REM build the interpreter or fail
 :build
 @echo on
 REM build lisp interpreter, the main object file
-tcc -DNDEBUG -Wall -Wextra lisp.c  -c -o lisp.o    || goto :error
-tcc -DNDEBUG -Wall -Wextra hash.c  -c -o hash.o    || goto :error
-tcc -DNDEBUG -Wall -Wextra io.c    -c -o io.o      || goto :error
-tcc -DNDEBUG -Wall -Wextra util.c  -c -o util.o    || goto :error
-tcc -DNDEBUG -Wall -Wextra subr.c  -c -o subr.o    || goto :error
-tcc -DNDEBUG -Wall -Wextra eval.c  -c -o eval.o    || goto :error
-tcc -DNDEBUG -Wall -Wextra gc.c    -c -o gc.o      || goto :error
-tcc -DNDEBUG -Wall -Wextra print.c -c -o print.o   || goto :error
-tcc -DNDEBUG -Wall -Wextra repl.c  -c -o repl.o    || goto :error
-tcc -DNDEBUG -Wall -Wextra read.c  -c -o read.o    || goto :error
-tcc -DNDEBUG -Wall -Wextra tr.c    -c -o tr.o      || goto :error
-tcc -DNDEBUG -Wall -Wextra valid.c -c -o valid.o   || goto :error
-
-tcc -DNDEBUG -Wall -Wextra lisp.o hash.o io.o util.o gc.o eval.o repl.o subr.o read.o print.o tr.o valid.o main.c -o lisp.exe || goto :error
+tcc -DNDEBUG -DCOMPILING_LIBLISP -Wall -Wextra -shared lisp.c hash.c io.c util.c subr.c eval.c gc.c print.c repl.c read.c tr.c valid.c -o liblisp.dll  || goto :error
+tiny_impdef liblisp.dll -o liblisp.def
+tcc -DUSE_DL -DNDEBUG -Wall -Wextra main.c liblisp.def -o lisp.exe || goto :error
 exit /b 0
 
 :run
@@ -60,6 +49,8 @@ del lisp.exe 2>NUL
 del /q *.a   2>NUL
 del /q *.o   2>NUL
 del /q *~    2>NUL
+del /q *.def 2>NUL
+del /q *.dll 2>NUL
 exit /b 0  
 
 REM list all options

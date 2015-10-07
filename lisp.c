@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+lisp *lglobal; /**< used for signal handler and modules*/
+
 void lisp_throw(lisp *l, int ret) {
         if(!l->errors_halt && l && l->recover_init) longjmp(l->recover, ret);
         else exit(ret);
