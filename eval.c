@@ -48,7 +48,7 @@ cell* cons(lisp *l, cell *x, cell *y) {
         cell *z = mk(l, CONS, 2, x, y);
         assert(l /*&& x && y*/);
         if(!z || !x || !y) return NULL;
-        if(y->type == CONS) z->len = y->len + 1;
+        if(is_cons(y)) z->len = y->len + 1;
         if(is_nil(y)) z->len++;
         return z;
 }
@@ -85,9 +85,9 @@ static cell *mk_sym(lisp *l, char *s) { return mk_asciiz(l, s, SYMBOL); }
 cell *mk_int(lisp *l, intptr_t d) { return mk(l, INTEGER, 1, (cell*) d); }
 cell *mk_io(lisp *l, io *x)    { assert(x); return mk(l, IO, 1, (cell*)x); }
 cell *mk_subr(lisp *l, subr p) { assert(p); return mk(l, SUBR, 3, p); }
-cell *mk_proc(lisp *l, cell *x, cell *y, cell *z)  { assert(x); return mk(l,PROC,3,x,y,z); }
-cell *mk_fproc(lisp *l, cell *x, cell *y, cell *z) { assert(x); return mk(l,FPROC,3,x,y,z); }
-cell *mk_float(lisp *l, lfloat f) { return mk(l, FLOAT, 1, f); }
+cell *mk_proc(lisp *l, cell *x, cell *y, cell *z)  { assert(x); return mk(l, PROC,  3, x, y, z); }
+cell *mk_fproc(lisp *l, cell *x, cell *y, cell *z) { assert(x); return mk(l, FPROC, 3, x, y, z); }
+cell *mk_float(lisp *l, lfloat f) { assert(l); return mk(l, FLOAT, 1, f); }
 cell *mk_str(lisp *l, char *s) { return mk_asciiz(l, s, STRING); }
 cell *mk_hash(lisp *l, hashtable *h) { return mk(l, HASH, 1, (cell *)h); }
 cell *mk_user(lisp *l, void *x, intptr_t type) { assert(l && x);
@@ -96,26 +96,26 @@ cell *mk_user(lisp *l, void *x, intptr_t type) { assert(l && x);
         return ret;
 }
 
-subr  subrval(cell *x)        { assert(x); return x->p[0].prim; }
-char *subrtype(cell *x)       { assert(x); return (char *) x->p[1].v; }
-char *subrdocstr(cell *x)     { assert(x); return (char *) x->p[2].v; }
-cell *proc_args(cell *x)      { assert(x); return x->p[0].v; }
-cell *proc_code(cell *x)      { assert(x); return x->p[1].v; }
-cell *proc_env(cell *x)       { assert(x); return x->p[2].v; }
-char *proc_type(cell *x)      { assert(x); return (char *) x->p[3].v; }
-char *proc_docstr(cell *x)    { assert(x); return (char *) x->p[4].v; }
-cell *car(cell *x)            { assert(x); return x->p[0].v; }
-cell *cdr(cell *x)            { assert(x); return x->p[1].v; }
-io*  ioval(cell *x)           { assert(x); return (io*)(x->p[0].v); }
+subr  subrval(cell *x)         { assert(x && is_subr(x)); return x->p[0].prim; }
+char *subrtype(cell *x)        { assert(x && is_subr(x)); return (char *) x->p[1].v; }
+char *subrdocstr(cell *x)      { assert(x && is_subr(x)); return (char *) x->p[2].v; }
+cell *proc_args(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[0].v; }
+cell *proc_code(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[1].v; }
+cell *proc_env(cell *x)        { assert(x && (is_proc(x) || is_fproc(x))); return x->p[2].v; }
+char *proc_type(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[3].v; }
+char *proc_docstr(cell *x)     { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[4].v; }
+cell *car(cell *x)             { assert(x && is_cons(x)); return x->p[0].v; }
+cell *cdr(cell *x)             { assert(x && is_cons(x)); return x->p[1].v; }
+io*  ioval(cell *x)            { assert(x /*&& x->type == IO*/); return (io*)(x->p[0].v); }
 void set_car(cell *x, cell *y) { assert(x && y); x->p[0].v = y; }
 void set_cdr(cell *x, cell *y) { assert(x && y); x->p[1].v = y; }
-char *symval(cell *x)         { assert(x); return (char *)(x->p[0].v); }
-char *strval(cell *x)         { assert(x); return (char *)(x->p[0].v); }
-void *userval(cell *x)        { assert(x); return (void *)(x->p[0].v); }
-intptr_t user_type(cell *x)   { assert(x); return (intptr_t)x->p[1].v; }
-hashtable *hashval(cell *x)   { assert(x); return (hashtable *)(x->p[0].v); }
-int  cklen(cell *x, size_t expect)  { assert(x); return (x->len) == expect; }
-lfloat floatval(cell *x)      { assert(x); return x->p[0].f; }
+char *symval(cell *x)          { assert(x); return (char *)(x->p[0].v); }
+char *strval(cell *x)          { assert(x && is_asciiz(x)); return (char *)(x->p[0].v); }
+void *userval(cell *x)         { assert(x && is_userdef(x)); return (void *)(x->p[0].v); }
+intptr_t user_type(cell *x)    { assert(x && is_userdef(x)); return (intptr_t)x->p[1].v; }
+hashtable *hashval(cell *x)    { assert(x && is_hash(x)); return (hashtable *)(x->p[0].v); }
+int  cklen(cell *x, size_t expect) { assert(x); return (x->len) == expect; }
+lfloat floatval(cell *x)       { assert(x && is_floatval(x)); return x->p[0].f; }
 
 int newuserdef(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p) {
         if(l->userdef_used >= MAX_USER_TYPES) return -1;

@@ -23,6 +23,26 @@
 #include <ctype.h>
 #include <assert.h>
 
+#define VALIDATE_XLIST\
+        X('s', "symbol",        /* symbol */              is_sym(x))\
+        X('d', "integer",       /* integer */             is_int(x))\
+        X('c', "cons",          /* cons cell (list) */    is_cons(x))\
+        X('p', "procedure",     /* procedure */           is_proc(x))\
+        X('r', "subroutine",    /* built in subroutine */ is_subr(x))\
+        X('S', "string",        /* string */              is_str(x))\
+        X('P', "io-port",       /* IO port */             is_io(x))\
+        X('h', "hash",          /* a hash */              is_hash(x))\
+        X('F', "f-expr",        /* an F-Expression */     is_fproc(x))\
+        X('f', "float",         /* a floating point number */ is_floatval(x))\
+        X('u', "user-defined",  /* user define type */    is_userdef(x))\
+        X('b', "t-or-nil",      /* "boolean" */           is_nil(x) || x == gsym_tee())\
+        X('i', "input-port",    /* input port only */     is_in(x))\
+        X('o', "output-port",   /* output port only */    is_out(x))\
+        X('Z', "symbol-or-string", /* group symbol/string */ is_asciiz(x))\
+        X('a', "integer-or-float", /* group integer/float */ is_arith(x))\
+        X('x', "function",      /* executable type */     is_func(x))\
+        X('A', "any-expression",/* any expression */      1)
+
 static int print_type_string(lisp *l, unsigned len, char *fmt, cell *args, 
                               const char *file, const char *func, unsigned line) 
 {
@@ -33,27 +53,9 @@ static int print_type_string(lisp *l, unsigned len, char *fmt, cell *args,
                 s = "";
                 switch(c) {
                 case ' ': continue;
-                case 's': s = "symbol";       break; /*symbol*/
-                case 'd': s = "integer";      break; /*integer*/
-                case 'c': s = "cons";         break; /*cons cell*/
-                case 'p': s = "procedure";    break; /*procedure*/
-                case 'r': s = "subroutine";   break; /*subroutine*/
-                case 'S': s = "string";       break; /*string*/
-                case 'P': s = "io-port";      break; /*I/O port*/
-                case 'h': s = "hash";         break; /*hash*/
-                case 'F': s = "f-expr";       break; /*f-expression*/
-                case 'f': s = "float";        break; /*float*/
-                case 'u': s = "user-defined"; break; /*user define type*/
-
-                case 'b': s = "t-or-nil";     break; /*nil or tee*/
-                case 'i': s = "input-port";   break; /*input port*/
-                case 'o': s = "output-port";  break; /*output port*/
-
-                case 'Z': s = "symbol-or-string"; break; /*ASCIIZ (string or symbol)*/
-                case 'a': s = "integer-or-float"; break; /*arithmetic type*/
-                          /*executable (procedure, subroutine, f-expression)*/
-                case 'x': s = "function"; break;
-                case 'A': s = "any-expression"; break; /*any*/
+#define X(CHAR, STRING, ACTION) case (CHAR): s = (STRING); break;
+                VALIDATE_XLIST
+#undef X
                 default: HALT(l, "%s", "invalid validation format");
                 }
                 io_puts(s, l->efp);
@@ -64,10 +66,10 @@ static int print_type_string(lisp *l, unsigned len, char *fmt, cell *args,
 
 int lisp_validate(lisp *l, unsigned len, char *fmt, cell *args, int recover, 
                            const char *file, const char *func, unsigned line) 
-{
+{       assert(l && fmt && args && file && func);
         int v = 1;
         char c, *fmt_head;
-        cell *args_head;
+        cell *args_head, *x;
         assert(l && fmt && args);
         args_head = args;
         fmt_head = fmt;
@@ -75,29 +77,12 @@ int lisp_validate(lisp *l, unsigned len, char *fmt, cell *args, int recover,
         while((c = *fmt++)) {
                 if(is_nil(args) || !v || car(args)->close) goto fail;
                 v = 0;
+                x = car(args);
                 switch(c) {
                 case ' ': v = 1; continue;
-                case 's': v = is_sym(car(args));      break; /*symbol*/
-                case 'd': v = is_int(car(args));      break; /*integer*/
-                case 'c': v = is_cons(car(args));     break; /*cons cell*/
-                case 'p': v = is_proc(car(args));     break; /*procedure*/
-                case 'r': v = is_subr(car(args));     break; /*subroutine*/
-                case 'S': v = is_str(car(args));      break; /*string*/
-                case 'P': v = is_io(car(args));       break; /*I/O port*/
-                case 'h': v = is_hash(car(args));     break; /*hash*/
-                case 'F': v = is_fproc(car(args));    break; /*f-expression*/
-                case 'f': v = is_floatval(car(args)); break; /*float*/
-                case 'u': v = is_userdef(car(args));  break; /*user define type*/
-
-                case 'b': v = is_nil(car(args)) || car(args) == gsym_tee(); break; /*nil or tee*/
-                case 'i': v = is_in(car(args));       break; /*input port*/
-                case 'o': v = is_out(car(args));      break; /*output port*/
-
-                case 'Z': v = is_asciiz(car(args));   break; /*ASCIIZ (string or symbol)*/
-                case 'a': v = is_arith(car(args));    break; /*arithmetic type*/
-                          /*executable (procedure, subroutine, f-expression)*/
-                case 'x': v = is_subr(car(args)) || is_proc(car(args)) || is_fproc(car(args)); break;
-                case 'A': v = 1; break; /*any*/
+#define X(CHAR, STRING, ACTION) case (CHAR): v = ACTION; break;
+                VALIDATE_XLIST
+#undef X
                 default: HALT(l, "%s", "invalid validation format");
                 }
                 args = cdr(args);

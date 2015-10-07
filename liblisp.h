@@ -927,6 +927,8 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
 
 /** @brief  validate a lisp expression and automatically put file, function and
  *          line information into the macro.
+ *  @bug    This macro needs a better name as it is not a generic validation
+ *          function.
  *  LISP    lisp environment
  *  LEN     number of 
  *  FMT     format string described in lisp_validate comment
