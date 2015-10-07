@@ -1,5 +1,5 @@
 /** @file       valid.c
- *  @brief      validate a list against a type format string, see the
+ *  @brief      VALIDATE a list against a type format string, see the
  *              "liblisp.h" header or the code for the format options.
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
@@ -23,9 +23,12 @@
 #include <ctype.h>
 #include <assert.h>
 
-static int print_type_string(lisp *l, unsigned len, char *fmt, cell *args) {
+static int print_type_string(lisp *l, unsigned len, char *fmt, cell *args, 
+                              const char *file, const char *func, unsigned line) 
+{
         char c, *s;
-        lisp_printf(l, l->efp, 0, "(error \"incorrect arguments\" %d (", (intptr_t)len); 
+        lisp_printf(l, l->efp, 0, "(error \"incorrect arguments\" (%s %s %d) (%d) (", 
+                        file, func, (intptr_t) line, (intptr_t)len); 
         while((c = *fmt++)) {
                 s = "";
                 switch(c) {
@@ -59,7 +62,9 @@ static int print_type_string(lisp *l, unsigned len, char *fmt, cell *args) {
         return lisp_printf(l, l->efp, 0, ") %S)\n", args);
 }
 
-int lisp_validate(lisp *l, unsigned len, char *fmt, cell *args, int recover) {
+int lisp_validate(lisp *l, unsigned len, char *fmt, cell *args, int recover, 
+                           const char *file, const char *func, unsigned line) 
+{
         int v = 1;
         char c, *fmt_head;
         cell *args_head;
@@ -99,7 +104,7 @@ int lisp_validate(lisp *l, unsigned len, char *fmt, cell *args, int recover) {
         }
         if(!v) goto fail;
         return 1;
-fail:   print_type_string(l, len, fmt_head, args_head);
+fail:   print_type_string(l, len, fmt_head, args_head, file, func, line);
         if(recover)
                 lisp_throw(l, 1);
         return 0;

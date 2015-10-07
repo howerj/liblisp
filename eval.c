@@ -212,7 +212,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 first = car(exp);
                 exp   = cdr(exp);
                 if(first == l->iif) {
-                        lisp_validate(l, 3, "A A A", exp, 1);
+                        VALIDATE(l, 3, "A A A", exp, 1);
                         exp = !is_nil(eval(l, depth+1, car(exp), env)) ?
                                 CADR(exp) :
                                 CADDR(exp);
@@ -251,14 +251,14 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                                                cons(l, 
                                                  eval(l, depth+1, car(exp), env), l->nil));
                 if(first == l->define) {
-                        lisp_validate(l, 2, "s A", exp, 1);
+                        VALIDATE(l, 2, "s A", exp, 1);
                         l->gc_stack_used = gc_stack_save;
                         return gc_add(l, extend_top(l, car(exp),
                               eval(l, depth+1, CADR(exp), env)));
                 }
                 if(first == l->set) {
                         cell *pair, *newval;
-                        lisp_validate(l, 2, "s A", exp, 1);
+                        VALIDATE(l, 2, "s A", exp, 1);
                         if(is_nil(pair = assoc(car(exp), env)))
                                 RECOVER(l, "'set! \"undefined variable\" '%S", exp);
                         newval = eval(l, depth+1, CADR(exp), env);

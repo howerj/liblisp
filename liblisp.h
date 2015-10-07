@@ -832,8 +832,12 @@ LIBLISP_API int  lisp_get_cell_length(cell *c);
  *  @param args    argument cons list to validate
  *  @param recover if non zero this will longjmp to an error handler instead
  *                 of returning.
+ *  @param file
+ *  @param func
+ *  @param line
  *  @return 0 if invalid (or lonjmp if recover is non zero), 1 if valid**/
-LIBLISP_API int lisp_validate(lisp *l, unsigned len, char *fmt, cell* args, int recover);
+LIBLISP_API int lisp_validate(lisp *l, unsigned len, char *fmt, cell* args, int recover, 
+                                const char *file, const char *func, unsigned line);
 
 /************************ test environment ***********************************/
 
@@ -921,19 +925,29 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
  * @param MSG Message to print out**/
 #define FATAL(MSG) pfatal((MSG), __FILE__, __LINE__)
 
+/** @brief  validate a lisp expression and automatically put file, function and
+ *          line information into the macro.
+ *  LISP    lisp environment
+ *  LEN     number of 
+ *  FMT     format string described in lisp_validate comment
+ *  ARGS    arguments to check
+ *  RECOVER halt lisp environment if negative, recover if positive **/
+#define VALIDATE(LISP, LEN, FMT, ARGS, RECOVER)\
+        lisp_validate((LISP), (LEN), (FMT), (ARGS), (RECOVER), __FILE__, __func__, __LINE__)
+
 /**@brief Stringify X, turn X into a string.
- * X      Thing to turn into a string  **/
+ * @param X      Thing to turn into a string  **/
 #define STRINGIFY(X) #X
 
 /**@brief Stringify with macro expansion
- * X      Thing to turn into a string with macro expansion  **/
+ * @param X      Thing to turn into a string with macro expansion  **/
 #define XSTRINGIFY(X) STRINGIFY(X)
 
 /**@brief Like assert() but will not be disabled by NDEBUG. It would be
  *        nice if this would print a stack trace but there is no portable
  *        way of doing this without make the C code look ugly with macro
  *        magic.
- * X      Test to perform**/
+ * @param X      Test to perform**/
 #define ASSERT(X) do { if(!(X)) FATAL("assertion failed: " # X ); } while(0)
 
 /**@brief Swap two values, with a specified type. For example to swap
@@ -956,6 +970,7 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
 #endif
 
 #define UNUSED(X)         ((void)(X)) /**< unused variable*/
+
 
 /* The following macros are helper macros for lisp list access */
 #define CAAR(X)    car(car((X)))

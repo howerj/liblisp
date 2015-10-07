@@ -137,7 +137,7 @@ static void close_window(Window w) {
 
 static cell* subr_create_window(lisp *l, cell *args) {
         cell *ret;
-        lisp_validate(l, 0, "", args, 1);
+        VALIDATE(l, 0, "", args, 1);
         if(!(ret = mk_user(l, (void*)create_window(), ud_x11)))
                 HALT(l, "\"%s\"", "out of memory");
         return ret;
