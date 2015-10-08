@@ -379,7 +379,7 @@ LIBLISP_API int io_printflt(double f, io * o);
 /** @brief   read from a string
  *  @param   sin string to read from, ASCII nul terminated
  *  @return  io* an initialized I/O stream (for reading) or NULL**/
-LIBLISP_API io *io_sin(char *sin);
+LIBLISP_API io *io_sin(const char *sin);
 
 /** @brief  read from a file
  *  @param  fin an already opened file handle, opened with "r" or "rb"
@@ -534,6 +534,8 @@ LIBLISP_API cell *mk_int(lisp *l, intptr_t d); /**< make a lisp cell from an int
 LIBLISP_API cell *mk_float(lisp *l, lfloat f); /**< make a lisp cell from a float**/
 LIBLISP_API cell *mk_io(lisp *l, io *x); /**< make lisp cell from an I/O stream**/
 LIBLISP_API cell *mk_subr(lisp *l, subr p); /**< make a lisp cell from a primitive**/
+/** @brief long version of subroutine creation function **/
+LIBLISP_API cell *mk_subr_long(lisp *l, subr p, const char *fmt, const char *doc);
 LIBLISP_API cell *mk_proc(lisp *l, cell *x, cell *y, cell *z); /**< make a lisp cell/proc**/
 LIBLISP_API cell *mk_fproc(lisp *l, cell *x, cell *y, cell *z); /**< make a lisp cell/fproc**/
 LIBLISP_API cell *mk_str(lisp *l, char *s); /**< make lisp cell (string) from a string**/
@@ -541,12 +543,12 @@ LIBLISP_API cell *mk_str(lisp *l, char *s); /**< make lisp cell (string) from a 
 LIBLISP_API cell *mk_hash(lisp *l, hashtable *h); /**< make lisp cell from hash**/
 LIBLISP_API cell *mk_user(lisp *l, void *x, intptr_t type); /**< make a user defined type**/
 LIBLISP_API subr subrval(cell *x); /**< cast a lisp cell to a primitive func ptr**/
-LIBLISP_API char *subrtype(cell *x);   /**< get the type validation string for a subroutine*/
+LIBLISP_API char *subrformat(cell *x);   /**< get the type validation string for a subroutine*/
 LIBLISP_API char *subrdocstr(cell *x); /**< get the documentation string for a subroutine*/ 
 LIBLISP_API cell *proc_args(cell *x);   /**< get args to a procedure/f-expr **/
 LIBLISP_API cell *proc_code(cell *x);   /**< get code from a procedure/f-expr **/
 LIBLISP_API cell *proc_env(cell *x);    /**< get procedure/f-expr environment**/
-LIBLISP_API char *proc_type(cell *x);   /**< get the type validation string for a procedure/f-expr */
+LIBLISP_API char *proc_format(cell *x);   /**< get the type validation string for a procedure/f-expr */
 LIBLISP_API char *proc_docstr(cell *x); /**< get the documentation string for a procedure/f-expr */
 LIBLISP_API intptr_t user_type(cell *x); /**< get the user-defined-value identifier*/
 LIBLISP_API void set_car(cell *x, cell *y); /**< set cdr cell of a cons cell**/
@@ -677,7 +679,7 @@ LIBLISP_API cell *lisp_intern(lisp *l, cell *ob);
  *  @param  sym  name of symbol
  *  @param  val  value to add
  *  @return NULL on failure, not NULL on success **/
-LIBLISP_API cell *lisp_add_cell(lisp *l, char *sym, cell *val);
+LIBLISP_API cell *lisp_add_cell(lisp *l, const char *sym, cell *val);
 
 /** @brief  add a function primitive to a lisp environment. It will be
  *          referenced internally by the "name" string.
@@ -686,7 +688,20 @@ LIBLISP_API cell *lisp_add_cell(lisp *l, char *sym, cell *val);
  *  @param  func  function primitive
  *  @return cell* pointer to extended environment if successful, NULL
  *                otherwise. You shouldn't do anything with pointer**/
-LIBLISP_API cell *lisp_add_subr(lisp *l, char *name, subr func);
+LIBLISP_API cell *lisp_add_subr(lisp *l, const char *name, subr func);
+
+/** @brief  add a function primitive to a lisp environment. It will be
+ *          referenced internally by the "name" string. This is the long
+ *          version, a format string and a documentation string can be added
+ *          to the subroutine.
+ *  @param  l     lisp environment to add primitive to
+ *  @param  name  name to call the function primitive by
+ *  @param  func  function primitive
+ *  @param  fmt   format string that is passed to lisp_validate (can be NULL)
+ *  @param  doc   documentation string (can be NULL)
+ *  @return cell* pointer to extended environment if successful, NULL
+ *                otherwise. You shouldn't do anything with pointer**/
+LIBLISP_API cell *lisp_add_subr_long(lisp *l, const char *name, subr func, const char *fmt, const char *doc);
 
 /** @brief  Initialize a lisp environment. By default it will read
  *          from stdin, print to stdout and log errors to stderr.
@@ -736,7 +751,7 @@ LIBLISP_API cell *lisp_eval(lisp *l, cell *exp);
  *  @param  l       lisp environment to evaluate in
  *  @param  evalme  string to evaluate
  *  @return cell*   result of evaluation or NULL on failure critical failure**/
-LIBLISP_API cell *lisp_eval_string(lisp *l, char *evalme);
+LIBLISP_API cell *lisp_eval_string(lisp *l, const char *evalme);
 
 /** @brief  a simple Read-Evaluate-Print-Loop (REPL)
  *  @param  l      an initialized lisp environment
@@ -972,7 +987,6 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
 #endif
 
 #define UNUSED(X)         ((void)(X)) /**< unused variable*/
-
 
 /* The following macros are helper macros for lisp list access */
 #define CAAR(X)    car(car((X)))

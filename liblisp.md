@@ -1457,22 +1457,22 @@ Set the locale string.
 
         (locale! ENUM STRING)
 
-* binary-logarithm
+* blog
 
 Calculate the binary logarithm of an integer.
 
-        # (binary-logarithm INT)
-        > (binary-logarithm 4)
+        # (blog INT)
+        > (blog 4)
         2
-        > (binary-logarithm 99)
+        > (blog 99)
         6
-        > (binary-logarithm 127)
+        > (blog 127)
         127
-        > (binary-logarithm 128)
+        > (blog 128)
         7
-        > (binary-logarithm -1)
+        > (blog -1)
         63 # implementation defined
-        > (binary-logarithm 1.0)
+        > (blog 1.0)
         (error 'subr_binlog "expected (int)" '(1.000000) "liblisp.c" 1374)
         error
 

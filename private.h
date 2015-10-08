@@ -223,6 +223,11 @@ cell *assoc(cell *key, cell *alist);
  * @return NULL on failure, not NULL on success**/
 cell *extend_top(lisp *l, cell *sym, cell *val);
 
+/**@brief  Count the number of arguments in a validation format string
+ * @brief  validation format string, as passed to lisp_validate()
+ * @return argument count**/
+size_t validate_arg_count(const char *fmt);
+
 #ifdef __cplusplus
 }
 #endif

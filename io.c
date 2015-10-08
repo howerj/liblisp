@@ -164,7 +164,7 @@ int io_printflt(double f, io * o) { assert(o);
         return EOF;
 }
 
-io *io_sin(char *sin) {
+io *io_sin(const char *sin) {
         io *i;
         if(!sin || !(i = calloc(1, sizeof(*i)))) return NULL;
         if(!(i->p.str = lstrdup(sin))) return NULL;

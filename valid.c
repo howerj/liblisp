@@ -7,8 +7,6 @@
  *  
  *  @todo print_type_string should decode the format string
  *  @todo print the doc string for the subroutine or procedure if available
- *  @todo __LINE__, __FILE__ and __func__ debugging information should be
- *        passed into lisp_validate with a nice wrapper macro
  *  @todo Improve the format options with; variable length validation,
  *        groups of type (such as argument one can be either a string or
  *        and I/O port), optional arguments, etcetera. This will require 
@@ -43,11 +41,13 @@
         X('x', "function",      /* executable type */     is_func(x))\
         X('A', "any-expression",/* any expression */      1)
 
-static int print_type_string(lisp *l, unsigned len, char *fmt, cell *args, 
+static int print_type_string(lisp *l, unsigned len, const char *fmt, cell *args, 
                               const char *file, const char *func, unsigned line) 
 {
-        char c, *s;
-        lisp_printf(l, l->efp, 0, "(error \"incorrect arguments\" (%s %s %d) (%d) (", 
+        const char *s, *head = fmt;
+        char c;
+        io *e = lisp_get_logging(l);
+        lisp_printf(l, e, 0, "(error \"incorrect arguments\" (%s %s %d) (%d) (", 
                         file, func, (intptr_t) line, (intptr_t)len); 
         while((c = *fmt++)) {
                 s = "";
@@ -56,12 +56,22 @@ static int print_type_string(lisp *l, unsigned len, char *fmt, cell *args,
 #define X(CHAR, STRING, ACTION) case (CHAR): s = (STRING); break;
                 VALIDATE_XLIST
 #undef X
-                default: HALT(l, "%s", "invalid validation format");
+                default: HALT(l, "\"invalid format string\" \"%s\" %S))", head, args);
                 }
-                io_puts(s, l->efp);
-                if(*fmt) io_putc(' ', l->efp);
+                io_puts(s, e);
+                if(*fmt) io_putc(' ', e);
         }
-        return lisp_printf(l, l->efp, 0, ") %S)\n", args);
+        return lisp_printf(l, e, 0, ") %S)\n", args);
+}
+
+size_t validate_arg_count(const char *fmt) {
+        size_t i = 0;
+        if(!fmt) return 0;
+        for(;*fmt; i++) {
+                while(*fmt && isspace(*fmt++));
+                while(*fmt && !isspace(*fmt++));
+        }
+        return i;
 }
 
 int lisp_validate(lisp *l, unsigned len, char *fmt, cell *args, int recover, 

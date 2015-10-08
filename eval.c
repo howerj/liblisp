@@ -82,9 +82,19 @@ static cell *mk_asciiz(lisp *l, char *s, lisp_type type) {
         return x;
 }
 static cell *mk_sym(lisp *l, char *s) { return mk_asciiz(l, s, SYMBOL); }
-cell *mk_int(lisp *l, intptr_t d) { return mk(l, INTEGER, 1, (cell*) d); }
-cell *mk_io(lisp *l, io *x)    { assert(x); return mk(l, IO, 1, (cell*)x); }
-cell *mk_subr(lisp *l, subr p) { assert(p); return mk(l, SUBR, 3, p); }
+cell *mk_int(lisp *l, intptr_t d) { assert(l); return mk(l, INTEGER, 1, (cell*) d); }
+cell *mk_io(lisp *l, io *x)    { assert(l && x); return mk(l, IO, 1, (cell*)x); }
+cell *mk_subr(lisp *l, subr p) { assert(l && p); return mk(l, SUBR, 3, p, NULL, NULL); }
+
+cell *mk_subr_long(lisp *l, subr p, const char *fmt, const char *doc) { assert(l && p); 
+        cell *t;
+        t = mk(l, SUBR, 3, p); 
+        if(fmt) t->len = validate_arg_count(fmt);
+        t->p[1].v = (void*)fmt;
+        t->p[2].v = (void*)doc;
+        return t;
+}
+
 cell *mk_proc(lisp *l, cell *x, cell *y, cell *z)  { assert(x); return mk(l, PROC,  3, x, y, z); }
 cell *mk_fproc(lisp *l, cell *x, cell *y, cell *z) { assert(x); return mk(l, FPROC, 3, x, y, z); }
 cell *mk_float(lisp *l, lfloat f) { assert(l); return mk(l, FLOAT, 1, f); }
@@ -97,12 +107,12 @@ cell *mk_user(lisp *l, void *x, intptr_t type) { assert(l && x);
 }
 
 subr  subrval(cell *x)         { assert(x && is_subr(x)); return x->p[0].prim; }
-char *subrtype(cell *x)        { assert(x && is_subr(x)); return (char *) x->p[1].v; }
+char *subrformat(cell *x)      { assert(x && is_subr(x)); return (char *) x->p[1].v; }
 char *subrdocstr(cell *x)      { assert(x && is_subr(x)); return (char *) x->p[2].v; }
 cell *proc_args(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[0].v; }
 cell *proc_code(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[1].v; }
 cell *proc_env(cell *x)        { assert(x && (is_proc(x) || is_fproc(x))); return x->p[2].v; }
-char *proc_type(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[3].v; }
+char *proc_format(cell *x)     { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[3].v; }
 char *proc_docstr(cell *x)     { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[4].v; }
 cell *car(cell *x)             { assert(x && is_cons(x)); return x->p[0].v; }
 cell *cdr(cell *x)             { assert(x && is_cons(x)); return x->p[1].v; }
@@ -311,6 +321,8 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         gc_add(l, proc);
                         gc_add(l, vals);
                         l->cur_depth = depth; /*tucked away for subr use*/
+                        if(subrformat(proc))
+                                VALIDATE(l, proc->len, subrformat(proc), vals, 1);
                         return (*subrval(proc))(l, vals);
                 }
                 if(is_proc(proc) || is_fproc(proc)) {

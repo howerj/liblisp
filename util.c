@@ -30,12 +30,12 @@ char *lstrdup(const char *s) { assert(s);
         return str;
 }
 
-static int matcher(char *pat, char *str, size_t depth) { 
-        ASSERT(depth); /*crude method of protection*/
+static int matcher(char *pat, char *str, size_t depth, jmp_buf *bf) { 
+        if(!depth) longjmp(*bf, -1);
         if(!str) return 0;
 again:  switch(*pat) {
         case '\0': return !*str;
-        case '*':  return matcher(pat+1, str, depth-1) || (*str && matcher(pat, str+1, depth-1));
+        case '*':  return matcher(pat+1, str, depth-1, bf) || (*str && matcher(pat, str+1, depth-1, bf));
         case '.':  if(!*str)        return  0; pat++; str++; goto again;
         case '\\': if(!*(pat+1))    return -1; if(!*str) return 0; pat++; /*fall through*/
         default:   if(*pat != *str) return  0; pat++; str++; goto again;
@@ -43,7 +43,9 @@ again:  switch(*pat) {
 }
 
 int match(char *pat, char *str) { assert(pat && str);
-        return matcher(pat, str, LARGE_DEFAULT_LEN);
+        jmp_buf bf;
+        if(setjmp(bf)) return -1;
+        return matcher(pat, str, LARGE_DEFAULT_LEN, &bf);
 }
 
 /*This regex engine is a bit of a mess and needs to be rewritten*/

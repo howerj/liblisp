@@ -22,8 +22,13 @@ void lisp_throw(lisp *l, int ret) {
         else exit(ret);
 }
 
-cell *lisp_add_subr(lisp *l, char *name, subr func) { assert(l && func && name);
+cell *lisp_add_subr(lisp *l, const char *name, subr func) { assert(l && func && name);
         return extend_top(l, intern(l, lstrdup(name)), mk_subr(l, func));
+}
+
+cell *lisp_add_subr_long(lisp *l, const char *name, subr func, const char *fmt, const char *doc) {
+        assert(l && name && func); /*fmt and doc are optional*/
+        return extend_top(l, intern(l, lstrdup(name)), mk_subr_long(l, func, fmt, doc));
 }
 
 cell *lisp_intern(lisp *l, cell *ob) { assert(l && ob);
@@ -31,7 +36,7 @@ cell *lisp_intern(lisp *l, cell *ob) { assert(l && ob);
         return l->tee;
 }
 
-cell *lisp_add_cell(lisp *l, char *sym, cell *val) { assert(l && sym && val);
+cell *lisp_add_cell(lisp *l, const char *sym, cell *val) { assert(l && sym && val);
         return extend_top(l, intern(l, lstrdup(sym)), val);
 }
 
@@ -87,7 +92,7 @@ cell *lisp_eval(lisp *l, cell *exp) { assert(l && exp);
         return ret;
 }
 
-cell *lisp_eval_string(lisp *l, char *evalme) { assert(l && evalme);
+cell *lisp_eval_string(lisp *l, const char *evalme) { assert(l && evalme);
         io *in = NULL;
         cell *ret;
         volatile int restore_used = 0, r;
