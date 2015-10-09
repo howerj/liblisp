@@ -9,17 +9,11 @@
 #include <math.h>
 #include <stdlib.h>
 
-extern lisp *lglobal; /* from main.c */
-
-static void construct(void) __attribute__((constructor));
-static void destruct(void) __attribute__((destructor));
-
 /**@brief Template for most of the functions in "math.h"
  * @param NAME name of math function such as "log", "sin", etc.*/
 #define SUBR_MATH_UNARY(NAME)\
 static cell *subr_ ## NAME (lisp *l, cell *args) {\
-        if(!cklen(args, 1) || !is_arith(car(args)))\
-                RECOVER(l, "\"expected (number)\" '%S", args);\
+	VALIDATE(l, 1, "A", args, 1);\
         return mk_float(l, NAME (is_floatval(car(args)) ? floatval(car(args)) :\
                                   (double) intval(car(args))));\
 }
@@ -36,8 +30,7 @@ MATH_UNARY_LIST
 static cell *subr_pow (lisp *l, cell *args) {
         cell *xo, *yo;
         double x, y;
-        if(!cklen(args, 2) || !is_arith(car(args)) || !is_arith(CADR(args)))
-                RECOVER(l, "\"expected (number number)\" '%S", args);
+	VALIDATE(l, 2, "A A", args, 1);
         xo = car(args);
         yo = CADR(args);
         x = is_floatval(xo) ? floatval(xo) : intval(xo);
@@ -48,8 +41,7 @@ static cell *subr_pow (lisp *l, cell *args) {
 static cell *subr_modf(lisp *l, cell *args) {
         cell *xo;
         double x, fracpart, intpart = 0;
-        if(!cklen(args, 1) || !is_arith(car(args)))
-                RECOVER(l, "\"expected (number)\" '%S", args);
+	VALIDATE(l, 1, "A", args, 1);
         xo = car(args);
         x = is_floatval(xo) ? floatval(xo) : intval(xo);
         fracpart = modf(x, &intpart);
@@ -65,7 +57,7 @@ static struct module_subroutines { subr p; char *name; } primitives[] = {
 };
 #undef X
 
-static void construct(void) {
+static int initialize(void) {
         size_t i;
         assert(lglobal);
 
@@ -73,9 +65,28 @@ static void construct(void) {
                 if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
                         goto fail;
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: math loaded\n");
-        return;
+        return 0;
 fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: math load failure\n");
+	return -1;
 }
 
-static void destruct(void) {
+#ifdef __unix__
+static void construct(void) __attribute__((constructor));
+static void destruct(void)  __attribute__((destructor));
+static void construct(void) { initialize(); }
+static void destruct(void)  { }
+#elif _WIN32
+#include <windows.h>
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
+        switch (fdwReason) {
+            case DLL_PROCESS_ATTACH: initialize(); break;
+            case DLL_PROCESS_DETACH: break;
+            case DLL_THREAD_ATTACH:  break;
+            case DLL_THREAD_DETACH:  break;
+	    default: break;
+        }
+        return TRUE;
 }
+#endif
+
+

@@ -20,8 +20,6 @@
 
 #include <linux/kdev_t.h>
 
-extern lisp *lglobal; /* from main.c */
-
 #define SUBROUTINE_XLIST\
         X(subr_chdir,     "chdir")\
         X(subr_directory, "ls")\

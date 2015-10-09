@@ -5,7 +5,6 @@
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com 
  *  
- *  @todo print_type_string should decode the format string
  *  @todo print the doc string for the subroutine or procedure if available
  *  @todo Improve the format options with; variable length validation,
  *        groups of type (such as argument one can be either a string or
@@ -22,27 +21,27 @@
 #include <assert.h>
 
 #define VALIDATE_XLIST\
-        X('s', "symbol",        /* symbol */              is_sym(x))\
-        X('d', "integer",       /* integer */             is_int(x))\
-        X('c', "cons",          /* cons cell (list) */    is_cons(x))\
-        X('p', "procedure",     /* procedure */           is_proc(x))\
-        X('r', "subroutine",    /* built in subroutine */ is_subr(x))\
-        X('S', "string",        /* string */              is_str(x))\
-        X('P', "io-port",       /* IO port */             is_io(x))\
-        X('h', "hash",          /* a hash */              is_hash(x))\
-        X('F', "f-expr",        /* an F-Expression */     is_fproc(x))\
-        X('f', "float",         /* a floating point number */ is_floatval(x))\
-        X('u', "user-defined",  /* user define type */    is_userdef(x))\
-        X('b', "t-or-nil",      /* "boolean" */           is_nil(x) || x == gsym_tee())\
-        X('i', "input-port",    /* input port only */     is_in(x))\
-        X('o', "output-port",   /* output port only */    is_out(x))\
-        X('Z', "symbol-or-string", /* group symbol/string */ is_asciiz(x))\
-        X('a', "integer-or-float", /* group integer/float */ is_arith(x))\
-        X('x', "function",      /* executable type */     is_func(x))\
-        X('A', "any-expression",/* any expression */      1)
+        X('s', "symbol",            is_sym(x))\
+        X('d', "integer",           is_int(x))\
+        X('c', "cons",              is_cons(x))\
+        X('p', "procedure",         is_proc(x))\
+        X('r', "subroutine",        is_subr(x))\
+        X('S', "string",            is_str(x))\
+        X('P', "io-port",           is_io(x))\
+        X('h', "hash",              is_hash(x))\
+        X('F', "f-expr",            is_fproc(x))\
+        X('f', "float",             is_floatval(x))\
+        X('u', "user-defined",      is_userdef(x))\
+        X('b', "t-or-nil",          is_nil(x) || x == gsym_tee())\
+        X('i', "input-port",        is_in(x))\
+        X('o', "output-port",       is_out(x))\
+        X('Z', "symbol-or-string",  is_asciiz(x))\
+        X('a', "integer-or-float",  is_arith(x))\
+        X('x', "function",          is_func(x))\
+        X('A', "any-expression",    1)
 
-static int print_type_string(lisp *l, unsigned len, const char *fmt, cell *args, 
-                              const char *file, const char *func, unsigned line) 
+static int print_type_string(lisp *l, unsigned len, const char *fmt, 
+                cell *args, const char *file, const char *func, unsigned line) 
 {
         const char *s, *head = fmt;
         char c;

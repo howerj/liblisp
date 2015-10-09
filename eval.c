@@ -5,9 +5,7 @@
  *  @email      howe.r.j.89@gmail.com
  *
  *  This is the main evaluator and associated function, the built in
- *  subroutines for the interpreter are defined elsewhere.
- *
- **/
+ *  subroutines for the interpreter are defined elsewhere. **/
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
@@ -126,6 +124,13 @@ intptr_t user_type(cell *x)    { assert(x && is_userdef(x)); return (intptr_t)x-
 hashtable *hashval(cell *x)    { assert(x && is_hash(x)); return (hashtable *)(x->p[0].v); }
 int  cklen(cell *x, size_t expect) { assert(x); return (x->len) == expect; }
 lfloat floatval(cell *x)       { assert(x && is_floatval(x)); return x->p[0].f; }
+intptr_t a2i_val(cell *x) { assert(x && is_arith(x));
+       return is_int(x) ? intval(x) : (intptr_t) floatval(x);
+}
+
+lfloat a2f_val(cell *x) { assert(x && is_arith(x));
+       return is_floatval(x) ? floatval(x) : (lfloat) intval(x);
+}
 
 int newuserdef(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p) {
         if(l->userdef_used >= MAX_USER_TYPES) return -1;

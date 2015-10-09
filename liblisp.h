@@ -558,6 +558,8 @@ LIBLISP_API char *symval(cell *x); /**< get string (symbol) from a lisp cell**/
 LIBLISP_API void *userval(cell *x); /**< get data from user defined type**/
 LIBLISP_API lfloat floatval(cell *x); /**< get floating point val from lisp cell**/
 LIBLISP_API hashtable *hashval(cell *x); /**< get hash table from a lisp cell**/
+LIBLISP_API intptr_t a2i_val(cell *x); /** float/int to int */
+LIBLISP_API lfloat a2f_val(cell *x);   /** float/int to float */
 LIBLISP_API cell *gsym_error(void); /**< return the error cell**/
 LIBLISP_API cell *gsym_nil(void);   /**< return the nil cell**/
 LIBLISP_API cell *gsym_tee(void);   /**< return the tee cell**/

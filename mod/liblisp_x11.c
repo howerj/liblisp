@@ -19,13 +19,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define START_X         (10u)
-#define START_Y         (20u)
+#define START_X         (10u)  /**< default start position (x)*/
+#define START_Y         (20u)  /**< default start position (y)*/
 #define START_HEIGHT    (400u) /**< default window height*/
 #define START_WIDTH     (400u) /**< default window width*/
-#define BORDER_WIDTH    (10u)   /**< default border width*/
-
-extern lisp *lglobal; /* from main.c */
+#define BORDER_WIDTH    (10u)  /**< default border width*/
 
 #define SUBROUTINE_XLIST\
         X(subr_draw_line,      "draw-line")\
@@ -57,9 +55,6 @@ static struct module_subroutines { subr p; char *name; } primitives[] = {
         {NULL, NULL} /*must be terminated with NULLs*/
 };
 #undef X
-
-static void construct(void) __attribute__((constructor));
-static void destruct(void) __attribute__((destructor));
 
 static Display *xdisplay; /**< the display to be used by this module*/
 static int xscreen;       /**< the screen to use*/
@@ -103,7 +98,8 @@ static Window create_window(void) {
                         WhitePixel(xdisplay, xscreen)
                         );
 
-        XSetStandardProperties(xdisplay, w, "Default Window", "Icon", None, NULL, 0, &xhints);
+        XSetStandardProperties(
+              xdisplay, w, "Default Window", "Icon", None, NULL, 0, &xhints);
         xcolormap = DefaultColormap(xdisplay, xscreen);
 
         solid_GC = XCreateGC(xdisplay, w, None, &solid_GC_values);
@@ -115,7 +111,8 @@ static Window create_window(void) {
         XSetForeground(xdisplay, clear_GC, WhitePixel(xdisplay, xscreen));
 
         if (!(fontstruct = XLoadQueryFont(xdisplay,"8x13"))) {
-                lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "could not open font\n");
+                lisp_printf(lglobal, lisp_get_logging(lglobal), 0, 
+                                                 "could not open font\n");
                 return -1;
         }
 
@@ -251,7 +248,8 @@ static cell* subr_draw_rectangle(lisp *l, cell *args) {
         y      = intval(car(v)); v = cdr(v);
         width  = intval(car(v)); v = cdr(v);
         height = intval(car(v)); v = cdr(v);
-        XDrawRectangle(xdisplay, (Window)userval(car(args)), solid_GC, x, y, width, height) ;
+        XDrawRectangle(
+          xdisplay, (Window)userval(car(args)), solid_GC, x, y, width, height);
         XFlush(xdisplay);
         return gsym_tee();
 fail:   RECOVER(l, "\"expected (window x y width height)\" '%S", args);
@@ -363,7 +361,7 @@ static cell* subr_set_foreground(lisp *l, cell *args) {
         return gsym_nil();
 }
 
-static void construct(void) {
+static int initialize(void) {
         size_t i;
         assert(lglobal);
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
@@ -378,10 +376,27 @@ static void construct(void) {
         xrootwin = RootWindow(xdisplay, xscreen);
         /*w = open_window();*/
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: x11 loaded\n");
-        return;
+        return 0;
 fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: x11 load failure\n");
+	return -1;
 }
 
-static void destruct(void) {
+#ifdef __unix__
+static void construct(void) __attribute__((constructor));
+static void destruct(void)  __attribute__((destructor));
+static void construct(void) { initialize(); }
+static void destruct(void)  { }
+#elif _WIN32
+#include <windows.h>
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
+        switch (fdwReason) {
+            case DLL_PROCESS_ATTACH: initialize(); break;
+            case DLL_PROCESS_DETACH: break;
+            case DLL_THREAD_ATTACH:  break;
+            case DLL_THREAD_DETACH:  break;
+	    default: break;
+        }
+        return TRUE;
 }
+#endif
 

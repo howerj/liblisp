@@ -11,24 +11,36 @@
 #include <assert.h>
 #include <liblisp.h>
 
-extern lisp *lglobal; /* from main.c */
-
-static void construct(void) __attribute__((constructor));
-static void destruct(void) __attribute__((destructor));
-
 static cell* subr_diff(lisp *l, cell *args) {
         UNUSED(l); UNUSED(args);
         return gsym_nil();
 }
 
-static void construct(void) {
+static int initialize(void) {
         assert(lglobal);
         if(!(lisp_add_subr(lglobal, "diff", subr_diff))) goto fail;
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: diff loaded\n");
-        return;
+        return 0;
 fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: diff load failure\n");
+	return -1;
 }
 
-static void destruct(void) {
+#ifdef __unix__
+static void construct(void) __attribute__((constructor));
+static void destruct(void)  __attribute__((destructor));
+static void construct(void) { initialize(); }
+static void destruct(void)  { }
+#elif _WIN32
+#include <windows.h>
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
+        switch (fdwReason) {
+            case DLL_PROCESS_ATTACH: initialize(); break;
+            case DLL_PROCESS_DETACH: break;
+            case DLL_THREAD_ATTACH:  break;
+            case DLL_THREAD_DETACH:  break;
+	    default: break;
+        }
+        return TRUE;
 }
+#endif
 

@@ -10,11 +10,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-extern lisp *lglobal; /* from main.c */
-
-static void construct(void) __attribute__((constructor));
-static void destruct(void) __attribute__((destructor));
-
 #define SUBROUTINE_XLIST\
         X(subr_compile,             "compile")\
         X(subr_link,                "link-library")\
@@ -23,7 +18,6 @@ static void destruct(void) __attribute__((destructor));
         X(subr_add_include_path,    "add-include-path")\
         X(subr_add_sysinclude_path, "add-system-include-path")\
         X(subr_set_lib_path,        "set-library-path")\
-
 
 #define X(SUBR, NAME) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
@@ -111,7 +105,7 @@ static cell* subr_set_lib_path(lisp *l, cell *args) {
         return gsym_tee();
 }
 
-static void construct(void) {
+static int initialize(void) {
         size_t i;
         assert(lglobal);
         /** Tiny C compiler library interface, special care has to be taken 
@@ -133,9 +127,27 @@ static void construct(void) {
                 if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
                         goto fail;
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: tcc loaded\n");
-        return;
+        return 0;
 fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: tcc load failure\n");
+        return -1;
 }
 
-static void destruct(void) {
+#ifdef __unix__
+static void construct(void) __attribute__((constructor));
+static void destruct(void)  __attribute__((destructor));
+static void construct(void) { initialize(); }
+static void destruct(void)  { }
+#elif _WIN32
+#include <windows.h>
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
+        switch (fdwReason) {
+            case DLL_PROCESS_ATTACH: initialize(); break;
+            case DLL_PROCESS_DETACH: break;
+            case DLL_THREAD_ATTACH:  break;
+            case DLL_THREAD_DETACH:  break;
+	    default: break;
+        }
+        return TRUE;
 }
+#endif
+

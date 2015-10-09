@@ -3,28 +3,18 @@
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later 
  *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
- *  @email      howe.r.j.89@gmail.com
- *  
- *  A small CRC module; using the following two links it will be the first
- *  module that an attempted port to the Windows operating system will be
- *  done under from Unix (Linux).
- * 
- * See <https://stackoverflow.com/questions/15454968/dll-plugin-that-uses-functions-defined-in-the-main-executable>
- * and <https://stackoverflow.com/questions/8863193/what-does-declspecdllimport-really-mean>
- **/
+ *  @email      howe.r.j.89@gmail.com **/
 
 #include "crc.h"
 #include <assert.h>
 #include "liblisp.h"
 
-static void construct(void) __attribute__((constructor));
-static void destruct(void) __attribute__((destructor));
-
 static cell* subr_crc(lisp *l, cell *args) {
         uint32_t c;
         if(!cklen(args, 1) || !is_asciiz(car(args)))
                 RECOVER(l, "\"expected (string)\" '%S", args);
-        c = crc_final(crc_init((uint8_t*)strval(car(args)), lisp_get_cell_length(car(args))));
+        c = crc_final(crc_init((uint8_t*)strval(car(args)), 
+                                         lisp_get_cell_length(car(args))));
         return mk_int(lglobal, c);
 }
 
@@ -38,6 +28,8 @@ fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: crc load fai
 }
 
 #ifdef __unix__
+static void construct(void) __attribute__((constructor));
+static void destruct(void)  __attribute__((destructor));
 static void construct(void) { initialize(); }
 static void destruct(void)  { }
 #elif _WIN32

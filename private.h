@@ -5,10 +5,7 @@
  *              should not be used outside the project.
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com
- *  
- *  @todo Remove unnecessary bit fields in the cell structure (such as the
- *        trace bit, or the userdef field for non user defined functions).**/
+ *  @email      howe.r.j.89@gmail.com **/
 
 #ifndef PRIVATE_H
 #define PRIVATE_H
@@ -64,16 +61,18 @@ typedef enum lisp_type {
 typedef union cell_data { /**< ideally we would use void* for everything*/
         void *v;     /**< use this for integers and points to cells*/
         lfloat f;    /**< if lfloat is double it could be bigger than *v */ 
-        subr prim;   /**< function pointers are not guaranteed to fit into a void**/
+        subr prim;   /**< function pointers are not guaranteed 
+                                                      to fit into a void**/
 } cell_data; /**< a union of all the different C datatypes used*/
 
 struct cell {
         unsigned type:    4,        /**< Type of the lisp object*/
                  mark:    1,        /**< mark for garbage collection*/
-                 uncollectable: 1,  /**< set if the object cannot, or should not, be freed*/
-                 close:   1,        /**< set if the objects data field is now invalid/freed*/
+                 uncollectable: 1,  /**< do not free object?*/
+                 close:   1,        /**< object closed/invalid?*/
                  len:     32;       /**< length of data p*/
-        cell_data p[1]; /**< uses the "struct hack", c99 does not quite work here*/
+        cell_data p[1]; /**< uses the "struct hack", 
+                             c99 does not quite work here*/
 }; /**< a tagged object representing all possible lisp objects*/
 
 typedef struct hashentry {      /**< linked list of entries in a bin*/
@@ -106,14 +105,15 @@ struct io {
 };
 
 struct tr_state {
-        int set_squ[256],    /**< squeeze a character sequence?*/
-            set_del[256],    /**< delete a character?*/
+        int set_squ[UINT8_MAX],    /**< squeeze a character sequence?*/
+            set_del[UINT8_MAX],    /**< delete a character?*/
             compliment_seq,  /**< compliment sequence*/
             squeeze_seq,     /**< squeeze sequence*/
             delete_seq,      /**< delete a sequence of character*/
             truncate_seq;    /**< truncate s1 to length of s2*/
-        uint8_t set_tr[256], /**< mapping from one character set to another*/
-                previous_char; /**< previous translation char, used for squeeze*/
+        uint8_t set_tr[UINT8_MAX], /**< mapping from one character 
+                                                            set to another*/
+                previous_char; /**< previous translation char, for squeeze*/
 };
 
 typedef struct gc_list { 
@@ -139,24 +139,24 @@ struct lisp {
         gc_list *gc_head;  /**< linked list of all allocated objects*/
         char *token /**< one token of put back for parser*/, 
              *buf   /**< input buffer for parser*/;
-        size_t buf_allocated,   /**< size of buffer "l->buf"*/
-               buf_used,        /**< amount of buffer used by current string*/
+        size_t buf_allocated,/**< size of buffer "l->buf"*/
+               buf_used,     /**< amount of buffer used by current string*/
                gc_stack_allocated,    /**< length of buffer of GC stack*/
                gc_stack_used,         /**< elements used in GC stack*/
-               gc_collectp,     /**< collection counter, collect after it goes too high*/
-               max_depth,       /**< max recursion depth*/
-               cur_depth        /**< current depth*/;
+               gc_collectp,  /**< garbage collect after it goes too high*/
+               max_depth,    /**< max recursion depth*/
+               cur_depth     /**< current depth*/;
         uint64_t random_state[2] /**< PRNG state*/;
         int sig;   /**< set by signal handlers or other threads*/
         int trace; /**< trace level for eval*/
         unsigned ungettok:     1, /**< do we have a put-back token to read?*/
-                 recover_init: 1, /**< has the recover buffer been initialized?*/
-                 dynamic:      1, /**< use lexical scope if false, dynamic if true*/
+                 recover_init: 1, /**< recover buffer been initialized?*/
+                 dynamic:      1, /**< dynamic if true, lexical otherwise*/
                  errors_halt:  1, /**< any error halts the interpreter if true*/
                  color_on:     1, /**< REPL Colorize output*/
                  prompt_on:    1, /**< REPL '>' Turn prompt on*/
                  editor_on:    1; /**< REPL Turn the line editor on*/
-        userdef_funcs ufuncs[MAX_USER_TYPES]; /**< functions for user defined types*/
+        userdef_funcs ufuncs[MAX_USER_TYPES]; /**< for user defined types*/
         int userdef_used;   /**< number of user defined types allocated*/
         editor_func editor; /**< line editor to use, optional*/
 

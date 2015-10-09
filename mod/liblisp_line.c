@@ -11,10 +11,7 @@
 #include <string.h>
 #include <signal.h>
 
-extern lisp *lglobal; /* from main.c */
 static char *homedir;
-static void construct(void) __attribute__((constructor));
-static void destruct(void) __attribute__((destructor));
 static int running; /**< only handle errors when the lisp interpreter is running*/
 
 /** @brief This function tells a running lisp REPL to halt if it is reading
@@ -68,17 +65,14 @@ static cell *subr_line_editor_mode(lisp *l, cell *args) {
 }
 
 static cell *subr_hist_len(lisp *l, cell *args) {
-        if(!cklen(args, 1) || !is_int(car(args)))
-                RECOVER(l, "\"expected (integer)\" '%S", args);
+        VALIDATE(l, 1, "d", args, 1);
         if(!line_history_set_maxlen((int)intval(car(args))))
                 HALT(l, "\"%s\"", "out of memory");
         return gsym_tee();
 }
 
 static cell *subr_clear_screen(lisp *l, cell *args) {
-        (void)args;
-        if(!cklen(args, 0))
-                RECOVER(l, "\"expected ()\" '%S", args);
+        VALIDATE(l, 0, "", args, 1);
         line_clearscreen();
         return gsym_tee();
 }
@@ -88,15 +82,17 @@ SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
 #undef X
 
 #define X(SUBR, NAME) { SUBR, NAME },
-static struct module_subroutines { subr p; char *name; } primitives[] = {
+static struct module_subroutines { subr p; char *name; } prims[] = {
         SUBROUTINE_XLIST /*all of the subr functions*/
         {NULL, NULL} /*must be terminated with NULLs*/
 };
 #undef X
 
-static void construct(void) {
+static int initialize(void) {
         size_t i;
+        io *e;
         assert(lglobal);
+        e = lisp_get_logging(lglobal);
 
         if(signal(SIGINT, sig_int_handler) == SIG_ERR) {
                 PRINT_ERROR("\"%s\"", "could not set signal handler");
@@ -112,17 +108,36 @@ static void construct(void) {
         lisp_set_line_editor(lglobal, line_editing_function);
         line_history_load(histfile);
         line_set_vi_mode(1); /*start up in a sane editing mode*/
-        lisp_add_cell(lglobal, "*history-file*",   mk_str(lglobal, lstrdup(histfile)));
+        lisp_add_cell(lglobal, "*history-file*", mk_str(lglobal, lstrdup(histfile)));
 
-        for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
-                if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
-                        goto fail;
-        lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: line editor loaded\n");
-        return;
-fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: line editor load failure\n");
+        for(i = 0; prims[i].p; i++) /*add primitives from this module*/
+               if(!lisp_add_subr(lglobal, prims[i].name, prims[i].p))
+                     goto fail;
+        lisp_printf(lglobal, e, 0, "module: line editor loaded\n");
+        return 0;
+fail:   lisp_printf(lglobal, e, 0, "module: line editor load failure\n");
+        return -1;
 }
 
-static void destruct(void) {
-      /*lisp_set_line_editor(lglobal, NULL);*/
-        if(homedir) free(histfile);
+#ifdef __unix__
+static void construct(void) __attribute__((constructor));
+static void destruct(void)  __attribute__((destructor));
+static void construct(void) { initialize(); }
+static void destruct(void)  { 
+       /*lisp_set_line_editor(lglobal, NULL);*/ 
+         if(homedir) free(histfile); 
 }
+#elif _WIN32
+#include <windows.h>
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
+        switch (fdwReason) {
+            case DLL_PROCESS_ATTACH: initialize(); break;
+            case DLL_PROCESS_DETACH: break;
+            case DLL_THREAD_ATTACH:  break;
+            case DLL_THREAD_DETACH:  break;
+            default: break;
+        }
+        return TRUE;
+}
+#endif
+

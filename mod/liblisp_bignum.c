@@ -3,19 +3,12 @@
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later 
  *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
- *  @email      howe.r.j.89@gmail.com
- *
- *  @bug implement me!**/
+ *  @email      howe.r.j.89@gmail.com **/
 #include <assert.h>
 #include <liblisp.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include "bignum.h"
-
-extern lisp *lglobal; /* from main.c */
-
-static void construct(void) __attribute__((constructor));
-static void destruct(void) __attribute__((destructor));
 
 #define SUBROUTINE_XLIST\
         X(subr_bignum_create,    "bignum")\
@@ -38,7 +31,7 @@ static struct module_subroutines { subr p; char *name; } primitives[] = {
 
 static intptr_t ud_bignum = 0;
 
-static void ud_bignum_free(cell *f) {
+static void ud_bignum_free(cell *f) { 
         bignum_destroy(userval(f));
         free(f);
 }
@@ -109,7 +102,7 @@ static cell* subr_bignum_to_string(lisp *l, cell *args) {
         return mk_str(l, s);
 }
 
-static void construct(void) {
+static int initialize(void) {
         size_t i;
         assert(lglobal);
 
@@ -118,9 +111,27 @@ static void construct(void) {
                 if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
                         goto fail;
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: bignum loaded\n");
-        return;
+        return 0;
 fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: bignum load failure\n");
+	return -1;
 }
 
-static void destruct(void) {
+#ifdef __unix__
+static void construct(void) __attribute__((constructor));
+static void destruct(void)  __attribute__((destructor));
+static void construct(void) { initialize(); }
+static void destruct(void)  { }
+#elif _WIN32
+#include <windows.h>
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
+        switch (fdwReason) {
+            case DLL_PROCESS_ATTACH: initialize(); break;
+            case DLL_PROCESS_DETACH: break;
+            case DLL_THREAD_ATTACH:  break;
+            case DLL_THREAD_DETACH:  break;
+	    default: break;
+        }
+        return TRUE;
 }
+#endif
+

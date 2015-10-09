@@ -9,11 +9,7 @@
 #include <sqlite3.h>
 #include <stdlib.h>
 
-extern lisp *lglobal; /* from main.c */
-
 static int ud_sql;
-static void construct(void) __attribute__((constructor));
-static void destruct(void) __attribute__((destructor));
 
 static void ud_sql_free(cell *f) {
         if(!lisp_is_cell_closed(f))
@@ -35,9 +31,10 @@ static int sql_callback(void *obin, int argc, char **argv, char **azColName)
         ob = *((cell**)obin);
         for (i = 0; i < argc; i++)
                 ob = cons(lglobal, 
-                                cons(lglobal, 
-                                        mk_str(lglobal, lstrdup(azColName[i])),
-                                        argv[i] ? mk_str(lglobal, lstrdup(argv[i])) : gsym_nil()), ob);
+                       cons(lglobal, 
+                         mk_str(lglobal, lstrdup(azColName[i])),
+                         argv[i] ? mk_str(lglobal, lstrdup(argv[i])) : 
+                           gsym_nil()), ob);
         *((cell **)obin) = ob;
         return 0;
 }
@@ -45,8 +42,7 @@ static int sql_callback(void *obin, int argc, char **argv, char **azColName)
 static cell *subr_sqlopen(lisp *l, cell *args) {
         sqlite3 *db;
         assert(l == lglobal);
-        if(!cklen(args, 1) || !is_asciiz(car(args)))
-               RECOVER(l, "\"expected (string)\" '%S", args); 
+	VALIDATE(l, 1, "Z", args, 1);
         if(sqlite3_open(strval(car(args)), &db)) {
                 lisp_printf(l, lisp_get_logging(l), 0, "(sql-error \"%s\")\n", sqlite3_errmsg(db));
                 sqlite3_close(db);
@@ -77,16 +73,34 @@ static cell *subr_sqlclose(lisp *l, cell *args) {
         return gsym_tee();
 }
 
-static void construct(void) {
+static int initialize(void) {
         assert(lglobal);
         ud_sql = newuserdef(lglobal, ud_sql_free, NULL, NULL, ud_sql_print);
         if(!lisp_add_subr(lglobal, "sql",       subr_sql)) goto fail;
         if(!lisp_add_subr(lglobal, "sql-open",  subr_sqlopen)) goto fail;
         if(!lisp_add_subr(lglobal, "sql-close", subr_sqlclose)) goto fail;
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: sqlite3 loaded\n");
-        return;
+        return 0;
 fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: sqlite3 load failure\n");
+	return -1;
 }
 
-static void destruct(void) {
+#ifdef __unix__
+static void construct(void) __attribute__((constructor));
+static void destruct(void)  __attribute__((destructor));
+static void construct(void) { initialize(); }
+static void destruct(void)  { }
+#elif _WIN32
+#include <windows.h>
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
+        switch (fdwReason) {
+            case DLL_PROCESS_ATTACH: initialize(); break;
+            case DLL_PROCESS_DETACH: break;
+            case DLL_THREAD_ATTACH:  break;
+            case DLL_THREAD_DETACH:  break;
+	    default: break;
+        }
+        return TRUE;
 }
+#endif
+
