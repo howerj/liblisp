@@ -95,12 +95,12 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
                 case go_switch: break;
                 case go_in_stdin: /*read from standard input*/
                         io_close(l->ifp);
-                        if(!(l->ifp = io_fin(stdin)))
+                        if(lisp_set_input(l, io_fin(stdin)) < 0)
                                 return perror("stdin"), -1;
                         if(lisp_repl(l, l->prompt_on ? "> ": "", l->editor_on) < 0) 
                                 return -1;
-                        io_close(l->ifp);
-                        l->ifp = NULL;
+                        io_close(lisp_get_input(l));
+                        lisp_set_input(l, NULL);
                         stdin_off = 1;
                         break;
                 case go_in_file_next_arg: 
@@ -109,29 +109,30 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
                         /*--- fall through ---*/
                 case go_in_file: /*read from a file*/
                         io_close(l->ifp);
-                        if(!(l->ifp = io_fin(fopen(argv[i], "rb"))))
+                        if(lisp_set_input(l, io_fin(fopen(argv[i], "rb"))) < 0)
                                 return perror(argv[i]), -1;
                         if(lisp_repl(l, "", 0) < 0) return -1;
-                        io_close(l->ifp);
-                        l->ifp = NULL;
+                        io_close(lisp_get_input(l));
+                        lisp_set_input(l, NULL);
                         stdin_off = 1;
                         break;
                 case go_in_string: /*evaluate a string*/
                         io_close(l->ifp);
                         if(!(++i < argc))
                                 return fprintf(stderr, "-e expects arg\n"), -1;
-                        if(!(l->ifp = io_sin(argv[i])))
+                        if(lisp_set_input(l, io_sin(argv[i])) < 0)
                                 return perror(argv[i]), -1;
                         if(lisp_repl(l, "", 0) < 0) return -1;
-                        io_close(l->ifp);
-                        l->ifp = NULL;
+                        io_close(lisp_get_input(l));
+                        lisp_set_input(l, NULL);
                         stdin_off = 1;
                         break;
                 case go_out_file: /*change the file to write to*/
                         if(!(++i < argc))
                                 return fprintf(stderr, "-o expects arg\n"), -1;
-                        io_close(l->ofp);
-                        if(!(l->ofp = io_fout(fopen(argv[i], "wb"))))
+                        io_close(lisp_get_output(l));
+                        lisp_set_output(l, NULL);
+                        if(lisp_set_output(l, io_fout(fopen(argv[i], "wb"))) < 0)
                                 return perror(argv[i]), -1;
                         break;
                 case go_error:

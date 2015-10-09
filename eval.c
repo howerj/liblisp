@@ -93,8 +93,8 @@ cell *mk_subr_long(lisp *l, subr p, const char *fmt, const char *doc) { assert(l
         return t;
 }
 
-cell *mk_proc(lisp *l, cell *x, cell *y, cell *z)  { assert(x); return mk(l, PROC,  3, x, y, z); }
-cell *mk_fproc(lisp *l, cell *x, cell *y, cell *z) { assert(x); return mk(l, FPROC, 3, x, y, z); }
+cell *mk_proc(lisp *l, cell *x, cell *y, cell *z)  { assert(x); return mk(l, PROC,  5, x, y, z, NULL, NULL); }
+cell *mk_fproc(lisp *l, cell *x, cell *y, cell *z) { assert(x); return mk(l, FPROC, 5, x, y, z, NULL, NULL); }
 cell *mk_float(lisp *l, lfloat f) { assert(l); return mk(l, FLOAT, 1, f); }
 cell *mk_str(lisp *l, char *s) { return mk_asciiz(l, s, STRING); }
 cell *mk_hash(lisp *l, hashtable *h) { return mk(l, HASH, 1, (cell *)h); }

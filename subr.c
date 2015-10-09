@@ -44,73 +44,77 @@
  *       documentation string (if NULL then there is no doc-string)
  *       subroutine name (as it appears with in the interpreter) */
 #define SUBROUTINE_XLIST\
-  X("assoc",        subr_assoc,     "A c", "lookup a variable in an 'a-list'")\
-  X("blog",         subr_binlog,    "d",    "compute the binary logarithm of an integer")\
-  X("car",          subr_car,       "c",    "return the first object in a list")\
-  X("cdr",          subr_cdr,       "c",    "return every object apart from the first in a list")\
-  X("close",        subr_close,     "P",    "close a port, invalidating it")\
-  X("coerce",       subr_coerce,    NULL,   "coerce a variable from one type to another")\
-  X("cons",         subr_cons,      "A A",  "allocate a new cons cell with two arguments")\
-  X("date",         subr_date,      "",     "return a list representing the date (GMT) (not thread safe)")\
-  X("define-eval",  subr_define_eval, "s A", "extend the top level environment with a computed symbol")\
-  X("eof?",         subr_eofp,      "P",    "is the EOF flag set on a port?")\
-  X("eq",           subr_eq,        "A A",  "equality operation")\
-  X("eval",         subr_eval,      NULL,   "evaluate an expression")\
-  X("ferror",       subr_ferror,    "P",    "is the error flag set on a port")\
-  X("flush",        subr_flush,     NULL,   "flush a port")\
-  X("format",       subr_format,    NULL,   "print a string given a format and arguments")\
-  X("gc",           subr_gc,        "",     "force the collection of garbage")\
-  X("get-char",     subr_getchar,   NULL,   "read in a character from a port")\
-  X("get-delim",    subr_getdelim,  NULL,   "read in a string delimited by a character from a port")\
-  X("getenv",       subr_getenv,    "Z",    "get an environment variable (not thread safe)")\
-  X("hash-create",  subr_hcreate,   NULL,   "create a new hash")\
-  X("hash-insert",  subr_hinsert,   "h Z A", "insert a variable into a hash")\
-  X("hash-lookup",  subr_hlookup,   "h Z",  "loop up a variable in a hash")\
-  X("input?",       subr_inp,       "A",    "is an object an input port?")\
-  X("join",         subr_join,      NULL,   "join a list of strings together with a separator")\
-  X("length",       subr_length,    "A",    "return the length of a list or string")\
-  X("list",         subr_list,      NULL,   "create a list from the arguments")\
-  X("locale!",      subr_setlocale, "d Z",  "set the locale")\
-  X("match",        subr_match,     "Z Z",  "perform a primitive match on a string")\
-  X("open",         subr_open,      "d Z",  "open a port (either a file or a string) for reading *or* writing")\
-  X("output?",      subr_outp,      "A",    "is an object an output port?")\
-  X("print",        subr_print,     NULL,   "print out an s-expression")\
-  X("put-char",     subr_putchar,   NULL,   "write a character to a output port")\
-  X("put",          subr_puts,      NULL,   "write a string to a output port")\
-  X("raise",        subr_raise,     "d",    "raise a signal")\
-  X("random",       subr_rand,      "",     "return a pseudo random number generator")\
-  X("read",         subr_read,      NULL,   "read in an s-expression from a port")\
-  X("regex-span",   subr_regexspan, "Z Z",  "get the span of a regex match on a string")\
-  X("remove",       subr_remove,    "Z",    "remove a file")\
-  X("rename",       subr_rename,    "Z Z",  "rename a file")\
-  X("reverse",      subr_reverse,   NULL,   "reverse a string, list or hash")\
-  X("scar",         subr_scar,      "Z",    "return the first character in a string")\
-  X("scdr",         subr_scdr,      "Z",    "return a string excluding the first character")\
-  X("scons",        subr_scons,     "Z Z",  "concatenate two string")\
-  X("seed",         subr_seed,      "d d",  "seed the pseudo random number generator")\
-  X("seek",         subr_seek,      "P d d", "perform a seek on a port (moving the port position indicator)")\
-  X("split",        subr_split,     "Z Z",  "split a string given a regular expression")\
-  X("&",            subr_band,      "d d",  "bit-wise and of two integers")\
-  X("~",            subr_binv,      "d",    "bit-wise inversion of an integers")\
-  X("|",            subr_bor,       "d d",  "bit-wise or of two integers")\
-  X("^",            subr_bxor,      "d d",  "bit-wise xor of two integers")\
-  X("/",            subr_div,       "a a",  "divide operation")\
-  X("=",            subr_eq,        "A A",  "equality operation")\
-  X(">",            subr_greater,   NULL,   "greater operation")\
-  X("<",            subr_less,      NULL,   "less than operation")\
-  X("%",            subr_mod,       "d d",  "modulo operation")\
-  X("*",            subr_prod,      "a a",  "multiply two numbers")\
-  X("-",            subr_sub,       "a a",  "subtract two numbers")\
-  X("+",            subr_sum,       "a a",  "add two numbers")\
-  X("substring",    subr_substring, NULL,   "create a substring from a string")\
-  X("system",       subr_system,    NULL,   "execute a command with the system command interpreter")\
-  X("tell",         subr_tell,      "P",    "return the position indicator of a port")\
-  X("timed-eval",   subr_timed_eval, NULL,  "time an evaluation")\
-  X("time",         subr_time,      "",     "create a list representing the time")\
-  X("trace!",       subr_trace,     "b",    "turn tracing on or off")\
-  X("tr",           subr_tr,        "Z Z Z Z", "translate a string given a format and mode")\
-  X("type-of",      subr_typeof,    "A",    "return an integer representing the type of an object")\
-  X("validate",     subr_validate,  "d Z c", "validate an argument list against a format string")
+  X("assoc",       subr_assoc,     "A c", "lookup a variable in an 'a-list'")\
+  X("blog",        subr_binlog,    "d",    "compute the binary logarithm of an integer")\
+  X("car",         subr_car,       "c",    "return the first object in a list")\
+  X("cdr",         subr_cdr,       "c",    "return every object apart from the first in a list")\
+  X("close",       subr_close,     "P",    "close a port, invalidating it")\
+  X("coerce",      subr_coerce,    NULL,   "coerce a variable from one type to another")\
+  X("cons",        subr_cons,      "A A",  "allocate a new cons cell with two arguments")\
+  X("date",        subr_date,      "",     "return a list representing the date (GMT) (not thread safe)")\
+  X("define-eval", subr_define_eval, "s A", "extend the top level environment with a computed symbol")\
+  X("documentation-string", subr_doc_string, "x", "return the documentation string from a procedure")\
+  X("eof?",        subr_eofp,      "P",    "is the EOF flag set on a port?")\
+  X("eq",          subr_eq,        "A A",  "equality operation")\
+  X("eval",        subr_eval,      NULL,   "evaluate an expression")\
+  X("ferror",      subr_ferror,    "P",    "is the error flag set on a port")\
+  X("flush",       subr_flush,     NULL,   "flush a port")\
+  X("format",      subr_format,    NULL,   "print a string given a format and arguments")\
+  X("function-format", subr_validate_string, "x", "return the format string from a procedure")\
+  X("gc",          subr_gc,        "",     "force the collection of garbage")\
+  X("get-char",    subr_getchar,   "i",    "read in a character from a port")\
+  X("get-delim",   subr_getdelim,  "i C",  "read in a string delimited by a character from a port")\
+  X("getenv",      subr_getenv,    "Z",    "get an environment variable (not thread safe)")\
+  X("hash-create", subr_hcreate,   NULL,   "create a new hash")\
+  X("hash-insert", subr_hinsert,   "h Z A", "insert a variable into a hash")\
+  X("hash-lookup", subr_hlookup,   "h Z",  "loop up a variable in a hash")\
+  X("input?",      subr_inp,       "A",    "is an object an input port?")\
+  X("join",        subr_join,      NULL,   "join a list of strings together with a separator")\
+  X("length",      subr_length,    "A",    "return the length of a list or string")\
+  X("list",        subr_list,      NULL,   "create a list from the arguments")\
+  X("locale!",     subr_setlocale, "d Z",  "set the locale")\
+  X("match",       subr_match,     "Z Z",  "perform a primitive match on a string")\
+  X("open",        subr_open,      "d Z",  "open a port (either a file or a string) for reading *or* writing")\
+  X("output?",     subr_outp,      "A",    "is an object an output port?")\
+  X("print",       subr_print,     "o A",  "print out an s-expression")\
+  X("procedure-args",  subr_proc_args, "l", "return the arguments from a user defined procedure")\
+  X("procedure-code",  subr_proc_code, "l", "return the code from a user defined procedure")\
+  X("put-char",    subr_putchar,   "o d",  "write a character to a output port")\
+  X("put",         subr_puts,      "o Z",  "write a string to a output port")\
+  X("raise",       subr_raise,     "d",    "raise a signal")\
+  X("random",      subr_rand,      "",     "return a pseudo random number generator")\
+  X("read",        subr_read,      NULL,   "read in an s-expression from a port")\
+  X("regex-span",  subr_regexspan, "Z Z",  "get the span of a regex match on a string")\
+  X("remove",      subr_remove,    "Z",    "remove a file")\
+  X("rename",      subr_rename,    "Z Z",  "rename a file")\
+  X("reverse",     subr_reverse,   NULL,   "reverse a string, list or hash")\
+  X("scar",        subr_scar,      "Z",    "return the first character in a string")\
+  X("scdr",        subr_scdr,      "Z",    "return a string excluding the first character")\
+  X("scons",       subr_scons,     "Z Z",  "concatenate two string")\
+  X("seed",        subr_seed,      "d d",  "seed the pseudo random number generator")\
+  X("seek",        subr_seek,      "P d d", "perform a seek on a port (moving the port position indicator)")\
+  X("split",       subr_split,     "Z Z",  "split a string given a regular expression")\
+  X("&",           subr_band,      "d d",  "bit-wise and of two integers")\
+  X("~",           subr_binv,      "d",    "bit-wise inversion of an integers")\
+  X("|",           subr_bor,       "d d",  "bit-wise or of two integers")\
+  X("^",           subr_bxor,      "d d",  "bit-wise xor of two integers")\
+  X("/",           subr_div,       "a a",  "divide operation")\
+  X("=",           subr_eq,        "A A",  "equality operation")\
+  X(">",           subr_greater,   NULL,   "greater operation")\
+  X("<",           subr_less,      NULL,   "less than operation")\
+  X("%",           subr_mod,       "d d",  "modulo operation")\
+  X("*",           subr_prod,      "a a",  "multiply two numbers")\
+  X("-",           subr_sub,       "a a",  "subtract two numbers")\
+  X("+",           subr_sum,       "a a",  "add two numbers")\
+  X("substring",   subr_substring, NULL,   "create a substring from a string")\
+  X("system",      subr_system,    NULL,   "execute a command with the system command interpreter")\
+  X("tell",        subr_tell,      "P",    "return the position indicator of a port")\
+  X("timed-eval",  subr_timed_eval, NULL,  "time an evaluation")\
+  X("time",        subr_time,      "",     "create a list representing the time")\
+  X("trace!",      subr_trace,     "b",    "turn tracing on or off")\
+  X("tr",          subr_tr,        "Z Z Z Z", "translate a string given a format and mode")\
+  X("type-of",     subr_typeof,    "A",    "return an integer representing the type of an object")\
+  X("validate",    subr_validate,  "d Z c", "validate an argument list against a format string")
 
 #define X(NAME, SUBR, VALIDATE, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
@@ -199,10 +203,11 @@ ISX_LIST /*defines lisp subroutines for checking whether a string only contains 
 lisp *lisp_init(void) {
         lisp *l;
         unsigned i;
-        if(!(l = calloc(1, sizeof(*l))))       goto fail;
-        if(!(l->ifp = io_fin(stdin)))          goto fail;
-        if(!(l->ofp = io_fout(stdout)))        goto fail;
-        if(!(l->efp = io_fout(stderr)))        goto fail;
+        if(!(l = calloc(1, sizeof(*l))))     goto fail;
+        if(!(l->ifp = io_fin(stdin)))        goto fail;
+        if(!(l->ofp = io_fout(stdout)))      goto fail;
+        if(!(l->efp = io_fout(stderr)))      goto fail;
+
         if(!(l->buf = calloc(DEFAULT_LEN, 1))) goto fail;
         l->buf_allocated = DEFAULT_LEN;
         if(!(l->gc_stack = calloc(DEFAULT_LEN, sizeof(*l->gc_stack)))) 
@@ -227,6 +232,26 @@ CELL_XLIST
         if(!(l->top_env = cons(l, cons(l, gsym_nil(), gsym_nil()),gsym_nil())))
                 goto fail;
 
+        /* Special care has to be taken with the input and output objects
+         * as they can change throughout the interpreters lifetime, they
+         * should only be set by accessor functions*/
+        if(!(l->input   = mk_io(l, l->ifp))) goto fail;
+        if(!(l->output  = mk_io(l, l->ofp))) goto fail;
+        if(!(l->logging = mk_io(l, l->efp))) goto fail;
+
+        l->input->uncollectable = l->output->uncollectable = l->logging->uncollectable = 1;
+
+        /* These are the ports currently used by the interpreter for default
+         * input, output and error reporting*/
+        if(!lisp_add_cell(l, "*input*",  l->input))   goto fail;
+        if(!lisp_add_cell(l, "*output*", l->output))  goto fail;
+        if(!lisp_add_cell(l, "*error*",  l->logging)) goto fail;
+        /* These are the ports representing stdin/stdout/stderr of the C
+         * environment*/
+        if(!lisp_add_cell(l, "*stdin*",  mk_io(l, io_fin(stdin))))   goto fail;
+        if(!lisp_add_cell(l, "*stdout*", mk_io(l, io_fout(stdout)))) goto fail;
+        if(!lisp_add_cell(l, "*stderr*", mk_io(l, io_fout(stderr)))) goto fail;
+
         for(i = 0; special_cells[i].internal; i++) { /*add special cells*/
                 if(!lisp_intern(l, special_cells[i].internal))
                         goto fail;
@@ -240,9 +265,6 @@ CELL_XLIST
         if(!lisp_add_cell(l, "e",  mk_float(l, 2.71828182845904523536))) 
                 goto fail;
 
-        if(!lisp_add_cell(l, "*stdin*",  mk_io(l, io_fin(stdin))))   goto fail;
-        if(!lisp_add_cell(l, "*stdout*", mk_io(l, io_fout(stdout)))) goto fail;
-        if(!lisp_add_cell(l, "*stderr*", mk_io(l, io_fout(stderr)))) goto fail;
 
         for(i = 0; integers[i].name; i++) /*add all integers*/
                 if(!lisp_add_cell(l, integers[i].name, 
@@ -463,7 +485,7 @@ static cell *subr_length(lisp *l, cell *args) {
         return mk_int(l, (intptr_t)car(args)->len);
 }
 
-static cell* subr_inp(lisp *l, cell *args) { 
+static cell* subr_inp(lisp *l, cell *args) { UNUSED(l);
         return is_in(car(args)) ? gsym_tee() : gsym_nil();
 }
 
@@ -487,30 +509,14 @@ static cell* subr_open(lisp *l, cell *args) {
 }
 
 static cell* subr_getchar(lisp *l, cell *args) { 
-        if(cklen(args, 0)) return mk_int(l, io_getc(l->ifp));
-        if(cklen(args, 1) && is_in(car(args)))
-                return mk_int(l, io_getc(ioval(car(args))));
-        RECOVER(l, "\"expected () or (input)\" '%S", args);
-        return gsym_error();
+        return mk_int(l, io_getc(ioval(car(args))));
 }
 
 static cell* subr_getdelim(lisp *l, cell *args) {
         int ch;
         char *s; 
-        if(cklen(args, 1) && (is_asciiz(car(args)) || is_int(car(args)))) {
-                ch = is_asciiz(car(args)) ? 
-                        strval(car(args))[0] : 
-                        intval(car(args));
-                return (s = io_getdelim(l->ifp, ch)) ? 
-                        mk_str(l, s) : 
-                        gsym_nil();
-        }
-        if(cklen(args, 2) && is_in(car(args)) && (is_asciiz(CADR(args)) || is_int(CADR(args)))) {
-                ch = is_asciiz(CADR(args)) ? strval(CADR(args))[0] : intval(CADR(args));
-                return (s = io_getdelim(ioval(car(args)), ch)) ? mk_str(l, s) : gsym_nil();
-        }
-        RECOVER(l, "\"expected (string) or (input string)\" '%S", args);
-        return gsym_error();
+        ch = is_asciiz(CADR(args)) ? strval(CADR(args))[0] : intval(CADR(args));
+        return (s = io_getdelim(ioval(car(args)), ch)) ? mk_str(l, s) : gsym_nil();
 }
 
 static cell* subr_read(lisp *l, cell *args) { 
@@ -548,37 +554,20 @@ static cell* subr_read(lisp *l, cell *args) {
         return ob;
 }
 
-static cell* subr_puts(lisp *l, cell *args) { 
-        if(cklen(args, 1) && is_asciiz(car(args)))
-                return io_puts(strval(car(args)),l->ofp) < 0 ? 
-                            gsym_nil() : car(args);
-        if(cklen(args, 2) && is_out(car(args)) && is_asciiz(CADR(args)))
-                return io_puts(strval(CADR(args)), ioval(car(args))) < 0 ?
+static cell* subr_puts(lisp *l, cell *args) { UNUSED(l);
+        return io_puts(strval(CADR(args)), ioval(car(args))) < 0 ? 
                         gsym_nil() : CADR(args);
-        RECOVER(l, "\"expected (string) or (output string)\" '%S", args);
-        return gsym_error();
 }
 
-static cell* subr_putchar(lisp *l, cell *args) { 
-        if(cklen(args, 1) && is_int(car(args)))
-                return io_putc(intval(car(args)),l->ofp) < 0 ? 
-                            gsym_nil() : car(args);
-        if(cklen(args, 2) && is_out(car(args)) && is_int(CADR(args)))
-                return io_putc(intval(car(args)), ioval(CADR(args))) < 0 ?
+static cell* subr_putchar(lisp *l, cell *args) { UNUSED(l);
+        /**@todo should put strings as well*/
+        return io_putc(intval(CADR(args)), ioval(car(args))) < 0 ?
                         gsym_nil() : CADR(args);
-        RECOVER(l, "\"expected (integer) or (output integer)\" '%S", args);
-        return gsym_error();
 }
 
 static cell* subr_print(lisp *l, cell *args) { 
-        if(cklen(args, 1)) 
-                return printer(l, l->ofp, car(args), 0) < 0 ? 
-                          gsym_nil() : car(args); 
-        if(cklen(args, 2) && is_out(car(args))) 
-                return printer(l, ioval(car(args)), CADR(args), 0) < 0 ? 
-                        gsym_nil() : CADR(args); 
-        RECOVER(l, "\"expected (expr) or (output expression)\" '%S", args);
-        return gsym_error();
+        return printer(l, ioval(car(args)), CADR(args), 0) < 0 ? 
+                gsym_nil() : CADR(args); 
 }
 
 static cell* subr_flush(lisp *l, cell *args) {
@@ -764,7 +753,7 @@ static cell* subr_getenv(lisp *l, cell *args) {
                       gsym_nil();
 }
 
-static cell *subr_rand(lisp *l, cell *args) { 
+static cell *subr_rand(lisp *l, cell *args) { UNUSED(args);
         return mk_int(l, xorshift128plus(l->random_state));
 }
 
@@ -1056,5 +1045,27 @@ static cell *subr_define_eval(lisp *l, cell *args) {
 
 static cell *subr_validate(lisp *l, cell *args) {
         return VALIDATE(l, intval(car(args)), strval(CADR(args)), CADDR(args), 0) ? gsym_tee() : gsym_nil();
+}
+
+static cell *subr_proc_code(lisp *l, cell *args) { UNUSED(l);
+        return car(proc_code(car(args)));
+}
+
+static cell *subr_proc_args(lisp *l, cell *args) { UNUSED(l);
+        return proc_args(car(args));
+}
+
+static cell *subr_validate_string(lisp *l, cell *args) {
+        char *s;
+        if(is_subr(car(args))) s = subrformat(car(args));
+        else                   s = proc_format(car(args));
+        return s ? mk_str(l, lstrdup(s)) : gsym_nil();
+}
+
+static cell *subr_doc_string(lisp *l, cell *args) {
+        char *s;
+        if(is_subr(car(args))) s = subrdocstr(car(args));
+        else                   s = proc_docstr(car(args));
+        return s ? mk_str(l, lstrdup(s)) : gsym_nil();
 }
 

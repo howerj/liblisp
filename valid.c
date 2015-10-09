@@ -38,6 +38,8 @@
         X('Z', "symbol-or-string",  is_asciiz(x))\
         X('a', "integer-or-float",  is_arith(x))\
         X('x', "function",          is_func(x))\
+        X('l', "defined-procedure", is_proc(x) || is_fproc(x))\
+        X('C', "symbol-string-or-integer", is_asciiz(x) || is_int(x))\
         X('A', "any-expression",    1)
 
 static int print_type_string(lisp *l, unsigned len, const char *fmt, 

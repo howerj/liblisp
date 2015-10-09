@@ -236,7 +236,7 @@
     (car (regex-span pattern str))))
 
 ; print a newline
-(define newline (lambda () (put "\n")))
+(define newline (lambda () (put *output* "\n")))
 
 ; exclude all the element from 0 to k in a list
 (define list-tail

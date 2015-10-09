@@ -165,6 +165,7 @@ struct lisp {
          * interpreter*/
         cell CELL_XLIST Unused;
 #undef X
+        cell *input, *output, *logging;
 };
 
 /*************************** internal functions *******************************/

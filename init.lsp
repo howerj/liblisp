@@ -65,8 +65,8 @@
             (if (eq x 'error) 
               (on-error-fn S)
               (progn
-                (print (eval x))
-                (put "\n")
+                (print *output* (eval x))
+                (put *output* "\n")
                 (eval-file-inner S on-error-fn)))))))
     (cond 
       ; If we have been given a potential file name, try to open it
@@ -76,7 +76,7 @@
             (progn (eval-file-inner file-handle on-error-fn)
                    (close file-handle) ; Close file!
                    nil)
-            (progn (put "could not open file for reading\n")
+            (progn (put *error* "could not open file for reading\n")
                    'error))))
       ; We must have been passed an input file port
       ((input? file)
@@ -84,7 +84,7 @@
       ; User error
       (t 
         (progn
-          (put "Not a file name or a output IO type\n") 
+          (put *error* "Not a file name or a output IO type\n") 
           'error))))))
 
 ; exit the interpreter

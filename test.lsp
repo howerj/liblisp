@@ -41,7 +41,7 @@
       (compare expr result)
       t
       (progn
-        (format "Test failed: %S != %S\n" expr result)
+        (format *output* "Test failed: %S != %S\n" expr result)
         (exit)))))
   (progn
     (test = (let (a 3) (b -4) (+ a b)) -1)
@@ -85,6 +85,6 @@
         (clear-screen)
          t)
       nil)
-    (put "Self-Test Passed\n")
+    (put *output* "Self-Test Passed\n")
     t))
 

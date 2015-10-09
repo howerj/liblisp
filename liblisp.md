@@ -1134,27 +1134,21 @@ a file to be read in, or a string that can be opened as an IO port for reading.
 
 * get-char
 
-Read in a character, if no input port is given it will use the standard IO
-input port. It returns a integer representing that character.
+Read in a character from an input port. It returns a integer representing
+that character.
 
-        (get-char)
         (get-char IN)
 
 * get-delim
 
-Read in a record delimited by a character, uses the default input port if none
-is given. A string can be provided, but only the first character of the string
-is used at the moment as a delimiter. An integer can be provided representing
-that character instead, this can included the End-Of-File marker, which allows
-you to slurp an entire file into one string. If the record is not delimited by
-that character it will read the entire contents until the end of the file is
-encountered.
+Read in a record delimited by a character.  A string can be provided,
+but only the first character of the string is used at the moment as
+a delimiter. An integer can be provided representing that character
+instead, this can included the End-Of-File marker, which allows you to
+slurp an entire file into one string. If the record is not delimited
+by that character it will read the entire contents until the end of the
+file is encountered.
 
-If no input port is provided it will take its input from the standard input
-port.
-
-        # (get-delim STRING)
-        # (get-delim INTEGER)
         # (get-delim IN STRING)
         # (get-delim IN INTEGER)
 
@@ -1185,11 +1179,10 @@ Called "ozy.txt":
 
 * read
 
-Read in an S-Expression, if no input port is given it will use the standard IO
-input port. This returns an S-Expression, not a string. A string can be read as
-well.
+Read in an S-Expression. This returns an S-Expression, not a string. A
+string can be read from as well, this will still return a parsed
+S-Expression.
 
-        # (read)
         # (read IN)
         # (read STRING)
         > (read "(+ 2 2)")
@@ -1197,15 +1190,9 @@ well.
 
 * put
 
-Write a string to an IO output port, if no IO port is given it will use the
-standard output IO port (which may be different from stdout).
+Write a string to an IO output port.
 
-        # (put STRING)
         # (put OUT STRING)
-
-        > (put "Hello\tWorld\n") # Print a string to the standard output port
-        Hello   World            # String written is printed out in raw form
-        "Hello\tWorld\n"         # String written is returned in escaped form
         > (define a-file (open *file-out* "a.txt"))
         <IO:OUT:33884688>
         > (put "Hello\tWorld\n")
@@ -1215,18 +1202,14 @@ standard output IO port (which may be different from stdout).
 
 * put-char
 
-Write a character to an IO output port. If no output port is given it will
-write to standard output IO port.
+Write a character to an IO output port.
 
-        (put-char INT)
         (put-char OUT INT)
 
 * print
 
-Print out an S-Expressions, to standard output IO port if no output port is
-given.
+Print out an S-Expressions to an output port.
 
-        (print EXPR)
         (print OUT EXPR)
 
 * ferror
@@ -1720,6 +1703,30 @@ proceed. Some of the arguments are mutually exclusive.
         > (tr "ts" "abc" "de" "aaaabbaaaccc") 
         "dedccc"
 
+* procedure-code  
+
+Return the code from a user defined procedure. Or *nil* if there is not one.
+
+        # (procedure-code DEFINED-PROCEDURE)
+
+* procedure-args  
+
+Return the arguments from a user defined procedure. Or *nil* if there is not one.
+
+        # (procedure-args DEFINED-PROCEDURE)
+
+* function-format 
+
+Return the format string from a procedure. Or *nil* if there is not one.
+
+        # (function-format FUNCTION)
+
+* documentation-string
+
+Return the documentation string from a procedure. Or *nil* if there is not one.
+
+        # (documentation-string FUNCTION)
+
 #### Predefined variables
 
 These are predefined variables used throughout the system, they often directly
@@ -1985,6 +1992,10 @@ Glossary of all of defined subroutine primitives and variables.
         isupper?           is string or integer is upper case?
         isxdigit?          is string or integer is a hex digit?
         tr                 translate a string
+        procedure-code     return the code from a user defined procedure
+        procedure-args     return the arguments from a user defined procedure"
+        function-format    return the format string from a procedure
+        documentation-string return the documentation string from a procedure
 
 ##### dynamic loader
 

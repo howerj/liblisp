@@ -47,6 +47,9 @@ void lisp_destroy(lisp *l) {
         if(l->efp) io_close(l->efp);
         if(l->ofp) io_close(l->ofp);
         if(l->ifp) io_close(l->ifp);
+        free(l->input);
+        free(l->output);
+        free(l->logging);
         free(l);
 }
 
@@ -114,21 +117,24 @@ cell *lisp_eval_string(lisp *l, const char *evalme) { assert(l && evalme);
         return ret;
 }
 
-int lisp_set_input(lisp *l, io *in) { assert(l && in);
-        if(!io_is_in(in)) return -1;
+int lisp_set_input(lisp *l, io *in) { assert(l);
         l->ifp = in;
+        l->input->p[0].v = in;
+        if(in && !io_is_in(in)) return -1;
         return 0;
 }
 
-int lisp_set_output(lisp *l, io *out) { assert(l && out);
-        if(!io_is_out(out)) return -1;
+int lisp_set_output(lisp *l, io *out) { assert(l);
         l->ofp = out;
+        l->output->p[0].v = out;
+        if(out && !io_is_out(out)) return -1;
         return 0;
 }
 
-int lisp_set_logging(lisp *l, io *logging) { assert(l && logging);
-        if(!io_is_out(logging)) return -1;
+int lisp_set_logging(lisp *l, io *logging) { assert(l);
         l->efp = logging;
+        l->logging->p[0].v = logging;
+        if(logging && !io_is_out(logging)) return -1;
         return 0;
 }
 
