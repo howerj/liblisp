@@ -15,7 +15,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-lisp *lglobal; /**< used for signal handler and modules*/
+/**@brief Used for signal handler and modules. This should be moved back to
+ *        main.c eventually.**/
+lisp *lglobal; 
 
 void lisp_throw(lisp *l, int ret) {
         if(!l->errors_halt && l && l->recover_init) longjmp(l->recover, ret);
@@ -44,9 +46,9 @@ void lisp_destroy(lisp *l) {
         if(!l) return;
         if(l->gc_stack) gc_sweep_only(l), free(l->gc_stack);
         if(l->buf) free(l->buf);
-        if(l->efp) io_close(l->efp);
-        if(l->ofp) io_close(l->ofp);
-        if(l->ifp) io_close(l->ifp);
+        if(lisp_get_logging(l)) io_close(lisp_get_logging(l));
+        if(lisp_get_output(l)) io_close(lisp_get_output(l));
+        if(lisp_get_input(l)) io_close(lisp_get_input(l));
         free(l->input);
         free(l->output);
         free(l->logging);

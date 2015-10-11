@@ -515,6 +515,7 @@ LIBLISP_API int  is_nil(cell *x);    /**< true if 'x' is equal to nil**/
 LIBLISP_API int  is_int(cell *x);    /**< true if 'x' is a integer **/
 LIBLISP_API int  is_floatval(cell *x);  /**< true if 'x' is a floating point number**/
 LIBLISP_API int  is_cons(cell *x);   /**< true if 'x' is a cons cell**/
+LIBLISP_API int  is_proper_cons(cell *x); /**< true if 'x' is not a dotted pair cons cell*/
 LIBLISP_API int  is_io(cell *x);     /**< true if 'x' is a I/O type**/
 LIBLISP_API int  is_proc(cell *x);   /**< true if 'x' is a lambda procedure**/
 LIBLISP_API int  is_fproc(cell *x);  /**< true if 'x' is a flambda procedure**/

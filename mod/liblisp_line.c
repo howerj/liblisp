@@ -33,7 +33,7 @@ static void sig_int_handler(int sig) {
         X(subr_clear_screen,     "clear-screen")\
         X(subr_hist_len,         "history-length")
 
-static char *histfile = ".list";
+static char *histfile = ".lisp";
 
 static char *line_editing_function(const char *prompt) {
         static int warned = 0; /**< have we warned the user we cannot write to

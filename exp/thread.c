@@ -31,7 +31,7 @@ int main(void)
                 }
 
                 ret2 = pthread_create(&thread_2, NULL, lisp_thead_eval, 
-                                (void*)"(put \"Another thread\n\") ");
+                                (void*)"(put *output* \"Another thread\n\") ");
                 if(ret2) {
                         fprintf(stderr, "thread 2 returned %d\n", ret1);
                         exit(1);

@@ -54,7 +54,7 @@ If you do not like the formatting use the "indent" program from:
 
 ### Rationale
 
-* Simple and Small (< 3000 lines of code)
+* Simple and Small (< 5000 lines of code)
 
 The interpreter and the language should be simple to understand. It provides
 more of a DIY lisp environment where most facilities are not provided but are
@@ -94,14 +94,12 @@ To build the interpreter a C compiler for a hosted platform is needed. It has
 no other dependencies apart from the C library. A makefile is provided, but the
 following commands should all work for their respective compilers:
 
-        gcc   *.c -lm -o lisp
-        tcc   *.c -lm -o lisp
-        clang *.c -lm -o lisp
+        gcc   *.c -o lisp
+        tcc   *.c -o lisp
+        clang *.c -o lisp
 
 The preprocessor defines that add or change functionality are:
 
-        USE_LINE  Add a line editor, must be linked with libline.a
-        USE_TCC   Add the Tiny C Compiler for run time code generation
         USE_DL    Add the dynamic loader interface
         NDEBUG    The interpreter liberally uses assertions
 
@@ -114,7 +112,10 @@ The line editing library is limited to Unix systems which support a
 hooked up!), which should be all of them. It may also work with POSIX
 compatibility layers such as [Cygwin][], but this has not been tested. The
 repository is set up a fork of the [linenoise][] library that is simply called
-[libline][], this has limited support for ["Vi"][] like key bindings.
+[libline][], this has limited support for ["Vi"][] like key bindings. This is
+compiled as a module and will only be loaded if compiled the lisp interpreter
+has been compiled with "USE\_DL", and if the line editing library is available
+on your platform.
 
 Color support can be optionally enabled on all output channels and is reliant
 on [ANSI escape codes][] on it being displayed correctly, if it is not simply
@@ -192,31 +193,13 @@ on the internal representation of the hash functionality.
 * The "struct hack" could be applied strings and other types, as
 well as the length field being encoded in the variable length
 section of the object.
-* Generic error handling for primitives before they are called would
-cut down on the amount of code needed in the primitives subroutines.
 * File operations on strings could be improved. An append mode should
 be added as well. freopen and/or opening in append mode need to be
 added as well.
-* Needed primitives; apply, loop. 
-* Input, output and error IO ports should be added, these are different
-  from *stdin*, *stdout* and *stdout*.
 * Anonymous recursion would be a good thing to have.
 * The semantics of the default IO port to **print** and **format**
 to be worked out when it comes to printing color and pretty printing.
 * There is currently no decent way of handling binary data.
-* A branch that makes use of arbitrary precision arithmetic
-  (replacing floating point numbers *and* integers) could be made.
-
-#### main.c
-
-* Some level of auto-completion could be added from the libline library.
-* Experiment with auto insertion of parenthesis to make the shell
-easier to use, for example if an expression is missing right parens
-the line editing callback could add them in, or if there are more
-than one atoms on a line it could enclose them in parens and see if
-that can be evaluated "+ 2 2" would become "(+ 2 2)". This would only
-be part of the line editor.
-* Porting libline to Windows
 
 <div id='Test programs'/>
 ## Test programs
@@ -532,6 +515,13 @@ New functions and variables can be defined and they can be defined in global or
 a lexical scope.
 
 #### Control structures and recursion
+
+* recursion
+* loop
+* return
+* cond
+* if
+
 #### Association lists
 
 * Normal association Lists

@@ -70,7 +70,7 @@ int lisp_repl(lisp *l, char *prompt, int editor_on) {
         } else { /*read from stdin with no special handling, or a file*/
                 for(;;){
                         lisp_printf(l, l->ofp, 0, "%s", prompt);
-                        if(!(ret = reader(l, l->ifp))) break;
+                        if(!(ret = reader(l, lisp_get_input(l)))) break;
                         if(!(ret = eval(l, 0, ret, l->top_env))) break;
                         lisp_printf(l, l->ofp, 0, "%S\n", ret);
                         l->gc_stack_used = 0;
@@ -94,7 +94,7 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
                 switch(getoptions(l, argv[i], argv[0])) {
                 case go_switch: break;
                 case go_in_stdin: /*read from standard input*/
-                        io_close(l->ifp);
+                        io_close(lisp_get_input(l));
                         if(lisp_set_input(l, io_fin(stdin)) < 0)
                                 return perror("stdin"), -1;
                         if(lisp_repl(l, l->prompt_on ? "> ": "", l->editor_on) < 0) 
@@ -108,7 +108,7 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
                                 return fprintf(stderr, "-i and -- expects file\n"), -1;
                         /*--- fall through ---*/
                 case go_in_file: /*read from a file*/
-                        io_close(l->ifp);
+                        io_close(lisp_get_input(l));
                         if(lisp_set_input(l, io_fin(fopen(argv[i], "rb"))) < 0)
                                 return perror(argv[i]), -1;
                         if(lisp_repl(l, "", 0) < 0) return -1;
@@ -117,7 +117,7 @@ int main_lisp_env(lisp *l, int argc, char **argv) {
                         stdin_off = 1;
                         break;
                 case go_in_string: /*evaluate a string*/
-                        io_close(l->ifp);
+                        io_close(lisp_get_input(l));
                         if(!(++i < argc))
                                 return fprintf(stderr, "-e expects arg\n"), -1;
                         if(lisp_set_input(l, io_sin(argv[i])) < 0)

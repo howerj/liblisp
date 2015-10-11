@@ -4,7 +4,6 @@
 ; The job of the initialization code is to define enough functionality to
 ; sensibly load modules.
 ;
-
 ; type checking information
 (define type?      (lambda (type-enum x) (eq type-enum (type-of x))))
 (define list?      (lambda (x) (type? *cons* x)))
@@ -65,9 +64,8 @@
             (if (eq x 'error) 
               (on-error-fn S)
               (progn
-                (print *output* (eval x))
-                (put *output* "\n")
-                (eval-file-inner S on-error-fn)))))))
+                (format *output* "%S\n" (eval x))
+                loop))))))
     (cond 
       ; If we have been given a potential file name, try to open it
       ((or (string? file) (symbol? file))
@@ -131,4 +129,3 @@
  ())
 
 (eval-file 'test.lsp exit-if-not-eof)
-

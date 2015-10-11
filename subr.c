@@ -20,10 +20,7 @@
  *
  *  @todo Assertions should be added throughout these routines to make sure
  *        operations do not go out of bounds.
- *  @todo Remove as many variable length functions as possible, these are
- *        mainly I/O functions as there is no current way to get the
- *        interpreters default I/O ports from within the interpreter, this
- *        problem has to be solved elsewhere and not here.
+ *  @todo Remove as many variable length functions as possible.
  **/
 
 #include "liblisp.h"
@@ -171,12 +168,10 @@ static struct special_cell_list { cell *internal; } special_cells[] = {
 #undef X
 
 #define SUBR_ISX(NAME)\
-static cell *subr_ ## NAME (lisp *l, cell *args) {\
+static cell *subr_ ## NAME (lisp *l, cell *args) { UNUSED(l);\
         char *s, c;\
-        if(cklen(args, 1) && is_int(car(args)))\
+        if(is_int(car(args)))\
                 return NAME (intval(car(args))) ? gsym_tee() : gsym_nil();\
-        if(!cklen(args, 1) || !is_asciiz(car(args)))\
-                RECOVER(l, "\"expected (string)\" %S", args);\
         s = strval(car(args));\
         if(!s[0]) return gsym_nil();\
         while((c = *s++)) \
@@ -186,17 +181,24 @@ static cell *subr_ ## NAME (lisp *l, cell *args) {\
 }
 
 #define ISX_LIST\
-        X(isalnum) X(isalpha) X(iscntrl)\
-        X(isdigit) X(isgraph) X(islower)\
-        X(isprint) X(ispunct) X(isspace)\
-        X(isupper) X(isxdigit)
+        X(isalnum,  "Is a string or integer composed of alphanumeric characters?")\
+        X(isalpha,  "Is a string or integer composed of alphabetic characters?")\
+        X(iscntrl,  "Is a string or integer composed of control characters?")\
+        X(isdigit,  "Is a string or integer composed of digits?")\
+        X(isgraph,  "Is a string or integer composed of printable characters (excluding space)?")\
+        X(islower,  "Is a string or integer composed of lower case characters?")\
+        X(isprint,  "Is a string or integer composed of printable characters?")\
+        X(ispunct,  "Is a string or integer composed of punctuation characters?")\
+        X(isspace,  "Is a string or integer composed of whitespace characters?")\
+        X(isupper,  "Is a string or integer composed of upper case characters?")\
+        X(isxdigit, "Is a string or integer composed of hexadecimal digits?")
 
 /*defines functions to get a lisp "cell" for the built in special symbols*/
 #define X(FNAME, IGNORE) cell *gsym_ ## FNAME (void) { return FNAME ; }
 CELL_XLIST
 #undef X
 
-#define X(FUNC) SUBR_ISX(FUNC)
+#define X(FUNC, IGNORE) SUBR_ISX(FUNC)
 ISX_LIST /*defines lisp subroutines for checking whether a string only contains a character class*/
 #undef X
 
@@ -276,7 +278,7 @@ CELL_XLIST
                      prims[i].validate, prims[i].docstring))
                         goto fail;
 
-#define X(FUNC) if(!lisp_add_subr(l, # FUNC "?", subr_ ## FUNC)) goto fail;
+#define X(FUNC, DOCSTRING) if(!lisp_add_subr_long(l, # FUNC "?", subr_ ## FUNC, "C", DOCSTRING)) goto fail;
 ISX_LIST /*add all of the subroutines for string character class testing*/
 #undef X
 
@@ -482,7 +484,7 @@ static cell *subr_gc(lisp *l, cell *args) { UNUSED(args);
 }
 
 static cell *subr_length(lisp *l, cell *args) {
-        return mk_int(l, (intptr_t)car(args)->len);
+        return mk_int(l, (intptr_t)lisp_get_cell_length(car(args)));
 }
 
 static cell* subr_inp(lisp *l, cell *args) { UNUSED(l);
@@ -535,7 +537,7 @@ static cell* subr_read(lisp *l, cell *args) {
         }
         s = NULL;
         if(cklen(args, 0))
-                ob = (ob = reader(l, l->ifp)) ? ob : gsym_error();
+                ob = (ob = reader(l, lisp_get_input(l))) ? ob : gsym_error();
         if(cklen(args, 1) && (is_in(car(args)) || is_str(car(args)))) {
                 io *i = NULL;
                 if(is_in(car(args))){
@@ -691,19 +693,32 @@ static cell* subr_coerce(lisp *l, cell *args) {
                     }
                     break;
         case STRING:if(is_int(from)) { /*int to string*/
-                            char s[64] = "";
+                            char s[64] = ""; /*holds all integer strings*/
                             sprintf(s, "%"PRIiPTR, intval(from));
                             return mk_str(l, lstrdup(s));
                     }
                     if(is_sym(from)) /*symbol to string*/
                            return mk_str(l, lstrdup(strval(from)));
                     if(is_floatval(from)) { /*float to string*/
-                            char s[512] = "";
+                            char s[512] = ""; /*holds all float strings*/
                             sprintf(s, "%f", floatval(from));
                             return mk_str(l, lstrdup(s));
                     }
                     if(is_cons(from)) { /*list of chars/ints to string*/
-                        /**@bug implement me*/
+                            size_t i;
+                            char *s;
+                            for(x = from; !is_nil(x); x = cdr(x)) { /*validate args*/
+                                    if(!is_proper_cons(x))
+                                            goto fail; /*not a proper list*/
+                                    if(!is_int(car(x)))
+                                            goto fail; /*convert only integers*/
+                            }
+                            x = from;
+                            if(!(s = calloc(lisp_get_cell_length(x)+1, 1)))
+                                    HALT(l, "\"%s\"", "out of memory");
+                            for(i = 0; !is_nil(x); x = cdr(x), i++) 
+                                    s[i] = intval(car(x));
+                            return mk_str(l, s);
                     }
                     break;
         case SYMBOL: if(is_str(from)) 
@@ -961,7 +976,7 @@ static cell *subr_format(lisp *l, cell *args) {
                 o = ioval(car(args));
                 args = cdr(args);
         } else {
-                o = l->ofp;
+                o = lisp_get_output(l);
         }
         if(!is_asciiz(car(args)))
                 RECOVER(l, "\"expected () (io? str any...)\" '%S", args);

@@ -57,6 +57,7 @@ int  is_int(cell *x)          { assert(x); return x->type == INTEGER; }
 int  is_floatval(cell *x)     { assert(x); return x->type == FLOAT; }
 int  is_io(cell *x)           { assert(x); return x->type == IO && !x->close; }
 int  is_cons(cell *x)         { assert(x); return x->type == CONS; }
+int  is_proper_cons(cell *x)  { assert(x); return is_cons(x) && (is_nil(cdr(x)) || is_cons(cdr(x))); }
 int  is_proc(cell *x)         { assert(x); return x->type == PROC; }
 int  is_fproc(cell *x)        { assert(x); return x->type == FPROC; }
 int  is_str(cell *x)          { assert(x); return x->type == STRING; }
@@ -208,7 +209,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
         gc_add(l, env);
         tail:
         if(!exp || !env) return NULL;
-        if(l->trace) lisp_printf(l, l->efp, 1, "(%ytrace%t %S)\n", exp); 
+        if(l->trace) lisp_printf(l, lisp_get_logging(l), 1, "(%ytrace%t %S)\n", exp); 
         if(is_nil(exp)) return gsym_nil();
         if(l->sig) {
                 l->sig = 0;
@@ -353,16 +354,16 @@ static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env) { /**< evalua
         size_t i;
         cell *op, *head, *start = exps;
         assert(l && exps && env);
-        if(is_nil(exps)) return l->nil;
+        if(is_nil(exps)) return gsym_nil();
         op = car(exps);
         exps = cdr(exps);
-        head = op = cons(l, eval(l, depth+1, op, env), l->nil);
+        head = op = cons(l, eval(l, depth+1, op, env), gsym_nil());
         if(!is_nil(exps) && !is_cons(exps)) /*is there a better way of doing this?*/
                 RECOVER(l, "\"evlis cannot eval dotted pairs\" '%S", start);
         for(i = 1; !is_nil(exps); exps = cdr(exps), op = cdr(op), i++) {
                 if(!is_nil(cdr(exps)) && !is_cons(cdr(exps)))
                         RECOVER(l, "\"evlis cannot eval dotted pairs\"'%S", start);
-                set_cdr(op, cons(l, eval(l, depth+1, car(exps), env), l->nil));
+                set_cdr(op, cons(l, eval(l, depth+1, car(exps), env), gsym_nil()));
         }
         head->len = i;
         return head;
