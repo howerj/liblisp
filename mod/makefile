@@ -10,6 +10,9 @@ all: help $(MODULES)
 %.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@
 
+liblisp_line.o: liblisp_line.c 
+	$(CC) $(CFLAGS) -Ilibline/ $^ -c -o $@
+
 liblisp_sql.so: liblisp_sql.o
 	$(CC) $(CFLAGS) -shared $^ -lsqlite3 -o $@
 
@@ -25,8 +28,8 @@ liblisp_tcc.so: liblisp_tcc.o
 liblisp_math.so: liblisp_math.o
 	$(CC) $(CFLAGS) -shared $^ -lm -o $@
 
-liblisp_line.so: liblisp_line.o
-	$(CC) $(CFLAGS) -shared $^ -lline -o $@
+liblisp_line.so: liblisp_line.o libline.so
+	$(CC) $(CFLAGS) -shared $^ -L. -lline -o $@
 
 liblisp_x11.so: liblisp_x11.o
 	$(CC) $(CFLAGS) -shared $^ -lX11 -o $@
@@ -39,6 +42,10 @@ liblisp_tsort.so: tsort.o liblisp_tsort.o
 
 liblisp_bignum.so: bignum.o liblisp_bignum.o
 	$(CC) $(CFLAGS) -shared $^ -o $@
+
+libline.so:
+	cd libline && make
+	cp libline/libline.so .
 
 help:
 	@echo ""
