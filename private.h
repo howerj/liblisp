@@ -105,14 +105,13 @@ struct io {
 };
 
 struct tr_state {
-        int set_squ[UINT8_MAX],    /**< squeeze a character sequence?*/
-            set_del[UINT8_MAX],    /**< delete a character?*/
+        int set_squ[UINT8_MAX+1], /**< squeeze a character sequence?*/
+            set_del[UINT8_MAX+1], /**< delete a character?*/
             compliment_seq,  /**< compliment sequence*/
             squeeze_seq,     /**< squeeze sequence*/
             delete_seq,      /**< delete a sequence of character*/
             truncate_seq;    /**< truncate s1 to length of s2*/
-        uint8_t set_tr[UINT8_MAX], /**< mapping from one character 
-                                                            set to another*/
+        uint8_t set_tr[UINT8_MAX+1], /**< final map of s1 to s2 */
                 previous_char; /**< previous translation char, for squeeze*/
 };
 
@@ -130,9 +129,9 @@ typedef struct userdef_funcs {
 
 struct lisp {
         jmp_buf recover; /**< jump here when there is an error*/
-        io *ifp /**< standard input port*/, 
-           *ofp /**< standard output port*/, 
-           *efp /**< standard error output port*/;
+        io *ifp /**< input port @todo replace with cell *input (completely) */, 
+           *ofp /**< output port @todo replace with cell *output */, 
+           *efp /**< error output port @todo replace with cell *logging*/;
         cell *all_symbols, /**< all intern'ed symbols*/
              *top_env,     /**< top level lisp environment*/
              **gc_stack;   /**< garbage collection stack for working items*/

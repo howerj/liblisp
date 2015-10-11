@@ -114,8 +114,8 @@
 ; a proper module system nor ways of representing dependencies between them
 ; has been devised yet. They must be executed in order.
  (eval-file 'base.lsp exit-if-not-eof)
-;(eval-file 'sets.lsp exit-if-not-eof)
-;(eval-file 'symb.lsp exit-if-not-eof)
+;(eval-file 'mod/sets.lsp exit-if-not-eof)
+;(eval-file 'mod/symb.lsp exit-if-not-eof)
 
 (progn
  (load-module "os")     ; operating system module

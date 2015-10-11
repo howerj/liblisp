@@ -523,7 +523,7 @@ static cell* subr_read(lisp *l, cell *args) {
         cell *ob = NULL;
         int restore_used, r;
         jmp_buf restore;
-        char *s = NULL;
+        char *s;
         if(l->recover_init) {
                 memcpy(restore, l->recover, sizeof(jmp_buf));
                 restore_used = 1;
@@ -533,7 +533,7 @@ static cell* subr_read(lisp *l, cell *args) {
                 RECOVER_RESTORE(restore_used, l, restore); 
                 return gsym_error();
         }
-
+        s = NULL;
         if(cklen(args, 0))
                 ob = (ob = reader(l, l->ifp)) ? ob : gsym_error();
         if(cklen(args, 1) && (is_in(car(args)) || is_str(car(args)))) {

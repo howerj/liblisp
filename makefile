@@ -21,6 +21,13 @@ help:
 	@echo "commit:      $(VCS_COMMIT)"
 	@echo "origin:      $(VCS_ORIGIN)"
 	@echo ""
+	@echo "If this makefile fails to build the project a simple interpreter,"
+	@echo "lacking some features, can be built with:"
+	@echo ""
+	@echo "    cc *.c -o lisp"
+	@echo ""
+	@echo "The C compiler must support C99."
+	@echo ""
 	@echo "make (option)*"
 	@echo ""
 	@echo "     all         build the example example executable and static library"
@@ -40,7 +47,8 @@ help:
 
 ### building #################################################################
 
-OBJFILES=hash.o io.o util.o gc.o read.o print.o subr.o repl.o eval.o lisp.o tr.o valid.o
+OBJFILES=hash.o io.o util.o gc.o read.o print.o\
+	 subr.o repl.o eval.o lisp.o tr.o valid.o
 
 lib$(TARGET).a: $(OBJFILES)
 	$(AR) $(AR_FLAGS) $@ $^
@@ -58,18 +66,6 @@ main.o: main.c lib$(TARGET).h
 
 $(TARGET): main.o lib$(TARGET).a 
 	$(CC) $(CFLAGS) -Wl,-E $^ -lm ${LINK} -o $@
-
-# Work around so the makefile initializes submodules. This requires
-# the full liblisp git repository to be available.
-# The repository is available at <https://github.com/howerj/liblisp>
-
-libline/.git:
-	git submodule init
-	git submodule update
-
-libline/libline.h: libline/.git
-libline/libline.a: libline/.git
-	cd libline && make
 
 ### running ##################################################################
 
@@ -140,7 +136,6 @@ CLEAN_LIST = *.a *.so *.o *.html Doxyfile $(TARGET) *.tgz *~ *.log *.out html la
 
 clean:
 	@echo Cleaning repository.
-	if [ -f libline/makefile ]; then cd libline && make clean; fi
 	$(RM) -rf $(CLEAN_LIST)
 
 ##############################################################################
