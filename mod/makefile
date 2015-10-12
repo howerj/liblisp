@@ -1,9 +1,9 @@
 CC?=gcc
 CFLAGS?=-Wall -Wextra -std=gnu99 -g -O2 -fPIC 
-MODULES=liblisp_sql.so liblisp_os.so liblisp_crc.so\
-       	liblisp_tcc.so liblisp_math.so liblisp_line.so\
+MODULES=liblisp_sql.so liblisp_unix.so liblisp_crc.so\
+       	liblisp_bignum.so liblisp_math.so liblisp_line.so\
 	liblisp_x11.so liblisp_diff.so liblisp_tsort.so\
-	liblisp_bignum.so
+	#liblisp_tcc.so
 
 all: help $(MODULES)
 
@@ -16,7 +16,7 @@ liblisp_line.o: liblisp_line.c
 liblisp_sql.so: liblisp_sql.o
 	$(CC) $(CFLAGS) -shared $^ -lsqlite3 -o $@
 
-liblisp_os.so: liblisp_os.o 
+liblisp_unix.so: liblisp_unix.o 
 	$(CC) $(CFLAGS) -shared $^ -o $@
 
 liblisp_crc.so: crc.o liblisp_crc.o
@@ -64,7 +64,7 @@ help:
 	@echo "     all               make all of the modules"
 	@echo "     help              this help message!"
 	@echo "     liblisp_sql.so    SQL module"
-	@echo "     liblisp_os.so     OS module"
+	@echo "     liblisp_unix.so   Unix interface module"
 	@echo "     liblisp_crc.so    CRC module"
 	@echo "     liblisp_tcc.so    Tiny C Compiler module"
 	@echo "     liblisp_math.so   Math module"

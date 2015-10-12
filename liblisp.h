@@ -24,20 +24,19 @@ extern "C" {
 #include <stdint.h>
 
 #ifdef __unix__
-#define LIBLISP_API /**< not needed*/
+        #define LIBLISP_API /**< not needed*/
 #elif _WIN32
 /** @brief The LIBLISP_API macro is needed due to the way Windows handles
  * DLLs, the build system should define COMPILING_LIBLISP when
  * building liblisp.dll and do nothing when compiling modules that
- * depend on it **/
-#ifdef COMPILING_LIBLISP
-#define LIBLISP_API __declspec(dllexport) /**< export this function*/
+ * depend on it. **/
+        #ifdef COMPILING_LIBLISP
+                #define LIBLISP_API __declspec(dllexport) /**< export function*/
+        #else
+                #define LIBLISP_API __declspec(dllimport) /**< import function*/
+        #endif
 #else
-#define LIBLISP_API __declspec(dllimport) /**< import this function*/
-#endif
-
-#else
-#define LIBLISP_API /**< not needed*/
+        #define LIBLISP_API /**< not needed*/
 #endif
 
 /************************* structs and opaque types **************************/
@@ -843,6 +842,29 @@ LIBLISP_API int  lisp_get_cell_length(cell *c);
  *
  *         The format string expected is as follows:
  *
+ *            s  a symbol
+ *            d  integer
+ *            c  a cons cell
+ *            p  procedure, defined with "lambda"
+ *            r  subroutine, a built in subroutine
+ *            S  a string
+ *            P  io-port, either input or an output port
+ *            h  a hash
+ *            F  f-expression, defined with "flambda"
+ *            f  floating point number
+ *            u  a user-defined type
+ *            b  t or nil
+ *            i  input-port only
+ *            o  output-port only
+ *            Z  symbol or string (ASCIIZ string)
+ *            a  integer or float
+ *            x  function, (lambda, f-expression or subroutine)
+ *            I  input-port or string
+ *            l  any defined procedure (lambda or f-expression)
+ *            C  symbol, string or integer
+ *            A  any expression
+ *
+ *         The format is determined by the internal needs of the interpreter.
  *
  *  @param l       lisp environment for error handling
  *  @param len     length of arguments list
@@ -947,6 +969,7 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
  *          line information into the macro.
  *  @bug    This macro needs a better name as it is not a generic validation
  *          function.
+ *  @todo   This needs a macro #ifdef to disable validation if needed.
  *  LISP    lisp environment
  *  LEN     number of 
  *  FMT     format string described in lisp_validate comment

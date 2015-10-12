@@ -102,6 +102,7 @@ finish: va_end(ap);
 }
 
 int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
+        cell *tmp;
         if(!op) return EOF;
         if(l && depth > l->max_depth) { /*problem if depth UINT_MAX < l->max_depth INTPTR_MAX*/
                 lisp_printf(l, o, depth, "%r<PRINT-DEPTH-EXCEEDED:%d>%t", (intptr_t) depth);
@@ -130,14 +131,16 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
         case SYMBOL:  if(is_nil(op)) lisp_printf(l, o, depth, "%r()");
                       else           lisp_printf(l, o, depth, "%y%s", symval(op));
                       break;
-        case STRING:  print_escaped_string(l, o, depth, strval(op));     break;
-        case SUBR:    lisp_printf(l, o, depth, "%B<SUBR:%d>", intval(op));  break;
-        case PROC:    lisp_printf(l, o, depth+1, "(%ylambda%t %S %S)", 
-                                      proc_args(op), proc_code(op));
-                      break; /**@bug prints out extra () for function body*/
-        case FPROC:   lisp_printf(l, o, depth+1, "(%yflambda%t %S %S)", 
-                                      proc_args(op), proc_code(op));
-                      break; /**@bug prints out extra () for function body*/
+        case STRING:  print_escaped_string(l, o, depth, strval(op));       break;
+        case SUBR:    lisp_printf(l, o, depth, "%B<SUBR:%d>", intval(op)); break;
+        case PROC: case FPROC:
+                      lisp_printf(l, o, depth+1, 
+                                is_proc(op) ? "(%ylambda%t %S " :
+                                              "(%yflambda%t %S ", proc_args(op));
+                      for(tmp = proc_code(op); !is_nil(tmp); tmp = cdr(tmp))
+                              printer(l, o, car(tmp), depth+1);
+                      io_putc(')', o);
+                      break;
         case HASH:    lisp_printf(l, o, depth, "%H",             hashval(op)); break;
         case IO:      lisp_printf(l, o, depth, "%B<IO:%s:%d>",  
                                       op->close? "CLOSED" : 

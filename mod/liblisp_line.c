@@ -29,9 +29,9 @@ static void sig_int_handler(int sig) {
 }
 
 #define SUBROUTINE_XLIST\
-        X(subr_line_editor_mode, "line-editor-mode")\
-        X(subr_clear_screen,     "clear-screen")\
-        X(subr_hist_len,         "history-length")
+        X("line-editor-mode", subr_line_editor_mode, "b", "set the line editor mode (t = vi-mode)")\
+        X("clear-screen",     subr_clear_screen,     "",  "clear the screen")\
+        X("history-length",   subr_hist_len,         "d", "set the length of the history file")
 
 static char *histfile = ".lisp";
 
@@ -55,36 +55,30 @@ static char *line_editing_function(const char *prompt) {
         return line; /*returned line will be evaluated*/
 }
 
-static cell *subr_line_editor_mode(lisp *l, cell *args) {
-        (void)l;
-        if(cklen(args, 1)) {
-                line_set_vi_mode(is_nil(car(args)) ? 0 : 1);
-                return gsym_tee();
-        }
-        return line_get_vi_mode() ? gsym_tee(): (cell*)gsym_nil();
+static cell *subr_line_editor_mode(lisp *l, cell *args) { UNUSED(l);
+        line_set_vi_mode(is_nil(car(args)) ? 0 : 1);
+        return gsym_tee();
 }
 
 static cell *subr_hist_len(lisp *l, cell *args) {
-        VALIDATE(l, 1, "d", args, 1);
         if(!line_history_set_maxlen((int)intval(car(args))))
                 HALT(l, "\"%s\"", "out of memory");
         return gsym_tee();
 }
 
-static cell *subr_clear_screen(lisp *l, cell *args) {
-        VALIDATE(l, 0, "", args, 1);
+static cell *subr_clear_screen(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
         line_clearscreen();
         return gsym_tee();
 }
 
-#define X(SUBR, NAME) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
 #undef X
 
-#define X(SUBR, NAME) { SUBR, NAME },
-static struct module_subroutines { subr p; char *name; } prims[] = {
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, DOCSTRING, SUBR },
+static struct module_subroutines { char *name, *validate, *docstring; subr p; } primitives[] = {
         SUBROUTINE_XLIST /*all of the subr functions*/
-        {NULL, NULL} /*must be terminated with NULLs*/
+        {NULL, NULL, NULL, NULL} /*must be terminated with NULLs*/
 };
 #undef X
 
@@ -110,8 +104,10 @@ static int initialize(void) {
         line_set_vi_mode(1); /*start up in a sane editing mode*/
         lisp_add_cell(lglobal, "*history-file*", mk_str(lglobal, lstrdup(histfile)));
 
-        for(i = 0; prims[i].p; i++) /*add primitives from this module*/
-               if(!lisp_add_subr(lglobal, prims[i].name, prims[i].p))
+        for(i = 0; primitives[i].p; i++) /*add primitives from this module*/
+               if(!lisp_add_subr_long(lglobal, 
+                        primitives[i].name, primitives[i].p, 
+                        primitives[i].validate, primitives[i].docstring))
                      goto fail;
         lisp_printf(lglobal, e, 0, "module: line editor loaded\n");
         return 0;

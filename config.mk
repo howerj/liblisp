@@ -34,8 +34,9 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 # Compilation options
 
 ## CPP defines of use
-### NDEBUG       Disable asserts
-### USE_DL	 Add support for dlopen, requires "-ldl".
-DEFINES ?= -DUSE_DL 
+#   NDEBUG       Disable asserts
+#   USE_DL	 Add support for dlopen/LoadLibrary, requires "-ldl" 
+#                on Unix systems
+DEFINES ?= -DUSE_DL
 LINK    ?= -ldl
 

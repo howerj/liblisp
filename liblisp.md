@@ -1705,11 +1705,11 @@ Return the arguments from a user defined procedure. Or *nil* if there is not one
 
         # (procedure-args DEFINED-PROCEDURE)
 
-* function-format 
+* validation-string 
 
 Return the format string from a procedure. Or *nil* if there is not one.
 
-        # (function-format FUNCTION)
+        # (validation-string FUNCTION)
 
 * documentation-string
 
@@ -1947,7 +1947,6 @@ Glossary of all of defined subroutine primitives and variables.
         system             Run a command in the systems command processor
         remove             Remove files
         rename             Rename files
-        all-symbols        Return all the symbols encountered (bound or not)
         hash-create        Create a hash table
         hash-lookup        Lookup a value in a hash by string
         hash-insert        Insert a value into a hash
@@ -1959,7 +1958,7 @@ Glossary of all of defined subroutine primitives and variables.
         date               Return a list of integers representing the date
         assoc              Find a value in an association list
         locale!            Set the locale
-        binary-logarithm   Calculate the binary logarithm of an integer
+        blog               Calculate the binary logarithm of an integer
         close              Close an IO object
         type-of            Return an integer-enum for the type of an object
         timed-eval         Eval with execution time
@@ -1970,22 +1969,22 @@ Glossary of all of defined subroutine primitives and variables.
         format             Print out a list of objects based on a format string
         regex              Match a regular expression on a string
         raise              Raise a signal
-        isalnum?           is string or integer alphanumeric only?
-        isalpha?           is string or integer alphabetic only?
-        iscntrl?           is string or integer control character?
-        isdigit?           is string or integer digits?
-        isgraph?           is string or integer printable (except space)?
-        islower?           is string or integer is lower case?
-        isprint?           is string or integer is printable?
-        ispunct?           is string or integer is punctuation?
-        isspace?           is string or integer is white space?
-        isupper?           is string or integer is upper case?
-        isxdigit?          is string or integer is a hex digit?
-        tr                 translate a string
-        procedure-code     return the code from a user defined procedure
-        procedure-args     return the arguments from a user defined procedure"
-        function-format    return the format string from a procedure
-        documentation-string return the documentation string from a procedure
+        isalnum?           Is string or integer alphanumeric only?
+        isalpha?           Is string or integer alphabetic only?
+        iscntrl?           Is string or integer control character?
+        isdigit?           Is string or integer digits?
+        isgraph?           Is string or integer printable (except space)?
+        islower?           Is string or integer is lower case?
+        isprint?           Is string or integer is printable?
+        ispunct?           Is string or integer is punctuation?
+        isspace?           Is string or integer is white space?
+        isupper?           Is string or integer is upper case?
+        isxdigit?          Is string or integer is a hex digit?
+        tr                 Translate a string
+        procedure-code     Return the code from a user defined procedure
+        procedure-args     Return the arguments from a user defined procedure"
+        validation-string  Return the format string from a procedure
+        documentation-string Return the documentation string from a procedure
 
 ##### dynamic loader
 

@@ -57,7 +57,7 @@
   X("ferror",      subr_ferror,    "P",    "is the error flag set on a port")\
   X("flush",       subr_flush,     NULL,   "flush a port")\
   X("format",      subr_format,    NULL,   "print a string given a format and arguments")\
-  X("function-format", subr_validate_string, "x", "return the format string from a procedure")\
+  X("validation-string", subr_validation_string, "x", "return the format string from a procedure")\
   X("gc",          subr_gc,        "",     "force the collection of garbage")\
   X("get-char",    subr_getchar,   "i",    "read in a character from a port")\
   X("get-delim",   subr_getdelim,  "i C",  "read in a string delimited by a character from a port")\
@@ -69,7 +69,7 @@
   X("join",        subr_join,      NULL,   "join a list of strings together with a separator")\
   X("length",      subr_length,    "A",    "return the length of a list or string")\
   X("list",        subr_list,      NULL,   "create a list from the arguments")\
-  X("locale!",     subr_setlocale, "d Z",  "set the locale")\
+  X("locale!",     subr_setlocale, "d Z",  "set the locale, this affects global state!")\
   X("match",       subr_match,     "Z Z",  "perform a primitive match on a string")\
   X("open",        subr_open,      "d Z",  "open a port (either a file or a string) for reading *or* writing")\
   X("output?",     subr_outp,      "A",    "is an object an output port?")\
@@ -80,7 +80,7 @@
   X("put",         subr_puts,      "o Z",  "write a string to a output port")\
   X("raise",       subr_raise,     "d",    "raise a signal")\
   X("random",      subr_rand,      "",     "return a pseudo random number generator")\
-  X("read",        subr_read,      NULL,   "read in an s-expression from a port")\
+  X("read",        subr_read,      "I",    "read in an s-expression from a port or a string")\
   X("regex-span",  subr_regexspan, "Z Z",  "get the span of a regex match on a string")\
   X("remove",      subr_remove,    "Z",    "remove a file")\
   X("rename",      subr_rename,    "Z Z",  "rename a file")\
@@ -117,8 +117,8 @@
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
 #undef X
 
-#define X(NAME, SUBR, VALIDATE, DOCSTRING) { SUBR, NAME, VALIDATE, DOCSTRING },
-static struct all_subroutines { subr p; const char *name, *validate, *docstring; } prims[] = {
+#define X(NAME, SUBR, VALIDATE, DOCSTRING) { SUBR, NAME, VALIDATE, "(" NAME ") : " DOCSTRING },
+static struct all_subroutines { subr p; const char *name, *validate, *docstring; } primitives[] = {
         SUBROUTINE_XLIST /*all of the subr functions*/
         {NULL, NULL, NULL, NULL} /*must be terminated with NULLs*/
 };
@@ -167,6 +167,11 @@ static struct special_cell_list { cell *internal; } special_cells[] = {
 };
 #undef X
 
+/*defines functions to get a lisp "cell" for the built in special symbols*/
+#define X(FNAME, IGNORE) cell *gsym_ ## FNAME (void) { return FNAME ; }
+CELL_XLIST
+#undef X
+
 #define SUBR_ISX(NAME)\
 static cell *subr_ ## NAME (lisp *l, cell *args) { UNUSED(l);\
         char *s, c;\
@@ -192,11 +197,6 @@ static cell *subr_ ## NAME (lisp *l, cell *args) { UNUSED(l);\
         X(isspace,  "Is a string or integer composed of whitespace characters?")\
         X(isupper,  "Is a string or integer composed of upper case characters?")\
         X(isxdigit, "Is a string or integer composed of hexadecimal digits?")
-
-/*defines functions to get a lisp "cell" for the built in special symbols*/
-#define X(FNAME, IGNORE) cell *gsym_ ## FNAME (void) { return FNAME ; }
-CELL_XLIST
-#undef X
 
 #define X(FUNC, IGNORE) SUBR_ISX(FUNC)
 ISX_LIST /*defines lisp subroutines for checking whether a string only contains a character class*/
@@ -272,10 +272,10 @@ CELL_XLIST
                 if(!lisp_add_cell(l, integers[i].name, 
                                         mk_int(l, integers[i].val)))
                         goto fail;
-        for(i = 0; prims[i].p; i++) /*add all primitives*/
+        for(i = 0; primitives[i].p; i++) /*add all primitives*/
                 if(!lisp_add_subr_long(l, 
-                     prims[i].name,     prims[i].p, 
-                     prims[i].validate, prims[i].docstring))
+                     primitives[i].name,     primitives[i].p, 
+                     primitives[i].validate, primitives[i].docstring))
                         goto fail;
 
 #define X(FUNC, DOCSTRING) if(!lisp_add_subr_long(l, # FUNC "?", subr_ ## FUNC, "C", DOCSTRING)) goto fail;
@@ -522,37 +522,27 @@ static cell* subr_getdelim(lisp *l, cell *args) {
 }
 
 static cell* subr_read(lisp *l, cell *args) { 
-        cell *ob = NULL;
+        cell *ob;
         int restore_used, r;
         jmp_buf restore;
         char *s;
-        if(l->recover_init) {
+        if(l->recover_init) { /*store exception state*/
                 memcpy(restore, l->recover, sizeof(jmp_buf));
                 restore_used = 1;
         }
         l->recover_init = 1;
-        if((r = setjmp(l->recover))) { 
+        if((r = setjmp(l->recover))) { /*handle exception in reader*/
                 RECOVER_RESTORE(restore_used, l, restore); 
                 return gsym_error();
         }
         s = NULL;
-        if(cklen(args, 0))
-                ob = (ob = reader(l, lisp_get_input(l))) ? ob : gsym_error();
-        if(cklen(args, 1) && (is_in(car(args)) || is_str(car(args)))) {
-                io *i = NULL;
-                if(is_in(car(args))){
-                        i = ioval(car(args));
-                } else {
-                        s = strval(car(args));
-                        if(!(i = io_sin(s)))
-                                HALT(l, "\"%s\"", "out of memory");
-                }
-                ob = (ob = reader(l, i)) ? ob : gsym_error();
-                if(s) io_close(i);
-
-        }
+        ob = NULL;
+        io *i = NULL;
+        if(!(i = is_in(car(args)) ? ioval(car(args)) : io_sin(strval(car(args)))))
+                HALT(l, "\"%s\"", "out of memory");
+        ob = (ob = reader(l, i)) ? ob : gsym_error();
+        if(s) io_close(i);
         RECOVER_RESTORE(restore_used, l, restore); 
-        if(!ob) RECOVER(l, "\"expected () or (input)\" '%S", args);
         return ob;
 }
 
@@ -1070,7 +1060,7 @@ static cell *subr_proc_args(lisp *l, cell *args) { UNUSED(l);
         return proc_args(car(args));
 }
 
-static cell *subr_validate_string(lisp *l, cell *args) {
+static cell *subr_validation_string(lisp *l, cell *args) {
         char *s;
         if(is_subr(car(args))) s = subrformat(car(args));
         else                   s = proc_format(car(args));

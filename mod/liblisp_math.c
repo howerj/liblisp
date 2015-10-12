@@ -11,49 +11,50 @@
 
 /**@brief Template for most of the functions in "math.h"
  * @param NAME name of math function such as "log", "sin", etc.*/
-#define SUBR_MATH_UNARY(NAME)\
+#define SUBR_MATH_UNARY(NAME, VALIDATION, DOCSTRING)\
 static cell *subr_ ## NAME (lisp *l, cell *args) {\
-	VALIDATE(l, 1, "A", args, 1);\
-        return mk_float(l, NAME (is_floatval(car(args)) ? floatval(car(args)) :\
-                                  (double) intval(car(args))));\
+        return mk_float(l, NAME (a2f_val(car(args))));\
 }
 
 #define MATH_UNARY_LIST\
-        X(log)    X(log10)   X(fabs)    X(sin)     X(cos)   X(tan)\
-        X(asin)   X(acos)    X(atan)    X(sinh)    X(cosh)  X(tanh)\
-        X(exp)    X(sqrt)    X(ceil)    X(floor)
+        X(log,   "a", "natural logarithm")\
+        X(fabs,  "a", "absolute value")\
+        X(sin,   "a", "sine")\
+        X(cos,   "a", "cosine")\
+        X(tan,   "a", "tangent")\
+        X(asin,  "a", "arcsine")\
+        X(acos,  "a", "arcosine")\
+        X(atan,  "a", "arctangent")\
+        X(sinh,  "a", "hyperbolic sine")\
+        X(cosh,  "a", "hyperbolic cosine")\
+        X(tanh,  "a", "hyperbolic tangent")\
+        X(exp,   "a", "exponential function")\
+        X(sqrt,  "a", "square root")\
+        X(ceil,  "a", "ceiling")\
+        X(floor, "a", "floor")\
+        X(log10, "a", "logarithm (base 10)")
 
-#define X(FUNC) SUBR_MATH_UNARY(FUNC)
+#define X(FUNC, VALIDATION, DOCSTRING) SUBR_MATH_UNARY(FUNC, VALIDATION, DOCSTRING)
 MATH_UNARY_LIST
 #undef X
 
 static cell *subr_pow (lisp *l, cell *args) {
-        cell *xo, *yo;
-        double x, y;
-	VALIDATE(l, 2, "A A", args, 1);
-        xo = car(args);
-        yo = CADR(args);
-        x = is_floatval(xo) ? floatval(xo) : intval(xo);
-        y = is_floatval(yo) ? floatval(yo) : intval(yo);
-        return mk_float(l, pow(x, y));
+        return mk_float(l, pow(a2f_val(car(args)), a2f_val(CADR(args))));
 }
 
 static cell *subr_modf(lisp *l, cell *args) {
-        cell *xo;
         double x, fracpart, intpart = 0;
-	VALIDATE(l, 1, "A", args, 1);
-        xo = car(args);
-        x = is_floatval(xo) ? floatval(xo) : intval(xo);
+        x = a2f_val(car(args));
         fracpart = modf(x, &intpart);
         return cons(l, mk_float(l, intpart), mk_float(l, fracpart));
 }
 
-#define X(SUBR) { subr_ ## SUBR, # SUBR },
-static struct module_subroutines { subr p; char *name; } primitives[] = {
+#define X(SUBR, VALIDATION, DOCSTRING) { # SUBR, VALIDATION, DOCSTRING, subr_ ## SUBR },
+static struct module_subroutines { char *name, *validate, *docstring; subr p; } primitives[] = {
         MATH_UNARY_LIST /*all of the subr functions*/
-        { subr_modf, "modf" },
-        { subr_pow,  "pow" },
-        { NULL, NULL} /*must be terminated with NULLs*/
+        { "modf", "a",   "",   subr_modf },
+        { "pow",  "a a", "",   subr_pow },
+        { NULL,   NULL,  NULL, NULL} /*must be terminated with NULLs*/
 };
 #undef X
 
@@ -62,7 +63,9 @@ static int initialize(void) {
         assert(lglobal);
 
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
-                if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
+                if(!lisp_add_subr_long(lglobal, 
+                        primitives[i].name, primitives[i].p, 
+                        primitives[i].validate, primitives[i].docstring))
                         goto fail;
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: math loaded\n");
         return 0;

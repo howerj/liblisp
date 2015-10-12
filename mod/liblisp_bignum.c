@@ -11,21 +11,21 @@
 #include "bignum.h"
 
 #define SUBROUTINE_XLIST\
-        X(subr_bignum_create,    "bignum")\
-        X(subr_bignum_multiply,  "bignum-multiply")\
-        X(subr_bignum_add,       "bignum-add")\
-        X(subr_bignum_subtract,  "bignum-subtract")\
-        X(subr_bignum_divide,    "bignum-divide")\
-        X(subr_bignum_to_string, "bignum-to-string")
+        X("bignum",             subr_bignum_create,     NULL, "create a bignum")\
+        X("bignum-multiply",    subr_bignum_multiply,   NULL, "multiply two bignums")\
+        X("bignum-add",         subr_bignum_add,        NULL, "add two bignums")\
+        X("bignum-subtract",    subr_bignum_subtract,   NULL, "subtract one bignum from another")\
+        X("bignum-divide",      subr_bignum_divide,     NULL, "bignum division")\
+        X("bignum-to-string",   subr_bignum_to_string,  NULL, "convert a bignum to a string")
 
-#define X(SUBR, NAME) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION , DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
 #undef X
 
-#define X(SUBR, NAME) { SUBR, NAME },
-static struct module_subroutines { subr p; char *name; } primitives[] = {
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, DOCSTRING, SUBR },
+static struct module_subroutines { char *name, *validate, *docstring; subr p; } primitives[] = {
         SUBROUTINE_XLIST /*all of the subr functions*/
-        {NULL, NULL} /*must be terminated with NULLs*/
+        {NULL, NULL, NULL, NULL} /*must be terminated with NULLs*/
 };
 #undef X
 
@@ -108,7 +108,9 @@ static int initialize(void) {
 
         ud_bignum = newuserdef(lglobal, ud_bignum_free, NULL, NULL, ud_bignum_print);
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
-                if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
+                if(!lisp_add_subr_long(lglobal, 
+                                primitives[i].name, primitives[i].p, 
+                                primitives[i].validate, primitives[i].docstring))
                         goto fail;
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: bignum loaded\n");
         return 0;

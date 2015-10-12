@@ -64,7 +64,9 @@
             (if (eq x 'error) 
               (on-error-fn S)
               (progn
-                (format *output* "%S\n" (eval x))
+                ; (format *output* "%S\n" (eval x))
+                (print *output* (eval x))
+                (put *output* "\n")
                 loop))))))
     (cond 
       ; If we have been given a potential file name, try to open it
@@ -116,7 +118,7 @@
 ;(eval-file 'mod/symb.lsp exit-if-not-eof)
 
 (progn
- (load-module "os")     ; operating system module
+ (load-module "unix")   ; unix interface module
  (load-module "sql")    ; sql interface
  (load-module "tcc")    ; tiny c compiler
  (load-module "crc")    ; crc module
@@ -126,6 +128,6 @@
  (load-module "diff")   ; diff module
  (load-module "tsort")  ; tsort module
  (load-module "bignum") ; bignum module
- ())
+ t)
 
 (eval-file 'test.lsp exit-if-not-eof)

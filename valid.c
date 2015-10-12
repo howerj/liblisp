@@ -1,5 +1,5 @@
 /** @file       valid.c
- *  @brief      VALIDATE a list against a type format string, see the
+ *  @brief      validate a list against a type format string, see the
  *              "liblisp.h" header or the code for the format options.
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
@@ -10,6 +10,10 @@
  *        groups of type (such as argument one can be either a string or
  *        and I/O port), optional arguments, etcetera. This will require 
  *        making a strsep() function for "util.c".
+ *  @todo add checks for *specific* user defined values, this will
+ *        require turning lisp_validate into a variadic function, something
+ *        like %u will pop an integer off the argument stack to test
+ *        against.
  *  @todo make sure the expected argument length format string agree
  **/
  
@@ -38,6 +42,7 @@
         X('Z', "symbol-or-string",  is_asciiz(x))\
         X('a', "integer-or-float",  is_arith(x))\
         X('x', "function",          is_func(x))\
+        X('I', "input-port-or-string", is_in(x) || is_str(x))\
         X('l', "defined-procedure", is_proc(x) || is_fproc(x))\
         X('C', "symbol-string-or-integer", is_asciiz(x) || is_int(x))\
         X('A', "any-expression",    1)
@@ -48,8 +53,9 @@ static int print_type_string(lisp *l, unsigned len, const char *fmt,
         const char *s, *head = fmt;
         char c;
         io *e = lisp_get_logging(l);
-        lisp_printf(l, e, 0, "(error \"incorrect arguments\" (%s %s %d) (%d) (", 
-                        file, func, (intptr_t) line, (intptr_t)len); 
+        lisp_printf(l, e, 0, 
+                "\n(error\n \"incorrect arguments\"\n '(in %s %s %d)\n '(expected-length %d)\n '(expected-arguments ", 
+                file, func, (intptr_t)line, (intptr_t)len); 
         while((c = *fmt++)) {
                 s = "";
                 switch(c) {
@@ -62,7 +68,7 @@ static int print_type_string(lisp *l, unsigned len, const char *fmt,
                 io_puts(s, e);
                 if(*fmt) io_putc(' ', e);
         }
-        return lisp_printf(l, e, 0, ") %S)\n", args);
+        return lisp_printf(l, e, 1, ")\n %S)\n", args);
 }
 
 size_t validate_arg_count(const char *fmt) {
