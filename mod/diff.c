@@ -35,8 +35,7 @@ function LCS(X[1..m], Y[1..n])
                 C[i,j] := max(C[i,j-1], C[i-1,j])
     return C*/
 
-diff *lcs(char *x[], size_t xlen, char *y[], size_t ylen)
-{
+diff *lcs(char *x[], size_t xlen, char *y[], size_t ylen) {
         diff *d;
         unsigned *c;
         size_t m=xlen, n=ylen, i, j;
@@ -71,8 +70,7 @@ diff *lcs(char *x[], size_t xlen, char *y[], size_t ylen)
     else
         print "" */
 
-void print_diff_inner(diff *d, char *x[], char *y[], size_t i, size_t j)
-{
+void print_diff_inner(diff *d, char *x[], char *y[], size_t i, size_t j) {
         if (i > 0 && j > 0 && !strcmp(x[i-1], y[j-1])) {
                 print_diff_inner(d, x, y, i-1, j-1);
                 printf("  %s", x[i-1]);
@@ -85,14 +83,13 @@ void print_diff_inner(diff *d, char *x[], char *y[], size_t i, size_t j)
         }
 }
 
-void print_diff(diff *d, char **x, char **y)
-{
+void print_diff(diff *d, char **x, char **y) {
         assert(d && x && y);
         print_diff_inner(d, x, y, d->m, d->n);
 }
 
-char **fill_array_with_lines(FILE *f, size_t *returned_length)
-{
+#if 0
+char **fill_array_with_lines(FILE *f, size_t *returned_length) {
         char *line = NULL, **s = NULL;
         size_t ignore = 0, nl = 1;
         while(getline(&line, &ignore, f) > 0) {
@@ -109,7 +106,6 @@ char **fill_array_with_lines(FILE *f, size_t *returned_length)
         return s;
 }
 
-#if 0
 int main(int argc, char **argv) 
 {
         diff *d;

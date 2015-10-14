@@ -356,3 +356,11 @@
     (cadr 
       (assoc (type-of x) *type-names*))))
 
+; is a variable defined or not?
+(define defined?
+  (lambda (x)
+   (if
+    (assoc x (top-environment))
+     t
+     nil)))
+

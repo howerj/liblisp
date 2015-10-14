@@ -63,7 +63,7 @@ static int print_type_string(lisp *l, unsigned len, const char *fmt,
 #define X(CHAR, STRING, ACTION) case (CHAR): s = (STRING); break;
                 VALIDATE_XLIST
 #undef X
-                default: HALT(l, "\"invalid format string\" \"%s\" %S))", head, args);
+                default: RECOVER(l, "\"invalid format string\" \"%s\" %S))", head, args);
                 }
                 io_puts(s, e);
                 if(*fmt) io_putc(' ', e);
@@ -100,7 +100,7 @@ int lisp_validate(lisp *l, unsigned len, char *fmt, cell *args, int recover,
 #define X(CHAR, STRING, ACTION) case (CHAR): v = ACTION; break;
                 VALIDATE_XLIST
 #undef X
-                default: HALT(l, "%s", "invalid validation format");
+                default: RECOVER(l, "\"%s\"", "invalid validation format");
                 }
                 args = cdr(args);
         }
@@ -111,5 +111,4 @@ fail:   print_type_string(l, len, fmt_head, args_head, file, func, line);
                 lisp_throw(l, 1);
         return 0;
 } 
-
 

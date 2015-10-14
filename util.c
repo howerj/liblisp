@@ -161,10 +161,21 @@ char *vstrcatsep(const char *separator, const char *first, ...) {
         return retbuf;
 }
 
-uint8_t binlog(unsigned long long v) { /*binary logarithm*/
+uint8_t binlog(uint64_t v) {
         uint8_t r = 0;
         while(v >>= 1) r++;
         return r;
+}
+
+uint64_t ipow(uint64_t base, uint64_t exp) {
+    uint64_t result = 1;
+    while (exp) {
+        if (exp & 1)
+            result *= base;
+        exp >>= 1;
+        base *= base;
+    }
+    return result;
 }
 
 uint64_t xorshift128plus(uint64_t s[2]) { /*PRNG*/

@@ -103,9 +103,9 @@ install: all
 	@echo "installing executable ${TARGET} to ${DESTDIR}${PREFIX}/bin"
 	$(CP) -f ${TARGET} ${DESTDIR}${PREFIX}/bin
 	@echo "installing manual pages to ${DESTDIR}${MANPREFIX}/man1"
-	mkdir -p ${DESTDIR}${PREFIX}/bin
-	mkdir -p ${DESTDIR}${MANPREFIX}/man1
-	mkdir -p ${DESTDIR}${PREFIX}/lib
+	$(MKDIR) -p ${DESTDIR}${PREFIX}/bin
+	$(MKDIR) -p ${DESTDIR}${MANPREFIX}/man1
+	$(MKDIR) -p ${DESTDIR}${PREFIX}/lib
 	@echo "updating manual page version"
 	sed "s/VERSION/${VERSION}/g" < ${TARGET}.1 > ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
 	@echo "install library files"
@@ -117,6 +117,7 @@ install: all
 	$(CHMOD) 755 ${DESTDIR}${PREFIX}/lib/lib${TARGET}.a
 	$(CHMOD) 755 ${DESTDIR}${PREFIX}/lib/lib${TARGET}.so
 	$(CHMOD) 644 ${DESTDIR}${PREFIX}/include/lib${TARGET}.h
+	$(LDCONFIG)
 	@echo "installation complete"
 
 uninstall:
@@ -132,7 +133,7 @@ TAGS:
 
 ### clean up #################################################################
 
-CLEAN_LIST = *.a *.so *.o *.html Doxyfile $(TARGET) *.tgz *~ *.log *.out html latex
+CLEAN_LIST = *.a *.so *.o *.htm Doxyfile $(TARGET) *.tgz *~ *.log *.out html/ latex/
 
 clean:
 	@echo Cleaning repository.

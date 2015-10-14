@@ -41,8 +41,9 @@
  *       documentation string (if NULL then there is no doc-string)
  *       subroutine name (as it appears with in the interpreter) */
 #define SUBROUTINE_XLIST\
-  X("assoc",       subr_assoc,     "A c", "lookup a variable in an 'a-list'")\
+  X("assoc",       subr_assoc,     "A c",  "lookup a variable in an 'a-list'")\
   X("blog",        subr_binlog,    "d",    "compute the binary logarithm of an integer")\
+  X("ipow",        subr_ipow,      "d d",  "compute the integer exponentiation of two numbers")\
   X("car",         subr_car,       "c",    "return the first object in a list")\
   X("cdr",         subr_cdr,       "c",    "return every object apart from the first in a list")\
   X("close",       subr_close,     "P",    "close a port, invalidating it")\
@@ -111,6 +112,7 @@
   X("trace!",      subr_trace,     "b",    "turn tracing on or off")\
   X("tr",          subr_tr,        "Z Z Z Z", "translate a string given a format and mode")\
   X("type-of",     subr_typeof,    "A",    "return an integer representing the type of an object")\
+  X("top-environment", subr_top_env, "",   "return the top level environment")\
   X("validate",    subr_validate,  "d Z c", "validate an argument list against a format string")
 
 #define X(NAME, SUBR, VALIDATE, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
@@ -305,6 +307,10 @@ static cell *subr_binv(lisp *l, cell *args) {
 
 static cell *subr_binlog(lisp *l, cell *args) { 
         return mk_int(l, binlog(intval(car(args))));
+}
+
+static cell *subr_ipow(lisp *l, cell *args) {
+        return mk_int(l, ipow(intval(car(args)), intval(CADR(args))));
 }
 
 static cell *subr_sum(lisp *l, cell *args) { 
@@ -1074,3 +1080,6 @@ static cell *subr_doc_string(lisp *l, cell *args) {
         return s ? mk_str(l, lstrdup(s)) : gsym_nil();
 }
 
+static cell *subr_top_env(lisp *l, cell *args) {
+        return l->top_env;
+}

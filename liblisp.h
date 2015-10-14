@@ -197,12 +197,20 @@ LIBLISP_API char *getadelim(FILE *in, int delim);
  *  @return char *      a NUL terminated string that can be freed**/
 LIBLISP_API char *vstrcatsep(const char *separator, const char *first, ...);
 
-/** @brief    Calculate the binary logarithm, for more efficient examples see
- *            http://graphics.stanford.edu/~seander/bithacks.html or
- *            "Bit Twiddling Hacks by Sean Eron Anderson"
- *  @param    v         Value to calculate the binary logarithm of
- *  @return   uint8_t   Binary log**/
-LIBLISP_API uint8_t binlog(unsigned long long v);
+/** @brief  Calculate the binary logarithm, for more efficient examples see
+ *          http://graphics.stanford.edu/~seander/bithacks.html or
+ *          "Bit Twiddling Hacks by Sean Eron Anderson"
+ *  @param  v         Value to calculate the binary logarithm of
+ *  @return uint8_t   Binary log**/
+LIBLISP_API uint8_t binlog(uint64_t v);
+
+/** @brief  Calculate an integer exponentiation.
+ *  From:
+ *  https://stackoverflow.com/questions/101439/the-most-efficient-way-to-implement-an-integer-based-power-function-powint-int
+ *  @param  base  number to raise
+ *  @param  exp   number to raise base to
+ *  @return uint64_t exponentiation result**/
+LIBLISP_API uint64_t ipow(uint64_t base, uint64_t exp);
 
 /** @brief "xorshift" pseudo random number generator
  *  https://en.wikipedia.org/wiki/Xorshift#Xorshift.2B
@@ -1012,7 +1020,7 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
 #define MIN(X, Y)    ((X)>(Y)?(Y):(X)) /**< smallest of two values*/
 #endif
 
-#define UNUSED(X)         ((void)(X)) /**< unused variable*/
+#define UNUSED(X)    ((void)(X)) /**< unused variable*/
 
 /* The following macros are helper macros for lisp list access */
 #define CAAR(X)    car(car((X)))

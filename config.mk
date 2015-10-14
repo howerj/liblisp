@@ -4,7 +4,9 @@
 RM    ?= rm
 CP    ?= cp
 CHMOD ?= chmod
-PRELOAD ?= LD_LIBRARY_PATH="`pwd`/mod" 
+MKDIR ?= mkdir
+PRELOAD ?= LD_LIBRARY_PATH="`pwd`/mod"
+LDCONFIG ?= ldconfig
 
 # Version control variables and information
 

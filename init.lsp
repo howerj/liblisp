@@ -5,6 +5,21 @@
 ; sensibly load modules.
 ;
 ; type checking information
+
+; @bug Incorrect, evaluates all args
+(define and
+  (lambda (x y)
+    (if x
+      (if y t nil)
+       nil)))
+
+; @bug Incorrect, evaluates all args
+(define or
+  (lambda (x y)
+    (cond (x t)
+          (y t)
+          (t nil))))
+
 (define type?      (lambda (type-enum x) (eq type-enum (type-of x))))
 (define list?      (lambda (x) (type? *cons* x)))
 (define atom?      (lambda (x) (if (list? x) nil t)))
@@ -19,6 +34,7 @@
 (define primitive? (lambda (x) (type? *primitive* x)))
 (define char?      (lambda (x) (and (string? x) (= (length x) 1))))
 (define dotted?    (lambda (x) (and (list? x) (not (list? (cdr x))))))
+(define arithmetic?(lambda (x) (or (integer? x) (float? x))))
 (define nil? (lambda (x) (if x nil t)))
 
 (define null?
@@ -34,19 +50,6 @@
   (lambda (x)
     (null? x)))
 
-; @bug Incorrect, evaluates all args
-(define and
-  (lambda (x y)
-    (if x
-      (if y t nil)
-       nil)))
-
-; @bug Incorrect, evaluates all args
-(define or
-  (lambda (x y)
-    (cond (x t)
-          (y t)
-          (t nil))))
 
 ; Evaluate an entire file, stopping on 'error
 ; (eval-file STRING)
@@ -115,7 +118,7 @@
 ; has been devised yet. They must be executed in order.
  (eval-file 'base.lsp exit-if-not-eof)
 ;(eval-file 'mod/sets.lsp exit-if-not-eof)
-;(eval-file 'mod/symb.lsp exit-if-not-eof)
+ (eval-file 'mod/symb.lsp exit-if-not-eof)
 
 (progn
  (load-module "unix")   ; unix interface module
