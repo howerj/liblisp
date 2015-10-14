@@ -61,7 +61,7 @@ static cell *subr_line_editor_mode(lisp *l, cell *args) { UNUSED(l);
 }
 
 static cell *subr_hist_len(lisp *l, cell *args) {
-        if(!line_history_set_maxlen((int)intval(car(args))))
+        if(!line_history_set_maxlen((int)get_int(car(args))))
                 HALT(l, "\"%s\"", "out of memory");
         return gsym_tee();
 }
@@ -105,7 +105,7 @@ static int initialize(void) {
         lisp_add_cell(lglobal, "*history-file*", mk_str(lglobal, lstrdup(histfile)));
 
         for(i = 0; primitives[i].p; i++) /*add primitives from this module*/
-               if(!lisp_add_subr_long(lglobal, 
+               if(!lisp_add_subr(lglobal, 
                         primitives[i].name, primitives[i].p, 
                         primitives[i].validate, primitives[i].docstring))
                      goto fail;

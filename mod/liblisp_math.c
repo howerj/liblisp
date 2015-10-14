@@ -63,7 +63,7 @@ static int initialize(void) {
         assert(lglobal);
 
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
-                if(!lisp_add_subr_long(lglobal, 
+                if(!lisp_add_subr(lglobal, 
                         primitives[i].name, primitives[i].p, 
                         primitives[i].validate, primitives[i].docstring))
                         goto fail;

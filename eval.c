@@ -51,10 +51,14 @@ cell* cons(lisp *l, cell *x, cell *y) {
         return z;
 }
 
-intptr_t intval(cell *x)      { return !x ? 0 : (intptr_t)(x->p[0].v); }
+cell *car(cell *x)              { assert(x && is_cons(x)); return x->p[0].v; }
+cell *cdr(cell *x)              { assert(x && is_cons(x)); return x->p[1].v; }
+void set_car(cell *x, cell *y)  { assert(x && is_cons(x) && y); x->p[0].v = y; }
+void set_cdr(cell *x, cell *y)  { assert(x && is_cons(x) && y); x->p[1].v = y; }
+int  cklen(cell *x, size_t expect) { assert(x); return x->len == expect; }
 int  is_nil(cell *x)          { assert(x); return x == gsym_nil(); }
 int  is_int(cell *x)          { assert(x); return x->type == INTEGER; }
-int  is_floatval(cell *x)     { assert(x); return x->type == FLOAT; }
+int  is_floating(cell *x)     { assert(x); return x->type == FLOAT; }
 int  is_io(cell *x)           { assert(x); return x->type == IO && !x->close; }
 int  is_cons(cell *x)         { assert(x); return x->type == CONS; }
 int  is_proper_cons(cell *x)  { assert(x); return is_cons(x) && (is_nil(cdr(x)) || is_cons(cdr(x))); }
@@ -66,10 +70,10 @@ int  is_subr(cell *x)         { assert(x); return x->type == SUBR; }
 int  is_hash(cell *x)         { assert(x); return x->type == HASH; }
 int  is_userdef(cell *x)      { assert(x); return x->type == USERDEF && !x->close; }
 int  is_usertype(cell *x, int type) { assert(x);
-        return x->type == USERDEF && user_type(x) == type && !x->close;
+        return x->type == USERDEF && get_user_type(x) == type && !x->close;
 }
 int  is_asciiz(cell *x)       { assert(x); return is_str(x) || is_sym(x); }
-int  is_arith(cell *x)        { assert(x); return is_int(x) || is_floatval(x); }
+int  is_arith(cell *x)        { assert(x); return is_int(x) || is_floating(x); }
 int  is_func(cell *x)         { assert(x); return is_proc(x) || is_fproc(x) || is_subr(x); }
 int  is_closed(cell *x)       { assert(x); return x->close; }
 
@@ -83,9 +87,8 @@ static cell *mk_asciiz(lisp *l, char *s, lisp_type type) {
 static cell *mk_sym(lisp *l, char *s) { return mk_asciiz(l, s, SYMBOL); }
 cell *mk_int(lisp *l, intptr_t d) { assert(l); return mk(l, INTEGER, 1, (cell*) d); }
 cell *mk_io(lisp *l, io *x)    { assert(l && x); return mk(l, IO, 1, (cell*)x); }
-cell *mk_subr(lisp *l, subr p) { assert(l && p); return mk(l, SUBR, 3, p, NULL, NULL); }
 
-cell *mk_subr_long(lisp *l, subr p, const char *fmt, const char *doc) { assert(l && p); 
+cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc) { assert(l && p); 
         cell *t;
         t = mk(l, SUBR, 3, p); 
         if(fmt) t->len = validate_arg_count(fmt);
@@ -105,54 +108,50 @@ cell *mk_user(lisp *l, void *x, intptr_t type) { assert(l && x);
         return ret;
 }
 
-subr  subrval(cell *x)         { assert(x && is_subr(x)); return x->p[0].prim; }
-char *subrformat(cell *x)      { assert(x && is_subr(x)); return (char *) x->p[1].v; }
-char *subrdocstr(cell *x)      { assert(x && is_subr(x)); return (char *) x->p[2].v; }
-cell *proc_args(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[0].v; }
-cell *proc_code(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[1].v; }
-cell *proc_env(cell *x)        { assert(x && (is_proc(x) || is_fproc(x))); return x->p[2].v; }
-char *proc_format(cell *x)     { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[3].v; }
-char *proc_docstr(cell *x)     { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[4].v; }
-cell *car(cell *x)             { assert(x && is_cons(x)); return x->p[0].v; }
-cell *cdr(cell *x)             { assert(x && is_cons(x)); return x->p[1].v; }
-io*  ioval(cell *x)            { assert(x /*&& x->type == IO*/); return (io*)(x->p[0].v); }
-void set_car(cell *x, cell *y) { assert(x && y); x->p[0].v = y; }
-void set_cdr(cell *x, cell *y) { assert(x && y); x->p[1].v = y; }
-char *symval(cell *x)          { assert(x); return (char *)(x->p[0].v); }
-char *strval(cell *x)          { assert(x && is_asciiz(x)); return (char *)(x->p[0].v); }
-void *userval(cell *x)         { assert(x && is_userdef(x)); return (void *)(x->p[0].v); }
-intptr_t user_type(cell *x)    { assert(x && is_userdef(x)); return (intptr_t)x->p[1].v; }
-hashtable *hashval(cell *x)    { assert(x && is_hash(x)); return (hashtable *)(x->p[0].v); }
-int  cklen(cell *x, size_t expect) { assert(x); return (x->len) == expect; }
-lfloat floatval(cell *x)       { assert(x && is_floatval(x)); return x->p[0].f; }
+intptr_t get_int(cell *x)      { return !x ? 0 : (intptr_t)(x->p[0].v); }
+subr  get_subr(cell *x)            { assert(x && is_subr(x)); return x->p[0].prim; }
+char *get_subr_format(cell *x)     { assert(x && is_subr(x)); return (char *) x->p[1].v; }
+char *get_subr_docstring(cell *x)  { assert(x && is_subr(x)); return (char *) x->p[2].v; }
+cell *get_proc_args(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[0].v; }
+cell *get_proc_code(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[1].v; }
+cell *get_proc_env(cell *x)        { assert(x && (is_proc(x) || is_fproc(x))); return x->p[2].v; }
+char *get_proc_format(cell *x)     { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[3].v; }
+char *get_proc_docstring(cell *x)  { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[4].v; }
+io*  get_io(cell *x)            { assert(x && x->type == IO); return (io*)(x->p[0].v); }
+char *get_sym(cell *x)          { assert(x && is_asciiz(x)); return (char *)(x->p[0].v); }
+char *get_str(cell *x)          { assert(x && is_asciiz(x)); return (char *)(x->p[0].v); }
+void *get_user(cell *x)         { assert(x && is_userdef(x)); return (void *)(x->p[0].v); }
+int   get_user_type(cell *x)    { assert(x && is_userdef(x)); return (intptr_t)x->p[1].v; }
+hashtable *get_hash(cell *x)    { assert(x && is_hash(x)); return (hashtable *)(x->p[0].v); }
+lfloat get_float(cell *x)       { assert(x && is_floating(x)); return x->p[0].f; }
 intptr_t a2i_val(cell *x) { assert(x && is_arith(x));
-       return is_int(x) ? intval(x) : (intptr_t) floatval(x);
+       return is_int(x) ? get_int(x) : (intptr_t) get_float(x);
 }
 
 lfloat a2f_val(cell *x) { assert(x && is_arith(x));
-       return is_floatval(x) ? floatval(x) : (lfloat) intval(x);
+       return is_floating(x) ? get_float(x) : (lfloat) get_int(x);
 }
 
-int newuserdef(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p) {
-        if(l->userdef_used >= MAX_USER_TYPES) return -1;
-        l->ufuncs[l->userdef_used].free  = f;
-        l->ufuncs[l->userdef_used].mark  = m;
-        l->ufuncs[l->userdef_used].equal = e;
-        l->ufuncs[l->userdef_used].print = p;
-        return l->userdef_used++;
+int new_user_defined_type(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p) {
+        if(l->user_defined_types_used >= MAX_USER_TYPES) return -1;
+        l->ufuncs[l->user_defined_types_used].free  = f;
+        l->ufuncs[l->user_defined_types_used].mark  = m;
+        l->ufuncs[l->user_defined_types_used].equal = e;
+        l->ufuncs[l->user_defined_types_used].print = p;
+        return l->user_defined_types_used++;
 }
 
 int is_in(cell *x) { assert(x);
         if(!x || !is_io(x) 
-              || (ioval(x)->type != FIN && ioval(x)->type != SIN)) return 0;
+              || (get_io(x)->type != FIN && get_io(x)->type != SIN)) return 0;
         return 1;
 }
 
 int is_out(cell *x) { assert(x);
         if(!x || !is_io(x) 
-              ||    (ioval(x)->type != SOUT 
-                 &&  ioval(x)->type != FOUT 
-                 &&  ioval(x)->type != NULLOUT)) return 0;
+              ||    (get_io(x)->type != SOUT 
+                 &&  get_io(x)->type != FOUT 
+                 &&  get_io(x)->type != NULLOUT)) return 0;
         return 1;
 }
 
@@ -161,10 +160,10 @@ cell *extend(lisp *l, cell *env, cell *sym, cell *val) {
 }
 
 cell *intern(lisp *l, char *name) { assert(l && name);
-        cell *op = hash_lookup(hashval(l->all_symbols), name);
+        cell *op = hash_lookup(get_hash(l->all_symbols), name);
         if(op) return op;
         op = mk_sym(l, name);
-        hash_insert(hashval(l->all_symbols), name, op);
+        hash_insert(get_hash(l->all_symbols), name, op);
         return op;
 }
 
@@ -188,10 +187,10 @@ cell *assoc(cell *key, cell *alist) { assert(key && alist);
         cell *lookup;
         for(;!is_nil(alist); alist = cdr(alist))
                 if(is_cons(car(alist))) { /*normal assoc*/
-                        if(intval(CAAR(alist)) == intval(key)) 
+                        if(get_int(CAAR(alist)) == get_int(key)) 
                                 return car(alist);
                 } else if(is_hash(car(alist)) && is_asciiz(key)) { /*assoc extended with hashes*/
-                        if((lookup = hash_lookup(hashval(car(alist)), strval(key))))
+                        if((lookup = hash_lookup(get_hash(car(alist)), get_str(key))))
                                 return lookup; 
                 }
         return gsym_nil();
@@ -222,7 +221,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 return exp; /*self evaluating types*/
         case SYMBOL:   
                 if(is_nil(tmp = assoc(exp, env)))
-                        RECOVER(l, "\"unbound symbol\" '%s", symval(exp));
+                        RECOVER(l, "\"unbound symbol\" '%s", get_sym(exp));
                 return cdr(tmp);
         case CONS:
                 first = car(exp);
@@ -327,19 +326,19 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         gc_add(l, proc);
                         gc_add(l, vals);
                         l->cur_depth = depth; /*tucked away for subr use*/
-                        if(subrformat(proc))
-                                VALIDATE(l, proc->len, subrformat(proc), vals, 1);
-                        return (*subrval(proc))(l, vals);
+                        if(get_subr_format(proc))
+                                VALIDATE(l, proc->len, get_subr_format(proc), vals, 1);
+                        return (*get_subr(proc))(l, vals);
                 }
                 if(is_proc(proc) || is_fproc(proc)) {
-                        if(proc_args(proc)->len != vals->len)
+                        if(get_proc_args(proc)->len != vals->len)
                                 RECOVER(l, "'proc \"expected %S\" '%S", 
-                                                proc_args(proc), vals);
-                        if(proc_args(proc)->len)
+                                                get_proc_args(proc), vals);
+                        if(get_proc_args(proc)->len)
                                 env = multiple_extend(l, 
-                                        l->dynamic ? env : proc_env(proc), 
-                                        proc_args(proc), vals);
-                        exp = cons(l, l->progn, proc_code(proc));
+                                        l->dynamic ? env : get_proc_env(proc), 
+                                        get_proc_args(proc), vals);
+                        exp = cons(l, l->progn, get_proc_code(proc));
                         goto tail;
                 }
                 RECOVER(l, "\"not a procedure\" '%S", first);

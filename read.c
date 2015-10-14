@@ -125,7 +125,7 @@ cell *reader(lisp *l, io *i) { /*read in s-expr, this should be rewritten*/
                         }
                    }
                    ret = intern(l, token);
-                   if(symval(ret) != token) free(token);
+                   if(get_sym(ret) != token) free(token);
                    return ret;
         }
         return gsym_nil();

@@ -100,20 +100,19 @@ dist: ${TARGET} lib${TARGET}.[ah3] lib${TARGET}.so lib${TARGET}.htm ${TARGET}.1
 	tar -zcf ${TARBALL} $^
 
 install: all 
-	@echo "installing executable ${TARGET} to ${DESTDIR}${PREFIX}/bin"
 	$(CP) -f ${TARGET} ${DESTDIR}${PREFIX}/bin
-	@echo "installing manual pages to ${DESTDIR}${MANPREFIX}/man1"
 	$(MKDIR) -p ${DESTDIR}${PREFIX}/bin
 	$(MKDIR) -p ${DESTDIR}${MANPREFIX}/man1
+	$(MKDIR) -p ${DESTDIR}${MANPREFIX}/man3
 	$(MKDIR) -p ${DESTDIR}${PREFIX}/lib
-	@echo "updating manual page version"
-	sed "s/VERSION/${VERSION}/g" < ${TARGET}.1 > ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
-	@echo "install library files"
+	sed "s/VERSION/${VERSION}/g" < ${TARGET}.1    > ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
+	sed "s/VERSION/${VERSION}/g" < lib${TARGET}.3 > ${DESTDIR}${MANPREFIX}/man3/lib${TARGET}.3
 	$(CP) -f lib${TARGET}.a ${DESTDIR}${PREFIX}/lib
 	$(CP) -f lib${TARGET}.so ${DESTDIR}${PREFIX}/lib
 	$(CP) -f lib${TARGET}.h ${DESTDIR}${PREFIX}/include
 	$(CHMOD) 755 ${DESTDIR}${PREFIX}/bin/${TARGET}
 	$(CHMOD) 644 ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
+	$(CHMOD) 644 ${DESTDIR}${MANPREFIX}/man3/lib${TARGET}.3
 	$(CHMOD) 755 ${DESTDIR}${PREFIX}/lib/lib${TARGET}.a
 	$(CHMOD) 755 ${DESTDIR}${PREFIX}/lib/lib${TARGET}.so
 	$(CHMOD) 644 ${DESTDIR}${PREFIX}/include/lib${TARGET}.h

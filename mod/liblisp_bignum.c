@@ -29,18 +29,18 @@ static struct module_subroutines { char *name, *validate, *docstring; subr p; } 
 };
 #undef X
 
-static intptr_t ud_bignum = 0;
+static int ud_bignum = 0;
 
 static void ud_bignum_free(cell *f) { 
-        bignum_destroy(userval(f));
+        bignum_destroy(get_user(f));
         free(f);
 }
 
 static int ud_bignum_print(io *o, unsigned depth, cell *f) {
         int ret;
         char *s;
-        s = bignum_bigtostr(userval(f), 10);
-        ret = lisp_printf(NULL, o, depth, "%mb%s%t", s);
+        s = bignum_bigtostr(get_user(f), 10);
+        ret = lisp_printf(NULL, o, depth, "%m%sb%t", s);
         free(s);
         return ret;
 }
@@ -49,7 +49,7 @@ static cell* subr_bignum_create(lisp *l, cell *args) {
         cell *ret;
         if(!cklen(args, 1) || !is_int(car(args)))
                 RECOVER(l, "\"expected (integer)\" '%S", args);
-        if(!(ret = mk_user(l, (void*)bignum_create(intval(car(args)), 16), ud_bignum)))
+        if(!(ret = mk_user(l, (void*)bignum_create(get_int(car(args)), 16), ud_bignum)))
                 HALT(l, "\"%s\"", "out of memory");
         return ret;
 }
@@ -58,7 +58,7 @@ static cell* subr_bignum_multiply(lisp *l, cell *args) {
         cell *ret;
         if(!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
                 RECOVER(l, "\"expected (bignum bignum)\" '%S", args);
-        if(!(ret = mk_user(l, (void*)bignum_multiply(userval(car(args)), userval(CADR(args))), ud_bignum)))
+        if(!(ret = mk_user(l, (void*)bignum_multiply(get_user(car(args)), get_user(CADR(args))), ud_bignum)))
                 HALT(l, "\"%s\"", "out of memory");
         return ret;
 }
@@ -67,7 +67,7 @@ static cell* subr_bignum_add(lisp *l, cell *args) {
         cell *ret;
         if(!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
                 RECOVER(l, "\"expected (bignum bignum)\" '%S", args);
-        if(!(ret = mk_user(l, (void*)bignum_add(userval(car(args)), userval(CADR(args))), ud_bignum)))
+        if(!(ret = mk_user(l, (void*)bignum_add(get_user(car(args)), get_user(CADR(args))), ud_bignum)))
                 HALT(l, "\"%s\"", "out of memory");
         return ret;
 }
@@ -76,7 +76,7 @@ static cell* subr_bignum_subtract(lisp *l, cell *args) {
         cell *ret;
         if(!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
                 RECOVER(l, "\"expected (bignum bignum)\" '%S", args);
-        if(!(ret = mk_user(l, (void*)bignum_subtract(userval(car(args)), userval(CADR(args))), ud_bignum)))
+        if(!(ret = mk_user(l, (void*)bignum_subtract(get_user(car(args)), get_user(CADR(args))), ud_bignum)))
                 HALT(l, "\"%s\"", "out of memory");
         return ret;
 }
@@ -86,7 +86,7 @@ static cell* subr_bignum_divide(lisp *l, cell *args) {
         cell *ret;
         if(!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
                 RECOVER(l, "\"expected (bignum bignum)\" '%S", args);
-        if(!(d = bignum_divide(userval(car(args)), userval(CADR(args))), ud_bignum))
+        if(!(d = bignum_divide(get_user(car(args)), get_user(CADR(args))), ud_bignum))
                 HALT(l, "\"%s\"", "out of memory");
         ret = cons(l, mk_user(l, d->quotient, ud_bignum), mk_user(l, d->remainder, ud_bignum));
         free(d);
@@ -97,7 +97,7 @@ static cell* subr_bignum_to_string(lisp *l, cell *args) {
         char *s;
         if(!cklen(args, 1) || !is_usertype(car(args), ud_bignum))
                 RECOVER(l, "\"expected (bignum)\" '%S", args);
-        if(!(s = bignum_bigtostr(userval(car(args)), 10)))
+        if(!(s = bignum_bigtostr(get_user(car(args)), 10)))
                 HALT(l, "\"%s\"", "out of memory");
         return mk_str(l, s);
 }
@@ -106,9 +106,11 @@ static int initialize(void) {
         size_t i;
         assert(lglobal);
 
-        ud_bignum = newuserdef(lglobal, ud_bignum_free, NULL, NULL, ud_bignum_print);
+        ud_bignum = new_user_defined_type(lglobal, ud_bignum_free, NULL, NULL, ud_bignum_print);
+        if(ud_bignum < 0)
+                goto fail;
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
-                if(!lisp_add_subr_long(lglobal, 
+                if(!lisp_add_subr(lglobal, 
                                 primitives[i].name, primitives[i].p, 
                                 primitives[i].validate, primitives[i].docstring))
                         goto fail;

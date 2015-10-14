@@ -8,10 +8,10 @@ MODULES=liblisp_sql.so liblisp_unix.so liblisp_crc.so\
 all: help $(MODULES)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $^ -c -o $@
+	$(CC) $(CFLAGS) -I.. $^ -c -o $@
 
 liblisp_line.o: liblisp_line.c 
-	$(CC) $(CFLAGS) -Ilibline/ $^ -c -o $@
+	$(CC) $(CFLAGS) -I.. -Ilibline/ $^ -c -o $@
 
 liblisp_sql.so: liblisp_sql.o
 	$(CC) $(CFLAGS) -shared $^ -lsqlite3 -o $@

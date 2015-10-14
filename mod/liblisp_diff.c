@@ -18,7 +18,7 @@ static cell* subr_diff(lisp *l, cell *args) {
 
 static int initialize(void) {
         assert(lglobal);
-        if(!(lisp_add_subr(lglobal, "diff", subr_diff))) goto fail;
+        if(!(lisp_add_subr(lglobal, "diff", subr_diff, NULL, NULL))) goto fail;
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: diff loaded\n");
         return 0;
 fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: diff load failure\n");

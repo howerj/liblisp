@@ -156,7 +156,7 @@ struct lisp {
                  prompt_on:    1, /**< REPL '>' Turn prompt on*/
                  editor_on:    1; /**< REPL Turn the line editor on*/
         userdef_funcs ufuncs[MAX_USER_TYPES]; /**< for user defined types*/
-        int userdef_used;   /**< number of user defined types allocated*/
+        int user_defined_types_used;   /**< number of user defined types allocated*/
         editor_func editor; /**< line editor to use, optional*/
 
 #define X(CNAME, LNAME) * CNAME, 

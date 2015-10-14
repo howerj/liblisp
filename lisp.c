@@ -24,17 +24,13 @@ void lisp_throw(lisp *l, int ret) {
         else exit(ret);
 }
 
-cell *lisp_add_subr(lisp *l, const char *name, subr func) { assert(l && func && name);
-        return extend_top(l, intern(l, lstrdup(name)), mk_subr(l, func));
-}
-
-cell *lisp_add_subr_long(lisp *l, const char *name, subr func, const char *fmt, const char *doc) {
+cell *lisp_add_subr(lisp *l, const char *name, subr func, const char *fmt, const char *doc) {
         assert(l && name && func); /*fmt and doc are optional*/
-        return extend_top(l, intern(l, lstrdup(name)), mk_subr_long(l, func, fmt, doc));
+        return extend_top(l, intern(l, lstrdup(name)), mk_subr(l, func, fmt, doc));
 }
 
 cell *lisp_intern(lisp *l, cell *ob) { assert(l && ob);
-        if(hash_insert(hashval(l->all_symbols), symval(ob) , ob)) return NULL;
+        if(hash_insert(get_hash(l->all_symbols), get_sym(ob) , ob)) return NULL;
         return l->tee;
 }
 

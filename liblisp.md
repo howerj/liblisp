@@ -1430,6 +1430,13 @@ Set the locale string.
 
         (locale! ENUM STRING)
 
+* ipow
+
+Calculate an integer exponentiation.
+
+        # (ipow INT INT)
+
+
 * blog
 
 Calculate the binary logarithm of an integer.
@@ -1959,6 +1966,7 @@ Glossary of all of defined subroutine primitives and variables.
         assoc              Find a value in an association list
         locale!            Set the locale
         blog               Calculate the binary logarithm of an integer
+        ipow               Calculate exponentiation on integers
         close              Close an IO object
         type-of            Return an integer-enum for the type of an object
         timed-eval         Eval with execution time

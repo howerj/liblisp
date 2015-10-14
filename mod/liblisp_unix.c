@@ -143,38 +143,38 @@ static cell *subr_mknod(lisp *l, cell *args) {
         mode_t m = S_IFIFO;
         if(!cklen(CADR(args), 1))
                 goto invalid;
-        switch(strval(CADR(args))[0]) {
+        switch(get_str(CADR(args))[0]) {
                 case 'c': /*fall through*/
                 case 'u': m = S_IFCHR; break;
                 case 'b': m = S_IFBLK; break;
                 case 'p': m = S_IFIFO; break;
-        invalid: default: RECOVER(l, "\"invalid node type (not 'c 'u 'b or 'p)\" %s", strval(CADR(args)));
+        invalid: default: RECOVER(l, "\"invalid node type (not 'c 'u 'b or 'p)\" %s", get_str(CADR(args)));
         }
-        d = MKDEV(intval(CADDR(args)), intval(CADDDR(args)));
-        return mk_int(l, mknod(strval(car(args)), m | S_IRWXU, d));
+        d = MKDEV(get_int(CADDR(args)), get_int(CADDDR(args)));
+        return mk_int(l, mknod(get_str(car(args)), m | S_IRWXU, d));
 }
 
 static cell *subr_chmod(lisp *l, cell *args) {
-        return mk_int(l, chmod(strval(car(args)), intval(CADR(args))));
+        return mk_int(l, chmod(get_str(car(args)), get_int(CADR(args))));
 }
 
 static cell *subr_mount(lisp *l, cell *args) {
-        return mk_int(l, mount(strval(car(args)), strval(CADR(args)), strval(CADDR(args)), MS_MGC_VAL, NULL));
+        return mk_int(l, mount(get_str(car(args)), get_str(CADR(args)), get_str(CADDR(args)), MS_MGC_VAL, NULL));
 }
 
 static cell *subr_umount(lisp *l, cell *args) {
-        return mk_int(l, umount(strval(car(args))));
+        return mk_int(l, umount(get_str(car(args))));
 }
 
 static cell *subr_chown(lisp *l, cell *args) {
-        return mk_int(l, chown(strval(car(args)), intval(CADR(args)), intval(CADDR(args))));
+        return mk_int(l, chown(get_str(car(args)), get_int(CADR(args)), get_int(CADDR(args))));
 }
 
 static cell* subr_directory(lisp *l, cell *args) {
         DIR *d;
         struct dirent *e;
         cell *ret = gsym_nil();
-        if(!(d = opendir(strval(car(args)))))
+        if(!(d = opendir(get_str(car(args)))))
                 return gsym_error();
         while((e = readdir(d)))
                 ret = cons(l, mk_str(lglobal, lstrdup(e->d_name)), ret);
@@ -183,7 +183,7 @@ static cell* subr_directory(lisp *l, cell *args) {
 }
 
 static cell* subr_sleep(lisp *l, cell *args) {
-        return mk_int(l, sleep(intval(car(args))));
+        return mk_int(l, sleep(get_int(car(args))));
 }
 
 static cell *subr_sync(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
@@ -192,11 +192,11 @@ static cell *subr_sync(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
 }
 
 static cell *subr_kill(lisp *l, cell *args) {
-        return mk_int(l, kill(intval(car(args)), intval(CADR(args))));
+        return mk_int(l, kill(get_int(car(args)), get_int(CADR(args))));
 }
 
 static cell *subr_nice(lisp *l, cell *args) {
-        return mk_int(l, nice(intval(car(args))));
+        return mk_int(l, nice(get_int(car(args))));
 }
 
 static cell *subr_pause(lisp *l, cell *args) { UNUSED(args);
@@ -204,30 +204,30 @@ static cell *subr_pause(lisp *l, cell *args) { UNUSED(args);
 }
 
 static cell *subr_symlink(lisp *l, cell *args) {
-        return mk_int(l, symlink(strval(car(args)), strval(CADR(args))));
+        return mk_int(l, symlink(get_str(car(args)), get_str(CADR(args))));
 }
 
 static cell *subr_link(lisp *l, cell *args) {
-        return mk_int(l, link(strval(car(args)), strval(CADR(args))));
+        return mk_int(l, link(get_str(car(args)), get_str(CADR(args))));
 }
 
 static cell *subr_chdir(lisp *l, cell *args) {
-        return mk_int(l, chdir(strval(car(args))));
+        return mk_int(l, chdir(get_str(car(args))));
 }
 
 static cell *subr_ualarm(lisp *l, cell *args) {
-        return mk_int(l, ualarm(intval(car(args)), intval(CADR(args))));
+        return mk_int(l, ualarm(get_int(car(args)), get_int(CADR(args))));
 }
 
 static cell *subr_rmdir(lisp *l, cell *args) {
-        return mk_int(l, rmdir(strval(car(args))));
+        return mk_int(l, rmdir(get_str(car(args))));
 }
 
 static int initialize(void) {
         size_t i;
         assert(lglobal);
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
-                if(!lisp_add_subr_long(lglobal, 
+                if(!lisp_add_subr(lglobal, 
                         primitives[i].name, primitives[i].p, 
                         primitives[i].validate, primitives[i].docstring))
                         goto fail;

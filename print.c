@@ -109,8 +109,8 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
                 return -1;
         }
         switch(op->type) {
-        case INTEGER: lisp_printf(l, o, depth, "%m%d", intval(op));   break; 
-        case FLOAT:   lisp_printf(l, o, depth, "%m%f", floatval(op)); break; 
+        case INTEGER: lisp_printf(l, o, depth, "%m%d", get_int(op));   break; 
+        case FLOAT:   lisp_printf(l, o, depth, "%m%f", get_float(op)); break; 
         case CONS:    if(depth && o->pretty) io_putc('\n', o);
                       if(o->pretty) lisp_printf(l, o, depth, "%* ");
                       io_putc('(', o);
@@ -129,26 +129,26 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
                       }
                       break;
         case SYMBOL:  if(is_nil(op)) lisp_printf(l, o, depth, "%r()");
-                      else           lisp_printf(l, o, depth, "%y%s", symval(op));
+                      else           lisp_printf(l, o, depth, "%y%s", get_sym(op));
                       break;
-        case STRING:  print_escaped_string(l, o, depth, strval(op));       break;
-        case SUBR:    lisp_printf(l, o, depth, "%B<SUBR:%d>", intval(op)); break;
+        case STRING:  print_escaped_string(l, o, depth, get_str(op));       break;
+        case SUBR:    lisp_printf(l, o, depth, "%B<SUBR:%d>", get_int(op)); break;
         case PROC: case FPROC:
                       lisp_printf(l, o, depth+1, 
                                 is_proc(op) ? "(%ylambda%t %S " :
-                                              "(%yflambda%t %S ", proc_args(op));
-                      for(tmp = proc_code(op); !is_nil(tmp); tmp = cdr(tmp))
+                                              "(%yflambda%t %S ", get_proc_args(op));
+                      for(tmp = get_proc_code(op); !is_nil(tmp); tmp = cdr(tmp))
                               printer(l, o, car(tmp), depth+1);
                       io_putc(')', o);
                       break;
-        case HASH:    lisp_printf(l, o, depth, "%H",             hashval(op)); break;
+        case HASH:    lisp_printf(l, o, depth, "%H",             get_hash(op)); break;
         case IO:      lisp_printf(l, o, depth, "%B<IO:%s:%d>",  
                                       op->close? "CLOSED" : 
-                                      (is_in(op)? "IN": "OUT"), intval(op)); break;
-        case USERDEF: if(l && l->ufuncs[user_type(op)].print)
-                              (l->ufuncs[user_type(op)].print)(o, depth, op);
+                                      (is_in(op)? "IN": "OUT"), get_int(op)); break;
+        case USERDEF: if(l && l->ufuncs[get_user_type(op)].print)
+                              (l->ufuncs[get_user_type(op)].print)(o, depth, op);
                       else lisp_printf(l, o, depth, "<USER:%d:%d>",
-                                user_type(op), intval(op)); break;
+                                get_user_type(op), get_int(op)); break;
         case INVALID: 
         default:      FATAL("internal inconsistency");
         }

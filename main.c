@@ -96,12 +96,12 @@ static void ud_dl_free(cell *f) {
        * before the callback in the closed module is called the
        * program will SEGFAULT as the callback no longer is mapped
        * into the program space. This is resolved with dlclose_atexit */
-      /*DL_CLOSE(userval(f));*/
+      /*DL_CLOSE(get_user(f));*/
         free(f);
 }
 
 static int ud_dl_print(io *o, unsigned depth, cell *f) {
-        return lisp_printf(NULL, o, depth, "%B<DYNAMIC-MODULE:%d>%t", userval(f));
+        return lisp_printf(NULL, o, depth, "%B<DYNAMIC-MODULE:%d>%t", get_user(f));
 }
 
 static cell *subr_dlopen(lisp *l, cell *args) {
@@ -109,7 +109,7 @@ static cell *subr_dlopen(lisp *l, cell *args) {
         dllist *h;
         if(!cklen(args, 1) || !is_asciiz(car(args)))
                 RECOVER(l, "\"expected (string)\" '%S", args);
-        if(!(handle = DL_OPEN(strval(car(args)))))
+        if(!(handle = DL_OPEN(get_str(car(args)))))
                 return gsym_error();
         if(!(h = calloc(1, sizeof(*h))))
                 HALT(l, "\"%s\"", "out of memory");
@@ -123,9 +123,9 @@ static cell *subr_dlsym(lisp *l, cell *args) {
         subr func;
         if(!cklen(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
-        if(!(func = DL_SYM(userval(car(args)), strval(CADR(args)))))
+        if(!(func = DL_SYM(get_user(car(args)), get_str(CADR(args)))))
                 return gsym_error();
-        return mk_subr(l, func);
+        return mk_subr(l, func, NULL, NULL);
 }
 
 static cell *subr_dlerror(lisp *l, cell *args) {
@@ -149,10 +149,10 @@ int main(int argc, char **argv) {
 	lisp_add_cell(l, "os", mk_str(l, lstrdup(os)));
 
 #ifdef USE_DL
-        ud_dl = newuserdef(l, ud_dl_free, NULL, NULL, ud_dl_print);
-        lisp_add_subr(l, "dynamic-open",   subr_dlopen);
-        lisp_add_subr(l, "dynamic-symbol", subr_dlsym);
-        lisp_add_subr(l, "dynamic-error",  subr_dlerror);
+        ud_dl = new_user_defined_type(l, ud_dl_free, NULL, NULL, ud_dl_print);
+        lisp_add_subr(l, "dynamic-open",   subr_dlopen, NULL, NULL);
+        lisp_add_subr(l, "dynamic-symbol", subr_dlsym, NULL, NULL);
+        lisp_add_subr(l, "dynamic-error",  subr_dlerror, NULL, NULL);
         lisp_add_cell(l, "*have-dynamic-loader*", gsym_tee());
         atexit(dlclose_atexit);
 #else

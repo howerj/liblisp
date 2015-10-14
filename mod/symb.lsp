@@ -98,7 +98,8 @@
 ;
 ;    x is a symbol
 ;
-;    @todo More operations can be added
+;    @todo More operations can be added, and ones on operations
+;          that take more than two (or only one) operands.
 ;
 ;    &   0 ?          0
 ;    &   ? 0          0
@@ -112,6 +113,7 @@
 ;    ^   0 ?          ?
 ;    ^   a b         a^b
 ;    ^   x x          0
+;    ~   x           ~x
 ;    sin pi           0
 ;    cos pi          -1
 ;    ...
@@ -121,6 +123,7 @@
 ;      as:
 ;       (log (exp x)) -> x
 ;       (exp (log x)) -> x
+;       (* (* x x) (* x x)) -> (pow x 4)
 ;    * symbols can be resolved:
 ;         x <= 3
 ;         (simplify '(+ (* x x) y) environment) => (+ 9 y)

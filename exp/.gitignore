@@ -4,6 +4,7 @@ thread
 unix
 hash
 line
+monte
 tcc
 *.o
 history.tst

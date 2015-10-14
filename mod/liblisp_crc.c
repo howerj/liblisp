@@ -11,14 +11,14 @@
 
 static cell* subr_crc(lisp *l, cell *args) { UNUSED(l);
         uint32_t c;
-        c = crc_final(crc_init((uint8_t*)strval(car(args)), 
+        c = crc_final(crc_init((uint8_t*)get_str(car(args)), 
                                          lisp_get_cell_length(car(args))));
         return mk_int(lglobal, c);
 }
 
 static int initialize(void) {
         assert(lglobal);
-        if(!(lisp_add_subr_long(lglobal, "crc", subr_crc, "Z", "CRC-32 of a string"))) goto fail;
+        if(!(lisp_add_subr(lglobal, "crc", subr_crc, "Z", "CRC-32 of a string"))) goto fail;
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: crc loaded\n");
         return 0;
 fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: crc load failure\n");

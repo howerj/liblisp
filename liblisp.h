@@ -28,8 +28,7 @@ extern "C" {
 #elif _WIN32
 /** @brief The LIBLISP_API macro is needed due to the way Windows handles
  * DLLs, the build system should define COMPILING_LIBLISP when
- * building liblisp.dll and do nothing when compiling modules that
- * depend on it. **/
+ * building "liblisp.dll", but only then. **/
         #ifdef COMPILING_LIBLISP
                 #define LIBLISP_API __declspec(dllexport) /**< export function*/
         #else
@@ -511,16 +510,16 @@ LIBLISP_API size_t tr_block(tr_state *tr, uint8_t *in, uint8_t *out, size_t len)
 
 LIBLISP_API cell *car(cell *x); /**< get car cell from cons**/
 LIBLISP_API cell *cdr(cell *x); /**< get cdr cell from cons**/
+LIBLISP_API void set_car(cell *x, cell *y); /**< set cdr cell of a cons cell**/
+LIBLISP_API void set_cdr(cell *x, cell *y); /**< set car cell of a cons cell**/
 LIBLISP_API int  cklen(cell *x, size_t expect); /**< get length of list**/
 LIBLISP_API cell *cons(lisp *l, cell *x, cell *y); /**< create a new cons cell**/
 LIBLISP_API cell *extend(lisp *l, cell *env, cell *sym, cell *val);
 LIBLISP_API cell *findsym(lisp *l, char *name); /**< find a previously used symbol**/
 LIBLISP_API cell *intern(lisp *l, char *name); /**< add a new symbol**/
-LIBLISP_API intptr_t intval(cell *x); /**< cast lisp cell to integer**/
-LIBLISP_API io*  ioval(cell *x);    /**< cast lisp cell to I/O stream**/
 LIBLISP_API int  is_nil(cell *x);    /**< true if 'x' is equal to nil**/
 LIBLISP_API int  is_int(cell *x);    /**< true if 'x' is a integer **/
-LIBLISP_API int  is_floatval(cell *x);  /**< true if 'x' is a floating point number**/
+LIBLISP_API int  is_floating(cell *x);  /**< true if 'x' is a floating point number**/
 LIBLISP_API int  is_cons(cell *x);   /**< true if 'x' is a cons cell**/
 LIBLISP_API int  is_proper_cons(cell *x); /**< true if 'x' is not a dotted pair cons cell*/
 LIBLISP_API int  is_io(cell *x);     /**< true if 'x' is a I/O type**/
@@ -541,31 +540,30 @@ LIBLISP_API int  is_closed(cell *x); /**< true if 'x' is 'closed' or invalidated
 LIBLISP_API cell *mk_int(lisp *l, intptr_t d); /**< make a lisp cell from an integer**/
 LIBLISP_API cell *mk_float(lisp *l, lfloat f); /**< make a lisp cell from a float**/
 LIBLISP_API cell *mk_io(lisp *l, io *x); /**< make lisp cell from an I/O stream**/
-LIBLISP_API cell *mk_subr(lisp *l, subr p); /**< make a lisp cell from a primitive**/
-/** @brief long version of subroutine creation function **/
-LIBLISP_API cell *mk_subr_long(lisp *l, subr p, const char *fmt, const char *doc);
+/** @brief long version of subroutine creation function, fmt and doc can be NULL **/
+LIBLISP_API cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc);
 LIBLISP_API cell *mk_proc(lisp *l, cell *x, cell *y, cell *z); /**< make a lisp cell/proc**/
 LIBLISP_API cell *mk_fproc(lisp *l, cell *x, cell *y, cell *z); /**< make a lisp cell/fproc**/
 LIBLISP_API cell *mk_str(lisp *l, char *s); /**< make lisp cell (string) from a string**/
 /*LIBLISP_API cell *mksym(lisp *l, char *s); use intern instead to get a unique symbol*/
 LIBLISP_API cell *mk_hash(lisp *l, hashtable *h); /**< make lisp cell from hash**/
 LIBLISP_API cell *mk_user(lisp *l, void *x, intptr_t type); /**< make a user defined type**/
-LIBLISP_API subr subrval(cell *x); /**< cast a lisp cell to a primitive func ptr**/
-LIBLISP_API char *subrformat(cell *x);   /**< get the type validation string for a subroutine*/
-LIBLISP_API char *subrdocstr(cell *x); /**< get the documentation string for a subroutine*/ 
-LIBLISP_API cell *proc_args(cell *x);   /**< get args to a procedure/f-expr **/
-LIBLISP_API cell *proc_code(cell *x);   /**< get code from a procedure/f-expr **/
-LIBLISP_API cell *proc_env(cell *x);    /**< get procedure/f-expr environment**/
-LIBLISP_API char *proc_format(cell *x);   /**< get the type validation string for a procedure/f-expr */
-LIBLISP_API char *proc_docstr(cell *x); /**< get the documentation string for a procedure/f-expr */
-LIBLISP_API intptr_t user_type(cell *x); /**< get the user-defined-value identifier*/
-LIBLISP_API void set_car(cell *x, cell *y); /**< set cdr cell of a cons cell**/
-LIBLISP_API void set_cdr(cell *x, cell *y); /**< set car cell of a cons cell**/
-LIBLISP_API char *strval(cell *x); /**< get string from a lisp cell**/
-LIBLISP_API char *symval(cell *x); /**< get string (symbol) from a lisp cell**/
-LIBLISP_API void *userval(cell *x); /**< get data from user defined type**/
-LIBLISP_API lfloat floatval(cell *x); /**< get floating point val from lisp cell**/
-LIBLISP_API hashtable *hashval(cell *x); /**< get hash table from a lisp cell**/
+LIBLISP_API intptr_t get_int(cell *x); /**< cast lisp cell to integer**/
+LIBLISP_API io*   get_io(cell *x);    /**< cast lisp cell to I/O stream**/
+LIBLISP_API subr  get_subr(cell *x); /**< cast a lisp cell to a primitive func ptr**/
+LIBLISP_API char *get_subr_format(cell *x);   /**< get the type validation string for a subroutine*/
+LIBLISP_API char *get_subr_docstring(cell *x); /**< get the documentation string for a subroutine*/ 
+LIBLISP_API cell *get_proc_args(cell *x);   /**< get args to a procedure/f-expr **/
+LIBLISP_API cell *get_proc_code(cell *x);   /**< get code from a procedure/f-expr **/
+LIBLISP_API cell *get_proc_env(cell *x);    /**< get procedure/f-expr environment**/
+LIBLISP_API char *get_proc_format(cell *x);   /**< get the type validation string for a procedure/f-expr */
+LIBLISP_API char *get_proc_docstring(cell *x); /**< get the documentation string for a procedure/f-expr */
+LIBLISP_API int   get_user_type(cell *x); /**< get the user-defined-value identifier*/
+LIBLISP_API char *get_str(cell *x); /**< get string from a lisp cell**/
+LIBLISP_API char *get_sym(cell *x); /**< get string (symbol) from a lisp cell**/
+LIBLISP_API void *get_user(cell *x); /**< get data from user defined type**/
+LIBLISP_API lfloat get_float(cell *x); /**< get floating point val from lisp cell**/
+LIBLISP_API hashtable *get_hash(cell *x); /**< get hash table from a lisp cell**/
 LIBLISP_API intptr_t a2i_val(cell *x); /** float/int to int */
 LIBLISP_API lfloat a2f_val(cell *x);   /** float/int to float */
 LIBLISP_API cell *gsym_error(void); /**< return the error cell**/
@@ -581,7 +579,7 @@ LIBLISP_API cell *gsym_quote(void); /**< return the quote cell**/
  * @param  p function to call when printing type, optional
  * @return int return -1 if there are no more tokens to give or a positive
  *                number representing a user defined token*/
-LIBLISP_API int newuserdef(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p);  
+LIBLISP_API int new_user_defined_type(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p);  
 
 /**@brief determines whether a string contains a number that
  *        can be converted with strtol.
@@ -692,15 +690,6 @@ LIBLISP_API cell *lisp_intern(lisp *l, cell *ob);
 LIBLISP_API cell *lisp_add_cell(lisp *l, const char *sym, cell *val);
 
 /** @brief  add a function primitive to a lisp environment. It will be
- *          referenced internally by the "name" string.
- *  @param  l     lisp environment to add primitive to
- *  @param  name  name to call the function primitive by
- *  @param  func  function primitive
- *  @return cell* pointer to extended environment if successful, NULL
- *                otherwise. You shouldn't do anything with pointer**/
-LIBLISP_API cell *lisp_add_subr(lisp *l, const char *name, subr func);
-
-/** @brief  add a function primitive to a lisp environment. It will be
  *          referenced internally by the "name" string. This is the long
  *          version, a format string and a documentation string can be added
  *          to the subroutine.
@@ -711,7 +700,7 @@ LIBLISP_API cell *lisp_add_subr(lisp *l, const char *name, subr func);
  *  @param  doc   documentation string (can be NULL)
  *  @return cell* pointer to extended environment if successful, NULL
  *                otherwise. You shouldn't do anything with pointer**/
-LIBLISP_API cell *lisp_add_subr_long(lisp *l, const char *name, subr func, const char *fmt, const char *doc);
+LIBLISP_API cell *lisp_add_subr(lisp *l, const char *name, subr func, const char *fmt, const char *doc);
 
 /** @brief  Initialize a lisp environment. By default it will read
  *          from stdin, print to stdout and log errors to stderr.

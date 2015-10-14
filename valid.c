@@ -34,7 +34,7 @@
         X('P', "io-port",           is_io(x))\
         X('h', "hash",              is_hash(x))\
         X('F', "f-expr",            is_fproc(x))\
-        X('f', "float",             is_floatval(x))\
+        X('f', "float",             is_floating(x))\
         X('u', "user-defined",      is_userdef(x))\
         X('b', "t-or-nil",          is_nil(x) || x == gsym_tee())\
         X('i', "input-port",        is_in(x))\

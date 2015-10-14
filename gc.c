@@ -14,13 +14,13 @@ static void gc_free(lisp *l, cell *ob) { assert(ob); /**< free a lisp cell*/
         switch(ob->type) {
         case INTEGER: case CONS: case FLOAT:
         case PROC:    case SUBR: case FPROC:      free(ob); break;
-        case STRING:  free(strval(ob));           free(ob); break;
-        case SYMBOL:  free(symval(ob));           free(ob); break;
-        case IO:      if(!ob->close)   io_close(ioval(ob));        
+        case STRING:  free(get_str(ob));           free(ob); break;
+        case SYMBOL:  free(get_sym(ob));           free(ob); break;
+        case IO:      if(!ob->close)   io_close(get_io(ob));        
                                                   free(ob); break; 
-        case HASH:    hash_destroy(hashval(ob));  free(ob); break;
-        case USERDEF: if(l->ufuncs[user_type(ob)].free)
-                              (l->ufuncs[user_type(ob)].free)(ob);
+        case HASH:    hash_destroy(get_hash(ob));  free(ob); break;
+        case USERDEF: if(l->ufuncs[get_user_type(ob)].free)
+                              (l->ufuncs[get_user_type(ob)].free)(ob);
                       else free(ob);
                       break;
         case INVALID:
@@ -35,9 +35,9 @@ static void gc_mark(lisp *l, cell* op) { assert(op); /**<recursively mark reacha
         case INTEGER: case SYMBOL: case SUBR: 
         case STRING:  case IO:     case FLOAT:  break;
         case FPROC: case PROC: 
-                   gc_mark(l, proc_args(op)); 
-                   gc_mark(l, proc_code(op));
-                   gc_mark(l, proc_env(op));
+                   gc_mark(l, get_proc_args(op)); 
+                   gc_mark(l, get_proc_code(op));
+                   gc_mark(l, get_proc_env(op));
                    break;
         case CONS: gc_mark(l, car(op));
                    gc_mark(l, cdr(op));
@@ -45,15 +45,15 @@ static void gc_mark(lisp *l, cell* op) { assert(op); /**<recursively mark reacha
         case HASH: {
                         size_t i;
                         hashentry *cur;
-                        hashtable *h = hashval(op);
+                        hashtable *h = get_hash(op);
                         for(i = 0; i < h->len; i++)
                                 if(h->table[i])
                                         for(cur = h->table[i]; cur; cur = cur->next)
                                                 gc_mark(l, cur->val);
                    }
                    break;
-        case USERDEF: if(l->ufuncs[user_type(op)].mark)
-                             (l->ufuncs[user_type(op)].mark)(op);
+        case USERDEF: if(l->ufuncs[get_user_type(op)].mark)
+                             (l->ufuncs[get_user_type(op)].mark)(op);
                       break;
         case INVALID:
         default:   FATAL("internal inconsistency: unknown type");

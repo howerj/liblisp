@@ -30,15 +30,15 @@ static struct module_subroutines { subr p; char *name; } primitives[] = {
 };
 #undef X
 
-static intptr_t ud_tcc = 0;
+static int ud_tcc = 0;
 
 static void ud_tcc_free(cell *f) {
-        tcc_delete(userval(f));
+        tcc_delete(get_user(f));
         free(f);
 }
 
 static int ud_tcc_print(io *o, unsigned depth, cell *f) {
-        return lisp_printf(NULL, o, depth, "%B<COMPILE-STATE:%d>%t", userval(f));
+        return lisp_printf(NULL, o, depth, "%B<COMPILE-STATE:%d>%t", get_user(f));
 }
 
 static cell* subr_compile(lisp *l, cell *args) {
@@ -46,31 +46,31 @@ static cell* subr_compile(lisp *l, cell *args) {
         || !is_usertype(car(args), ud_tcc)
         || !is_asciiz(CADR(args)) || !is_str(CADDR(args)))
                 RECOVER(l, "\"expected (compile-state string string\" '%S", args);
-        char *fname = strval(CADR(args)), *prog = strval(CADDR(args));
+        char *fname = get_str(CADR(args)), *prog = get_str(CADDR(args));
         subr func;
-        TCCState *st = userval(car(args));
+        TCCState *st = get_user(car(args));
         if(tcc_compile_string(st, prog) < 0)
                 return gsym_error();
         if(tcc_relocate(st, TCC_RELOCATE_AUTO) < 0)
                 return gsym_error();
         func = (subr)tcc_get_symbol(st, fname);
-        return mk_subr(l, func);
+        return mk_subr(l, func, NULL, NULL);
 }
 
 static cell* subr_link(lisp *l, cell *args) {
         if(!cklen(args, 2) 
         || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        return tcc_add_library(userval(car(args)), strval(CADR(args))) < 0 ? gsym_error() : gsym_nil();
+        return tcc_add_library(get_user(car(args)), get_str(CADR(args))) < 0 ? gsym_error() : gsym_nil();
 }
 
 static cell* subr_compile_file(lisp *l, cell *args) {
         if(!cklen(args, 2)
         || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        if(tcc_add_file(userval(car(args)), strval(CADR(args))) < 0)
+        if(tcc_add_file(get_user(car(args)), get_str(CADR(args))) < 0)
                 return gsym_error();
-        if(tcc_relocate(userval(car(args)), TCC_RELOCATE_AUTO) < 0)
+        if(tcc_relocate(get_user(car(args)), TCC_RELOCATE_AUTO) < 0)
                 return gsym_error();
         return gsym_tee();
 }
@@ -80,28 +80,28 @@ static cell* subr_get_subr(lisp *l, cell *args) {
         if(!cklen(args, 2)
         || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        if(!(func = tcc_get_symbol(userval(car(args)), strval(CADR(args)))))
+        if(!(func = tcc_get_symbol(get_user(car(args)), get_str(CADR(args)))))
                 return gsym_error();
         else
-                return mk_subr(l, func);
+                return mk_subr(l, func, NULL, NULL);
 }
 
 static cell* subr_add_include_path(lisp *l, cell *args) {
         if(!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        return tcc_add_include_path(userval(car(args)), strval(CADR(args))) < 0 ? gsym_error() : gsym_tee();
+        return tcc_add_include_path(get_user(car(args)), get_str(CADR(args))) < 0 ? gsym_error() : gsym_tee();
 }
 
 static cell* subr_add_sysinclude_path(lisp *l, cell *args) {
         if(!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        return tcc_add_sysinclude_path(userval(car(args)), strval(CADR(args))) < 0 ? gsym_error() : gsym_tee();
+        return tcc_add_sysinclude_path(get_user(car(args)), get_str(CADR(args))) < 0 ? gsym_error() : gsym_tee();
 }
 
 static cell* subr_set_lib_path(lisp *l, cell *args) {
         if(!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
                 RECOVER(l, "\"expected (compile-state string)\" '%S", args);
-        tcc_set_lib_path(userval(car(args)), strval(CADR(args)));
+        tcc_set_lib_path(get_user(car(args)), get_str(CADR(args)));
         return gsym_tee();
 }
 
@@ -119,7 +119,9 @@ static int initialize(void) {
          *  * Separate out tcc_get_symbol from tcc_compile_string
          *  * Find out why link does not work
          **/
-        ud_tcc = newuserdef(lglobal, ud_tcc_free, NULL, NULL, ud_tcc_print);
+        ud_tcc = new_user_defined_type(lglobal, ud_tcc_free, NULL, NULL, ud_tcc_print);
+        if(ud_tcc < 0)
+                goto fail;
         TCCState *st = tcc_new();
         tcc_set_output_type(st, TCC_OUTPUT_MEMORY);
         lisp_add_cell(lglobal, "*compile-state*", mk_user(lglobal, st, ud_tcc));
