@@ -9,7 +9,10 @@
  *  be nice if this S-Expression parser could be made so parsing of
  *  different things could be turned on or off, such as strings. This
  *  parser needs rewriting as well, parts of it are quite ugly.
- *  **/
+ *
+ *  @todo parser options to turn on/off parsing of: char literals in strings,
+ *        strings, comments, dotted pairs, integers and floats
+ *  @todo better error messages**/
  
 
 #include "liblisp.h"

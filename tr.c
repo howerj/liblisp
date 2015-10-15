@@ -94,8 +94,9 @@ int tr_char(tr_state *tr, uint8_t c) { /*return character to emit, -1 otherwise*
 }
 
 size_t tr_block(tr_state *tr, uint8_t *in, uint8_t *out, size_t len) {
+        int c;
         size_t i = 0, j = 0;
-        for(int c; j < len; j++)
+        for(; j < len; j++)
                 if((c = tr_char(tr, in[j])) >= 0)
                         out[i++] = c;
         return i;
