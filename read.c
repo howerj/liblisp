@@ -77,6 +77,7 @@ static char *gettoken(lisp *l, io *i) { /**< lexer*/
 
 static cell *readstring(lisp *l, io* i) { /**< handle parsing a string*/
         int ch;
+        char num[4] = {0,0,0,0};
         l->buf_used = 0;
         for(;;) {
                 if((ch = io_getc(i)) == EOF)
@@ -89,6 +90,22 @@ static cell *readstring(lisp *l, io* i) { /**< handle parsing a string*/
                         case 't':  add_char(l, '\t'); continue;
                         case 'r':  add_char(l, '\r'); continue;
                         case '"':  add_char(l, '"');  continue;
+                        case '0':  case '1': case '2': case '3':
+                                   num[0] = ch;
+                                   if((ch = io_getc(i)) == EOF)
+                                           return NULL;
+                                   num[1] = ch;
+                                   if((ch = io_getc(i)) == EOF)
+                                           return NULL;
+                                   num[2] = ch;
+                                   if(num[strspn(num, "01234567")])
+                                           goto fail;
+                                   ch = (char)strtol(num, NULL, 8);
+                                   if(!ch) /*cannot handle NUL in strings!*/
+                                           goto fail;
+                                   add_char(l, ch);
+                                   continue;
+                        fail:      RECOVER(l, "'invalid-escape-literal \"%s\"", num);
                         case EOF:  return NULL;
                         default:  RECOVER(l, "'invalid-escape-char \"%c\"", ch);
                         }

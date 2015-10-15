@@ -1,10 +1,16 @@
-# "dwm" from <http://suckless.org/> inspired config file
+# liblisp configuration and build system options
+
+# This does not work for TCC, but does for Clang and GCC
+TARGET_TRIPLE := $(subst -, ,$(shell $(CC) -dumpmachine))
+TARGET_ARCH   := $(word 1,$(TARGET_TRIPLE))
+TARGET_OS     := $(word 3,$(TARGET_TRIPLE))
 
 ## misc
 RM    ?= rm
 CP    ?= cp
 CHMOD ?= chmod
 MKDIR ?= mkdir
+SED   ?= sed
 PRELOAD ?= LD_LIBRARY_PATH="`pwd`/mod"
 LDCONFIG ?= ldconfig
 
@@ -20,7 +26,7 @@ VCS_ORIGIN = $(shell git config --get remote.origin.url)
 
 DESTDIR   ?= 
 PREFIX 	  ?= /usr/local
-MANPREFIX ?= ${PREFIX}/share/man
+MANPREFIX ?= $(PREFIX)/share/man
 
 # Compiler and compiler flags
 
@@ -30,7 +36,7 @@ CC       ?= gcc
 # The CFLAGS_RELAXED is used to compile main.c, main.c uses
 # several libraries that require a cast from "void*" to a
 # function pointer, which causes warnings which are unnecessary.
-CFLAGS_RELAXED ?= -Wall -Wextra -g -fwrapv -std=c99 -O2 -fPIC
+CFLAGS_RELAXED ?= -Wall -Wextra -g -fwrapv -O2 -Wmissing-prototypes
 CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 
 # Compilation options

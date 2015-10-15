@@ -8,6 +8,17 @@
 
 include config.mk
 
+ifeq      ($(TARGET_OS),mingw32)
+CFLAGS += -DCOMPILING_LIBLISP
+PRELOAD=
+else ifeq ($(TARGET_OS),cygwin)
+CFLAGS += -DCOMPILING_LIBLISP
+PRELOAD=
+else
+CFLAGS += -fPIC 
+endif
+CFLAGS += -std=c99
+
 TARGET = lisp
 .PHONY: all clean dist doc doxygen valgrind run 
 
@@ -26,7 +37,8 @@ help:
 	@echo ""
 	@echo "    cc *.c -o lisp"
 	@echo ""
-	@echo "The C compiler must support C99."
+	@echo "The C compiler must support C99. This makefile requires GNU make and"
+	@echo "should compile under Linux and Windows (given make and gcc are installed)"
 	@echo ""
 	@echo "make (option)*"
 	@echo ""
@@ -43,6 +55,7 @@ help:
 	@echo "     clean       remove all build artifacts and targets"
 	@echo "     doc         make html and doxygen documentation"
 	@echo "     TAGS        update project tags table (ctags)"
+	@echo "     indent      indent the source code sensibly (instead of what I like)"
 	@echo ""
 
 ### building #################################################################
@@ -59,13 +72,13 @@ lib$(TARGET).so: $(OBJFILES) lib$(TARGET).h private.h
 %.o: %.c lib$(TARGET).h private.h
 	$(CC) $(CFLAGS) $< -c -o $@
 
-VCS_DEFINES=-DVCS_ORIGIN="${VCS_ORIGIN}" -DVCS_COMMIT="${VCS_COMMIT}" -DVERSION="${VERSION}" 
+VCS_DEFINES=-DVCS_ORIGIN="$(VCS_ORIGIN)" -DVCS_COMMIT="$(VCS_COMMIT)" -DVERSION="$(VERSION)" 
 
 main.o: main.c lib$(TARGET).h 
-	$(CC) $(CFLAGS_RELAXED) ${DEFINES} ${VCS_DEFINES} $< -c -o $@
+	$(CC) $(CFLAGS_RELAXED) $(DEFINES) $(VCS_DEFINES) $< -c -o $@
 
 $(TARGET): main.o lib$(TARGET).a 
-	$(CC) $(CFLAGS) -Wl,-E $^ -lm ${LINK} -o $@
+	$(CC) $(CFLAGS) -Wl,-E $^ -lm $(LINK) -o $@
 
 ### running ##################################################################
 
@@ -94,45 +107,49 @@ doxygen:
 # 'make' adding spaces to things when it should not.
 space := 
 space +=
-TARBALL=$(subst $(space),,${TARGET}-${VERSION}.tgz) # Remove spaces 
+TARBALL=$(subst $(space),,$(TARGET)-$(VERSION).tgz) # Remove spaces 
 # make distribution tarball
-dist: ${TARGET} lib${TARGET}.[ah3] lib${TARGET}.so lib${TARGET}.htm ${TARGET}.1
-	tar -zcf ${TARBALL} $^
+dist: $(TARGET) lib$(TARGET).[ah3] lib$(TARGET).so lib$(TARGET).htm $(TARGET).1
+	tar -zcf $(TARBALL) $^
 
 install: all 
-	$(CP) -f ${TARGET} ${DESTDIR}${PREFIX}/bin
-	$(MKDIR) -p ${DESTDIR}${PREFIX}/bin
-	$(MKDIR) -p ${DESTDIR}${MANPREFIX}/man1
-	$(MKDIR) -p ${DESTDIR}${MANPREFIX}/man3
-	$(MKDIR) -p ${DESTDIR}${PREFIX}/lib
-	sed "s/VERSION/${VERSION}/g" < ${TARGET}.1    > ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
-	sed "s/VERSION/${VERSION}/g" < lib${TARGET}.3 > ${DESTDIR}${MANPREFIX}/man3/lib${TARGET}.3
-	$(CP) -f lib${TARGET}.a ${DESTDIR}${PREFIX}/lib
-	$(CP) -f lib${TARGET}.so ${DESTDIR}${PREFIX}/lib
-	$(CP) -f lib${TARGET}.h ${DESTDIR}${PREFIX}/include
-	$(CHMOD) 755 ${DESTDIR}${PREFIX}/bin/${TARGET}
-	$(CHMOD) 644 ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
-	$(CHMOD) 644 ${DESTDIR}${MANPREFIX}/man3/lib${TARGET}.3
-	$(CHMOD) 755 ${DESTDIR}${PREFIX}/lib/lib${TARGET}.a
-	$(CHMOD) 755 ${DESTDIR}${PREFIX}/lib/lib${TARGET}.so
-	$(CHMOD) 644 ${DESTDIR}${PREFIX}/include/lib${TARGET}.h
+	$(CP) -f $(TARGET) $(DESTDIR)$(PREFIX)/bin
+	$(MKDIR) -p $(DESTDIR)$(PREFIX)/bin
+	$(MKDIR) -p $(DESTDIR)$(MANPREFIX)/man1
+	$(MKDIR) -p $(DESTDIR)$(MANPREFIX)/man3
+	$(MKDIR) -p $(DESTDIR)$(PREFIX)/lib
+	$(SED) "s/VERSION/$(VERSION)/g" < $(TARGET).1    > $(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1
+	$(SED) "s/VERSION/$(VERSION)/g" < lib$(TARGET).3 > $(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3
+	$(CP) -f lib$(TARGET).a $(DESTDIR)$(PREFIX)/lib
+	$(CP) -f lib$(TARGET).so $(DESTDIR)$(PREFIX)/lib
+	$(CP) -f lib$(TARGET).h $(DESTDIR)$(PREFIX)/include
+	$(CHMOD) 755 $(DESTDIR)$(PREFIX)/bin/$(TARGET)
+	$(CHMOD) 644 $(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1
+	$(CHMOD) 644 $(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3
+	$(CHMOD) 755 $(DESTDIR)$(PREFIX)/lib/lib$(TARGET).a
+	$(CHMOD) 755 $(DESTDIR)$(PREFIX)/lib/lib$(TARGET).so
+	$(CHMOD) 644 $(DESTDIR)$(PREFIX)/include/lib$(TARGET).h
 	$(LDCONFIG)
 	@echo "installation complete"
 
 uninstall:
-	@echo uninstalling ${TARGET}
-	@$(RM) -vf ${DESTDIR}${MANPREFIX}/man1/${TARGET}.1
-	@$(RM) -vf ${DESTDIR}${PREFIX}/bin/${TARGET}
-	@$(RM) -vf ${DESTDIR}${PREFIX}/lib/lib${TARGET}.a
-	@$(RM) -vf ${DESTDIR}${PREFIX}/lib/lib${TARGET}.so
-	@$(RM) -vf ${DESTDIR}${PREFIX}/include/lib${TARGET}.h
+	@echo uninstalling $(TARGET)
+	@$(RM) -vf $(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1
+	@$(RM) -vf $(DESTDIR)$(PREFIX)/bin/$(TARGET)
+	@$(RM) -vf $(DESTDIR)$(PREFIX)/lib/lib$(TARGET).a
+	@$(RM) -vf $(DESTDIR)$(PREFIX)/lib/lib$(TARGET).so
+	@$(RM) -vf $(DESTDIR)$(PREFIX)/include/lib$(TARGET).h
 
 TAGS:
 	ctags -R .
 
+indent:
+	indent -linux -l 110 *.c *.h */*.c */*.h
+	rm *~ */*~
+
 ### clean up #################################################################
 
-CLEAN_LIST = *.a *.so *.o *.htm Doxyfile $(TARGET) *.tgz *~ *.log *.out html/ latex/
+CLEAN_LIST = *.a *.so *.o *.htm Doxyfile $(TARGET) *.tgz *~ */*~ *.log *.out html/ latex/ tags
 
 clean:
 	@echo Cleaning repository.

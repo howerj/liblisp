@@ -11,22 +11,22 @@
 #include <stdint.h>
 
 #define SUBROUTINE_XLIST\
-        X(subr_compile,             "compile")\
-        X(subr_link,                "link-library")\
-        X(subr_compile_file,        "compile-file")\
-        X(subr_get_subr,            "get-subroutine")\
-        X(subr_add_include_path,    "add-include-path")\
-        X(subr_add_sysinclude_path, "add-system-include-path")\
-        X(subr_set_lib_path,        "set-library-path")\
+        X("cc",                 subr_compile,      NULL, "compile a string as C code")\
+        X("link-library",       subr_link,         NULL, "link a library")\
+        X("compile-file",       subr_compile_file, NULL, "compile a file")\
+        X("get-subroutine",     subr_get_subr,     NULL, "get a subroutine from a compilation")\
+        X("add-include-path",   subr_add_include_path, NULL, "add an include path for the C compiler")\
+        X("add-system-include-path", subr_add_sysinclude_path, NULL, "add a system include path for the C compiler")\
+        X("set-library-path",   subr_set_lib_path, NULL, "add a library path for the C compiler to look in")\
 
-#define X(SUBR, NAME) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
 #undef X
 
-#define X(SUBR, NAME) { SUBR, NAME },
-static struct module_subroutines { subr p; char *name; } primitives[] = {
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, "(" #SUBR "):" __FILE__ ":" DOCSTRING, SUBR },
+static struct module_subroutines { char *name, *validate, *docstring; subr p; } primitives[] = {
         SUBROUTINE_XLIST /*all of the subr functions*/
-        {NULL, NULL} /*must be terminated with NULLs*/
+        {NULL, NULL, NULL, NULL} /*must be terminated with NULLs*/
 };
 #undef X
 
@@ -126,7 +126,9 @@ static int initialize(void) {
         tcc_set_output_type(st, TCC_OUTPUT_MEMORY);
         lisp_add_cell(lglobal, "*compile-state*", mk_user(lglobal, st, ud_tcc));
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
-                if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p))
+                if(!lisp_add_subr(lglobal, 
+                        primitives[i].name, primitives[i].p, 
+                        primitives[i].validate, primitives[i].docstring))
                         goto fail;
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: tcc loaded\n");
         return 0;

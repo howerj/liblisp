@@ -55,6 +55,7 @@ cell *car(cell *x)              { assert(x && is_cons(x)); return x->p[0].v; }
 cell *cdr(cell *x)              { assert(x && is_cons(x)); return x->p[1].v; }
 void set_car(cell *x, cell *y)  { assert(x && is_cons(x) && y); x->p[0].v = y; }
 void set_cdr(cell *x, cell *y)  { assert(x && is_cons(x) && y); x->p[1].v = y; }
+void close_cell(cell *x)        { assert(x); x->close = 1; }
 int  cklen(cell *x, size_t expect) { assert(x); return x->len == expect; }
 int  is_nil(cell *x)          { assert(x); return x == gsym_nil(); }
 int  is_int(cell *x)          { assert(x); return x->type == INTEGER; }
@@ -108,6 +109,7 @@ cell *mk_user(lisp *l, void *x, intptr_t type) { assert(l && x);
         return ret;
 }
 
+unsigned get_length(cell *c) { assert(c); return c->len; }
 intptr_t get_int(cell *x)      { return !x ? 0 : (intptr_t)(x->p[0].v); }
 subr  get_subr(cell *x)            { assert(x && is_subr(x)); return x->p[0].prim; }
 char *get_subr_format(cell *x)     { assert(x && is_subr(x)); return (char *) x->p[1].v; }
@@ -117,20 +119,23 @@ cell *get_proc_code(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); r
 cell *get_proc_env(cell *x)        { assert(x && (is_proc(x) || is_fproc(x))); return x->p[2].v; }
 char *get_proc_format(cell *x)     { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[3].v; }
 char *get_proc_docstring(cell *x)  { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[4].v; }
-io*  get_io(cell *x)            { assert(x && x->type == IO); return (io*)(x->p[0].v); }
-char *get_sym(cell *x)          { assert(x && is_asciiz(x)); return (char *)(x->p[0].v); }
-char *get_str(cell *x)          { assert(x && is_asciiz(x)); return (char *)(x->p[0].v); }
-void *get_user(cell *x)         { assert(x && is_userdef(x)); return (void *)(x->p[0].v); }
-int   get_user_type(cell *x)    { assert(x && is_userdef(x)); return (intptr_t)x->p[1].v; }
-hashtable *get_hash(cell *x)    { assert(x && is_hash(x)); return (hashtable *)(x->p[0].v); }
+io*   get_io(cell *x)           { assert(x && x->type == IO);  return (io*)(x->p[0].v); }
+char *get_sym(cell *x)          { assert(x && is_asciiz(x));   return (char *)(x->p[0].v); }
+char *get_str(cell *x)          { assert(x && is_asciiz(x));   return (char *)(x->p[0].v); }
+void *get_user(cell *x)         { assert(x && x->type == USERDEF); return (void *)(x->p[0].v); }
+int   get_user_type(cell *x)    { assert(x && x->type == USERDEF); return (intptr_t)x->p[1].v; }
+hashtable *get_hash(cell *x)    { assert(x && is_hash(x));     return (hashtable *)(x->p[0].v); }
 lfloat get_float(cell *x)       { assert(x && is_floating(x)); return x->p[0].f; }
-intptr_t a2i_val(cell *x) { assert(x && is_arith(x));
+intptr_t get_a2i(cell *x) { assert(x && is_arith(x));
        return is_int(x) ? get_int(x) : (intptr_t) get_float(x);
 }
 
-lfloat a2f_val(cell *x) { assert(x && is_arith(x));
+lfloat get_a2f(cell *x) { assert(x && is_arith(x));
        return is_floating(x) ? get_float(x) : (lfloat) get_int(x);
 }
+
+int is_in(cell *x)  { assert(x); return (x && is_io(x) && io_is_in(get_io(x)))  ? 1 : 0; }
+int is_out(cell *x) { assert(x); return (x && is_io(x) && io_is_out(get_io(x))) ? 1 : 0; }
 
 int new_user_defined_type(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p) {
         if(l->user_defined_types_used >= MAX_USER_TYPES) return -1;
@@ -139,20 +144,6 @@ int new_user_defined_type(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p)
         l->ufuncs[l->user_defined_types_used].equal = e;
         l->ufuncs[l->user_defined_types_used].print = p;
         return l->user_defined_types_used++;
-}
-
-int is_in(cell *x) { assert(x);
-        if(!x || !is_io(x) 
-              || (get_io(x)->type != FIN && get_io(x)->type != SIN)) return 0;
-        return 1;
-}
-
-int is_out(cell *x) { assert(x);
-        if(!x || !is_io(x) 
-              ||    (get_io(x)->type != SOUT 
-                 &&  get_io(x)->type != FOUT 
-                 &&  get_io(x)->type != NULLOUT)) return 0;
-        return 1;
 }
 
 cell *extend(lisp *l, cell *env, cell *sym, cell *val) { 
@@ -227,14 +218,14 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 first = car(exp);
                 exp   = cdr(exp);
                 if(first == l->iif) {
-                        VALIDATE(l, 3, "A A A", exp, 1);
+                        VALIDATE(l, "if", 3, "A A A", exp, 1);
                         exp = !is_nil(eval(l, depth+1, car(exp), env)) ?
                                 CADR(exp) :
                                 CADDR(exp);
                         goto tail;
                 }
                 if(first == l->lambda) {
-                        if(exp->len < 2)
+                        if(get_length(exp) < 2)
                                 RECOVER(l, "'lambda \"argc < 2 in %S\"", exp);
                         l->gc_stack_used = gc_stack_save;
                         tmp = mk_proc(l, car(exp), cdr(exp), env);
@@ -266,14 +257,14 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                                                cons(l, 
                                                  eval(l, depth+1, car(exp), env), l->nil));
                 if(first == l->define) {
-                        VALIDATE(l, 2, "s A", exp, 1);
+                        VALIDATE(l, "define", 2, "s A", exp, 1);
                         l->gc_stack_used = gc_stack_save;
                         return gc_add(l, extend_top(l, car(exp),
                               eval(l, depth+1, CADR(exp), env)));
                 }
                 if(first == l->set) {
                         cell *pair, *newval;
-                        VALIDATE(l, 2, "s A", exp, 1);
+                        VALIDATE(l, "set!", 2, "s A", exp, 1);
                         if(is_nil(pair = assoc(car(exp), env)))
                                 RECOVER(l, "'set! \"undefined variable\" '%S", exp);
                         newval = eval(l, depth+1, CADR(exp), env);
@@ -296,7 +287,8 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         }
                         return eval(l, depth+1, car(exp), env);
                 }
-                if(first == l->progn) { /**@todo Add looping constructs here*/
+                /**@bug loop/return and tail call optimization do not mix*/
+                if(first == l->progn) { 
                         cell *head = exp, *tmp;
                         if(is_nil(exp)) return l->nil;
                 begin:  for(exp = head;;) {
@@ -326,8 +318,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         gc_add(l, proc);
                         gc_add(l, vals);
                         l->cur_depth = depth; /*tucked away for subr use*/
-                        if(get_subr_format(proc))
-                                VALIDATE(l, proc->len, get_subr_format(proc), vals, 1);
+                        lisp_validate_cell(l, proc, vals, 1);
                         return (*get_subr(proc))(l, vals);
                 }
                 if(is_proc(proc) || is_fproc(proc)) {
@@ -336,7 +327,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                                                 get_proc_args(proc), vals);
                         if(get_proc_args(proc)->len)
                                 env = multiple_extend(l, 
-                                        l->dynamic ? env : get_proc_env(proc), 
+                                       get_proc_env(proc), 
                                         get_proc_args(proc), vals);
                         exp = cons(l, l->progn, get_proc_code(proc));
                         goto tail;
@@ -358,13 +349,15 @@ static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env) { /**< evalua
         exps = cdr(exps);
         head = op = cons(l, eval(l, depth+1, op, env), gsym_nil());
         if(!is_nil(exps) && !is_cons(exps)) /*is there a better way of doing this?*/
-                RECOVER(l, "\"evlis cannot eval dotted pairs\" '%S", start);
+                goto fail;
         for(i = 1; !is_nil(exps); exps = cdr(exps), op = cdr(op), i++) {
                 if(!is_nil(cdr(exps)) && !is_cons(cdr(exps)))
-                        RECOVER(l, "\"evlis cannot eval dotted pairs\"'%S", start);
+                        goto fail;
                 set_cdr(op, cons(l, eval(l, depth+1, car(exps), env), gsym_nil()));
         }
         head->len = i;
         return head;
+fail:   RECOVER(l, "\"evlis cannot eval dotted pairs\" '%S", start);
+        return gsym_error();
 }
 

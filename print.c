@@ -1,6 +1,7 @@
 #include "liblisp.h"
 #include "private.h"
 #include <stdarg.h>
+#include <ctype.h>
 
 static int print_escaped_string(lisp *l, io *o, unsigned depth, char *s) {
         char c;
@@ -13,6 +14,12 @@ static int print_escaped_string(lisp *l, io *o, unsigned depth, char *s) {
                case '\r': lisp_printf(l, o, depth, "%m\\r%r");  continue;
                case '"':  lisp_printf(l, o, depth, "%m\\\"%r"); continue;
                default: break;
+               }
+               if(!isprint(c)) {
+                       char num[8] = "\\";
+                       sprintf(num+1, "%03o", ((unsigned)c) & 0xFF);
+                       lisp_printf(l, o, depth, "%m%s%r", num);
+                       continue;
                }
                io_putc(c, o);
         }

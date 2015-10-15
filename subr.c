@@ -115,11 +115,11 @@
   X("top-environment", subr_top_env, "",   "return the top level environment")\
   X("validate",    subr_validate,  "d Z c", "validate an argument list against a format string")
 
-#define X(NAME, SUBR, VALIDATE, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
 #undef X
 
-#define X(NAME, SUBR, VALIDATE, DOCSTRING) { SUBR, NAME, VALIDATE, "(" NAME ") : " DOCSTRING },
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) { SUBR, NAME, VALIDATION, "(" NAME ") : " DOCSTRING },
 static struct all_subroutines { subr p; const char *name, *validate, *docstring; } primitives[] = {
         SUBROUTINE_XLIST /*all of the subr functions*/
         {NULL, NULL, NULL, NULL} /*must be terminated with NULLs*/
@@ -169,9 +169,9 @@ static struct special_cell_list { cell *internal; } special_cells[] = {
 };
 #undef X
 
-/*defines functions to get a lisp "cell" for the built in special symbols*/
+
 #define X(FNAME, IGNORE) cell *gsym_ ## FNAME (void) { return FNAME ; }
-CELL_XLIST
+CELL_XLIST /**< defines functions to get a lisp "cell" for the built in special symbols*/
 #undef X
 
 #define SUBR_ISX(NAME)\
@@ -280,7 +280,7 @@ CELL_XLIST
                      primitives[i].validate, primitives[i].docstring))
                         goto fail;
 
-#define X(FUNC, DOCSTRING) if(!lisp_add_subr(l, # FUNC "?", subr_ ## FUNC, "C", DOCSTRING)) goto fail;
+#define X(FUNC, DOCSTRING) if(!lisp_add_subr(l, # FUNC "?", subr_ ## FUNC, "C", "(" # FUNC "?) : " DOCSTRING)) goto fail;
 ISX_LIST /*add all of the subroutines for string character class testing*/
 #undef X
 
@@ -316,22 +316,22 @@ static cell *subr_ipow(lisp *l, cell *args) {
 static cell *subr_sum(lisp *l, cell *args) { 
         cell *x = car(args), *y = CADR(args);
         if(is_int(x))
-                return mk_int(l, get_int(x) + a2i_val(y));
-        return mk_float(l, get_float(x) + a2f_val(y));
+                return mk_int(l, get_int(x) + get_a2i(y));
+        return mk_float(l, get_float(x) + get_a2f(y));
 }
 
 static cell *subr_sub(lisp *l, cell *args) {
         cell *x = car(args), *y = CADR(args);
         if(is_int(x))
-                return mk_int(l, get_int(x) - a2i_val(y));
-        return mk_float(l, get_float(x) - a2f_val(y));
+                return mk_int(l, get_int(x) - get_a2i(y));
+        return mk_float(l, get_float(x) - get_a2f(y));
 }
 
 static cell *subr_prod(lisp *l, cell *args) { 
         cell *x = car(args), *y = CADR(args);
         if(is_int(x))
-                return mk_int(l, get_int(x) * a2i_val(y));
-        return mk_float(l, get_float(x) * a2f_val(y));
+                return mk_int(l, get_int(x) * get_a2i(y));
+        return mk_float(l, get_float(x) * get_a2f(y));
 }
 
 static cell *subr_mod(lisp *l, cell *args) { 
@@ -348,13 +348,13 @@ static cell *subr_div(lisp *l, cell *args) {
         if(is_int(car(args))) {
                 intptr_t dividend, divisor;
                 dividend = get_int(car(args));
-                divisor = a2i_val(CADR(args));
+                divisor = get_a2i(CADR(args));
                 if(!divisor || (dividend == INTPTR_MIN && divisor == -1))
                         RECOVER(l, "\"invalid divisor values\" '%S", args);
                 return mk_int(l, dividend / divisor);
         } 
         dividend = get_float(car(args));
-        divisor = a2f_val(CADR(args));
+        divisor = get_a2f(CADR(args));
         if(divisor == 0.)
                 RECOVER(l, "\"division by zero in %S\"", args);
         return mk_float(l, dividend / divisor);
@@ -490,7 +490,7 @@ static cell *subr_gc(lisp *l, cell *args) { UNUSED(args);
 }
 
 static cell *subr_length(lisp *l, cell *args) {
-        return mk_int(l, (intptr_t)lisp_get_cell_length(car(args)));
+        return mk_int(l, (intptr_t)get_length(car(args)));
 }
 
 static cell* subr_inp(lisp *l, cell *args) { UNUSED(l);
@@ -631,7 +631,7 @@ static cell* subr_hinsert(lisp *l, cell *args) {
 
 static cell* subr_hcreate(lisp *l, cell *args) { 
         hashtable *ht;
-        if(args->len % 2)
+        if(get_length(args) % 2)
                 RECOVER(l, "\"expected even number of arguments\" '%S", args);
         if(!(ht = hash_create(DEFAULT_LEN))) HALT(l, "%s", "out of memory");
         for(;!is_nil(args); args = cdr(cdr(args))) {
@@ -710,7 +710,7 @@ static cell* subr_coerce(lisp *l, cell *args) {
                                             goto fail; /*convert only integers*/
                             }
                             x = from;
-                            if(!(s = calloc(lisp_get_cell_length(x)+1, 1)))
+                            if(!(s = calloc(get_length(x)+1, 1)))
                                     HALT(l, "\"%s\"", "out of memory");
                             for(i = 0; !is_nil(x); x = cdr(x), i++) 
                                     s[i] = get_int(car(x));
@@ -825,7 +825,7 @@ static cell *subr_reverse(lisp *l, cell *args) {
                         if(!s) HALT(l, "\"%s\"", "out of memory");
                         if(!cklen(args, 0))
                                 return mk_str(l, s);
-                        len = car(args)->len - 1;
+                        len = get_length(car(args)) - 1;
                         do {
                                 c = s[i];
                                 s[i] = s[len - i];
@@ -853,7 +853,7 @@ fail:   RECOVER(l, "\"expected () (string) (list) (hash)\" %S", args);
 
 static cell *subr_join(lisp *l, cell *args) { 
         char *sep = "", *r, *tmp;
-        if(args->len < 2 || !is_asciiz(car(args))) 
+        if(get_length(args) < 2u || !is_asciiz(car(args))) 
                 goto fail;
         sep = get_str(car(args));
         if(!is_asciiz(CADR(args))) {
@@ -934,17 +934,17 @@ static cell *subr_substring(lisp *l, cell *args) {
         left = get_int(CADR(args));
         if(args->len == 2) {
                 if(left >= 0) {
-                        left = MIN(left, car(args)->len);
+                        left = MIN(left, get_length(car(args)));
                         assert(left < car(args)->len);
                         return mk_str(l, lstrdup(get_str(car(args))+left));
                 } else if (left < 0) {
-                        left = car(args)->len + left;
+                        left = get_length(car(args)) + left;
                         left = MAX(0, left);
                         if(!(subs = calloc(left + 1, 1)))
                                 HALT(l, "\"%s\"", "out of memory");
                         memcpy(subs, 
                             get_str(car(args)) + left, 
-                            car(args)->len - left);
+                            get_length(car(args)) - left);
                         return mk_str(l, subs);
                 }
         }
@@ -1036,7 +1036,7 @@ static cell *subr_tr(lisp *l, cell *args) {
         s1   = get_str(CADR(args));
         s2   = get_str(CADDR(args));
         tr   = get_str(CADDDR(args));
-        len  = CADDDR(args)->len;
+        len  = get_length(CADDDR(args));
         memset(&st, 0, sizeof(st));
         switch(tr_init(&st, mode, (uint8_t*)s1, (uint8_t*)s2)) {
                 case TR_OK:      break;
@@ -1055,7 +1055,7 @@ static cell *subr_define_eval(lisp *l, cell *args) {
 }
 
 static cell *subr_validate(lisp *l, cell *args) {
-        return VALIDATE(l, get_int(car(args)), get_str(CADR(args)), CADDR(args), 0) ? gsym_tee() : gsym_nil();
+        return VALIDATE(l, "subr_validate", get_int(car(args)), get_str(CADR(args)), CADDR(args), 0) ? gsym_tee() : gsym_nil();
 }
 
 static cell *subr_proc_code(lisp *l, cell *args) { UNUSED(l);

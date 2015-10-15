@@ -131,7 +131,7 @@
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
 #undef X
 
-#define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, DOCSTRING, SUBR },
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, "(" NAME "):" __FILE__ ":" DOCSTRING, SUBR },
 static struct module_subroutines { char *name, *validate, *docstring; subr p; } primitives[] = {
         SUBROUTINE_XLIST /*all of the subr functions*/
         {NULL, NULL, NULL, NULL} /*must be terminated with NULLs*/

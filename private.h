@@ -24,6 +24,9 @@ extern "C" {
 #define MAX_USER_TYPES    (256)   /**< max number of user defined types*/
 #define COLLECTION_POINT  (1<<20) /**< run gc after this many allocs*/
 
+/**@warning the following list must be kept in sync with the
+ * gsym_X functions defined in there liblisp.h header (such as gsym_nil,
+ * gsym_tee or gsym_error). */
 #define CELL_XLIST /**< list of all special cells for initializer*/ \
         X(nil,     "nil")    X(tee,     "t")\
         X(quote,   "quote")  X(iif,     "if")\
@@ -147,10 +150,9 @@ struct lisp {
                cur_depth     /**< current depth*/;
         uint64_t random_state[2] /**< PRNG state*/;
         int sig;   /**< set by signal handlers or other threads*/
-        int trace; /**< trace level for eval*/
+        int trace; /**< turn tracing on or off */
         unsigned ungettok:     1, /**< do we have a put-back token to read?*/
-                 recover_init: 1, /**< recover buffer been initialized?*/
-                 dynamic:      1, /**< dynamic if true, lexical otherwise*/
+                 recover_init: 1, /**< has the recover buffer been initialized?*/
                  errors_halt:  1, /**< any error halts the interpreter if true*/
                  color_on:     1, /**< REPL Colorize output*/
                  prompt_on:    1, /**< REPL '>' Turn prompt on*/
@@ -224,7 +226,7 @@ cell *assoc(cell *key, cell *alist);
 cell *extend_top(lisp *l, cell *sym, cell *val);
 
 /**@brief  Count the number of arguments in a validation format string
- * @brief  validation format string, as passed to lisp_validate()
+ * @brief  validation format string, as passed to lisp_validate_args()
  * @return argument count**/
 size_t validate_arg_count(const char *fmt);
 

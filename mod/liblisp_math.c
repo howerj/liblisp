@@ -13,7 +13,7 @@
  * @param NAME name of math function such as "log", "sin", etc.*/
 #define SUBR_MATH_UNARY(NAME, VALIDATION, DOCSTRING)\
 static cell *subr_ ## NAME (lisp *l, cell *args) {\
-        return mk_float(l, NAME (a2f_val(car(args))));\
+        return mk_float(l, NAME (get_a2f(car(args))));\
 }
 
 #define MATH_UNARY_LIST\
@@ -39,21 +39,21 @@ MATH_UNARY_LIST
 #undef X
 
 static cell *subr_pow (lisp *l, cell *args) {
-        return mk_float(l, pow(a2f_val(car(args)), a2f_val(CADR(args))));
+        return mk_float(l, pow(get_a2f(car(args)), get_a2f(CADR(args))));
 }
 
 static cell *subr_modf(lisp *l, cell *args) {
         double x, fracpart, intpart = 0;
-        x = a2f_val(car(args));
+        x = get_a2f(car(args));
         fracpart = modf(x, &intpart);
         return cons(l, mk_float(l, intpart), mk_float(l, fracpart));
 }
 
-#define X(SUBR, VALIDATION, DOCSTRING) { # SUBR, VALIDATION, DOCSTRING, subr_ ## SUBR },
+#define X(SUBR, VALIDATION, DOCSTRING) { # SUBR, VALIDATION, "(" #SUBR "):" __FILE__ ":" DOCSTRING, subr_ ## SUBR },
 static struct module_subroutines { char *name, *validate, *docstring; subr p; } primitives[] = {
         MATH_UNARY_LIST /*all of the subr functions*/
-        { "modf", "a",   "",   subr_modf },
-        { "pow",  "a a", "",   subr_pow },
+        { "modf", "a",   "(modf):" __FILE__ ":split a float into integer and fractional parts",   subr_modf },
+        { "pow",  "a a", "(pow):" __FILE__ ":raise a base to a power",   subr_pow },
         { NULL,   NULL,  NULL, NULL} /*must be terminated with NULLs*/
 };
 #undef X

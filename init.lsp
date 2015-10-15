@@ -118,12 +118,12 @@
 ; has been devised yet. They must be executed in order.
  (eval-file 'base.lsp exit-if-not-eof)
 ;(eval-file 'mod/sets.lsp exit-if-not-eof)
- (eval-file 'mod/symb.lsp exit-if-not-eof)
+;(eval-file 'mod/symb.lsp exit-if-not-eof)
 
 (progn
  (load-module "unix")   ; unix interface module
- (load-module "sql")    ; sql interface
- (load-module "tcc")    ; tiny c compiler
+ (load-module "sql")    ; sql interface (leaks memory)
+ (load-module "tcc")    ; tiny c compiler (leaks memory)
  (load-module "crc")    ; crc module
  (load-module "line")   ; line editing library and module
  (load-module "math")   ; math module

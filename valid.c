@@ -11,10 +11,13 @@
  *        and I/O port), optional arguments, etcetera. This will require 
  *        making a strsep() function for "util.c".
  *  @todo add checks for *specific* user defined values, this will
- *        require turning lisp_validate into a variadic function, something
+ *        require turning lisp_validate_args into a variadic function, something
  *        like %u will pop an integer off the argument stack to test
  *        against.
  *  @todo make sure the expected argument length format string agree
+ *  @todo instead of explicitly passing in the validation string and length
+ *        the subroutine or procedure that contains the information could
+ *        be passed in.
  **/
  
 #include "liblisp.h"
@@ -47,15 +50,14 @@
         X('C', "symbol-string-or-integer", is_asciiz(x) || is_int(x))\
         X('A', "any-expression",    1)
 
-static int print_type_string(lisp *l, unsigned len, const char *fmt, 
-                cell *args, const char *file, const char *func, unsigned line) 
+static int print_type_string(lisp *l, const char *msg, unsigned len, const char *fmt, cell *args)
 {
         const char *s, *head = fmt;
         char c;
         io *e = lisp_get_logging(l);
+        msg = msg ? msg : "";
         lisp_printf(l, e, 0, 
-                "\n(error\n \"incorrect arguments\"\n '(in %s %s %d)\n '(expected-length %d)\n '(expected-arguments ", 
-                file, func, (intptr_t)line, (intptr_t)len); 
+                "\n(error\n 'validation\n \"%s\"\n '(expected-length %d)\n '(expected-arguments ", msg, (intptr_t)len); 
         while((c = *fmt++)) {
                 s = "";
                 switch(c) {
@@ -81,18 +83,29 @@ size_t validate_arg_count(const char *fmt) {
         return i;
 }
 
-int lisp_validate(lisp *l, unsigned len, char *fmt, cell *args, int recover, 
-                           const char *file, const char *func, unsigned line) 
-{       assert(l && fmt && args && file && func);
+int lisp_validate_cell(lisp *l, cell *x, cell *args, int recover) {
+        char *msg, *fmt;
+        assert(x && is_func(x));
+        msg = is_subr(x) ? get_subr_docstring(x) : get_proc_docstring(x);
+        msg = msg ? msg : "";
+        fmt = is_subr(x) ? get_subr_format(x) : get_proc_format(x);
+        if(!fmt)
+                return 1; /*as there is no validation string, its up to the function*/
+        return lisp_validate_args(l, msg, get_length(x), fmt, args, recover);
+}
+
+int lisp_validate_args(lisp *l, const char *msg, unsigned len, const char *fmt, cell *args, int recover) {
+        assert(l && fmt && args && msg);
         int v = 1;
-        char c, *fmt_head;
+        char c;
+        const char *fmt_head;
         cell *args_head, *x;
         assert(l && fmt && args);
         args_head = args;
         fmt_head = fmt;
         if(!cklen(args, len)) goto fail;
         while((c = *fmt++)) {
-                if(is_nil(args) || !v || car(args)->close) goto fail;
+                if(is_nil(args) || !v || is_closed(car(args))) goto fail;
                 v = 0;
                 x = car(args);
                 switch(c) {
@@ -106,7 +119,7 @@ int lisp_validate(lisp *l, unsigned len, char *fmt, cell *args, int recover,
         }
         if(!v) goto fail;
         return 1;
-fail:   print_type_string(l, len, fmt_head, args_head, file, func, line);
+fail:   print_type_string(l, msg, len, fmt_head, args_head);
         if(recover)
                 lisp_throw(l, 1);
         return 0;

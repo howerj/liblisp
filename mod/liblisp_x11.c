@@ -76,7 +76,7 @@ static void ud_x11_free(cell *f) {
 }
 
 static int ud_x11_print(io *o, unsigned depth, cell *f) {
-        return lisp_printf(NULL, o, depth, "%B<X-WINDOW:%d>%t", get_user(f));
+        return lisp_printf(NULL, o, depth, "%B<X-WINDOW:%d:%s>%t", get_user(f), is_closed(f) ? "CLOSED" : "OPEN");
 }
 
 static Window create_window(void) {
@@ -134,15 +134,18 @@ static void close_window(Window w) {
 
 static cell* subr_create_window(lisp *l, cell *args) {
         cell *ret;
-        VALIDATE(l, 0, "", args, 1);
+        VALIDATE(l, "subr_create_window", 0, "", args, 1);
         if(!(ret = mk_user(l, (void*)create_window(), ud_x11)))
                 HALT(l, "\"%s\"", "out of memory");
         return ret;
 }
 
 static cell* subr_destroy_window(lisp *l, cell *args) {
-        UNUSED(l); UNUSED(args);
-        return gsym_nil();
+        if(!cklen(args, 1) || !is_usertype(car(args), ud_x11))
+                RECOVER(l, "\"expected (window)\" '%S", args);
+        close_window((Window)get_user(car(args)));
+        close_cell(car(args));
+        return car(args);
 }
 
 static cell* subr_draw_line(lisp *l, cell *args) {
@@ -172,7 +175,7 @@ static cell* subr_draw_text(lisp *l, cell *args) {
              !is_str(CADR(args)) || !is_int(CADDR(args))  || !is_int(CADDDR(args)))
                 RECOVER(l, "\"expected (window string int int)\" '%S", args);
         XDrawString(xdisplay, (Window) get_user(car(args)), solid_GC,
-                get_int(CADDR(args)), get_int(CADDDR(args)), get_str(CADR(args)), lisp_get_cell_length(CADR(args))); 
+                get_int(CADDR(args)), get_int(CADDDR(args)), get_str(CADR(args)), get_length(CADR(args))); 
         XFlush(xdisplay);
         return gsym_tee();
 }
@@ -182,7 +185,7 @@ static cell* subr_erase_text(lisp *l, cell *args) {
              !is_str(CADR(args)) || !is_int(CADDR(args))  || !is_int(CADDDR(args)))
                 RECOVER(l, "\"expected (window string int int)\" '%S", args);
         XDrawString(xdisplay, (Window) get_user(car(args)), clear_GC,
-                get_int(CADDR(args)), get_int(CADDDR(args)), get_str(CADR(args)), lisp_get_cell_length(CADR(args))); 
+                get_int(CADDR(args)), get_int(CADDDR(args)), get_str(CADR(args)), get_length(CADR(args))); 
         XFlush(xdisplay);
         return gsym_tee();
 }
@@ -351,7 +354,7 @@ static cell* subr_set_font(lisp *l, cell *args) {
 static cell* subr_set_background(lisp *l, cell *args) { 
         if(!cklen(args, 2) || !is_usertype(car(args), ud_x11) || !is_str(CADR(args)))
                 RECOVER(l, "\"expected (window string)\" '%S", args);
-
+        /**@todo implement this*/
         return gsym_nil();
 }
 
@@ -383,17 +386,21 @@ fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: x11 load fai
 	return -1;
 }
 
+static void cleanup(void) {
+        XCloseDisplay(xdisplay);
+}
+
 #ifdef __unix__
 static void construct(void) __attribute__((constructor));
 static void destruct(void)  __attribute__((destructor));
 static void construct(void) { initialize(); }
-static void destruct(void)  { }
+static void destruct(void)  { cleanup(); }
 #elif _WIN32
 #include <windows.h>
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
         switch (fdwReason) {
             case DLL_PROCESS_ATTACH: initialize(); break;
-            case DLL_PROCESS_DETACH: break;
+            case DLL_PROCESS_DETACH: cleanup(); break;
             case DLL_THREAD_ATTACH:  break;
             case DLL_THREAD_DETACH:  break;
 	    default: break;

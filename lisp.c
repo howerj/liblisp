@@ -118,21 +118,21 @@ cell *lisp_eval_string(lisp *l, const char *evalme) { assert(l && evalme);
 int lisp_set_input(lisp *l, io *in) { assert(l);
         l->ifp = in;
         l->input->p[0].v = in;
-        if(in && !io_is_in(in)) return -1;
+        if(!in || !io_is_in(in)) return -1;
         return 0;
 }
 
 int lisp_set_output(lisp *l, io *out) { assert(l);
         l->ofp = out;
         l->output->p[0].v = out;
-        if(out && !io_is_out(out)) return -1;
+        if(!out || !io_is_out(out)) return -1;
         return 0;
 }
 
 int lisp_set_logging(lisp *l, io *logging) { assert(l);
         l->efp = logging;
         l->logging->p[0].v = logging;
-        if(logging && !io_is_out(logging)) return -1;
+        if(!logging || !io_is_out(logging)) return -1;
         return 0;
 }
 
@@ -142,8 +142,4 @@ void lisp_set_signal(lisp *l, int sig) { assert(l); l->sig = sig; }
 io *lisp_get_input(lisp *l)   { assert(l); return l->ifp; }
 io *lisp_get_output(lisp *l)  { assert(l); return l->ofp; }
 io *lisp_get_logging(lisp *l) { assert(l); return l->efp; }
-
-int  lisp_is_cell_closed(cell *f) { assert(f); return f->close; }
-void lisp_close_cell(cell *f) { assert(f); f->close = 1; }
-int  lisp_get_cell_length(cell *c) { assert(c); return c->len; }
 

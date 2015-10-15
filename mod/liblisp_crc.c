@@ -12,7 +12,7 @@
 static cell* subr_crc(lisp *l, cell *args) { UNUSED(l);
         uint32_t c;
         c = crc_final(crc_init((uint8_t*)get_str(car(args)), 
-                                         lisp_get_cell_length(car(args))));
+                                         get_length(car(args))));
         return mk_int(lglobal, c);
 }
 

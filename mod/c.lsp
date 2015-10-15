@@ -9,7 +9,7 @@
 
 ; Begin C functions definitions
 (define square
-  (compile *compile-state* 
+  (cc *compile-state* 
 
     "square" ; name of the C function we want to extract 
 
@@ -24,7 +24,7 @@
               return mkint(l, intval(car(args)) * intval(car(args)));
     }"))
 ;(define a
-;  (compile *compile-state*
+;  (cc *compile-state*
 ;    "a"
 ;    "#include <liblisp.h>
 ;    cell *a(lisp *l, cell *args) {

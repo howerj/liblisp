@@ -49,16 +49,15 @@ especially when it comes to the interface of the library and the naming of
 functions. More comments are also in order in the code explaining what the code
 is meant to achieve is also in need.
 
-If you do not like the formatting use the "indent" program from:
-<https://www.gnu.org/software/indent/>.
-
 ### Rationale
 
-* Simple and Small (< 5000 lines of code)
+* Simple and Small (~ 5000 lines of code)
 
 The interpreter and the language should be simple to understand. It provides
 more of a DIY lisp environment where most facilities are not provided but are
-up to the users to implement.
+up to the users to implement. The interpreter is currently slightly over 5000
+lines in of C formatted with "GNU indent", and under it with the way I like the
+code formatted.
 
 * Extensible
 
