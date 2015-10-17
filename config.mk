@@ -1,21 +1,10 @@
 # liblisp configuration and build system options
 
-# This does not work for TCC, but does for Clang and GCC
-TARGET_TRIPLE := $(subst -, ,$(shell $(CC) -dumpmachine))
-TARGET_ARCH   := $(word 1,$(TARGET_TRIPLE))
-TARGET_OS     := $(word 3,$(TARGET_TRIPLE))
+# make run options
 
-## misc
-RM    ?= rm
-CP    ?= cp
-CHMOD ?= chmod
-MKDIR ?= mkdir
-SED   ?= sed
-PRELOAD ?= LD_LIBRARY_PATH="`pwd`/mod"
-LDCONFIG ?= ldconfig
+RUN_FLAGS=-Epc
 
 # Version control variables and information
-
 ## These commands will depend on what version control is being run, or
 ## if any is being used at all. Currently git is being used.
 VERSION    = $(shell git describe) 
@@ -47,4 +36,37 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 #                on Unix systems
 DEFINES ?= -DUSE_DL
 LINK    ?= -ldl
+
+# And the rest of the OS dependent nonsense
+
+## This does not work for TCC, but does for Clang and GCC
+TARGET_SYSTEM := $(subst -, ,$(shell $(CC) -dumpmachine))
+
+RM    	 = rm
+RM_FLAGS = -rf
+CP       = cp
+CP_FLAGS = -f
+MV       = mv
+CHMOD    = chmod
+MKDIR    = mkdir
+MKDIR_FLAGS= -p
+SED      = sed
+PRELOAD ?= LD_LIBRARY_PATH="`pwd`/mod:`pwd`"
+LDCONFIG = ldconfig
+
+ifeq (mingw32, $(TARGET_SYSTEM))
+#ifeq (mingw32, $(TARGET_SYSTEM))
+PRELOAD=
+RM=del
+RM_FLAGS= /Q
+LDCONFIG=
+CP=copy
+CP_FLAGS=
+MV=move
+CHMOD=REM
+RUN_FLAGS=-Ep
+else # Unix assumed {only Linux has been tested}
+CFLAGS += -fPIC
+endif
+CFLAGS += -std=c99
 

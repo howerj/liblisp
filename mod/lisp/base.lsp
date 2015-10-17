@@ -1,5 +1,28 @@
 ;;; base software library ;;;
 
+(define list?      (lambda (x) (type? *cons* x)))
+(define atom?      (lambda (x) (if (list? x) nil t)))
+(define float?     (lambda (x) (type? *float* x)))
+(define integer?   (lambda (x) (type? *integer* x)))
+(define io?        (lambda (x) (type? *io* x)))
+(define hash?      (lambda (x) (type? *hash* x)))
+(define string?    (lambda (x) (type? *string* x)))
+(define procedure? (lambda (x) (type? *procedure* x)))
+(define primitive? (lambda (x) (type? *primitive* x)))
+(define char?      (lambda (x) (and (string? x) (= (length x) 1))))
+(define dotted?    (lambda (x) (and (list? x) (not (list? (cdr x))))))
+(define arithmetic?(lambda (x) (or (integer? x) (float? x))))
+
+(define nil? (lambda (x) (if x nil t)))
+(define null? ; weaker version of nil
+  (lambda (x)
+    (cond
+      ((string? x)  (eq x ""))
+      ((float? x)   (eq x 0.0))
+      ((integer? x) (eq x 0))
+      ((hash? x)    (eq (coerce *cons* x) nil))
+      (t (eq nil x)))))  
+
 ; these are only defined because they are used elsewhere
 (define caar   (lambda (x) (car (car x))))
 (define cadr   (lambda (x) (car (cdr x))))
@@ -363,4 +386,5 @@
     (assoc x (top-environment))
      t
      nil)))
+
 

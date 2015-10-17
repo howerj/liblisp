@@ -21,6 +21,9 @@
  *  @todo Assertions should be added throughout these routines to make sure
  *        operations do not go out of bounds.
  *  @todo Remove as many variable length functions as possible.
+ *  @todo Make the open/close routines more generic (so that they can deal
+ *        with user defined types).
+ *  @todo add interface to errno and more C-library stuff.
  **/
 
 #include "liblisp.h"
@@ -47,6 +50,7 @@
   X("car",         subr_car,       "c",    "return the first object in a list")\
   X("cdr",         subr_cdr,       "c",    "return every object apart from the first in a list")\
   X("close",       subr_close,     "P",    "close a port, invalidating it")\
+  X("closed?",     subr_is_closed, NULL,   "is a object closed?")\
   X("coerce",      subr_coerce,    NULL,   "coerce a variable from one type to another")\
   X("cons",        subr_cons,      "A A",  "allocate a new cons cell with two arguments")\
   X("date",        subr_date,      "",     "return a list representing the date (GMT) (not thread safe)")\
@@ -911,7 +915,7 @@ static cell *subr_split(lisp *l, cell *args) {
         for(;;) {
                 rr = regex_match(pat, s);
                 if(!rr.result || rr.end == rr.start) {
-                        set_cdr(op, cons(l, mk_str(l, lstrdup(s)),gsym_nil()));
+                        set_cdr(op, cons(l, mk_str(l, lstrdup(s)), gsym_nil()));
                         break;
                 }
                 rr.start[0] = '\0';
@@ -926,22 +930,25 @@ static cell *subr_split(lisp *l, cell *args) {
 static cell *subr_substring(lisp *l, cell *args) { 
         intptr_t left, right, tmp;
         char *subs;
-        if(!(args->len == 2 || args->len == 3) 
+        assert(((int)get_length(args)) > 0);
+        if(!(get_length(args) == 2 || get_length(args) == 3) 
         || !is_asciiz(car(args)) || !is_int(CADR(args)))
                 RECOVER(l, "\"expected (string int int?)\" '%S", args);
-        if(args->len == 3 && !is_int(CADDR(args)))
+        if(get_length(args) == 3 && !is_int(CADDR(args)))
                 RECOVER(l, "\"expected (string int int?)\" '%S", args);
         left = get_int(CADR(args));
-        if(args->len == 2) {
+        if(get_length(args) == 2) {
                 if(left >= 0) {
-                        left = MIN(left, get_length(car(args)));
-                        assert(left < car(args)->len);
+                        left = MIN(left, (int)get_length(car(args)));
+                        assert(left < get_length(car(args)));
                         return mk_str(l, lstrdup(get_str(car(args))+left));
                 } else if (left < 0) {
-                        left = get_length(car(args)) + left;
+                        left = (int)get_length(car(args)) + left;
                         left = MAX(0, left);
                         if(!(subs = calloc(left + 1, 1)))
                                 HALT(l, "\"%s\"", "out of memory");
+                        assert((get_length(car(args)) - left) > 0);
+                        assert((get_str(car(args)) + left) < (get_str(car(args)) + get_length(car(args))));
                         memcpy(subs, 
                             get_str(car(args)) + left, 
                             get_length(car(args)) - left);
@@ -950,11 +957,11 @@ static cell *subr_substring(lisp *l, cell *args) {
         }
         if(((right = get_int(CADDR(args))) < 0) || left < 0)
                 RECOVER(l, "\"substring lengths must positive\" '%S", args);
-        left = MIN(left, car(args)->len);
-        if((left + right) >= car(args)->len) {
-                tmp = (right + left) - car(args)->len;
+        left = MIN(left, (int)get_length(car(args)));
+        if((left + right) >= (int)get_length(car(args))) {
+                tmp = (right + left) - get_length(car(args));
                 right = right - tmp;
-                assert((left + right) <= car(args)->len);
+                assert((left + right) <= (int)get_length(car(args)));
         }
         if(!(subs = calloc(right + 1, 1)))
                 HALT(l, "\"%s\"", "out of memory");
@@ -967,15 +974,10 @@ static cell *subr_format(lisp *l, cell *args) {
         io *o = NULL, *t;
         char *fmt, c;
         int ret = 0, pchar;
-        if(cklen(args, 0)) return gsym_nil();
-        if(is_out(car(args))) {
-                o = get_io(car(args));
-                args = cdr(args);
-        } else {
-                o = lisp_get_output(l);
-        }
-        if(!is_asciiz(car(args)))
-                RECOVER(l, "\"expected () (io? str any...)\" '%S", args);
+        if((get_length(args) < 2) || !is_out(car(args)) || !is_asciiz(CADR(args)))
+                RECOVER(l, "\"expected () (io str any...)\" '%S", args);
+        o = get_io(car(args));
+        args = cdr(args);
         if(!(t = io_sout(calloc(2, 1), 2)))
                 HALT(l, "\"%s\"", "out of memory");
         fmt = get_str(car(args));
@@ -1055,7 +1057,7 @@ static cell *subr_define_eval(lisp *l, cell *args) {
 }
 
 static cell *subr_validate(lisp *l, cell *args) {
-        return VALIDATE(l, "subr_validate", get_int(car(args)), get_str(CADR(args)), CADDR(args), 0) ? gsym_tee() : gsym_nil();
+        return VALIDATE(l, "validate", get_int(car(args)), get_str(CADR(args)), CADDR(args), 0) ? gsym_tee() : gsym_nil();
 }
 
 static cell *subr_proc_code(lisp *l, cell *args) { UNUSED(l);
@@ -1082,5 +1084,10 @@ static cell *subr_doc_string(lisp *l, cell *args) {
 
 static cell *subr_top_env(lisp *l, cell *args) { UNUSED(args);
         return l->top_env;
+}
+
+static cell *subr_is_closed(lisp *l, cell *args) {  UNUSED(l);
+        if(!cklen(args, 1)) RECOVER(l, "\"expected (any) '%S", args);
+        return is_closed(car(args)) ? gsym_tee() : gsym_nil();
 }
 

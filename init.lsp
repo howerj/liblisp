@@ -7,130 +7,75 @@
 ; type checking information
 
 ; @bug Incorrect, evaluates all args
-(define and
-  (lambda (x y)
-    (if x
-      (if y t nil)
-       nil)))
-
+(define and (lambda (x y) (if x (if y t nil) nil)))
 ; @bug Incorrect, evaluates all args
-(define or
-  (lambda (x y)
-    (cond (x t)
-          (y t)
-          (t nil))))
-
+(define or (lambda (x y) (cond (x t) (y t) (t nil))))
 (define type?      (lambda (type-enum x) (eq type-enum (type-of x))))
-(define list?      (lambda (x) (type? *cons* x)))
-(define atom?      (lambda (x) (if (list? x) nil t)))
-(define float?     (lambda (x) (type? *float* x)))
-(define integer?   (lambda (x) (type? *integer* x)))
 (define symbol?    (lambda (x) (type? *symbol* x)))
 (define string?    (lambda (x) (type? *string* x)))
-(define io?        (lambda (x) (type? *io* x)))
-(define hash?      (lambda (x) (type? *hash* x)))
-(define string?    (lambda (x) (type? *string* x)))
-(define procedure? (lambda (x) (type? *procedure* x)))
-(define primitive? (lambda (x) (type? *primitive* x)))
-(define char?      (lambda (x) (and (string? x) (= (length x) 1))))
-(define dotted?    (lambda (x) (and (list? x) (not (list? (cdr x))))))
-(define arithmetic?(lambda (x) (or (integer? x) (float? x))))
-(define nil? (lambda (x) (if x nil t)))
-
-(define null?
-  (lambda (x)
-    (cond
-      ((string? x)  (eq x ""))
-      ((float? x)   (eq x 0.0))
-      ((integer? x) (eq x 0))
-      ((hash? x)    (eq (coerce *cons* x) nil))
-      (t (eq nil x)))))  
-
-(define not
-  (lambda (x)
-    (null? x)))
-
+(define exit       (lambda ()  (raise *sig-term*)))
+(define not        (lambda (x) (null? x)))
+(define string->symbol (lambda (sym) (coerce *symbol* sym)))
 
 ; Evaluate an entire file, stopping on 'error
-; (eval-file STRING)
-; (eval-file INPUT-PORT)
+; (eval-file string-or-input-port)
 (define eval-file
-  (lambda (file on-error-fn)
-    ; This bit does the evaluation of a file input object
+  (lambda (file on-error-fn print-result)
     (let 
-      (eval-file-inner
-       (lambda (S on-error-fn)
-        (if (eof? S) 
-          nil
-          (let 
-            (x (read S))
-            (if (eq x 'error) 
-              (on-error-fn S)
-              (progn
-                ; (format *output* "%S\n" (eval x))
-                (print *output* (eval x))
-                (put *output* "\n")
-                loop))))))
-    (cond 
-      ; If we have been given a potential file name, try to open it
+     (x ())
+     (eval-file-inner ; evaluate all the expressions in a file 
+      (lambda (S on-error-fn)
+       (cond
+         ((eof? S) nil)
+         ((eq (set! x (read S)) 'error) (on-error-fn S file))
+         (t (progn
+              (set! x (eval x))
+              (if print-result
+                (format *output* "%S\n" x)
+                nil)
+              loop)))))
+     (cond ; If we have been given a potential file name, try to open it
       ((or (string? file) (symbol? file))
         (let (file-handle (open *file-in* file))
           (if (input? file-handle)
             (progn (eval-file-inner file-handle on-error-fn)
                    (close file-handle) ; Close file!
                    nil)
-            (progn (put *error* "could not open file for reading\n")
+            (progn (format *error* "Could not open file for reading: %s\n" file)
                    'error))))
-      ; We must have been passed an input file port
-      ((input? file)
+      ((input? file) ; We must have been passed an input file port
        (eval-file-inner file on-error-fn)) ; Do not close file!
-      ; User error
-      (t 
+      (t ; User error
         (progn
-          (put *error* "Not a file name or a output IO type\n") 
+          (put *error* "(error \"Not a file name or a output IO type\" %S)\n" file) 
           'error))))))
 
-; exit the interpreter
-(define exit (lambda () (raise *sig-term*)))
-
 (define exit-if-not-eof 
-  (lambda (in) 
-    (if 
-      (not (eof? in))
-      (exit)
-      nil)))
-
-(define string-to-symbol 
-  (lambda (sym)
-    (coerce *symbol* sym)))
-
-(define load-module
-  (lambda (name)
-    (if 
-      (and 
-        *have-dynamic-loader* 
-        (not (= (dynamic-open (string-to-symbol (join "" "liblisp_" name (if (= os "unix") ".so" ".dll")))) 'error)))
-      (define-eval (string-to-symbol (join "" "*have-" name "*")) t)
-      (define-eval (string-to-symbol (join "" "*have-" name "*")) nil))))
-
-; Evaluate a series of "modules", they are just files with defines in them,
-; a proper module system nor ways of representing dependencies between them
-; has been devised yet. They must be executed in order.
- (eval-file 'base.lsp exit-if-not-eof)
-;(eval-file 'mod/sets.lsp exit-if-not-eof)
-;(eval-file 'mod/symb.lsp exit-if-not-eof)
+  (lambda (in file) 
+    (if (eof? in)
+      t
+      (progn (format *error* "(error \"eval-file failed\" %S %S)\n" in file) (exit)))))
 
 (progn
- (load-module "unix")   ; unix interface module
- (load-module "sql")    ; sql interface (leaks memory)
- (load-module "tcc")    ; tiny c compiler (leaks memory)
- (load-module "crc")    ; crc module
- (load-module "line")   ; line editing library and module
- (load-module "math")   ; math module
- (load-module "x11")    ; x11 window module
- (load-module "diff")   ; diff module
- (load-module "tsort")  ; tsort module
- (load-module "bignum") ; bignum module
+ (eval-file 'mod/lisp/mods.lsp exit-if-not-eof nil)
+ (eval-file 'mod/lisp/base.lsp exit-if-not-eof nil)
+;(eval-file 'mod/lisp/sets.lsp exit-if-not-eof nil)
+;(eval-file 'mod/lisp/symb.lsp exit-if-not-eof nil)
+ (eval-file 'mod/lisp/test.lsp exit-if-not-eof nil)
  t)
 
-(eval-file 'test.lsp exit-if-not-eof)
+;(define or
+;  (flambda (x)
+;    (progn
+;    (cond
+;      ((atom? (cdr x)) 
+;       (progn (set! x (eval (car x)))
+;              (if x t nil))
+;      (t 
+;        (if (eval (car x))
+;          (return t)
+;          (progn
+;            (set! x (cdr x))
+;            loop))))
+;    nil))))
+

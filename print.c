@@ -1,7 +1,8 @@
 #include "liblisp.h"
 #include "private.h"
-#include <stdarg.h>
+#include <assert.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 static int print_escaped_string(lisp *l, io *o, unsigned depth, char *s) {
         char c;
@@ -16,8 +17,9 @@ static int print_escaped_string(lisp *l, io *o, unsigned depth, char *s) {
                default: break;
                }
                if(!isprint(c)) {
-                       char num[8] = "\\";
+                       char num[5] = "\\";
                        sprintf(num+1, "%03o", ((unsigned)c) & 0xFF);
+                       assert(!num[4]);
                        lisp_printf(l, o, depth, "%m%s%r", num);
                        continue;
                }
@@ -118,8 +120,7 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
         switch(op->type) {
         case INTEGER: lisp_printf(l, o, depth, "%m%d", get_int(op));   break; 
         case FLOAT:   lisp_printf(l, o, depth, "%m%f", get_float(op)); break; 
-        case CONS:    if(depth && o->pretty) io_putc('\n', o);
-                      if(o->pretty) lisp_printf(l, o, depth, "%* ");
+        case CONS:    if(depth && o->pretty) lisp_printf(l, o, depth, "\n%* ");
                       io_putc('(', o);
                       for(;;) {
                               printer(l, o, car(op), depth + 1);

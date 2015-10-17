@@ -240,28 +240,28 @@ LIBLISP_API int balance(const char *sexpr);
 /** @brief create a new bit field that can hold at least maxbits
  *  @param  maxbits   maximum bits in bit field
  *  @return bitfield* new bit field or NULL**/
-LIBLISP_API bitfield *new_bitfield(size_t maxbits);
+LIBLISP_API bitfield *bit_new(size_t maxbits);
 
 /** @brief set a bit in a bit field
  *  @param bf  bit field to set a bit in
  *  @param idx which bit to set**/
-LIBLISP_API void setbit(bitfield *bf, size_t idx);
+LIBLISP_API void bit_set(bitfield *bf, size_t idx);
 
 /** @brief clear a bit in a bit field
  *  @param bf  bit field to clear a bit in
  *  @param idx which bit to clear**/
-LIBLISP_API void unsetbit(bitfield *bf, size_t idx);
+LIBLISP_API void bit_unset(bitfield *bf, size_t idx);
 
 /** @brief toggle a bit in a bit field
  *  @param bf  bit field to toggle a bit in
  *  @param idx which bit to toggle**/
-LIBLISP_API void togglebit(bitfield *bf, size_t idx);
+LIBLISP_API void bit_toggle(bitfield *bf, size_t idx);
 
 /** @brief  check if a bit is set in a bit field
  *  @param  bf  bit field to check bit status in
  *  @param  idx which bit to check
  *  @return int status of bit set**/
-LIBLISP_API int isbitset(bitfield *bf, size_t idx);
+LIBLISP_API int bit_get(bitfield *bf, size_t idx);
 
 /************************** hash library *************************************/
 

@@ -239,7 +239,7 @@ expon:  buf = buf + i + 1;
         return 0;
 }
 
-bitfield *new_bitfield(size_t maxbits) {
+bitfield *bit_new(size_t maxbits) {
         bitfield *bf;
         size_t al = (maxbits / CHAR_BIT) + !!(maxbits % CHAR_BIT);
         if(!(bf = calloc(sizeof(*bf) + al, 1))) 
@@ -248,19 +248,19 @@ bitfield *new_bitfield(size_t maxbits) {
         return bf;
 }
 
-void setbit(bitfield *bf, size_t idx) { assert(bf && idx < bf->max);
+void bit_set(bitfield *bf, size_t idx) { assert(bf && idx < bf->max);
         bf->field[idx / CHAR_BIT] |= 1u << (idx % CHAR_BIT); 
 }
 
-void unsetbit(bitfield *bf, size_t idx) { assert(bf && idx < bf->max);
+void bit_unset(bitfield *bf, size_t idx) { assert(bf && idx < bf->max);
         bf->field[idx / CHAR_BIT] &= ~(1u << (idx % CHAR_BIT)); 
 }
 
-void togglebit(bitfield *bf, size_t idx) { assert(bf && idx < bf->max);
+void bit_toggle(bitfield *bf, size_t idx) { assert(bf && idx < bf->max);
         bf->field[idx / CHAR_BIT] ^= 1u << (idx % CHAR_BIT); 
 }
 
-int isbitset(bitfield *bf, size_t idx) { assert(bf && (idx < bf->max));
+int bit_get(bitfield *bf, size_t idx) { assert(bf && (idx < bf->max));
         return bf->field[idx / CHAR_BIT] & (1u << (idx % CHAR_BIT)) ? 1 : 0; 
 }
 

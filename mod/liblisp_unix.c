@@ -24,8 +24,7 @@
 
 #include <linux/kdev_t.h>
 #elif _WIN32
-/*#include "wunistd.h"*/
-#error "Windows is not currently supported"
+#error "Windows is not supported"
 #else
 #error "Unsupported (Unix?) system"
 #endif

@@ -82,7 +82,7 @@ static cell *mk_asciiz(lisp *l, char *s, lisp_type type) {
         assert(l && s && (type == STRING || type == SYMBOL));
         cell *x = mk(l, type, 1, (cell *)s); 
         if(!x) return NULL;
-        x->len = strlen(s);
+        x->len = strlen(s); /**@bug strlen(s) can be larger than x->len*/
         return x;
 }
 static cell *mk_sym(lisp *l, char *s) { return mk_asciiz(l, s, SYMBOL); }

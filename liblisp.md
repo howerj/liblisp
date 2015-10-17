@@ -1,6 +1,16 @@
 liblisp.md 
 ==========
-
+   
+            _ _ _     _ _           
+           | (_) |   | (_)          
+           | |_| |__ | |_ ___ _ __  
+           | | | '_ \| | / __| '_ \ 
+           | | | |_) | | \__ \ |_) |
+           |_|_|_.__/|_|_|___/ .__/ 
+                             | |    
+                             |_|    
+   
+   
 # A small and extensible lisp interpreter and library
 ## Table of contents
 
@@ -69,13 +79,23 @@ users, code fragments evaluated and even new types need adding.
 
 It should be possible to run multiple instances of the interpreter in the same
 address space, this requires no implicit or hidden state in the interpreter
-design, which impedes multiple instances running at once. There is currently no
-hidden and implicit state within the interpreter.
+design, which impedes multiple instances running at once. There is currently is
+hidden state which is needed by the module system to function; there is a
+single global lisp environment that each module adds its code to when it is
+loaded.
+
+If the module system is not used then multiple lisp interpreters can be run in
+different threads.
 
 * Used as a generic utility library
 
 The library includes routines that might be useful in other programs that it
 could have chosen not to expose, mostly relating to I/O and strings.
+
+* Portable
+
+The core library is written in C99, as such it should compile anywhere. Only a
+very small wrapper around the library is needed to make a working interpreter.
 
 <div id='Documentation'/>
 ## Documentation
@@ -172,7 +192,7 @@ are.
 * Maximum length of a string
 * Maximum number of allocated objects
 * Maximum number of user defined types
-* Non thread safe functions
+* Non thread safe functions and lisp subroutines
 * Maximum recursion limits for evaluation and printing 
 * Maximum recursion limits for regular expression matching
 
@@ -195,10 +215,14 @@ section of the object.
 * File operations on strings could be improved. An append mode should
 be added as well. freopen and/or opening in append mode need to be
 added as well.
+* Memory handling on Out of Memory conditions should be rethought, perhaps a
+  test bench using a custom malloc (wrapper) could be made and used to
+  inject arbitrary Out of Memory conditions.
 * Anonymous recursion would be a good thing to have.
 * The semantics of the default IO port to **print** and **format**
 to be worked out when it comes to printing color and pretty printing.
 * There is currently no decent way of handling binary data.
+* Modules for matrix arithmetic should be added.
 
 <div id='Test programs'/>
 ## Test programs
@@ -228,12 +252,15 @@ The executable can read from files, "stdin" or evaluating strings. There is a
 manual page for this interpreter, unlike for the header.
 
 <div id='Manual'/>
-## Manual
+# Manual
 
 This is the manual for the language defined by this library. It does not
 include any initialization code (that is lisp code that has been defined in
 lisp and not in C and then passed to the interpreter on start up), but only
 that language provided by [liblisp.c][] and [main.c][].
+
+The module system and some of the modules functions shall also be explained in
+depth.
 
 ### [Lisp][]
 
@@ -285,7 +312,7 @@ lisp expression, evaluates it, prints the result and loops to the beginning to
 read in a new expression. This gives instant feedback on whether an operation
 worked or now.
 
-### Style
+## Style
 
 Code examples will be presented as follows:
 
@@ -330,7 +357,86 @@ chapters, they will have to be defined by the user if only the base library
 defined in [liblisp.c][] is used and can be done so in terms of *car* and
 *cdr*.
 
-### An introduction to the interpreter
+## An introduction to the interpreter
+
+The lisp interpreter is a thin wrapper around the liblisp library, it adds
+functionality to load compiled modules into the running executable image and then
+runs the interpreter. What it does after this is controlled by by the arguments
+passed into the lisp library program. As much functionality is the same
+regardless of what system you are running the interpreter on, this cannot be
+said to be the same case for the loaded in modules which might exist only on a
+subset of the support platforms.
+
+
+### Command line arguments
+
+The options that can be passed into the lisp interpreter are as follows (taken
+from the man-pages):
+
+ * -h
+
+Print out the usage string and exit successfully.
+
+ * -c
+Turn on colorization of printed out S-Expressions, it assumes your terminal can
+handle ANSI color codes. If it cannot do not select this option. It does no
+checking for whether it is writing to terminal or not with isatty(3).
+
+ * -p
+
+This will turn the prompt on, by default no prompt is given when typing so as
+to allow output to be piped to other programs following the "No news is good
+news" Unix maxim.
+
+ * -E
+
+This will turn on the line editor when reading from stdin.
+
+ * -H
+
+If an error is encountered the interpreter will be halted rather than trying to
+recover.
+
+ * -i file
+
+This option allows the user to supply a file name that would otherwise look
+like an argument to the lisp interpreter, for example if the file name began
+with a "-" character.
+
+ * -- file
+Same as "-i".
+
+ * -e string
+Evaluate a string as input, this disables reading from stdin(3).
+
+ * -o file
+Open "file" and redirect output to it.
+
+ * file
+An argument that is not preceded by a valid option that takes an argument is 
+treated as a file to be read from. Reading from a single file disables reading
+from stdin(3).
+
+ * -
+
+This forces reading from stdin(3). By default the interpreter will read from
+stdin(3) but this behavior is disabled if an argument has been evaluated with
+"-e" or a file has been read in.
+
+If no file is given the interpreter reads input from stdin(3), if one is given
+then the interpreter will exit after having read all input files or evaluated
+all strings.
+
+Arguments are read in order and executed as soon as they are encountered.
+
+As an example:
+
+        $ ./lisp -Epc init.lsp -
+
+Will run the lisp interpreter, turn on the line editor (if available), turn the
+printing out the prompt on, and colorize the output to standard out. It will
+then read in and evaluate all the expressions in the file "init.lsp", after it
+has done that it will start an interactive session with the user.
 
 * Command line interface
   - The line editor and line history
@@ -338,12 +444,18 @@ defined in [liblisp.c][] is used and can be done so in terms of *car* and
 * Command line options
 * Environment variables used
   - HOME
+
+## Interpreter internals
+
 * C API
 * Interpreter Internals
+  - Types
+  - Initialization
+  - Description of files
 * User defined primitive functions or "subr"s.
 * User defined types
 
-### An introduction to the language
+## An introduction to the language
 
 This is a short introduction to the language, other very good sources of
 information about specific lisp implementations include:
@@ -369,7 +481,25 @@ is the other major dialect of lisp.
 There are many dialects of lisp, both historical and current, this is a defunct
 dialect that has a nice tutorial.
 
-#### Atoms
+### Built in types
+
+* Strings
+ - Normal Strings
+ - "Characters"
+ - Character literals
+* Floats
+* Integers
+* Symbols
+ - Interned symbols
+* Functions
+ - Subroutines
+ - Lambdas
+ - F-Expressions
+* Hashes
+* Ports
+* User defined types
+
+### Atoms
 
 An atom is the simplest data structure available to the lisp environment, it is
 a primitive data structure; lists are composed of collections of atoms and
@@ -395,7 +525,7 @@ Atoms can have different types, such as a hash, an IO port, a number, a string,
 and a floating point number. They will be colorized differently depending on
 what they are.
 
-#### CONS cells
+### CONS cells
 
 The [cons cell][] is the basic data structure from which lists and trees, and
 so most structured data in this lisp apart from [associative arrays][], are
@@ -464,7 +594,7 @@ Looks like this:
 
 Arbitrary lists and trees can be constructed.
 
-#### List Manipulation
+### List Manipulation
 
 The lists shown above can be manipulated and created with built in functions.
 To create new cons cells and list, *cons* is used, it takes to arguments and
@@ -500,7 +630,7 @@ the second cell.
         > (cdr (cons (cons 1 2) (cons 3 nil)))
         3
 
-#### Evaluation and Evaluation of Special Forms
+### Evaluation and Evaluation of Special Forms
 
 The evaluation of lisp expressions is very simple, but there are some
 exceptions known as special forms. The standard evaluation rule is quite
@@ -508,12 +638,12 @@ simple, any variable in the first position of a list is treated as a function
 to apply, the arguments to the function are first evaluated recursively then
 feed into the function.
 
-#### Function and variable definition
+### Function and variable definition
 
 New functions and variables can be defined and they can be defined in global or
 a lexical scope.
 
-#### Control structures and recursion
+### Control structures and recursion
 
 * recursion
 * loop
@@ -521,12 +651,12 @@ a lexical scope.
 * cond
 * if
 
-#### Association lists
+### Association lists
 
 * Normal association Lists
 * Extended association list (with hashes)
 
-#### Fexprs
+### Fexprs
 
 An [fexpr][] is a function, user defined or an internal, whose arguments are
 passed into it unevaluated, allowing them to be evaluated or many times or not
@@ -534,7 +664,7 @@ at all within the [fexpr][]. They have fallen out of favor within lisps as they
 defy code optimization techniques which is not a concern in this implementation
 as none are performed (beyond optimizing [tail calls][]).
 
-#### Example code
+### Example code
 
 Example code and be found in the repository the library is hosted in;
 
@@ -556,7 +686,7 @@ This contains a test suite, with limited coverage, for [init.lsp][]. It should
 be run after [init.lsp][] is, it will exit the interpreter if any of the tests
 fail.
 
-### Debugging
+## Debugging
 
 The implementation has a few methods for debugging the code, beyond the power
 of the REPL.
@@ -605,16 +735,17 @@ are similar:
 
 As much useful information about the object will be printed.
 
-#### Tracing
+### Tracing
 
-#### Error messages
+### Error messages
 
-### List of primitives, special forms and predefined symbols
+
+## List of primitives, special forms and predefined symbols
 
 Here follows a complete list of all symbols and primitives used within the
 library and their behavior.
 
-#### Special forms and variable
+### Special forms and variable
 
         nil                Nil, the object representing false
         t                  True, the object representing true
@@ -633,7 +764,7 @@ library and their behavior.
         loop               Jump back to beginning of a progn
         return             Return early from a progn
 
-##### Special variables
+#### Special variables
 
 There are several special variables used within the interpreter.
 
@@ -655,7 +786,7 @@ Represents false and the end of a list. Can also be written as '()'.
 
 Represents true, evaluates to itself.
 
-##### Special forms
+#### Special forms
 
 * quote
 
@@ -860,7 +991,7 @@ special form would be called *letrec* instead.
 
 * return
 
-#### Built in subroutines
+### Built in subroutines
 
 The following is a list of all the built in subroutines that are always
 available.
@@ -1540,14 +1671,13 @@ Any other character is printed out. If an argument is mismatched, there are too
 few arguments, or there are too many, an error is thrown.
 
         # (format IO STRING EXPRS)
-        # (format STRING EXPRS)
-        > (format "examples: %S %s\n" '(a b (c d)) "a string!")
+        > (format *output* "examples: %S %s\n" '(a b (c d)) "a string!")
         examples: (a b (c d)) a string!
         "examples: (a b (c d)) a string!\n"
-        > (format "%c %c\n" 104 "h")
+        > (format *output* "%c %c\n" 104 "h")
         h h
         "h h\n"
-        > (format "percent %%\n")
+        > (format *output* "percent %%\n")
         percent %
         "percent %\n"
 
@@ -1723,7 +1853,7 @@ Return the documentation string from a procedure. Or *nil* if there is not one.
 
         # (documentation-string FUNCTION)
 
-#### Predefined variables
+### Predefined variables
 
 These are predefined variables used throughout the system, they often directly
 relate to the internal C enumerations that are used, when this is the case they
@@ -1905,11 +2035,11 @@ Roughly "2.71828...".
 The numerical constant ["e"][]. It also breaks with the usual variable naming
 convention like ["pi"][] does.
 
-#### Glossary
+### Glossary
 
 Glossary of all of defined subroutine primitives and variables.
 
-##### Built in subroutines
+#### Built in subroutines
 
         &                  Perform a bitwise AND on two integers
         |                  Perform a bitwise OR on two integers
@@ -1993,7 +2123,82 @@ Glossary of all of defined subroutine primitives and variables.
         validation-string  Return the format string from a procedure
         documentation-string Return the documentation string from a procedure
 
-##### dynamic loader
+#### integers
+
+        *seek-cur*         Seek from current file marker with seek
+        *seek-set*         Seek from the beginning of a file with seek
+        *seek-end*         Seek from the end of a file with seek
+        *random-max*       Maximum number a random number can be
+        *integer-max*      Maximum number an integer can be
+        *integer-min*      Minimum number an integer can be
+        *integer*          Integer   type option for coerce or type-of
+        *symbol*           Symbol    type option for coerce or type-of
+        *cons*             Cons      type option for coerce or type-of
+        *string*           String    type option for coerce or type-of
+        *hash*             Hash      type option for coerce or type-of
+        *io*               IO        type option for type-of
+        *float*            Float     type option for coerce or type-of
+        *procedure*        Procedure type option type-of
+        *primitive*        Primitive type option for type-of
+        *f-procedure*      Fexpr     type option for type-of
+        *user-defined*     User-define type option for type-of
+        *file-in*          File   input  option for open
+        *file-out*         File   output option for open
+        *string-in*        String input  option for open
+        *string-out*       String output option for open
+        *lc-all*           Locale all option for locale!
+        *lc-collate*       Locale collate option for locale!
+        *lc-ctype*         Locale C-type option for locale!
+        *lc-monetary*      Locale money formatting option for locale!
+        *lc-numeric*       Locale numeric option for locale!
+        *lc-time*          Locale time option for locale!
+        *eof*              End-Of-File marker
+        *args*             Command line options passed into the interpreter
+        *history-file*     If using libline, it contains the history file name
+        *have-compile*     't if the C compiler is available, '() otherwise
+        *have-line*        't if the line editor is available, '() otherwise
+        *have-dynamic-loader* 't if the dynamic loader is available, '() otherwise
+        *version*          The version of this interpreter if known
+        *commit*           Commit version
+        *repository-origin* Origin of the lisp interpreters repository
+
+#### floats
+        pi                 The mathematical constant pi
+        e                  Euler's number
+
+## Modules
+
+This directory [mod/][] contains modules that can be loaded at run time, mostly
+containing non portable or extraneous code that does not belong in the core
+language.
+
+The module system is dependent on the [main.c][] example interpreter and the
+associate functions and *global state*.
+
+All of the libraries installed and linked against with these modules must be
+compiled as shared libraries. This might have to be arranged by the package
+maintainer, for example the TCC development package on Debian 7 only contains
+the static version of the library but the makefile contains options for
+compiling and installing a shared version of the library. The build system will
+attempt 
+
+Currently the following modules are support:
+
+        liblisp_bignum.so : An arbitrary precious arithmetic library
+        liblisp_sql.so    : An SQL interface using sqlite3
+        liblisp_tcc.so    : Tiny C Compiler module
+        liblisp_unix.so   : Interfacing with Unixen
+        liblisp_crc.so    : CRC module
+        liblisp_diff.so   : Print the "diff"
+        liblisp_tsort.so  : Topological sorting
+        liblisp_x11.so    : X11 interface
+        liblisp_line.so   : The line editor
+
+The following modules are planned:
+
+        openGL or SDL module
+
+### dynamic loader
 
 This is the interface to the dynamic module loader. This can be used to load
 compiled modules at run time so the interpreter can access compiled subroutines
@@ -2053,62 +2258,328 @@ This function returns an error string representing the latest error to occur
         > (dynamic-error)
         "libdoesnotexist.so: cannot open shared object file: No such file or directory"
 
+### Documented modules
 
-##### line-editor (optional)
+The following are the modules are not part of the core language, but they are
+documented here (for now).
 
-        line-editor-mode   Change the line editing mode
-        history-length     Change the number of records stored in the history file
-        clear-screen       Clear the screen
+##### compiler 
 
-##### integers
+* cc
 
-        *seek-cur*         Seek from current file marker with seek
-        *seek-set*         Seek from the beginning of a file with seek
-        *seek-end*         Seek from the end of a file with seek
-        *random-max*       Maximum number a random number can be
-        *integer-max*      Maximum number an integer can be
-        *integer-min*      Minimum number an integer can be
-        *integer*          Integer   type option for coerce or type-of
-        *symbol*           Symbol    type option for coerce or type-of
-        *cons*             Cons      type option for coerce or type-of
-        *string*           String    type option for coerce or type-of
-        *hash*             Hash      type option for coerce or type-of
-        *io*               IO        type option for type-of
-        *float*            Float     type option for coerce or type-of
-        *procedure*        Procedure type option type-of
-        *primitive*        Primitive type option for type-of
-        *f-procedure*      Fexpr     type option for type-of
-        *user-defined*     User-define type option for type-of
-        *file-in*          File   input  option for open
-        *file-out*         File   output option for open
-        *string-in*        String input  option for open
-        *string-out*       String output option for open
-        *lc-all*           Locale all option for locale!
-        *lc-collate*       Locale collate option for locale!
-        *lc-ctype*         Locale C-type option for locale!
-        *lc-monetary*      Locale money formatting option for locale!
-        *lc-numeric*       Locale numeric option for locale!
-        *lc-time*          Locale time option for locale!
-        *eof*              End-Of-File marker
-        *args*             Command line options passed into the interpreter
-        *history-file*     If using libline, it contains the history file name
-        *have-compile*     't if the C compiler is available, '() otherwise
-        *have-line*        't if the line editor is available, '() otherwise
-        *have-dynamic-loader* 't if the dynamic loader is available, '() otherwise
-        *version*          The version of this interpreter if known
-        *commit*           Commit version
-        *repository-origin* Origin of the lisp interpreters repository
+* cc-link
 
-##### floats
-        pi                 The mathematical constant pi
-        e                  Euler's number
+* cc-file
+
+* cc-get-subroutine
+
+* cc-add-include-path
+
+* cc-add-system-include-path
+
+* cc-set-library-path
+
+##### math.h
+
+        log                Compute the natural logarithm of a float
+        log10              Compute the logarith of a float in base 10
+        fabs               Return the absolute
+        sin                Sine of an angle (in radians)
+        cos                Cosine of an angle (in radians)
+        tan                Tangent of an angle (in radians)
+        asin               Arc Sine
+        acos               Arc Cosine
+        atan               Arc Tangent
+        sinh               Hyperbolic Sine
+        cosh               Hyperbolic Cosine
+        tanh               Hyperbolic Tangent
+        exp                Eulers constant raised to the power of X
+        sqrt               Squareroot of a float
+        ceil               Round upwards
+        floor              Round downwards
+        pow                Computer X raised to the Y
+        modf               Split a value into integer and fractional parts
+
+##### Additional functions
+
+Functions added optionally in modules.
+
+For all the mathematical functions imported from the C math library the
+arguments are converted to floating point numbers before, the functions also
+all return floating point values, apart from [modf][] which returns a cons of
+two floating point values as a dotted pair.
+
+* log
+
+Calculate the [natural logarithm][] of a floating point value. Integers are
+converted to floating point values before hand.
+
+        # (log ARITH)
+        > (log e)
+        1.0
+        > (log 1)
+        0.0
+        > (log -1)
+        nan
+        > (log 10)
+        2.302585
+        > (log 3.3)
+        1.193922
+
+* log10
+
+Calculate a [logarithm][] with base 10. If you need a logarithm of a value 'x'
+to any other base, base 'b', you can use:
+
+        logb(x) = log10(x) / log10(b)
+        or
+        logb(x) = log(x) / log(b)
+
+        # (log10 ARITH)
+        > (log10 e)
+        0.434294
+        > (log10 1)
+        0.0
+        > (log10 -1)
+        nan
+        > (log10 10)
+        1.0
+        > (log10 3.3)
+        0.518514
+
+* fabs
+
+Return the [absolute value][] of a floating point number.
+
+        # (fabs ARITH)
+        > (fabs 1)
+        1
+        > (fabs -2)
+        2
+        > (fabs 5.2)
+        5.2
+        > (fabs -4.0)
+        4.0
+
+* sin
+
+Calculate the [sine][] of an angle, in radians.
+
+        # (sin ARITH)
+        > (sin pi)
+        0.0
+        > (sin (/ pi 2))
+        1.0
+
+* cos
+
+Calculate the [cosine][] of an angle, in radians.
+
+        # (cos ARITH)
+        > (cos pi)
+        -1.0
+        > (cos (/ pi 2))
+        0.0
+        > (cos (/ pi 3))
+        0.5
+
+* tan
+
+Calculate the [tangent][] of an angle, in radians.
+
+        # (tan ARITH)
+        > (tan 0)
+        0
+        > (tan (/ pi 3))
+        1.732051
+
+* asin
+
+Calculate the [reciprocal of sine][], or the "cosecant".
+
+        # (asin ARITH)
+        > (asin 0)
+        0.0
+        > (asin 1.0)
+        1.570796
+
+* acos
+
+Calculate the [reciprocal of cosine][], or the "secant".
+
+        # (acos ARITH)
+        > (acos -1)
+        3.141593
+        > (acos 0.0)
+        1.570796
+
+* atan
+
+Calculate the [reciprocal of tangent][], or the "cotangent".
+
+        (atan ARITH)
+
+* sinh
+
+Calculate the [hyperbolic sine][].
+
+        (sinh ARITH)
+
+* cosh
+
+Calculate the [hyperbolic cosine][].
+
+        (cosh ARITH)
+
+* tanh
+
+Calculate the [hyperbolic tangent][].
+
+        (tanh ARITH)
+
+* exp
+
+Calculate the [exponential function][]. Or Euler's number raised to the
+floating point number provided.
+
+        # (exp ARITH)
+        > (exp 0)
+        1.0
+        > (exp 1)
+        2.718282
+        > (exp -1)
+        0.367879
+        > (exp 2)
+        7.389056
+        > (exp 0.5)
+        1.648721
+
+* sqrt
+
+Calculate the [square root][] of a number.
+
+        # (sqrt ARITH)
+        > (sqrt 100)
+        10.0
+        > (sqrt 69.0)
+        8.306624
+        > (sqrt -4)
+        -nan
+        > (sqrt 4)
+        2.0
+
+* ceil
+
+Calculate the [ceil][] of a float, or round up to the nearest integer, from
+"ceiling".
+
+        # (ceil ARITH)
+        > (ceil 4)
+        4
+        > (ceil 4.1)
+        5.0
+        > (ceil -3)
+        -3.0
+        > (ceil -3.1)
+        -3.0
+
+* floor
+
+Round down to the "[floor][]", or down to the nearest integer.
+
+        # (floor ARITH)
+        > (floor 4)
+        4.0
+        > (floor 4.9)
+        4.0
+        > (floor -3)
+        -3.0
+        > (floor -4.9)
+        -5.0
+
+* pow
+
+Raise the first value to the power of the second value.
+
+        # (pow ARITH ARITH)
+        > (pow 2 4)
+        16.0
+        > (pow -2  0.5)
+        1.414214
+        > (pow -2 -0.5)
+        0.707107
+        > (pow -2 -0.5)
+        nan
+
+* [modf][]
+
+Split a floating point value (integers are converted to floats first) into
+integer and fractional parts, returning a cons of the two values.
+
+        # (modf ARITH)
+        > (modf 2)
+        (2.000000 . 0.000000)
+        > (modf 2.1)
+        (2.000000 . 0.100000)
+        > (modf -3.5)
+        (-3.000000 . -0.500000)
+        > (modf -0.4)
+        (-0.000000 . -0.400000)
+
+* line-editor-mode
+
+If the line editing library is used then this function can be used to query the
+state of line editor mode, 't' representing ["Vi"][] like editing mode, 'nil'
+["Emacs"][] mode. The mode can be changed by passing in 't' to set it to 'Vi'
+mode and 'nil' to Emacs mode.
+
+        (line-editor-mode)
+        (line-editor-mode T-or-Nil)
+
+* history-length
+
+This variable controls the length of the history that the line-editing library
+saves.
+
+        # (history-length INT)
+        > (history-length 1) # disable history
+        > (history-length 2) # remember one entry
+        > (history-length 200) # remember 199 enteries.
+
+* clear-screen
+
+Clear the terminal screen, in interactive mode the return value (always 't') is
+printed and then the prompt if that option is set.
+
+        # (clear-screen)
+        > (clear-screen)
+        t
+
+[natural logarithm]: https://en.wikipedia.org/wiki/Natural_logarithm
+[logarithm]: https://en.wikipedia.org/wiki/Logarithm
+[absolute value]: https://en.wikipedia.org/wiki/Absolute_value
+[sine]: https://en.wikipedia.org/wiki/Sine
+[cosine]: https://en.wikipedia.org/wiki/Trigonometric_functions#Sine.2C_cosine_and_tangent
+[tangent]:https://en.wikipedia.org/wiki/Trigonometric_functions#Sine.2C_cosine_and_tangent
+[reciprocal of sine]: https://en.wikipedia.org/wiki/Trigonometric_functions#Reciprocal_functions
+[reciprocal of cosine]: https://en.wikipedia.org/wiki/Trigonometric_functions#Reciprocal_functions
+[reciprocal of tangent]: https://en.wikipedia.org/wiki/Trigonometric_functions#Reciprocal_functions
+[hyperbolic sine]: https://en.wikipedia.org/wiki/Hyperbolic_function
+[hyperbolic cosine]: https://en.wikipedia.org/wiki/Hyperbolic_function
+[hyperbolic tangent]: https://en.wikipedia.org/wiki/Hyperbolic_function
+[exponential function]: https://en.wikipedia.org/wiki/Exponential_function
+[square root]: https://en.wikipedia.org/wiki/Square_root
+[ceil]: http://www.cplusplus.com/reference/cmath/ceil/
+[floor]: http://www.cplusplus.com/reference/cmath/floor/
+[modf]: http://www.cplusplus.com/reference/cmath/modf/
+
 
 <div id='References'/>
-## References
+# References
 
 A list of references used for this lisp interpreter and this documentation.
 
-### X-Macros
+## X-Macros
 
 X-Macros are heavily used within the interpreter for initialization of the data
 structures relating to built in subroutines, special symbols (such as *nil*,
@@ -2119,7 +2590,7 @@ structures relating to built in subroutines, special symbols (such as *nil*,
 2. <http://www.drdobbs.com/the-new-c-x-macros/184401387>
 3. <http://www.drdobbs.com/cpp/the-x-macro/228700289>
 
-### "Struct hack" and Flexible Array Members
+## "Struct hack" and Flexible Array Members
 
 The "Struct hack" in C is a common pre C99 technique that has been replaced by
 Flexible Array Members. It does not quite work in this project however, due to
@@ -2131,7 +2602,7 @@ the fact that it needs to initialize static structures as well.
 4. <https://en.wikipedia.org/wiki/Flexible_array_member>
 5. <https://stackoverflow.com/questions/246977/flexible-array-members-in-c-bad>
 
-### [Lisp][]
+## [Lisp][]
 
 Here are a list of references on how to implement lisp interpreters and to
 other lisp interpreters people have made.
@@ -2149,14 +2620,14 @@ other lisp interpreters people have made.
 11. <http://shrager.org/llisp/>
 12. <https://github.com/darius/ichbins>
 
-### Garbage Collection
+## Garbage Collection
 
 Links on garbage collection in general:
 
 1. <http://www.brpreiss.com/books/opus5/html/page424.html>
 2. <http://c2.com/cgi/wiki?MarkAndSweep>
 
-### Regex
+## Regex
 
 The matching function provided by the base library "match" is very simple, but
 can be improved upon by several regex implementations shown here.
@@ -2165,7 +2636,7 @@ can be improved upon by several regex implementations shown here.
 2. <http://www.cs.princeton.edu/courses/archive/spr09/cos333/beautiful.html>
 3. <http://c-faq.com/lib/regex.html>
 
-### Bignum
+## Bignum
 
 Arbitrary precision arithmetic was investigated but it was decided instead to
 use floating point numbers and integers instead.
@@ -2175,7 +2646,7 @@ use floating point numbers and integers instead.
 3. <https://www3.cs.stonybrook.edu/~skiena/392/programs/bignum.c>
 4. <https://en.wikipedia.org/wiki/The_Art_of_Computer_Programming>
 
-### Hashes
+## Hashes
 
 A hashing library is provided along with the interpreter, the interpreter makes
 use of it.
@@ -2183,20 +2654,20 @@ use of it.
 1. <http://www.cse.yorku.ca/~oz/hash.html>
 2. <https://en.wikipedia.org/wiki/Hash_table#Separate_chaining>
 
-### String handling
+## String handling
 
 Various string handling routines were adapted from the C-FAQ.
 
 1. <http://c-faq.com/varargs/varargs1.html>
 
-### Bit twiddling hacks
+## Bit twiddling hacks
 
 One routine from the "bignum" library that was left in that related to binary
 logarithms was derived from here:
 
 1. <http://graphics.stanford.edu/~seander/bithacks.html>
 
-### Line editing library
+## Line editing library
 
 The line editing library used in this document was called "linenoise", which is
 a popular and minimal library for line editing released under a BSD license. I
@@ -2207,7 +2678,7 @@ library has been used in this project.
 1. <https://github.com/antirez/linenoise>
 2. <https://github.com/howerj/libline>
 
-### Documentation
+## Documentation
 
 The CSS style sheet used in this document and the markdown to HTML converter
 used:
@@ -2267,5 +2738,6 @@ used:
 [REPL]: https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop
 [git]: https://git-scm.com/
 [VCS]: https://en.wikipedia.org/wiki/Revision_control
+[mod/]: mod/
 <!-- This isn't meant to go here but it is out of the way -->
 <style type="text/css">body{margin:40px auto;max-width:650px;line-height:1.6;font-size:18px;color:#444;padding:0 10px}h1,h2,h3,h4,h5,h6{line-height:1.2}</style>

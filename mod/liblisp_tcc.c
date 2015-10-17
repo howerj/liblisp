@@ -11,13 +11,13 @@
 #include <stdint.h>
 
 #define SUBROUTINE_XLIST\
-        X("cc",                 subr_compile,      NULL, "compile a string as C code")\
-        X("link-library",       subr_link,         NULL, "link a library")\
-        X("compile-file",       subr_compile_file, NULL, "compile a file")\
-        X("get-subroutine",     subr_get_subr,     NULL, "get a subroutine from a compilation")\
-        X("add-include-path",   subr_add_include_path, NULL, "add an include path for the C compiler")\
-        X("add-system-include-path", subr_add_sysinclude_path, NULL, "add a system include path for the C compiler")\
-        X("set-library-path",   subr_set_lib_path, NULL, "add a library path for the C compiler to look in")\
+        X("cc",                    subr_compile,      NULL, "compile a string as C code")\
+        X("cc-link-library",       subr_link,         NULL, "link a library")\
+        X("cc-file",               subr_compile_file, NULL, "compile a file")\
+        X("cc-get-subroutine",     subr_get_subr,     NULL, "get a subroutine from a compilation")\
+        X("cc-add-include-path",   subr_add_include_path, NULL, "add an include path for the C compiler")\
+        X("cc-add-system-include-path", subr_add_sysinclude_path, NULL, "add a system include path for the C compiler")\
+        X("cc-set-library-path",   subr_set_lib_path, NULL, "add a library path for the C compiler to look in")\
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
