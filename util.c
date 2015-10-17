@@ -17,7 +17,7 @@
 static int matchhere(regex_result *r, char *regexp, char *text, size_t depth);
 static int matchstar(regex_result *r, int literal, int c, char *regexp, char *text, size_t depth);
 
-void pfatal(char *msg, char *file, long line) {
+void pfatal(char *msg, char *file, long line) { assert(msg && file);
         fprintf(stderr, "(error \"%s\" \"%s\" %ld)\n", msg, file, line);
         abort();
 }
@@ -63,7 +63,7 @@ regex_result regex_match(char *regexp, char *text) { assert(regexp && text);
 }
 
 static int matchhere(regex_result *r, char *regexp, char *text, size_t depth) {
-        if (REGEX_MAX_DEPTH < depth)
+        if (MAX_RECURSION_DEPTH < depth)
                 return r->result = -1;
  BEGIN:
         if (regexp[0] == '\0')
@@ -102,7 +102,7 @@ static int matchhere(regex_result *r, char *regexp, char *text, size_t depth) {
 }
 
 static int matchstar(regex_result *r, int literal, int c, char *regexp, char *text, size_t depth) {
-        if (REGEX_MAX_DEPTH < depth)
+        if (MAX_RECURSION_DEPTH < depth)
                 return r->result = -1;
         do { /* a* matches zero or more instances */
                 if (matchhere(r, regexp, text, depth + 1))
@@ -161,7 +161,7 @@ char *vstrcatsep(const char *separator, const char *first, ...) {
         return retbuf;
 }
 
-uint8_t binlog(uint64_t v) {
+uint8_t ilog2(uint64_t v) {
         uint8_t r = 0;
         while(v >>= 1) r++;
         return r;
@@ -239,13 +239,17 @@ expon:  buf = buf + i + 1;
         return 0;
 }
 
-bitfield *bit_new(size_t maxbits) {
+bitfield *bit_new(size_t maxbits) { assert(maxbits > 0);
         bitfield *bf;
         size_t al = (maxbits / CHAR_BIT) + !!(maxbits % CHAR_BIT);
         if(!(bf = calloc(sizeof(*bf) + al, 1))) 
                 return NULL;
         bf->max = maxbits;
         return bf;
+}
+
+void bit_delete(bitfield *bf) { 
+        free(bf);
 }
 
 void bit_set(bitfield *bf, size_t idx) { assert(bf && idx < bf->max);

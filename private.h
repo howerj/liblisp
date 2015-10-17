@@ -20,9 +20,10 @@ extern "C" {
 
 #define DEFAULT_LEN       (256)   /**< just an arbitrary smallish number*/
 #define LARGE_DEFAULT_LEN (4096)  /**< just another arbitrary number*/
-#define REGEX_MAX_DEPTH   (8192)  /**< max recursion depth of a regex*/
 #define MAX_USER_TYPES    (256)   /**< max number of user defined types*/
 #define COLLECTION_POINT  (1<<20) /**< run gc after this many allocs*/
+#define BITS_IN_LENGTH    (32)    /**< number of bits in a length field*/
+#define MAX_RECURSION_DEPTH (4096) /**< maximum recursion depth*/
 
 /**@warning the following list must be kept in sync with the
  * gsym_X functions defined in there liblisp.h header (such as gsym_nil,
@@ -68,15 +69,26 @@ typedef union cell_data { /**< ideally we would use void* for everything*/
                                                       to fit into a void**/
 } cell_data; /**< a union of all the different C datatypes used*/
 
+/**@brief A tagged object representing all possible lisp data types.
+ *
+ * It is possible to further reduce the memory usage if you are willing to
+ * sacrifice portability.
+ *
+ * See:
+ * <http://www.more-magic.net/posts/internals-data-representation.html>
+ * For more details.
+ *
+ * The cell uses the "struct hack", see
+ * <http://c-faq.com/struct/structhack.html> **/
 struct cell {
         unsigned type:    4,        /**< Type of the lisp object*/
                  mark:    1,        /**< mark for garbage collection*/
                  uncollectable: 1,  /**< do not free object?*/
                  close:   1,        /**< object closed/invalid?*/
-                 len:     32;       /**< length of data p*/
+                 len:     BITS_IN_LENGTH; /**< length of data p*/
         cell_data p[1]; /**< uses the "struct hack", 
                              c99 does not quite work here*/
-}; /**< a tagged object representing all possible lisp objects*/
+}; 
 
 typedef struct hashentry {      /**< linked list of entries in a bin*/
         char *key;              /**< ASCII nul delimited string*/
@@ -131,42 +143,37 @@ typedef struct userdef_funcs {
 } userdef_funcs; /**< functions the interpreter uses for user defined types*/
 
 struct lisp {
-        jmp_buf recover; /**< jump here when there is an error*/
-        io *ifp /**< input port @todo replace with cell *input (completely) */, 
-           *ofp /**< output port @todo replace with cell *output */, 
-           *efp /**< error output port @todo replace with cell *logging*/;
+        jmp_buf recover; /**< longjmp when there is an error */
+#define X(CNAME, LNAME) * CNAME,
+        cell CELL_XLIST Unused; /**< list of special forms/symbols*/
+#undef X
         cell *all_symbols, /**< all intern'ed symbols*/
              *top_env,     /**< top level lisp environment*/
+             *input,       /**< interpreter input stream*/
+             *output,      /**< interpreter output stream*/
+             *logging,     /**< interpreter logging/error stream*/
              **gc_stack;   /**< garbage collection stack for working items*/
         gc_list *gc_head;  /**< linked list of all allocated objects*/
         char *token /**< one token of put back for parser*/, 
              *buf   /**< input buffer for parser*/;
         size_t buf_allocated,/**< size of buffer "l->buf"*/
                buf_used,     /**< amount of buffer used by current string*/
-               gc_stack_allocated,    /**< length of buffer of GC stack*/
-               gc_stack_used,         /**< elements used in GC stack*/
-               gc_collectp,  /**< garbage collect after it goes too high*/
-               max_depth,    /**< max recursion depth*/
-               cur_depth     /**< current depth*/;
+               gc_stack_allocated, /**< length of buffer of GC stack*/
+               gc_stack_used,      /**< elements used in GC stack*/
+               gc_collectp;  /**< garbage collect after it goes too high*/
         uint64_t random_state[2] /**< PRNG state*/;
+        editor_func editor; /**< line editor to use, optional*/
+        userdef_funcs ufuncs[MAX_USER_TYPES]; /**< for user defined types*/
+        int user_defined_types_used;   /**< number of user defined types allocated*/
         int sig;   /**< set by signal handlers or other threads*/
-        int trace; /**< turn tracing on or off */
         unsigned ungettok:     1, /**< do we have a put-back token to read?*/
                  recover_init: 1, /**< has the recover buffer been initialized?*/
                  errors_halt:  1, /**< any error halts the interpreter if true*/
                  color_on:     1, /**< REPL Colorize output*/
                  prompt_on:    1, /**< REPL '>' Turn prompt on*/
+                 trace_on:     1, /**< turn tracing on or off*/
                  editor_on:    1; /**< REPL Turn the line editor on*/
-        userdef_funcs ufuncs[MAX_USER_TYPES]; /**< for user defined types*/
-        int user_defined_types_used;   /**< number of user defined types allocated*/
-        editor_func editor; /**< line editor to use, optional*/
-
-#define X(CNAME, LNAME) * CNAME, 
-        /* This is a list of all the special symbols in use within the
-         * interpreter*/
-        cell CELL_XLIST Unused;
-#undef X
-        cell *input, *output, *logging;
+        unsigned cur_depth; /*< current recursion depth of the interpreter*/
 };
 
 /*************************** internal functions *******************************/

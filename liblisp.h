@@ -201,7 +201,7 @@ LIBLISP_API char *vstrcatsep(const char *separator, const char *first, ...);
  *          "Bit Twiddling Hacks by Sean Eron Anderson"
  *  @param  v         Value to calculate the binary logarithm of
  *  @return uint8_t   Binary log**/
-LIBLISP_API uint8_t binlog(uint64_t v);
+LIBLISP_API uint8_t ilog2(uint64_t v);
 
 /** @brief  Calculate an integer exponentiation.
  *  From:
@@ -235,12 +235,17 @@ LIBLISP_API uint64_t xorshift128plus(uint64_t s[2]);
 LIBLISP_API int balance(const char *sexpr);
 
 /* These bit field functions have been adapted from this post on stackoverflow:
- * https://stackoverflow.com/questions/1590893/error-trying-to-define-a-1-024-bit-128-byte-bit-field */
+ * https://stackoverflow.com/questions/1590893/error-trying-to-define-a-1-024-bit-128-byte-bit-field 
+ * They could be inlined in this header.*/
 
 /** @brief create a new bit field that can hold at least maxbits
- *  @param  maxbits   maximum bits in bit field
+ *  @param  maxbits   maximum bits in bit field; assert(maxbits > 0)
  *  @return bitfield* new bit field or NULL**/
 LIBLISP_API bitfield *bit_new(size_t maxbits);
+
+/** @brief free a bitfield
+ *  @param bf the bitfield to free (can be NULL) **/
+LIBLISP_API void bit_delete(bitfield *bf);
 
 /** @brief set a bit in a bit field
  *  @param bf  bit field to set a bit in
@@ -549,9 +554,10 @@ LIBLISP_API cell *mk_str(lisp *l, char *s); /**< make lisp cell (string) from a 
 /*LIBLISP_API cell *mksym(lisp *l, char *s); // use intern instead to get a unique symbol*/
 LIBLISP_API cell *mk_hash(lisp *l, hashtable *h); /**< make lisp cell from hash*/
 LIBLISP_API cell *mk_user(lisp *l, void *x, intptr_t type); /**< make a user defined type*/
-LIBLISP_API unsigned get_length(cell *c); /**< get lisp length */
+LIBLISP_API unsigned get_length(cell *x); /**< get lisp length */
+LIBLISP_API void  *get_raw(cell *x); /**< get raw lisp value */
 LIBLISP_API intptr_t get_int(cell *x); /**< cast *any* lisp cell to integer*/
-LIBLISP_API io*   get_io(cell *x);    /**< get lisp cell to I/O stream*/
+LIBLISP_API io   *get_io(cell *x);    /**< get lisp cell to I/O stream*/
 LIBLISP_API subr  get_subr(cell *x); /**< get a lisp cell to a primitive func ptr*/
 LIBLISP_API char *get_subr_format(cell *x);   /**< get the type validation string for a subroutine*/
 LIBLISP_API char *get_subr_docstring(cell *x); /**< get the documentation string for a subroutine*/
@@ -884,6 +890,7 @@ LIBLISP_API int lisp_validate_args(lisp *l, const char *msg, unsigned len, const
  *                 of returning.
  *  @return 0 if invalid (or lonjmp if recover is non zero), 1 if valid***/
 int lisp_validate_cell(lisp *l, cell *x, cell *args, int recover);
+
 /************************ test environment ***********************************/
 
 /** @brief  A full lisp interpreter environment in a function call. It will
@@ -946,7 +953,7 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
  * @param ...  Arguments for format string**/
 #define FAILPRINTER(LISP, RET, FMT, ...) do{\
         lisp_printf((LISP), lisp_get_logging((LISP)), 0,\
-                        "(error '%s " FMT " \"%s\" %d)\n",\
+                        "(%Berror%t '%s%t " FMT " \"%s\" %d)\n",\
                        __func__, __VA_ARGS__, __FILE__, (intptr_t)__LINE__);\
         lisp_throw((LISP), RET);\
         } while(0)

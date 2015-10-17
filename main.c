@@ -25,12 +25,12 @@
 #endif
 
 #ifdef __unix__
-char *os = "unix";
+static char *os = "unix";
 #elif _WIN32
 #include <windows.h>
-char *os = "windows";
+static char *os = "windows";
 #else
-char *os = "unknown";
+static char *os = "unknown";
 #endif
 
 #ifdef USE_DL
@@ -82,6 +82,7 @@ dllist *head; /**< *GLOBAL* list of all DLL handles for dlclose_atexit*/
 static void dlclose_atexit(void) {
         dllist *t; 
         while(head) {
+                assert(head->handle);
                 DL_CLOSE(head->handle);
                 t = head;
                 head = head->next;
@@ -107,8 +108,6 @@ static int ud_dl_print(io *o, unsigned depth, cell *f) {
 static cell *subr_dlopen(lisp *l, cell *args) {
 	handle_t handle;
         dllist *h;
-        if(!cklen(args, 1) || !is_asciiz(car(args)))
-                RECOVER(l, "\"expected (string)\" '%S", args);
         if(!(handle = DL_OPEN(get_str(car(args)))))
                 return gsym_error();
         if(!(h = calloc(1, sizeof(*h))))
@@ -137,29 +136,31 @@ static cell *subr_dlerror(lisp *l, cell *args) {
 #endif
 
 int main(int argc, char **argv) {
-        int r;
         lisp *l = lisp_init();
-        if(!l) return PRINT_ERROR("\"%s\"", "initialization failed"), -1;
-
+        if(!l) 
+                goto fail;
         lglobal = l;
 
         lisp_add_cell(l, "*version*",           mk_str(l, lstrdup(XSTRINGIFY(VERSION))));
         lisp_add_cell(l, "*commit*",            mk_str(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
         lisp_add_cell(l, "*repository-origin*", mk_str(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));
-	lisp_add_cell(l, "os", mk_str(l, lstrdup(os)));
+	lisp_add_cell(l, "*os*",                mk_str(l, lstrdup(os)));
 
 #ifdef USE_DL
         ud_dl = new_user_defined_type(l, ud_dl_free, NULL, NULL, ud_dl_print);
-        lisp_add_subr(l, "dynamic-open",   subr_dlopen, NULL, NULL);
+        if(ud_dl < 0)
+                goto fail;
+        lisp_add_subr(l, "dynamic-open",   subr_dlopen, "Z", NULL);
         lisp_add_subr(l, "dynamic-symbol", subr_dlsym, NULL, NULL);
-        lisp_add_subr(l, "dynamic-error",  subr_dlerror, NULL, NULL);
+        lisp_add_subr(l, "dynamic-error",  subr_dlerror, "", NULL);
         lisp_add_cell(l, "*have-dynamic-loader*", gsym_tee());
         atexit(dlclose_atexit);
 #else
         lisp_add_cell(l, "*have-dynamic-loader*", gsym_nil());
 #endif
 
-        r = main_lisp_env(l, argc, argv);
-        return r;
+        return main_lisp_env(l, argc, argv);
+fail:   return PRINT_ERROR("\"%s\"", "initialization failed"), -1;
+        return -1;
 }
 

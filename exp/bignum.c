@@ -18,7 +18,7 @@ struct bignum {
         int isnegative;   /* 1 == negative, 0 == positive */
 };
 
-uint8_t binlog(size_t v) {
+uint8_t ilog2(size_t v) {
         uint8_t r = 0;
         while(v >>= 1) r++;
         return r;
@@ -93,7 +93,7 @@ char *bignum_bigtostr(bignum *n, unsigned int base) {
         char *s;
         if((MAX_RADIX < base) || (base <= 1) || !n) return NULL;
         /* +3 comes from '\0', possible +/- and array size +1*/
-        allocate = n->lastdigit*((sizeof(n->digits[0])*8)/binlog(base))+3;
+        allocate = n->lastdigit*((sizeof(n->digits[0])*8)/ilog2(base))+3;
 
         if(!(s = calloc(allocate, sizeof(*s)))) return NULL;
 

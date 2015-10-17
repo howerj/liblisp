@@ -78,11 +78,14 @@ int  is_arith(cell *x)        { assert(x); return is_int(x) || is_floating(x); }
 int  is_func(cell *x)         { assert(x); return is_proc(x) || is_fproc(x) || is_subr(x); }
 int  is_closed(cell *x)       { assert(x); return x->close; }
 
-static cell *mk_asciiz(lisp *l, char *s, lisp_type type) { 
+static cell *mk_asciiz(lisp *l, char *s, lisp_type type) {
+        size_t slen;
         assert(l && s && (type == STRING || type == SYMBOL));
         cell *x = mk(l, type, 1, (cell *)s); 
         if(!x) return NULL;
-        x->len = strlen(s); /**@bug strlen(s) can be larger than x->len*/
+        slen = strlen(s);
+        assert((BITS_IN_LENGTH >= 32) && slen < 0xFFFFFFFFu);
+        x->len = slen;
         return x;
 }
 static cell *mk_sym(lisp *l, char *s) { return mk_asciiz(l, s, SYMBOL); }
@@ -92,7 +95,11 @@ cell *mk_io(lisp *l, io *x)    { assert(l && x); return mk(l, IO, 1, (cell*)x); 
 cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc) { assert(l && p); 
         cell *t;
         t = mk(l, SUBR, 3, p); 
-        if(fmt) t->len = validate_arg_count(fmt);
+        if(fmt) { 
+                size_t tlen = validate_arg_count(fmt); 
+                assert((BITS_IN_LENGTH >= 32) && tlen < 0xFFFFFFFFu);
+                t->len = tlen;
+        }
         t->p[1].v = (void*)fmt;
         t->p[2].v = (void*)doc;
         return t;
@@ -109,7 +116,8 @@ cell *mk_user(lisp *l, void *x, intptr_t type) { assert(l && x);
         return ret;
 }
 
-unsigned get_length(cell *c) { assert(c); return c->len; }
+unsigned get_length(cell *x) { assert(x); return x->len; }
+void *get_raw(cell *x)       { assert(x); return x->p[0].v; }
 intptr_t get_int(cell *x)      { return !x ? 0 : (intptr_t)(x->p[0].v); }
 subr  get_subr(cell *x)            { assert(x && is_subr(x)); return x->p[0].prim; }
 char *get_subr_format(cell *x)     { assert(x && is_subr(x)); return (char *) x->p[1].v; }
@@ -119,7 +127,7 @@ cell *get_proc_code(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); r
 cell *get_proc_env(cell *x)        { assert(x && (is_proc(x) || is_fproc(x))); return x->p[2].v; }
 char *get_proc_format(cell *x)     { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[3].v; }
 char *get_proc_docstring(cell *x)  { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[4].v; }
-io*   get_io(cell *x)           { assert(x && x->type == IO);  return (io*)(x->p[0].v); }
+io   *get_io(cell *x)           { assert(x && x->type == IO);  return (io*)(x->p[0].v); }
 char *get_sym(cell *x)          { assert(x && is_asciiz(x));   return (char *)(x->p[0].v); }
 char *get_str(cell *x)          { assert(x && is_asciiz(x));   return (char *)(x->p[0].v); }
 void *get_user(cell *x)         { assert(x && x->type == USERDEF); return (void *)(x->p[0].v); }
@@ -193,13 +201,13 @@ static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env);
 cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
         size_t gc_stack_save = l->gc_stack_used;
         cell *tmp, *first, *proc, *vals = gsym_nil();
-        if(depth > l->max_depth)
+        if(depth > MAX_RECURSION_DEPTH)
                 RECOVER(l, "'recursion-depth-reached %d", depth);
         gc_add(l, exp);
         gc_add(l, env);
         tail:
         if(!exp || !env) return NULL;
-        if(l->trace) lisp_printf(l, lisp_get_logging(l), 1, "(%ytrace%t %S)\n", exp); 
+        if(l->trace_on) lisp_printf(l, lisp_get_logging(l), 1, "(%ytrace%t %S)\n", exp); 
         if(is_nil(exp)) return gsym_nil();
         if(l->sig) {
                 l->sig = 0;

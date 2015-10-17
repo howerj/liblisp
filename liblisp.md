@@ -171,30 +171,39 @@ in the usual manner.
 * If you manage to get a SEGFAULT then there is a bug in the code somewhere. It
   should not be possible to make the interpreter seg-fault.
 * See the "@todo" comments at the top of [liblisp.c][] to see a full list of
-  bugs as well comments labeled with "@bug".
+  bugs as well comments labeled with "@bug". "@warning" is also used in certain
+  cases, but as a warning to the programmer modifying the interpreter.
 * The code is formatted in an odd way, but I like it, it is simple enough to
   change however by using GNU indent.
 * Some line lengths in the C file exceed 80 characters.
-* The regex implementation does not work when built under Windows with the
-  64-bit version of the Tiny C Compiler. This is related to this bug
-  in version 0.9.26 of the compiler.
-  <https://lists.nongnu.org/archive/html/tinycc-devel/2015-06/msg00000.html>
-  with a solution posted here:
-  <https://lists.nongnu.org/archive/html/tinycc-devel/2015-06/msg00001.html>
-  The current Windows build script [make.bat][] is dependent on "tcc".
-* There is currently no maximum recursion limit for reading in S-Expressions.
 
 ### Implementation limits
 
 All implementation limits are in the bugs section, because that's what they
 are.
 
-* Maximum length of a string
-* Maximum number of allocated objects
-* Maximum number of user defined types
+* Maximum length of a string is 4GB
+* Maximum number of user defined types is at least 255
 * Non thread safe functions and lisp subroutines
-* Maximum recursion limits for evaluation and printing 
-* Maximum recursion limits for regular expression matching
+
+There are several functions that are not thread safe, a consequence of their
+implementation in the C library that cannot be worked around in a portable
+manner. These functions should be marked in their "docstring" as being so,
+the following is a list of functions that are known to be unsafe:
+
+        date
+        getenv
+        locale!
+
+The interpreter as built from from [main.c][] is also not thread safe, it
+relies on the existence of a global lisp environment being available. While
+another instance of the lisp interpreter could be run it should use any
+modules.
+
+* Maximum recursion limits for evaluation, printing and regular expression
+matching.
+
+Currently the interpreter cannot print out expressions 
 
 <div id='To Do'/>
 ## To Do
@@ -1567,22 +1576,22 @@ Calculate an integer exponentiation.
         # (ipow INT INT)
 
 
-* blog
+* ilog2
 
 Calculate the binary logarithm of an integer.
 
-        # (blog INT)
-        > (blog 4)
+        # (ilog2 INT)
+        > (ilog2 4)
         2
-        > (blog 99)
+        > (ilog2 99)
         6
-        > (blog 127)
+        > (ilog2 127)
         127
-        > (blog 128)
+        > (ilog2 128)
         7
-        > (blog -1)
+        > (ilog2 -1)
         63 # implementation defined
-        > (blog 1.0)
+        > (ilog2 1.0)
         (error 'subr_binlog "expected (int)" '(1.000000) "liblisp.c" 1374)
         error
 
@@ -2011,10 +2020,11 @@ repository, if this is not available it will be set to "unknown".
         pi                 The mathematical constant pi
         e                  Euler's number
 
-* \*have-line\*
+* \*os\*
 
-This is 't if the line editor functions and variables are available,
-it is '() otherwise.
+This is a string which describes what operating system is in use, such as
+"unix", "windows" or "unknown" (the latter if the which operating system is in
+use cannot be determined).
 
 * \*have-dynamic-loader\*
 
@@ -2094,7 +2104,7 @@ Glossary of all of defined subroutine primitives and variables.
         date               Return a list of integers representing the date
         assoc              Find a value in an association list
         locale!            Set the locale
-        blog               Calculate the binary logarithm of an integer
+        ilog2              Calculate the binary logarithm of an integer
         ipow               Calculate exponentiation on integers
         close              Close an IO object
         type-of            Return an integer-enum for the type of an object
@@ -2161,6 +2171,7 @@ Glossary of all of defined subroutine primitives and variables.
         *version*          The version of this interpreter if known
         *commit*           Commit version
         *repository-origin* Origin of the lisp interpreters repository
+        *os*               Which operating system is in use
 
 #### floats
         pi                 The mathematical constant pi

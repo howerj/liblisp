@@ -59,23 +59,8 @@
 (progn
  (eval-file 'mod/lisp/mods.lsp exit-if-not-eof nil)
  (eval-file 'mod/lisp/base.lsp exit-if-not-eof nil)
-;(eval-file 'mod/lisp/sets.lsp exit-if-not-eof nil)
-;(eval-file 'mod/lisp/symb.lsp exit-if-not-eof nil)
+ (eval-file 'mod/lisp/sets.lsp exit-if-not-eof nil)
+ (eval-file 'mod/lisp/symb.lsp exit-if-not-eof nil)
  (eval-file 'mod/lisp/test.lsp exit-if-not-eof nil)
  t)
-
-;(define or
-;  (flambda (x)
-;    (progn
-;    (cond
-;      ((atom? (cdr x)) 
-;       (progn (set! x (eval (car x)))
-;              (if x t nil))
-;      (t 
-;        (if (eval (car x))
-;          (return t)
-;          (progn
-;            (set! x (cdr x))
-;            loop))))
-;    nil))))
 

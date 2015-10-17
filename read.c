@@ -12,7 +12,9 @@
  *
  *  @todo parser options to turn on/off parsing of: char literals in strings,
  *        strings, comments, dotted pairs, integers and floats
- *  @todo better error messages**/
+ *  @todo better error messages
+ *  @note there is no option to strip colors of parsed input.
+ *  **/
  
 
 #include "liblisp.h"

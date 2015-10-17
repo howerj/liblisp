@@ -46,10 +46,13 @@ static int getoptions(lisp *l, char *arg, char *arg_0)
 
 int lisp_repl(lisp *l, char *prompt, int editor_on) {
         cell *ret;
+        io *ofp, *efp;
         char *line = NULL;
         int r = 0;
-        l->ofp->pretty = l->efp->pretty = 1; /*pretty print output*/
-        l->ofp->color = l->efp->color = l->color_on;
+        ofp = lisp_get_output(l);
+        efp = lisp_get_logging(l);
+        ofp->pretty = efp->pretty = 1;
+        ofp->color  = efp->color  = l->color_on;
         if((r = setjmp(l->recover)) < 0) {  /*catch errors and "sig"*/
                 l->recover_init = 0;
                 return r; 
@@ -69,10 +72,10 @@ int lisp_repl(lisp *l, char *prompt, int editor_on) {
                 }
         } else { /*read from stdin with no special handling, or a file*/
                 for(;;){
-                        lisp_printf(l, l->ofp, 0, "%s", prompt);
+                        lisp_printf(l, ofp, 0, "%s", prompt);
                         if(!(ret = reader(l, lisp_get_input(l)))) break;
                         if(!(ret = eval(l, 0, ret, l->top_env))) break;
-                        lisp_printf(l, l->ofp, 0, "%S\n", ret);
+                        lisp_printf(l, ofp, 0, "%S\n", ret);
                         l->gc_stack_used = 0;
                 }
         }

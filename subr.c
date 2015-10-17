@@ -45,7 +45,7 @@
  *       subroutine name (as it appears with in the interpreter) */
 #define SUBROUTINE_XLIST\
   X("assoc",       subr_assoc,     "A c",  "lookup a variable in an 'a-list'")\
-  X("blog",        subr_binlog,    "d",    "compute the binary logarithm of an integer")\
+  X("ilog2",       subr_ilog2,    "d",    "compute the binary logarithm of an integer")\
   X("ipow",        subr_ipow,      "d d",  "compute the integer exponentiation of two numbers")\
   X("car",         subr_car,       "c",    "return the first object in a list")\
   X("cdr",         subr_cdr,       "c",    "return every object apart from the first in a list")\
@@ -210,18 +210,18 @@ ISX_LIST /*defines lisp subroutines for checking whether a string only contains 
 
 lisp *lisp_init(void) {
         lisp *l;
+        io *ifp, *ofp, *efp;
         unsigned i;
         if(!(l = calloc(1, sizeof(*l))))     goto fail;
-        if(!(l->ifp = io_fin(stdin)))        goto fail;
-        if(!(l->ofp = io_fout(stdout)))      goto fail;
-        if(!(l->efp = io_fout(stderr)))      goto fail;
+        if(!(ifp = io_fin(stdin)))        goto fail;
+        if(!(ofp = io_fout(stdout)))      goto fail;
+        if(!(efp = io_fout(stderr)))      goto fail;
 
         if(!(l->buf = calloc(DEFAULT_LEN, 1))) goto fail;
         l->buf_allocated = DEFAULT_LEN;
         if(!(l->gc_stack = calloc(DEFAULT_LEN, sizeof(*l->gc_stack)))) 
                 goto fail;
         l->gc_stack_allocated = DEFAULT_LEN;
-        l->max_depth          = LARGE_DEFAULT_LEN; /**< max recursion depth*/
 
 #define X(CNAME, LNAME) l-> CNAME = CNAME;
 CELL_XLIST
@@ -243,9 +243,9 @@ CELL_XLIST
         /* Special care has to be taken with the input and output objects
          * as they can change throughout the interpreters lifetime, they
          * should only be set by accessor functions*/
-        if(!(l->input   = mk_io(l, l->ifp))) goto fail;
-        if(!(l->output  = mk_io(l, l->ofp))) goto fail;
-        if(!(l->logging = mk_io(l, l->efp))) goto fail;
+        if(!(l->input   = mk_io(l, ifp))) goto fail;
+        if(!(l->output  = mk_io(l, ofp))) goto fail;
+        if(!(l->logging = mk_io(l, efp))) goto fail;
 
         l->input->uncollectable = l->output->uncollectable = l->logging->uncollectable = 1;
 
@@ -309,8 +309,8 @@ static cell *subr_binv(lisp *l, cell *args) {
         return mk_int(l, ~get_int(car(args)));
 }
 
-static cell *subr_binlog(lisp *l, cell *args) { 
-        return mk_int(l, binlog(get_int(car(args))));
+static cell *subr_ilog2(lisp *l, cell *args) { 
+        return mk_int(l, ilog2(get_int(car(args))));
 }
 
 static cell *subr_ipow(lisp *l, cell *args) {
@@ -457,7 +457,7 @@ static cell *subr_scdr(lisp *l, cell *args) {
 }
 
 static cell *subr_eval(lisp *l, cell *args) { 
-        cell *ob = NULL;
+        cell *x = NULL;
         int restore_used, r;
         jmp_buf restore;
         if(l->recover_init) {
@@ -470,22 +470,22 @@ static cell *subr_eval(lisp *l, cell *args) {
                 return gsym_error();
         }
 
-        if(cklen(args, 1)) ob = eval(l, l->cur_depth, car(args), l->top_env);
+        if(cklen(args, 1)) x = eval(l, l->cur_depth, car(args), l->top_env);
         if(cklen(args, 2)) {
                 if(!is_cons(CADR(args)))
                         RECOVER(l, "\"expected a-list\" '%S", args);
-                ob = eval(l, l->cur_depth, car(args), CADR(args));
+                x = eval(l, l->cur_depth, car(args), CADR(args));
         }
 
         RECOVER_RESTORE(restore_used, l, restore); 
-        if(!ob) 
+        if(!x) 
            RECOVER(l, "\"expected (expr) or (expr environment)\" '%S", args);
-        return ob;
+        return x;
 }
 
 static cell *subr_trace(lisp *l, cell *args) { 
-        l->trace = is_nil(car(args)) ? 0 : 1;
-        return l->trace ? gsym_tee() : gsym_nil();
+        l->trace_on = is_nil(car(args)) ? 0 : 1;
+        return l->trace_on ? gsym_tee() : gsym_nil();
 }
 
 static cell *subr_gc(lisp *l, cell *args) { UNUSED(args);
@@ -532,7 +532,7 @@ static cell* subr_getdelim(lisp *l, cell *args) {
 }
 
 static cell* subr_read(lisp *l, cell *args) { 
-        cell *ob;
+        cell *x;
         int restore_used, r;
         jmp_buf restore;
         char *s;
@@ -546,14 +546,14 @@ static cell* subr_read(lisp *l, cell *args) {
                 return gsym_error();
         }
         s = NULL;
-        ob = NULL;
+        x = NULL;
         io *i = NULL;
         if(!(i = is_in(car(args)) ? get_io(car(args)) : io_sin(get_str(car(args)))))
                 HALT(l, "\"%s\"", "out of memory");
-        ob = (ob = reader(l, i)) ? ob : gsym_error();
+        x = (x = reader(l, i)) ? x : gsym_error();
         if(s) io_close(i);
         RECOVER_RESTORE(restore_used, l, restore); 
-        return ob;
+        return x;
 }
 
 static cell* subr_puts(lisp *l, cell *args) { UNUSED(l);
@@ -620,9 +620,9 @@ static cell* subr_rename(lisp *l, cell *args) { UNUSED(l);
 }
 
 static cell* subr_hlookup(lisp *l, cell *args) { UNUSED(l);
-        cell *ob;
-        return (ob = hash_lookup(get_hash(car(args)),
-                                get_sym(CADR(args)))) ? ob : gsym_nil(); 
+        cell *x;
+        return (x = hash_lookup(get_hash(car(args)),
+                                get_sym(CADR(args)))) ? x : gsym_nil(); 
 }
 
 static cell* subr_hinsert(lisp *l, cell *args) {
@@ -634,16 +634,19 @@ static cell* subr_hinsert(lisp *l, cell *args) {
 }
 
 static cell* subr_hcreate(lisp *l, cell *args) { 
-        hashtable *ht;
+        hashtable *ht = NULL;
         if(get_length(args) % 2)
-                RECOVER(l, "\"expected even number of arguments\" '%S", args);
+                goto fail;
         if(!(ht = hash_create(DEFAULT_LEN))) HALT(l, "%s", "out of memory");
         for(;!is_nil(args); args = cdr(cdr(args))) {
-                if(!is_asciiz(car(args))) return gsym_error();
-                hash_insert(ht, get_sym(car(args)), 
-                                cons(l, car(args), CADR(args)));
+                if(!is_asciiz(car(args))) goto fail;
+                if(hash_insert(ht, get_sym(car(args)), cons(l, car(args), CADR(args))) < 0)
+                        HALT(l, "%s", "out of memory");
         }
         return mk_hash(l, ht); 
+fail:   hash_destroy(ht);
+        RECOVER(l, "\"expected ({symbol any}*)\" '%S", args);
+        return gsym_error();
 }
 
 static cell* subr_coerce(lisp *l, cell *args) { 

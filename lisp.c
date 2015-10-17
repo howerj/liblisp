@@ -40,8 +40,8 @@ cell *lisp_add_cell(lisp *l, const char *sym, cell *val) { assert(l && sym && va
 
 void lisp_destroy(lisp *l) {
         if(!l) return;
-        if(l->gc_stack) gc_sweep_only(l), free(l->gc_stack);
         if(l->buf) free(l->buf);
+        if(l->gc_stack) gc_sweep_only(l), free(l->gc_stack);
         if(lisp_get_logging(l)) io_close(lisp_get_logging(l));
         if(lisp_get_output(l)) io_close(lisp_get_output(l));
         if(lisp_get_input(l)) io_close(lisp_get_input(l));
@@ -70,8 +70,8 @@ cell *lisp_read(lisp *l, io *i) { assert(l && i);
 }
 
 int lisp_print(lisp *l, cell *ob) { assert(l && ob);
-        int ret = printer(l, l->ofp, ob, 0);
-        io_putc('\n', l->ofp);
+        int ret = printer(l, lisp_get_output(l), ob, 0);
+        io_putc('\n', lisp_get_output(l));
         return ret;
 }
 
@@ -116,21 +116,18 @@ cell *lisp_eval_string(lisp *l, const char *evalme) { assert(l && evalme);
 }
 
 int lisp_set_input(lisp *l, io *in) { assert(l);
-        l->ifp = in;
         l->input->p[0].v = in;
         if(!in || !io_is_in(in)) return -1;
         return 0;
 }
 
 int lisp_set_output(lisp *l, io *out) { assert(l);
-        l->ofp = out;
         l->output->p[0].v = out;
         if(!out || !io_is_out(out)) return -1;
         return 0;
 }
 
 int lisp_set_logging(lisp *l, io *logging) { assert(l);
-        l->efp = logging;
         l->logging->p[0].v = logging;
         if(!logging || !io_is_out(logging)) return -1;
         return 0;
@@ -139,7 +136,7 @@ int lisp_set_logging(lisp *l, io *logging) { assert(l);
 void lisp_set_line_editor(lisp *l, editor_func ed){ assert(l); l->editor = ed; }
 void lisp_set_signal(lisp *l, int sig) { assert(l); l->sig = sig; }
 
-io *lisp_get_input(lisp *l)   { assert(l); return l->ifp; }
-io *lisp_get_output(lisp *l)  { assert(l); return l->ofp; }
-io *lisp_get_logging(lisp *l) { assert(l); return l->efp; }
+io *lisp_get_input(lisp *l)   { assert(l); return get_io(l->input); }
+io *lisp_get_output(lisp *l)  { assert(l); return get_io(l->output); }
+io *lisp_get_logging(lisp *l) { assert(l); return get_io(l->logging); }
 

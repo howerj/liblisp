@@ -1,3 +1,15 @@
+/** @file       print.c
+ *  @brief      print out S-expression
+ *  @author     Richard Howe (2015)
+ *  @license    LGPL v2.1 or Later
+ *  @email      howe.r.j.89@gmail.com 
+ *
+ * @warning Hashes are actually printed out in a deceiving fashion, they are
+ *          printed out as if they are lists when they are not, this makes
+ *          serialization easier. "read.c" should be modified to add a new
+ *          syntax for reading in such objects, which could be generalized
+ *          to new user defined types.
+ **/
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
@@ -6,6 +18,7 @@
 
 static int print_escaped_string(lisp *l, io *o, unsigned depth, char *s) {
         char c;
+        assert(l && o && s);
         lisp_printf(l, o, depth, "%r\"");
         while((c = *s++)) {
                switch(c) {
@@ -72,12 +85,18 @@ int lisp_printf(lisp*l, io *o, unsigned depth, char *fmt, ...) {
                           lisp_printf(l, o, depth, "(%yhash-create%t");
                           for(i = 0; i < ht->len; i++)
                             if(ht->table[i])
+                              /**@warning messy hash stuff*/
                               for(cur = ht->table[i]; cur; cur = cur->next) {
                                 io_putc(' ', o);
-                                print_escaped_string(l, o, depth, cur->key);
-                                if(is_cons(cur->val)) /**@warning messy hash stuff*/
+                                if(is_cons(cur->val) && is_sym(car(cur->val)))
+                                        lisp_printf(l, o, depth, "'%S", car(cur->val));
+                                else
+                                        print_escaped_string(l, o, depth, cur->key);
+                                if(is_cons(cur->val)) { 
                                         lisp_printf(l, o, depth, "%t '%S", cdr(cur->val));
-                                else    lisp_printf(l, o, depth, "%t '%S", cur->val);
+                                } else {
+                                        lisp_printf(l, o, depth, "%t '%S", cur->val);
+                                }
                               }
                           ret = io_putc(')', o);
                         }
@@ -113,7 +132,7 @@ finish: va_end(ap);
 int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
         cell *tmp;
         if(!op) return EOF;
-        if(l && depth > l->max_depth) { /*problem if depth UINT_MAX < l->max_depth INTPTR_MAX*/
+        if(l && depth > MAX_RECURSION_DEPTH) {
                 lisp_printf(l, o, depth, "%r<PRINT-DEPTH-EXCEEDED:%d>%t", (intptr_t) depth);
                 return -1;
         }
@@ -136,7 +155,7 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
                               io_putc(' ', o);
                       }
                       break;
-        case SYMBOL:  if(is_nil(op)) lisp_printf(l, o, depth, "%r()");
+        case SYMBOL:  if(is_nil(op)) lisp_printf(l, o, depth, "%rnil");
                       else           lisp_printf(l, o, depth, "%y%s", get_sym(op));
                       break;
         case STRING:  print_escaped_string(l, o, depth, get_str(op));       break;
