@@ -57,7 +57,8 @@ static int print_type_string(lisp *l, const char *msg, unsigned len, const char 
         io *e = lisp_get_logging(l);
         msg = msg ? msg : "";
         lisp_printf(l, e, 0, 
-                "\n(error\n 'validation\n \"%s\"\n '(expected-length %d)\n '(expected-arguments ", msg, (intptr_t)len); 
+                "\n(%Berror%t\n %y'validation\n %r\"%s\"\n%t '(%yexpected-length %r%d%t)\n '(%yexpected-arguments%t ", 
+                msg, (intptr_t)len); 
         while((c = *fmt++)) {
                 s = "";
                 switch(c) {
@@ -67,7 +68,7 @@ static int print_type_string(lisp *l, const char *msg, unsigned len, const char 
 #undef X
                 default: RECOVER(l, "\"invalid format string\" \"%s\" %S))", head, args);
                 }
-                io_puts(s, e);
+                lisp_printf(l, e, 0, "%y'%s%t", s);
                 if(*fmt) io_putc(' ', e);
         }
         return lisp_printf(l, e, 1, ")\n %S)\n", args);

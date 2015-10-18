@@ -62,6 +62,8 @@ static void gc_mark(lisp *l, cell* op) { assert(op); /**<recursively mark reacha
 
 void gc_sweep_only(lisp *l) { /*linked list versus dynamic array?*/
         gc_list *v, **p;
+        if(l->gc_off)
+                return;
         for(p = &l->gc_head; *p != NULL;) { 
                 v = *p;
                 if(v->ref->mark) {
@@ -93,6 +95,8 @@ cell *gc_add(lisp *l, cell* op) { /**< add a cell to the working set*/
 
 void gc_mark_and_sweep(lisp *l) {
         size_t i;
+        if(l->gc_off)
+                return;
         gc_mark(l, l->all_symbols);
         gc_mark(l, l->top_env);
         for(i = 0; i < l->gc_stack_used; i++)

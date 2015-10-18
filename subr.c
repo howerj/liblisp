@@ -217,6 +217,7 @@ lisp *lisp_init(void) {
         if(!(ofp = io_fout(stdout)))      goto fail;
         if(!(efp = io_fout(stderr)))      goto fail;
 
+        l->gc_off = 1;
         if(!(l->buf = calloc(DEFAULT_LEN, 1))) goto fail;
         l->buf_allocated = DEFAULT_LEN;
         if(!(l->gc_stack = calloc(DEFAULT_LEN, sizeof(*l->gc_stack)))) 
@@ -239,6 +240,10 @@ CELL_XLIST
                 goto fail;
         if(!(l->top_env = cons(l, cons(l, gsym_nil(), gsym_nil()),gsym_nil())))
                 goto fail;
+        if(!(l->top_hash = mk_hash(l, hash_create(LARGE_DEFAULT_LEN))))
+                goto fail;
+         set_cdr(l->top_env, cons(l, l->top_hash, cdr(l->top_env)));
+
 
         /* Special care has to be taken with the input and output objects
          * as they can change throughout the interpreters lifetime, they
@@ -287,9 +292,10 @@ CELL_XLIST
 #define X(FUNC, DOCSTRING) if(!lisp_add_subr(l, # FUNC "?", subr_ ## FUNC, "C", "(" # FUNC "?) : " DOCSTRING)) goto fail;
 ISX_LIST /*add all of the subroutines for string character class testing*/
 #undef X
-
+        l->gc_off = 0;
         return l;
-fail:   lisp_destroy(l);
+fail:   l->gc_off = 0;
+        lisp_destroy(l);
         return NULL;
 }
 

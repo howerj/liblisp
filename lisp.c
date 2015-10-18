@@ -40,7 +40,8 @@ cell *lisp_add_cell(lisp *l, const char *sym, cell *val) { assert(l && sym && va
 
 void lisp_destroy(lisp *l) {
         if(!l) return;
-        if(l->buf) free(l->buf);
+        free(l->buf);
+        l->gc_off = 0;
         if(l->gc_stack) gc_sweep_only(l), free(l->gc_stack);
         if(lisp_get_logging(l)) io_close(lisp_get_logging(l));
         if(lisp_get_output(l)) io_close(lisp_get_output(l));

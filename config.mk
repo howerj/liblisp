@@ -66,7 +66,16 @@ MV=move
 CHMOD=REM
 RUN_FLAGS=-Ep
 else # Unix assumed {only Linux has been tested}
-CFLAGS += -fPIC
+
+ifeq ($(FAST),true)
+CFLAGS += -DNDEBUG 
+else
+CFLAGS += -D_FORTIFY_SOURCE=2 -fstack-protector 
 endif
+
+CFLAGS += -fPIC
+
+endif
+
 CFLAGS += -std=c99
 

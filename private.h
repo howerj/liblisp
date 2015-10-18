@@ -152,7 +152,7 @@ struct lisp {
              *input,       /**< interpreter input stream*/
              *output,      /**< interpreter output stream*/
              *logging,     /**< interpreter logging/error stream*/
-             **gc_stack;   /**< garbage collection stack for working items*/
+            **gc_stack;    /**< garbage collection stack for working items*/
         gc_list *gc_head;  /**< linked list of all allocated objects*/
         char *token /**< one token of put back for parser*/, 
              *buf   /**< input buffer for parser*/;
@@ -172,8 +172,10 @@ struct lisp {
                  color_on:     1, /**< REPL Colorize output*/
                  prompt_on:    1, /**< REPL '>' Turn prompt on*/
                  trace_on:     1, /**< turn tracing on or off*/
+                 gc_off:       1, /**< turn the garbage collector off*/
                  editor_on:    1; /**< REPL Turn the line editor on*/
         unsigned cur_depth; /*< current recursion depth of the interpreter*/
+        cell *top_hash;
 };
 
 /*************************** internal functions *******************************/

@@ -953,7 +953,7 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
  * @param ...  Arguments for format string**/
 #define FAILPRINTER(LISP, RET, FMT, ...) do{\
         lisp_printf((LISP), lisp_get_logging((LISP)), 0,\
-                        "(%Berror%t '%s%t " FMT " \"%s\" %d)\n",\
+                        "(%Berror%t '%s%t " FMT " %r\"%s\" %m%d%t)\n",\
                        __func__, __VA_ARGS__, __FILE__, (intptr_t)__LINE__);\
         lisp_throw((LISP), RET);\
         } while(0)

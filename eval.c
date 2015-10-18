@@ -176,7 +176,8 @@ static cell *multiple_extend(lisp *l, cell *env, cell *syms, cell *vals) {
 }
 
 cell *extend_top(lisp *l, cell *sym, cell *val) { assert(l && sym && val);
-        set_cdr(l->top_env, cons(l, cons(l, sym, val), cdr(l->top_env)));
+        if(!hash_insert(get_hash(l->top_hash), get_str(sym), cons(l, sym, val)) < 0)
+                HALT(l, "\"%s\"", "out of memory");
         return val;
 }
 
@@ -282,11 +283,11 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 if(first == l->let) {
                         cell *r = NULL, *s = NULL;
                         if(exp->len < 2)
-                                RECOVER(l, "'let* \"argc < 2 in %S\"", exp);
+                                RECOVER(l, "'let \"argc < 2 in %S\"", exp);
                         tmp = exp;
                         for(; !is_nil(cdr(exp)); exp = cdr(exp)) {
                                 if(!is_cons(car(exp)) || !cklen(car(exp), 2))
-                                   RECOVER(l, "'let* \"expected list of length 2: '%S '%S\"",
+                                   RECOVER(l, "'let \"expected list of length 2: '%S '%S\"",
                                                    car(exp), tmp);
                                 s = env = extend(l, env, CAAR(exp), l->nil);
                                 r = env = extend(l, env, CAAR(exp),
