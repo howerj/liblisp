@@ -166,8 +166,9 @@ char *vstrcatsep(const char *separator, const char *first, ...) {
         return retbuf;
 }
 
-uint8_t ilog2(uint64_t v) {
-        uint8_t r = 0;
+int32_t ilog2(uint64_t v) {
+        if(!v) return INT32_MIN;
+        int32_t r = 0;
         while(v >>= 1) r++;
         return r;
 }

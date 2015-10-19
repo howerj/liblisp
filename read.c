@@ -112,7 +112,7 @@ static cell *readstring(lisp *l, io* i) { /**< handle parsing a string*/
                                    continue;
                         fail:      RECOVER(l, "'invalid-escape-literal \"%s\"", num);
                         case EOF:  return NULL;
-                        default:  RECOVER(l, "'invalid-escape-char \"%c\"", ch);
+                        default:   RECOVER(l, "'invalid-escape-char \"%c\"", ch);
                         }
                 }
                 if(ch == '"')

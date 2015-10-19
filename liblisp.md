@@ -36,7 +36,7 @@ non-standard variant of lisp.
 
 A summary of the design goals:
 
-* Simple and Small (< 5000 lines of code)
+* Simple and Small (~ 5000 lines of code)
 * Extensible
 * No implicit state
 * Used as a generic utility library
@@ -68,6 +68,10 @@ more of a DIY lisp environment where most facilities are not provided but are
 up to the users to implement. The interpreter is currently slightly over 5000
 lines in of C formatted with "GNU indent", and under it with the way I like the
 code formatted.
+
+The count does not include the modules, experimental code or the unit tests in
+[unit.c][] and these are not part of the core interpreter, these should grow as
+large as possible!
 
 * Extensible
 
@@ -1838,6 +1842,15 @@ Return the documentation string from a procedure. Or *nil* if there is not one.
 
         # (documentation-string FUNCTION)
 
+* top-environment
+
+* closed?
+
+* mapcar
+
+* environment
+ 
+
 ### Predefined variables
 
 These are predefined variables used throughout the system, they often directly
@@ -2108,7 +2121,11 @@ Glossary of all of defined subroutine primitives and variables.
         procedure-args     Return the arguments from a user defined procedure"
         validation-string  Return the format string from a procedure
         documentation-string Return the documentation string from a procedure
-
+        top-environment    Get the top level environment
+        closed?            Is a cell closed
+        mapcar             map a function onto a series of lists
+        environment        Get the current enviroment
+        
 #### integers
 
         *seek-cur*         Seek from current file marker with seek
@@ -2701,7 +2718,7 @@ used:
 [init.lsp]:  init.lsp
 [meta.lsp]:  meta.lsp
 [test.lsp]:  test.lsp
-[make.bat]:  make.bat
+[unit.c]:    unit.c
 [main.c]: main.c
 [metasyntactic variables]: http://www.catb.org/jargon/html/M/metasyntactic-variable.html
 [fexpr]: https://en.wikipedia.org/wiki/Fexpr

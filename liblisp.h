@@ -195,9 +195,11 @@ LIBLISP_API char *vstrcatsep(const char *separator, const char *first, ...);
 /** @brief  Calculate the binary logarithm, for more efficient examples see
  *          http://graphics.stanford.edu/~seander/bithacks.html or
  *          "Bit Twiddling Hacks by Sean Eron Anderson"
+ *          This version returns INT32_MIN on an error (which cannot
+ *          occur normally).
  *  @param  v         Value to calculate the binary logarithm of
  *  @return uint8_t   Binary log**/
-LIBLISP_API uint8_t ilog2(uint64_t v);
+LIBLISP_API int32_t ilog2(uint64_t v);
 
 /** @brief  Calculate an integer exponentiation.
  *  From:
@@ -606,7 +608,10 @@ LIBLISP_API int is_number(const char *buf);
 /**@brief  this is much like is_number, but for floating point numbers
  *         matches "[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?", and
  *         excludes valid conversions added in c99 (such as "inf" or
- *         "nan").
+ *         "nan"). This is not a test that a number is exclusively
+ *         a floating point number, only that is can be converted into
+ *         one sensible, to test for that use is_number() on the
+ *         string first.
  * @param  buf ascii delimited string to check if it is a float
  * @return 0 if it is not a float, non zero if it is**/
 LIBLISP_API int is_fnumber(const char *buf);

@@ -28,6 +28,7 @@ Doxyfile
 Doxyfile.bak
 doxygen/
 doxygen/*
+*.exe
 *.gcda
 *.gcno
 *.gcov
@@ -58,4 +59,4 @@ tags
 *.tar
 *.tar.gz
 *.tgz
-*.exe
+unit

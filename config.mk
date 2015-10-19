@@ -1,4 +1,6 @@
 # liblisp configuration and build system options
+# @todo replace this with a ./configure script (possibly)
+# @todo centralize all operating system variables here
 
 # make run options
 
@@ -36,6 +38,8 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 #                on Unix systems
 DEFINES ?= -DUSE_DL
 LINK    ?= -ldl
+# This is for convenience only, it may cause problems.
+RPATH   ?= -Wl,-rpath=. -Wl,-rpath=./mod 
 
 # And the rest of the OS dependent nonsense
 
@@ -51,12 +55,10 @@ CHMOD    = chmod
 MKDIR    = mkdir
 MKDIR_FLAGS= -p
 SED      = sed
-PRELOAD ?= LD_LIBRARY_PATH="`pwd`/mod:`pwd`"
 LDCONFIG = ldconfig
 
 ifeq (mingw32, $(TARGET_SYSTEM))
 #ifeq (mingw32, $(TARGET_SYSTEM))
-PRELOAD=
 RM=del
 RM_FLAGS= /Q
 LDCONFIG=
@@ -65,7 +67,9 @@ CP_FLAGS=
 MV=move
 CHMOD=REM
 RUN_FLAGS=-Ep
+DLL=dll
 else # Unix assumed {only Linux has been tested}
+DLL=so
 
 ifeq ($(FAST),true)
 CFLAGS += -DNDEBUG 

@@ -119,7 +119,8 @@
   X("top-environment", subr_top_env, "",   "return the top level environment")\
   X("validate",    subr_validate,  "d Z c", "validate an argument list against a format string")\
   X("mapcar",      subr_mapcar,    "c c",   "map a function onto a list of values")\
-  X("environment", subr_environment, "",    "get the current environment")
+  X("environment", subr_environment, "",    "get the current environment")\
+  X("raw",         subr_raw,       "A",     "get the raw value of an object")
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
@@ -268,7 +269,7 @@ CELL_XLIST
         if(!lisp_add_cell(l, "*stderr*", mk_io(l, io_fout(stderr)))) goto fail;
 
         for(i = 0; special_cells[i].internal; i++) { /*add special cells*/
-                if(!lisp_intern(l, special_cells[i].internal))
+                if(!lisp_intern(l, special_cells[i].internal)) /**@bug lisp_intern does not do what you think it does!*/
                         goto fail;
                 if(!extend_top(l, special_cells[i].internal, 
                                   special_cells[i].internal))
@@ -1109,5 +1110,9 @@ static cell *subr_mapcar(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
 
 static cell *subr_environment(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
         return l->cur_env;
+}
+
+static cell *subr_raw(lisp *l, cell *args) {
+        return mk_int(l, (intptr_t)get_raw(car(args)));
 }
 

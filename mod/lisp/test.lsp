@@ -64,7 +64,7 @@
     (test = (regex "^a" "a")        t)
     (test = (regex "^a" "ab")       t)
     (test = (regex "^a" "ba")       nil)
-    (test = (ilog2 0)               0)
+    (test < (ilog2 0)               255)
     (test = (ilog2 1)               0)
     (test = (ilog2 5)               2)
     (test = (ilog2 8)               3)

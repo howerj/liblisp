@@ -38,19 +38,18 @@ static char *os = "unknown";
  * dlsym/GetProcAddress must be of the "subr" function type as they will 
  * be used as internal lisp subroutines by the interpreter. */
 
-#ifdef __unix__
+#ifdef __unix__ /*Only tested on Linux*/
 
 #include <dlfcn.h>
-typedef void* handle_t;
+typedef void* dl_handle_t;
 
 #define DL_OPEN(NAME)        dlopen((NAME), RTLD_NOW)
 #define DL_CLOSE(HANDLE)     dlclose((HANDLE))
 #define DL_SYM(HANDLE, NAME) dlsym((HANDLE), (NAME))
 #define DL_ERROR()	     dlerror()
 
-#elif _WIN32
-
-typedef HMODULE handle_t;
+#elif _WIN32 /*Windows*/
+typedef HMODULE dl_handle_t;
 
 #define DL_OPEN(NAME)        LoadLibrary((NAME))
 #define DL_CLOSE(HANDLE)     FreeLibrary((HANDLE))
@@ -70,17 +69,17 @@ static char *win_dlerror(void) {
 
 static int ud_dl = 0; /**< User defined type value for DLL handles*/
 
-struct dllist; /**< linked list of all DLL handles*/
-typedef struct dllist {
-        handle_t handle;
-        struct dllist *next; /**< next node in linked list*/
-} dllist;
+struct dl_list; /**< linked list of all DLL handles*/
+typedef struct dl_list {
+        dl_handle_t handle;
+        struct dl_list *next; /**< next node in linked list*/
+} dl_list;
 
-dllist *head; /**< *GLOBAL* list of all DLL handles for dlclose_atexit*/
+dl_list *head; /**< *GLOBAL* list of all DLL handles for dlclose_atexit*/
 
 /** @brief close all of the open DLLs when the program exits **/
 static void dlclose_atexit(void) {
-        dllist *t; 
+        dl_list *t; 
         while(head) {
                 assert(head->handle);
                 DL_CLOSE(head->handle);
@@ -91,13 +90,7 @@ static void dlclose_atexit(void) {
 }
 
 static void ud_dl_free(cell *f) {
-      /* There is a problem with closing modules that contain 
-       * callbacks like these for freeing user defined types 
-       * made within those modules. If dlclose is called before
-       * before the callback in the closed module is called the
-       * program will SEGFAULT as the callback no longer is mapped
-       * into the program space. This is resolved with dlclose_atexit */
-      /*DL_CLOSE(get_user(f));*/
+      /*DL_CLOSE(get_user(f)); This is handled atexit instead*/
         free(f);
 }
 
@@ -106,8 +99,8 @@ static int ud_dl_print(io *o, unsigned depth, cell *f) {
 }
 
 static cell *subr_dlopen(lisp *l, cell *args) {
-	handle_t handle;
-        dllist *h;
+	dl_handle_t handle;
+        dl_list *h;
         if(!(handle = DL_OPEN(get_str(car(args)))))
                 return gsym_error();
         if(!(h = calloc(1, sizeof(*h))))

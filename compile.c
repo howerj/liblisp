@@ -1,3 +1,9 @@
+/** @file       compile.c
+ *  @brief      compiler (or optimizer) for the interpreter
+ *  @author     Richard Howe (2015)
+ *  @license    LGPL v2.1 or Later
+ *  @email      howe.r.j.89@gmail.com **/
+ 
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
