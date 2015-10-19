@@ -219,7 +219,9 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
         case INTEGER: case SUBR: case PROC:  case STRING: case FLOAT:
         case IO:      case HASH: case FPROC: case USERDEF:
                 return exp; /*self evaluating types*/
-        case SYMBOL:   
+        case SYMBOL:
+                /* checks could be added here so special forms are not looked
+                 * up, but only if this improves the speed of things*/
                 if(is_nil(tmp = assoc(exp, env)))
                         RECOVER(l, "\"unbound symbol\" '%s", get_sym(exp));
                 return cdr(tmp);
@@ -236,6 +238,9 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 if(first == l->lambda) {
                         if(get_length(exp) < 2)
                                 RECOVER(l, "'lambda \"argc < 2 in %S\"", exp);
+                        for(tmp = car(exp); !is_nil(tmp); tmp = cdr(tmp)) 
+                                if(!is_sym(car(tmp)) || !is_proper_cons(tmp))
+                                        RECOVER(l, "'lambda\n \"expected only symbols (or nil) as arguments\"\n %S", exp);
                         l->gc_stack_used = gc_stack_save;
                         tmp = mk_proc(l, car(exp), cdr(exp), env);
                         return gc_add(l, tmp);
@@ -243,8 +248,8 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 if(first == l->flambda) {
                         if(exp->len < 2)
                                 RECOVER(l, "'flambda \"argc < 2 in %S\"", exp);
-                        if(!cklen(car(exp), 1)) 
-                                RECOVER(l, "'flambda \"only one argument allowed %S\"", exp);
+                        if(!cklen(car(exp), 1) || !is_sym(car(car(exp)))) 
+                                RECOVER(l, "'flambda\n \"only one symbol argument allowed\"\n '%S", exp);
                         l->gc_stack_used = gc_stack_save;
                         return gc_add(l, mk_fproc(l, car(exp), cdr(exp), env));
                 }
@@ -260,7 +265,6 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         }
                         return l->nil;
                 }
-                if(first == l->env)   return env;
                 if(first == l->quote) return car(exp);
                 if(first == l->ret)   return cons(l, l->ret, 
                                                cons(l, 
@@ -279,6 +283,10 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         newval = eval(l, depth+1, CADR(exp), env);
                         set_cdr(pair, newval);
                         return newval;
+                }
+                if(first == l->compile) {
+                        VALIDATE(l, "compile", 2, "L c", exp, 1);
+                        return compile_expression(l, depth+1, exp, env);
                 }
                 if(first == l->let) {
                         cell *r = NULL, *s = NULL;
@@ -322,11 +330,12 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 } else { 
                         RECOVER(l, "\"not a procedure\" '%S", first);
                 }
+                l->cur_depth = depth; /*tucked away for function use*/
+                l->cur_env   = env;   /*also tucked away*/
                 if(is_subr(proc)) {
                         l->gc_stack_used = gc_stack_save;
                         gc_add(l, proc);
                         gc_add(l, vals);
-                        l->cur_depth = depth; /*tucked away for subr use*/
                         lisp_validate_cell(l, proc, vals, 1);
                         return (*get_subr(proc))(l, vals);
                 }

@@ -24,7 +24,7 @@ static uint32_t hash_alg(hashtable *table, const char *s) {
         return djb2(s, strlen(s)) % (table->len ? table->len : 1);
 }
 
-static hashentry *hash_newpair(const char *key, void *val) 
+static hashentry *hash_new_pair(const char *key, void *val) 
 { /**@brief internal function to create a chained hash node**/
         hashentry *np;
         if (!(np = calloc(1, sizeof(*np)))) return NULL;
@@ -71,7 +71,7 @@ int hash_insert(hashtable *ht, const char *key, void *val) { assert(ht && key &&
         if (cur && cur->key && !strcmp(key, cur->key)) {
                 cur->val = val;
         } else {
-                if(!(newt = hash_newpair(key, val))) 
+                if(!(newt = hash_new_pair(key, val))) 
                         return -1;
                 if (cur == ht->table[hash]) {
                         newt->next = cur;

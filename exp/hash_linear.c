@@ -20,15 +20,15 @@ char *lstrdup(const char *s) { assert(s);
         return str;
 }
 
-typedef struct hashentry {      /**< linked list of entries in a bin*/
-        char *key;              /**< ASCII nul delimited string*/
-        void *val;              /**< arbitrary value*/
-} hashentry;
+struct hashentry { /**< linked list of entries in a bin*/
+        char *key; /**< ASCII nul delimited string*/
+        void *val; /**< arbitrary value*/
+};
 
 struct hashtable {  /**< a hash table*/
         size_t len, /**< number of 'bins' in the hash table*/
                used;/**< number of used 'bins' in the hash table*/ 
-        struct hashentry table[0]; /**< table of linked lists, flexible array*/
+        struct hashentry table[]; /**< table of linked lists, flexible array*/
 };
 
 typedef void *(*hash_func)(const char *key, void *val); 

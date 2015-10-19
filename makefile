@@ -58,8 +58,8 @@ help:
 
 ### building #################################################################
 
-OBJFILES=hash.o io.o util.o gc.o read.o print.o\
-	 subr.o repl.o eval.o lisp.o tr.o valid.o
+OBJFILES=hash.o io.o util.o gc.o read.o print.o subr.o\
+	repl.o eval.o lisp.o tr.o valid.o compile.o
 
 lib$(TARGET).a: $(OBJFILES)
 	$(AR) $(AR_FLAGS) $@ $^

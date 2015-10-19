@@ -29,14 +29,11 @@ extern "C" {
  * gsym_X functions defined in there liblisp.h header (such as gsym_nil,
  * gsym_tee or gsym_error). */
 #define CELL_XLIST /**< list of all special cells for initializer*/ \
-        X(nil,     "nil")    X(tee,     "t")\
-        X(quote,   "quote")  X(iif,     "if")\
-        X(lambda,  "lambda") X(flambda, "flambda")\
-        X(define,  "define") X(set,     "set!")\
-        X(progn,   "progn")  X(cond,    "cond")\
-        X(error,   "error")  X(env,     "environment")\
-        X(let,     "let")    X(ret,     "return")\
-        X(loop,    "loop")
+        X(nil,     "nil")    X(tee,     "t")      X(quote,   "quote")\
+        X(iif,     "if")     X(lambda,  "lambda") X(flambda, "flambda")\
+        X(define,  "define") X(set,     "set!")   X(progn,   "progn")\
+        X(cond,    "cond")   X(error,   "error")  X(loop,    "loop")\
+        X(let,     "let")    X(ret,     "return") X(compile, "compile")
 
 /**@brief This restores a jmp_buf stored in lisp environment if it
  *        has been copied out to make way for another jmp_buf.
@@ -152,6 +149,7 @@ struct lisp {
              *input,       /**< interpreter input stream*/
              *output,      /**< interpreter output stream*/
              *logging,     /**< interpreter logging/error stream*/
+             *cur_env,     /**< current interpreter depth*/
             **gc_stack;    /**< garbage collection stack for working items*/
         gc_list *gc_head;  /**< linked list of all allocated objects*/
         char *token /**< one token of put back for parser*/, 
@@ -235,9 +233,18 @@ cell *assoc(cell *key, cell *alist);
 cell *extend_top(lisp *l, cell *sym, cell *val);
 
 /**@brief  Count the number of arguments in a validation format string
- * @brief  validation format string, as passed to lisp_validate_args()
+ *         validation format string, as passed to lisp_validate_args()
  * @return argument count**/
 size_t validate_arg_count(const char *fmt);
+
+/**@brief Compile an expression, that is, do as much evaluation and
+ *        optimization as is possible on an expression.
+ * @param l      initialized lisp environment
+ * @param depth  current interpreter depth
+ * @param exp    expression to compile
+ * @param env    environment to compile expression in
+ * @return compiled expression **/
+cell *compile_expression(lisp *l, unsigned depth, cell *exp, cell *env);
 
 #ifdef __cplusplus
 }

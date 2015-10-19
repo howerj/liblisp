@@ -14,6 +14,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct bitfield { /**< a structure representing a bitfield*/
+        size_t max;  /**< maximum number of bits in the bitfield*/
+        unsigned char field[]; /**< the bitfield*/
+}; 
+
 static int matchhere(regex_result *r, char *regexp, char *text, size_t depth);
 static int matchstar(regex_result *r, int literal, int c, char *regexp, char *text, size_t depth);
 

@@ -57,6 +57,7 @@ typedef void (*ud_free)(cell*);       /**< function to free a user type*/
 typedef void (*ud_mark)(cell*);       /**< marking function for user types*/
 typedef int  (*ud_equal)(cell*, cell*);  /**< equality function for user types*/
 typedef int  (*ud_print)(io*, unsigned, cell*); /**< print out user def types*/
+typedef struct bitfield bitfield;     /**< bitfield structure */
 
 /**@brief This is a prototype for the (optional) line editing functionality
  *        that the REPL can use. The editor function should accept a prompt
@@ -69,11 +70,6 @@ typedef struct {
         char *end;   /**< where the match ended*/
         int result;  /**< the result, -1 on error, 0 on no match, 1 on match*/
 } regex_result;      /**< a structure representing a regex result*/
-
-typedef struct {
-        size_t max;  /**< maximum number of bits in the bitfield*/
-        unsigned char field[]; /**< the bitfield*/
-} bitfield; /**< a structure representing a bitfield*/
 
 typedef enum tr_errors {
         TR_OK      =  0, /**< no error*/
@@ -585,10 +581,10 @@ LIBLISP_API cell *gsym_set(void);     /**< return the set! symbol*/
 LIBLISP_API cell *gsym_progn(void);   /**< return the progn symbol*/
 LIBLISP_API cell *gsym_cond(void);    /**< return the cond symbol*/
 LIBLISP_API cell *gsym_error(void);   /**< return the error symbol*/
-LIBLISP_API cell *gsym_env(void);     /**< return the environment symbol*/
 LIBLISP_API cell *gsym_let(void);     /**< return the let symbol*/
 LIBLISP_API cell *gsym_ret(void);     /**< return the return symbol*/
 LIBLISP_API cell *gsym_loop(void);    /**< return the loop symbol*/
+LIBLISP_API cell *gsym_compile(void); /**< return the compile symbol*/
 
 /**@brief  return a new token representing a new type
  * @param  l lisp environment to put the new type in
@@ -913,6 +909,7 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
 
 /*********************** some handy macros ***********************************/
 
+#ifndef __cplusplus /* variable length macros not available in C++ */
 /**@brief A wrapper around vstrcatsep so that the user does not have to
  *        terminate the sequence with a null. Like vstrcatsep is will
  *        concatenate a variable amount of strings with a separator
@@ -953,7 +950,7 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
  * @param ...  Arguments for format string**/
 #define FAILPRINTER(LISP, RET, FMT, ...) do{\
         lisp_printf((LISP), lisp_get_logging((LISP)), 0,\
-                        "(%Berror%t '%s%t " FMT " %r\"%s\" %m%d%t)\n",\
+                        "(%Berror%t\n %y'%s%t\n " FMT "\n %r\"%s\"\n %m%d%t)\n",\
                        __func__, __VA_ARGS__, __FILE__, (intptr_t)__LINE__);\
         lisp_throw((LISP), RET);\
         } while(0)
@@ -971,6 +968,8 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
  * @param FMT  Format string printing error messages
  * @param ...  Arguments for format string**/
 #define HALT(LISP, FMT, ...) FAILPRINTER(LISP, -1, FMT, __VA_ARGS__)
+
+#endif /*end of C99 variable length macros*/
 
 /**@brief A wrapper around pfatal that with file and line filled out
  *        for the error message to print.

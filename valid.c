@@ -31,6 +31,7 @@
         X('s', "symbol",            is_sym(x))\
         X('d', "integer",           is_int(x))\
         X('c', "cons",              is_cons(x))\
+        X('L', "cons-or-nil",       is_cons(x) || is_nil(x))\
         X('p', "procedure",         is_proc(x))\
         X('r', "subroutine",        is_subr(x))\
         X('S', "string",            is_str(x))\

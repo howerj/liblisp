@@ -767,7 +767,6 @@ library and their behavior.
         set!               Change an already defined variables value
         progn              Evaluate a sequence of S-Expression, return the last
         cond               Conditional evaluation
-        environment        Return a list of all in scope variables
         let                Create a new variable scope, allowing recursion
         error              Error, an object representing an error
         loop               Jump back to beginning of a progn
@@ -935,31 +934,6 @@ pairs evaluates to true, if none do it will return nil.
         > (cond (nil 1) ((if 'a t nil) 2) (t 3))
         2
 
-* environment
-
-Returns an association list of the current environment, the list is quite large
-as it contains every defined symbol and what they evaluated to as well as all
-the symbols defined in the current and encapsulating scopes. It returns an
-association list.
-
-        > (defined square (lambda (x) (* x x)))
-        (lambda (x) (* x x))
-        > (environment)
-         ((square . (lambda (x) (* x x))) # Most recently defined top level
-                                          # definition is the first entry
-         ...
-         (*seek-cur* . 1)
-         (e . 2.718282)
-         (pi . 3.141593)
-         (t . t))
-        > (let (x 4) (environment))
-        ((x . 4)
-         ...
-         (*seek-cur* . 1)
-         (e . 2.718282)
-         (pi . 3.141593)
-         (t . t))
-
 * let
 
 Creates new temporary local bindings for variables and evaluates expressions
@@ -999,6 +973,8 @@ special form would be called *letrec* instead.
 * loop
 
 * return
+
+* compile
 
 ### Built in subroutines
 

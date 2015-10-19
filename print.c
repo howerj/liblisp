@@ -164,8 +164,11 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
                       lisp_printf(l, o, depth+1, 
                                 is_proc(op) ? "(%ylambda%t %S " :
                                               "(%yflambda%t %S ", get_proc_args(op));
-                      for(tmp = get_proc_code(op); !is_nil(tmp); tmp = cdr(tmp))
+                      for(tmp = get_proc_code(op); !is_nil(tmp); tmp = cdr(tmp)) {
                               printer(l, o, car(tmp), depth+1);
+                              if(!is_nil(cdr(tmp)))
+                                      io_putc(' ', o);
+                      }
                       io_putc(')', o);
                       break;
         case HASH:    lisp_printf(l, o, depth, "%H",             get_hash(op)); break;

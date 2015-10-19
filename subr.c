@@ -117,7 +117,9 @@
   X("tr",          subr_tr,        "Z Z Z Z", "translate a string given a format and mode")\
   X("type-of",     subr_typeof,    "A",    "return an integer representing the type of an object")\
   X("top-environment", subr_top_env, "",   "return the top level environment")\
-  X("validate",    subr_validate,  "d Z c", "validate an argument list against a format string")
+  X("validate",    subr_validate,  "d Z c", "validate an argument list against a format string")\
+  X("mapcar",      subr_mapcar,    "c c",   "map a function onto a list of values")\
+  X("environment", subr_environment, "",    "get the current environment")
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
@@ -1098,5 +1100,14 @@ static cell *subr_top_env(lisp *l, cell *args) { UNUSED(args);
 static cell *subr_is_closed(lisp *l, cell *args) {  UNUSED(l);
         if(!cklen(args, 1)) RECOVER(l, "\"expected (any) '%S", args);
         return is_closed(car(args)) ? gsym_tee() : gsym_nil();
+}
+
+static cell *subr_mapcar(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
+        /**@todo implement this**/
+        return gsym_nil();
+}
+
+static cell *subr_environment(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
+        return l->cur_env;
 }
 
