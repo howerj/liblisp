@@ -9,32 +9,54 @@
  *            for it, this does not include accessor functions like "get_int"
  *  @note     This could be moved to "util.c" so it can be reused.
  *  @note     Other functionality could include generating a random test
- *            vector, printing out the time taken and more!
+ *            vector, optional colorizing, logging and more!
  **/
 #include "liblisp.h"
 
-#ifdef NDEBUG
-#undef NDEBUG
+#ifdef NDEBUG 
+#undef NDEBUG /*@warning do not remove this*/
 #endif
+
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <time.h>
 
 /*** very minimal test framework ***/
 
 static unsigned passed, failed;
+static int color = 1;
+
+static char *reset(void)  { return color ? "\x1b[0m"  : ""; }
+static char *red(void)    { return color ? "\x1b[31m" : ""; }
+static char *green(void)  { return color ? "\x1b[32m" : ""; }
+static char *yellow(void) { return color ? "\x1b[33m" : ""; }
+static char *blue(void)   { return color ? "\x1b[34m" : ""; }
+static void pass(void)    { passed++; }
+static void fail(void)    { failed++; }
 
 #define test(EXPR) do {\
-        if(!(EXPR)) printf("  FAILED:\t(" #EXPR ") on line '%d'\n", __LINE__), failed++;\
-        else        printf("      ok:\t(" #EXPR ")\n"), passed++;\
+        if(!(EXPR)) printf("  %sFAILED%s:\t" #EXPR " (line '%d')\n", red(), reset(), __LINE__), fail();\
+        else        printf("      %sok%s:\t" #EXPR "\n", green(), reset()), pass();\
+        } while(0);
+
+#define state(STMT) do{\
+                    printf("   %sstate%s:\t" #STMT "\n", blue(), reset());\
+                    STMT;\
         } while(0);
 
 /*** end minimal test framework ***/
 
 int main(void) {
-        printf("begin liblisp unit tests\n\n");
+        double timer;
+        clock_t start, end;
+        time_t rawtime;
+        time(&rawtime);
 
+        printf("liblisp unit tests\n%sbegin:\n\n", asctime(localtime(&rawtime)));
+
+        start = clock();
         { 
                 bitfield *b;
                 printf("util.c\n");
@@ -63,11 +85,11 @@ int main(void) {
 
                 test(b = bit_new(1024));
 
-                bit_set(b, 1023);
-                bit_set(b, 37);
-                bit_toggle(b, 37);
-                bit_set(b, 0);
-                bit_unset(b, 0);
+                state(bit_set(b, 1023));
+                state(bit_set(b, 37));
+                state(bit_toggle(b, 37));
+                state(bit_set(b, 0));
+                state(bit_unset(b, 0));
 
                 test(bit_get(b, 1023));
                 test(!bit_get(b, 37));
@@ -83,17 +105,21 @@ int main(void) {
                 test(is_fnumber("1e34"));
                 test(is_fnumber("93.04"));
 
-                /* match, lstrdup, regex_match, djb2, lstrcatend, vstrcatsep,
+                /* @todo match, lstrdup, regex_match, djb2, lstrcatend, vstrcatsep,
                  * ipow, xorshift128plus
                  */ 
         }
 
+        /** @todo tr.c, io.c, valid.c, hash.c, read.c, print.c, eval.c,
+         *        compile.c, subr.c, ... */
+
         { /* lisp.c (and the lisp interpreter in general) */
+                lisp *l;
+                cell *x;
+
                 printf("lisp.c\n");
                 /*while unit testing eschews state being held across tests it is makes
                  *little sense in this case*/
-                lisp *l;
-                cell *x;
                 test(l = lisp_init()); 
                 assert(l);
                 test(get_int(lisp_eval_string(l, "(+ 2 2)")) == 4);
@@ -106,10 +132,12 @@ int main(void) {
                 test(is_asciiz(x));
                 test(!is_str(x));
 
-                lisp_destroy(l);
+                state(lisp_destroy(l));
         }
+        end = clock();
 
-        printf("\npassed %u/%u\n", passed, passed+failed);
+        timer = ((double) (end - start)) / CLOCKS_PER_SEC;
+        printf("\npassed  %u/%u\ntime    %fs\n", passed, passed+failed, timer);
         return failed; /*should be zero!*/
 }
 

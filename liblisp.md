@@ -89,7 +89,11 @@ single global lisp environment that each module adds its code to when it is
 loaded.
 
 If the module system is not used then multiple lisp interpreters can be run in
-different threads.
+different threads. This could be remedied if instead of the modules having
+constructors and destructors that add their functions into a global environment
+the lisp environment acquired a function with "dlsym", which would have to be 
+part of the module specification and have a fixed name, and passed in the lisp 
+environment it was operating on to that function.
 
 * Used as a generic utility library
 

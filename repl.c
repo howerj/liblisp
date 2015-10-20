@@ -70,8 +70,13 @@ int lisp_repl(lisp *l, char *prompt, int editor_on) {
                         free(line);
                         line = NULL;
                 }
-        } else { /*read from stdin with no special handling, or a file*/
+        } else { /*read from input with no special handling, or a file*/
                 for(;;){
+                        /**@bug this should exit with a failure if not reading
+                         *      from stdin and an error occurs, otherwise the
+                         *      parser looses track, this is mainly a concern
+                         *      for string input, where is makes for very
+                         *      confusing behavior*/
                         lisp_printf(l, ofp, 0, "%s", prompt);
                         if(!(ret = reader(l, lisp_get_input(l)))) break;
                         if(!(ret = eval(l, 0, ret, l->top_env))) break;

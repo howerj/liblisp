@@ -25,12 +25,23 @@
 #endif
 
 #ifdef __unix__
-static char *os = "unix";
+static char *os   = "unix";
 #elif _WIN32
 #include <windows.h>
-static char *os = "windows";
+static char *os   = "windows";
 #else
-static char *os = "unknown";
+static char *os   = "unknown";
+#endif
+
+#ifdef USE_INITRC
+static char *init = ".lisprc"; /**< lisp initialization file */
+#ifdef __unix__
+static char *home = "HOME";
+#elif _WIN32
+static char *home = "%HOMEPATH%";
+#else
+static char *home = ""; 
+#endif
 #endif
 
 #ifdef USE_DL
@@ -150,6 +161,30 @@ int main(int argc, char **argv) {
         atexit(dlclose_atexit);
 #else
         lisp_add_cell(l, "*have-dynamic-loader*", gsym_nil());
+#endif
+
+#ifdef USE_INITRC
+        char *rcpath = NULL;;
+        if((rcpath = getenv(home))) {
+                io *i;
+                FILE *in;
+                if(!(rcpath = VSTRCATSEP("/", rcpath, init)))
+                        goto fail;
+                if((in = fopen(rcpath, "rb"))) {
+                        if(!(i = io_fin(in)))
+                                goto fail;
+                        lisp_set_input(l, i);
+                        if(lisp_repl(l, "", 0) < 0) {
+                                PRINT_ERROR("\"error in initialization file\" \"%s\"", rcpath);
+                                goto fail;
+                        }
+                        io_close(i);
+                        if(!(i = io_fin(stdin)))
+                                goto fail;
+                        lisp_set_input(l, i);
+                }
+                free(rcpath);
+        }
 #endif
 
         return main_lisp_env(l, argc, argv);

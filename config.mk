@@ -36,6 +36,8 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 #   NDEBUG       Disable asserts
 #   USE_DL	 Add support for dlopen/LoadLibrary, requires "-ldl" 
 #                on Unix systems
+#   USE_INITRC   Add support for a per user login file located in
+#                ~/.lisprc which is run before the interpreter is.
 DEFINES ?= -DUSE_DL
 LINK    ?= -ldl
 # This is for convenience only, it may cause problems.
