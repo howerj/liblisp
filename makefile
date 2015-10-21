@@ -168,18 +168,19 @@ indent:
 
 clean:
 	@echo Cleaning repository.
-	-$(RM) $(RM_FLAGS) *.a 
+	-$(RM) $(RM_FLAGS) $(TARGET) 
 	-$(RM) $(RM_FLAGS) *.$(DLL) 
+	-$(RM) $(RM_FLAGS) *.a 
 	-$(RM) $(RM_FLAGS) *.o 
 	-$(RM) $(RM_FLAGS) *.db
 	-$(RM) $(RM_FLAGS) *.htm 
 	-$(RM) $(RM_FLAGS) Doxyfile 
-	-$(RM) $(RM_FLAGS) $(TARGET) 
 	-$(RM) $(RM_FLAGS) *.tgz 
 	-$(RM) $(RM_FLAGS) *~ 
 	-$(RM) $(RM_FLAGS) */*~ 
 	-$(RM) $(RM_FLAGS) *.log 
 	-$(RM) $(RM_FLAGS) *.out 
+	-$(RM) $(RM_FLAGS) *.bak
 	-$(RM) $(RM_FLAGS) tags
 	-$(RM) $(RM_FLAGS) html/ 
 	-$(RM) $(RM_FLAGS) latex/ 

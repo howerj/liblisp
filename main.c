@@ -3,13 +3,20 @@
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later 
  *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
- *  @email      howe.r.j.89@gmail.com**/
+ *  @email      howe.r.j.89@gmail.com
+ *
+ *  All of the non-portable code in the interpreter is isolated here, the
+ *  library itself is written in pure C (C99) and dependent only on the
+ *  functions within the standard C library. This file adds in support
+ *  for various things depending on the operating system (if known).
+ **/
 
 #include "liblisp.h"
 #include <assert.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <time.h>
 
 #ifndef VERSION
@@ -25,6 +32,7 @@
 #endif
 
 #ifdef __unix__
+#include <dlfcn.h>
 static char *os   = "unix";
 #elif _WIN32
 #include <windows.h>
@@ -36,11 +44,44 @@ static char *os   = "unknown";
 #ifdef USE_INITRC
 static char *init = ".lisprc"; /**< lisp initialization file */
 #ifdef __unix__
-static char *home = "HOME";
+static char *home = "HOME"; /**< Unix home path*/
+static char *filesep = "/"; /**< Unix file directory separator */
 #elif _WIN32
-static char *home = "%HOMEPATH%";
+static char *home = "HOMEPATH"; /**< Windows home path*/
+static char *filesep = "\\"; /**< Window file directory separator */
 #else
-static char *home = ""; 
+static char *home = ""; /**< unknown operating system*/
+static char *filesep = "/"; /**< unknown os file directory separator */
+#endif
+#endif
+
+#ifdef USE_ABORT_HANDLER
+#ifdef __unix__
+/* it should be possible to move this into a module that can be loaded,
+ * however it would only be able to catch SIGABRT after the interpreter
+ * is in a working state already, making it less useful */
+#include <execinfo.h>
+#define TRACE_SIZE      (64u)
+
+/** @warning this hander calls functions that are not safe to call
+ *           from a signal handler, however this is only going to
+ *           be called in the event of an internal consistency failure,
+ *           and only as a courtesy to the programmer*/
+static void sig_abrt_handler(int sig) {
+        void *trace[TRACE_SIZE];
+        char **messages = NULL;
+        int i, trace_size;
+        trace_size = backtrace(trace, TRACE_SIZE);
+        messages = backtrace_symbols(trace, trace_size);
+        if(trace_size < 0)
+                goto fail;
+        fprintf(stderr, "SIGABRT! Stack trace:\n");
+        for(i = 0; i < trace_size; i++)
+                fprintf(stderr, "\t%s\n", messages[i]);
+        fflush(stderr);
+fail:   signal(sig, SIG_DFL);
+        abort();
+}
 #endif
 #endif
 
@@ -50,8 +91,6 @@ static char *home = "";
  * be used as internal lisp subroutines by the interpreter. */
 
 #ifdef __unix__ /*Only tested on Linux*/
-
-#include <dlfcn.h>
 typedef void* dl_handle_t;
 
 #define DL_OPEN(NAME)        dlopen((NAME), RTLD_NOW)
@@ -88,12 +127,13 @@ typedef struct dl_list {
 
 dl_list *head; /**< *GLOBAL* list of all DLL handles for dlclose_atexit*/
 
-/** @brief close all of the open DLLs when the program exits **/
+/** @brief close all of the open DLLs when the program exits, subr_dlopen
+ *         adds the handles to this list **/
 static void dlclose_atexit(void) {
         dl_list *t; 
         while(head) {
                 assert(head->handle);
-                DL_CLOSE(head->handle);
+                DL_CLOSE(head->handle); /*closes DLL and calls its destructors*/
                 t = head;
                 head = head->next;
                 free(t);
@@ -163,14 +203,25 @@ int main(int argc, char **argv) {
         lisp_add_cell(l, "*have-dynamic-loader*", gsym_nil());
 #endif
 
+#ifdef USE_ABORT_HANDLER
+        if(signal(SIGABRT, sig_abrt_handler) == SIG_ERR) {
+                PRINT_ERROR("\"%s\"", "could not install SIGABRT handler");
+                goto fail;
+        }
+#endif
+
 #ifdef USE_INITRC
         char *rcpath = NULL;;
+        lisp_add_cell(l, "*file-separator*", mk_str(l, lstrdup(filesep)));
         if((rcpath = getenv(home))) {
                 io *i;
                 FILE *in;
-                if(!(rcpath = VSTRCATSEP("/", rcpath, init)))
+                if(!(rcpath = VSTRCATSEP(filesep, rcpath, init)))
                         goto fail;
                 if((in = fopen(rcpath, "rb"))) {
+                        i = lisp_get_input(l);
+                        io_close(i);
+
                         if(!(i = io_fin(in)))
                                 goto fail;
                         lisp_set_input(l, i);
@@ -183,10 +234,9 @@ int main(int argc, char **argv) {
                                 goto fail;
                         lisp_set_input(l, i);
                 }
-                free(rcpath);
+                lisp_add_cell(l, "*initialization-file*", mk_str(l, rcpath));
         }
 #endif
-
         return main_lisp_env(l, argc, argv);
 fail:   return PRINT_ERROR("\"%s\"", "initialization failed"), -1;
         return -1;

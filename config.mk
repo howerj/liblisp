@@ -38,7 +38,9 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 #                on Unix systems
 #   USE_INITRC   Add support for a per user login file located in
 #                ~/.lisprc which is run before the interpreter is.
-DEFINES ?= -DUSE_DL
+#   USE_ABORT_HANDLER This adds in a handler that catches SIGABRT
+#                and prints out a stack trace if it can.
+DEFINES ?= -DUSE_DL -DUSE_INITRC -DUSE_ABORT_HANDLER
 LINK    ?= -ldl
 # This is for convenience only, it may cause problems.
 RPATH   ?= -Wl,-rpath=. -Wl,-rpath=./mod 
@@ -74,7 +76,7 @@ else # Unix assumed {only Linux has been tested}
 DLL=so
 
 ifeq ($(FAST),true)
-CFLAGS += -DNDEBUG 
+CFLAGS += -DNDEBUG
 else
 CFLAGS += -D_FORTIFY_SOURCE=2 -fstack-protector 
 endif

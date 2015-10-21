@@ -34,6 +34,7 @@ extern "C" {
         X(define,  "define") X(set,     "set!")   X(progn,   "progn")\
         X(cond,    "cond")   X(error,   "error")  X(loop,    "loop")\
         X(let,     "let")    X(ret,     "return") X(compile, "compile")
+      /*X(lambda_eval, "lambda-eval"); // @note evaluate an expression and create a  lambda from it */
 
 /**@brief This restores a jmp_buf stored in lisp environment if it
  *        has been copied out to make way for another jmp_buf.
@@ -145,7 +146,8 @@ struct lisp {
         cell CELL_XLIST Unused; /**< list of special forms/symbols*/
 #undef X
         cell *all_symbols, /**< all intern'ed symbols*/
-             *top_env,     /**< top level lisp environment*/
+             *top_env,     /**< top level lisp environment (association list)*/
+             *top_hash,    /**< top level hash (member of association list)*/
              *input,       /**< interpreter input stream*/
              *output,      /**< interpreter output stream*/
              *logging,     /**< interpreter logging/error stream*/
@@ -172,8 +174,7 @@ struct lisp {
                  trace_on:     1, /**< turn tracing on or off*/
                  gc_off:       1, /**< turn the garbage collector off*/
                  editor_on:    1; /**< REPL Turn the line editor on*/
-        unsigned cur_depth; /*< current recursion depth of the interpreter*/
-        cell *top_hash;
+        unsigned cur_depth; /**< current recursion depth of the interpreter*/
 };
 
 /*************************** internal functions *******************************/

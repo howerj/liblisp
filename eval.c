@@ -116,10 +116,12 @@ cell *mk_user(lisp *l, void *x, intptr_t type) { assert(l && x);
         return ret;
 }
 
-unsigned get_length(cell *x) { assert(x); return x->len; }
-void *get_raw(cell *x)       { assert(x); return x->p[0].v; }
-intptr_t get_int(cell *x)      { return !x ? 0 : (intptr_t)(x->p[0].v); }
+unsigned get_length(cell *x)       { assert(x); return x->len; }
+void *get_raw(cell *x)             { assert(x); return x->p[0].v; }
+intptr_t get_int(cell *x)          { return !x ? 0 : (intptr_t)(x->p[0].v); }
 subr  get_subr(cell *x)            { assert(x && is_subr(x)); return x->p[0].prim; }
+/**@note it might make sense to merge get_subr_docstring and get_proc_docstring
+ *       as well as get_subr_format and get_proc_format */
 char *get_subr_format(cell *x)     { assert(x && is_subr(x)); return (char *) x->p[1].v; }
 char *get_subr_docstring(cell *x)  { assert(x && is_subr(x)); return (char *) x->p[2].v; }
 cell *get_proc_args(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[0].v; }
@@ -228,6 +230,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
         case CONS:
                 first = car(exp);
                 exp   = cdr(exp);
+                /**@note if first is cons eval it?*/
                 if(first == l->iif) {
                         VALIDATE(l, "if", 3, "A A A", exp, 1);
                         exp = !is_nil(eval(l, depth+1, car(exp), env)) ?

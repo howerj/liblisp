@@ -181,9 +181,11 @@ in the usual manner.
 * See the "@todo" comments at the top of [liblisp.c][] to see a full list of
   bugs as well comments labeled with "@bug". "@warning" is also used in certain
   cases, but as a warning to the programmer modifying the interpreter.
+* "@note" also exits, they may be weaker forms of "@todo", or just notes.
 * The code is formatted in an odd way, but I like it, it is simple enough to
   change however by using GNU indent.
-* Some line lengths in the C file exceed 80 characters.
+* Many line lengths in the C file exceed 80 characters (about 209 lines at the
+  moment).
 
 ### Implementation limits
 
@@ -212,6 +214,60 @@ modules.
 matching.
 
 Currently the interpreter cannot print out expressions 
+
+### Testing and bug mitigation
+
+There are a few methods used (or aspired to) in this interpreter when it comes
+to mitigating bugs, documentation, profiling the code, and hopefully catching
+bugs introduced due to refactoring.
+
+* Unit Tests
+
+There are two parts to the unit test frame work, a C program that calls
+functions directly out of the library and unit test code written in lisp. The
+aim of the C program is to test all of the functions that can reasonably be
+tested by it (the higher level REPL functions will have to be tested by the
+lisp code and the user).
+
+* Valgrind
+
+Valgrind is used regularly to catch memory leaks. Currently the interpreter
+does not contain any known memory leaks, however some modules do leak memory,
+it is unclear if the modules themselves of the libraries they link against are
+responsible for the leaks.
+
+* Doxygen
+
+Doxygen is used to document most of the function interfaces (and all public
+ones), create a "to-do" list, a list of known bugs, make notes and provide
+a list of warnings to the programmer. It generates a list of warnings, which is
+logged to "doxygen.log".
+
+* Gprof
+
+"gprof" has been used and has helped find and remedy the highest offenders in
+terms of sloth (assoc).
+
+* Gcov
+
+"gcov" has not been used at the moment, either for profiling or coverage tests,
+this could be used in conjunction with the unit test framework to make sure it
+covers a high percentage of the code base.
+
+* Splint
+
+Using splint (3.1.2) has been unsuccessful, it fails to parse most of the C 
+files correctly and so cannot produce any warnings. The "-weak" setting would
+be used as there is no intention to mark up the source code with splint type
+information.
+
+* Asserts 
+
+Asserts are used throughout the code base, in fact disabling them gives about a
+10-20% speed boost. When changes are made, asserts have prevented subtle
+corruption and provided hints as to where the problem has occurred, failing
+fast and quickly instead of giving the impression that a change might have been
+successful.
 
 <div id='To Do'/>
 ## To Do
