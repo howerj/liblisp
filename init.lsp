@@ -5,6 +5,11 @@
 ; sensibly load modules.
 ;
 ; type checking information
+;
+; @todo file path conversion unix <==> windows
+; @todo file name escaping "a b" ==> "a\ b"
+; @todo more utility functions
+; @todo tabs for formating
 
 (progn
  ; @bug Incorrect, evaluates all args
@@ -51,6 +56,15 @@
           (put *error* "(error \"Not a file name or a output IO type\" %S)\n" file) 
           'error))))))
 
+(define *file-separator* 
+	(cond 
+		((= *os* "unix") "/")
+		((= *os* "windows") "\\")
+		(t "/")))
+
+(define make-path
+	(lambda	(l)
+		(join *file-separator* l)))
 
 (let
  (exit-if-not-eof
@@ -59,10 +73,10 @@
     t
     (progn (format *error* "(error \"eval-file failed\" %S %S)\n" in file) (exit)))))
  (progn
-  (eval-file 'mod/lisp/mods.lsp exit-if-not-eof nil)
-  (eval-file 'mod/lisp/base.lsp exit-if-not-eof nil)
-  (eval-file 'mod/lisp/sets.lsp exit-if-not-eof nil)
-  (eval-file 'mod/lisp/symb.lsp exit-if-not-eof nil)
-  (eval-file 'mod/lisp/test.lsp exit-if-not-eof nil)
+  (eval-file (make-path '(mod lisp mods.lsp)) exit-if-not-eof nil)
+  (eval-file (make-path '(mod lisp base.lsp)) exit-if-not-eof nil)
+  (eval-file (make-path '(mod lisp sets.lsp)) exit-if-not-eof nil)
+  (eval-file (make-path '(mod lisp symb.lsp)) exit-if-not-eof nil)
+  (eval-file (make-path '(mod lisp test.lsp)) exit-if-not-eof nil)
  t))
 

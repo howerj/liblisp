@@ -1,4 +1,11 @@
 *.so
-*.o
 *.a
-*~
+*.o
+line
+*.htm
+*.html
+linenoise_example
+*.dSYM
+*.txt
+*.exe
+*.dll

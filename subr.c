@@ -18,18 +18,18 @@
  *  manual (which should be called something like "liblisp.md") describes
  *  what each subroutine primitive does within the context of the interpreter.
  *
- *  @todo Assertions should be added throughout these routines to make sure
+ *  @note Assertions should be added throughout these routines to make sure
  *        operations do not go out of bounds.
- *  @todo Remove as many variable length functions as possible.
- *  @todo Make the open/close routines more generic (so that they can deal
- *        with user defined types).
- *  @todo add interface to errno and more C-library stuff.
+ *  @note More functions should be added like "lambda-eval" (or maybe macros
+ *        instead in eval.c), map, apply, generate (a list of
+ *        integers in a range).
  **/
 
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <locale.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -118,9 +118,11 @@
   X("type-of",     subr_typeof,    "A",    "return an integer representing the type of an object")\
   X("top-environment", subr_top_env, "",   "return the top level environment")\
   X("validate",    subr_validate,  "d Z c", "validate an argument list against a format string")\
-  X("mapcar",      subr_mapcar,    "c c",   "map a function onto a list of values")\
   X("environment", subr_environment, "",    "get the current environment")\
-  X("raw",         subr_raw,       "A",     "get the raw value of an object")
+  X("raw",         subr_raw,       "A",     "get the raw value of an object")\
+  X("errno",       subr_errno,     "",      "return the current errno")\
+  X("strerror",    subr_strerror,  "d",     "convert an errno into a string describing that error")\
+  X("foldl",       subr_foldl,      "x c",  "left fold; reduce a list given a function")
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
@@ -352,7 +354,7 @@ static cell *subr_mod(lisp *l, cell *args) {
         dividend = get_int(car(args));
         divisor  = get_int(CADR(args));
         if(!divisor || (dividend == INTPTR_MIN && divisor == -1)) 
-                RECOVER(l, "\"invalid divisor values\" '%S", args);
+                RECOVER(l, "\"invalid divisor values\"\n '%S", args);
         return mk_int(l, dividend % divisor);
 }
 
@@ -363,13 +365,13 @@ static cell *subr_div(lisp *l, cell *args) {
                 dividend = get_int(car(args));
                 divisor = get_a2i(CADR(args));
                 if(!divisor || (dividend == INTPTR_MIN && divisor == -1))
-                        RECOVER(l, "\"invalid divisor values\" '%S", args);
+                        RECOVER(l, "\"invalid divisor values\"\n '%S", args);
                 return mk_int(l, dividend / divisor);
         } 
         dividend = get_float(car(args));
         divisor = get_a2f(CADR(args));
         if(divisor == 0.)
-                RECOVER(l, "\"division by zero in %S\"", args);
+                RECOVER(l, "\"division by zero\"\n '%S", args);
         return mk_float(l, dividend / divisor);
 }
 
@@ -381,9 +383,9 @@ static cell *subr_greater(lisp *l, cell *args) {
         if(is_arith(x) && is_arith(y))
                 return  (is_floating(x) ? get_float(x) : get_int(x)) > 
                         (is_floating(y) ? get_float(y) : get_int(y)) ? gsym_tee() : gsym_nil();
-        else if(is_asciiz(x) && is_asciiz(x))
+        else if(is_asciiz(x) && is_asciiz(y))
                 return (strcmp(get_str(x), get_str(y)) > 0) ? gsym_tee() : gsym_nil();
-fail:   RECOVER(l, "\"expected (number number) or (string string)\" '%S", args);
+fail:   RECOVER(l, "\"expected (number number) or (string string)\"\n '%S", args);
         return gsym_error();
 }
 
@@ -395,9 +397,9 @@ static cell *subr_less(lisp *l, cell *args) {
         if(is_arith(x) && is_arith(y))
                 return  (is_floating(x) ? get_float(x) : get_int(x)) < 
                         (is_floating(y) ? get_float(y) : get_int(y)) ? gsym_tee() : gsym_nil();
-        else if(is_asciiz(x) && is_asciiz(x))
+        else if(is_asciiz(x) && is_asciiz(y))
                 return (strcmp(get_str(x), get_str(y)) < 0) ? gsym_tee() : gsym_nil();
-fail:   RECOVER(l, "\"expected (number number) or (string string)\" '%S", args);
+fail:   RECOVER(l, "\"expected (number number) or (string string)\"\n '%S", args);
         return gsym_error();
 }
 
@@ -482,13 +484,13 @@ static cell *subr_eval(lisp *l, cell *args) {
         if(cklen(args, 1)) x = eval(l, l->cur_depth, car(args), l->top_env);
         if(cklen(args, 2)) {
                 if(!is_cons(CADR(args)))
-                        RECOVER(l, "\"expected a-list\" '%S", args);
+                        RECOVER(l, "\"expected a-list\"\n '%S", args);
                 x = eval(l, l->cur_depth, car(args), CADR(args));
         }
 
         RECOVER_RESTORE(restore_used, l, restore); 
         if(!x) 
-           RECOVER(l, "\"expected (expr) or (expr environment)\" '%S", args);
+           RECOVER(l, "\"expected (expr) or (expr environment)\"\n '%S", args);
         return x;
 }
 
@@ -524,7 +526,7 @@ static cell* subr_open(lisp *l, cell *args) {
         case SIN:  ret = io_sin(file); break;
       /*case SOUT: will not be implemented.*/
         default:   
-          RECOVER(l, "\"invalid operation %d\" '%S", get_int(car(args)), args);
+          RECOVER(l, "\"invalid operation %d\"\n '%S", get_int(car(args)), args);
         }
         return ret == NULL ? gsym_nil() : mk_io(l, ret);
 }
@@ -585,7 +587,7 @@ static cell* subr_flush(lisp *l, cell *args) {
         if(cklen(args, 0)) return mk_int(l, fflush(NULL));
         if(cklen(args, 1) && is_io(car(args))) 
                 return io_flush(get_io(car(args))) ? gsym_nil() : gsym_tee();
-        RECOVER(l, "\"expected () or (io)\" '%S", args);
+        RECOVER(l, "\"expected () or (io)\"\n '%S", args);
         return gsym_error();
 }
 
@@ -596,7 +598,7 @@ static cell* subr_tell(lisp *l, cell *args) {
 static cell* subr_seek(lisp *l, cell *args) {
         switch (get_int(CADR(cdr(args)))) {
         case SEEK_SET: case SEEK_CUR: case SEEK_END: break;
-        default: RECOVER(l, "\"invalid enum option\" '%S", args);
+        default: RECOVER(l, "\"invalid enum option\"\n '%S", args);
         }
         return mk_int(l, io_seek(get_io(car(args)), get_int(CADR(args)), get_int(CADR(cdr(args)))));
 }
@@ -614,7 +616,7 @@ static cell* subr_system(lisp *l, cell *args) {
                 return mk_int(l, system(NULL));
         if(cklen(args, 1) && is_asciiz(car(args)))
                 return mk_int(l, system(get_str(car(args))));
-        RECOVER(l, "\"expected () or (string)\" '%S", args);
+        RECOVER(l, "\"expected () or (string)\"\n '%S", args);
         return gsym_error();
 }
 
@@ -654,7 +656,7 @@ static cell* subr_hcreate(lisp *l, cell *args) {
         }
         return mk_hash(l, ht); 
 fail:   hash_destroy(ht);
-        RECOVER(l, "\"expected ({symbol any}*)\" '%S", args);
+        RECOVER(l, "\"expected ({symbol any}*)\"\n '%S", args);
         return gsym_error();
 }
 
@@ -751,7 +753,7 @@ static cell* subr_coerce(lisp *l, cell *args) {
                     }
         default: break;
         }
-fail:   RECOVER(l, "\"invalid conversion or argument length not 2\" %S", args);
+fail:   RECOVER(l, "\"invalid conversion or argument length not 2\"\n %S", args);
         return gsym_error();
 }
 
@@ -801,7 +803,7 @@ static cell *subr_setlocale(lisp *l, cell *args) {
         case LC_MONETARY: case LC_NUMERIC: case LC_TIME:
                 ret = setlocale(get_int(car(args)), get_str(CADR(args)));
                 break;
-        default: RECOVER(l, "\"invalid int value\" '%S", args);
+        default: RECOVER(l, "\"invalid int value\"\n '%S", args);
         }
         if(!ret) return gsym_nil(); /*failed to set local*/
         return mk_str(l, lstrdup(ret));
@@ -863,7 +865,7 @@ static cell *subr_reverse(lisp *l, cell *args) {
         default:   
                 break;
         }
-fail:   RECOVER(l, "\"expected () (string) (list) (hash)\" %S", args);
+fail:   RECOVER(l, "\"expected () (string) (list) (hash)\"\n '%S", args);
         return gsym_error();
 }
 
@@ -894,7 +896,7 @@ static cell *subr_join(lisp *l, cell *args) {
                 r = tmp;
         }
         return mk_str(l, r);
-fail:   RECOVER(l, "\"expected (str str...) or (string (str ...))\" %S", args);
+fail:   RECOVER(l, "\"expected (str str...) or (string (str ...))\"\n '%S", args);
         return gsym_error();
 }
 
@@ -945,14 +947,15 @@ static cell *subr_substring(lisp *l, cell *args) {
         assert(((int)get_length(args)) > 0);
         if(!(get_length(args) == 2 || get_length(args) == 3) 
         || !is_asciiz(car(args)) || !is_int(CADR(args)))
-                RECOVER(l, "\"expected (string int int?)\" '%S", args);
+                RECOVER(l, "\"expected (string int int?)\"\n '%S", args);
         if(get_length(args) == 3 && !is_int(CADDR(args)))
-                RECOVER(l, "\"expected (string int int?)\" '%S", args);
+                RECOVER(l, "\"expected (string int int?)\"\n '%S", args);
         left = get_int(CADR(args));
         if(get_length(args) == 2) {
                 if(left >= 0) {
-                        left = MIN(left, (int)get_length(car(args)));
-                        assert(left < get_length(car(args)));
+			tmp  = get_length(car(args));
+                        left = MIN(left, tmp);
+                        assert(left < tmp);
                         return mk_str(l, lstrdup(get_str(car(args))+left));
                 } else if (left < 0) {
                         left = (int)get_length(car(args)) + left;
@@ -968,7 +971,7 @@ static cell *subr_substring(lisp *l, cell *args) {
                 }
         }
         if(((right = get_int(CADDR(args))) < 0) || left < 0)
-                RECOVER(l, "\"substring lengths must positive\" '%S", args);
+                RECOVER(l, "\"substring lengths must positive\"\n '%S", args);
         left = MIN(left, (int)get_length(car(args)));
         if((left + right) >= (int)get_length(car(args))) {
                 tmp = (right + left) - get_length(car(args));
@@ -982,12 +985,16 @@ static cell *subr_substring(lisp *l, cell *args) {
 }
 
 static cell *subr_format(lisp *l, cell *args) { 
+        /** @note This function has a lot of scope for improvement;
+         *        colorization, printing different base numbers, leading
+         *        zeros on numbers, printing repeated characters and even
+         *        string interpolation ("$x" could look up 'x). */
         cell *cret;
         io *o = NULL, *t;
         char *fmt, c;
         int ret = 0, pchar;
         if((get_length(args) < 2) || !is_out(car(args)) || !is_asciiz(CADR(args)))
-                RECOVER(l, "\"expected () (io str any...)\" '%S", args);
+                RECOVER(l, "\"expected () (io str any...)\"\n '%S", args);
         o = get_io(car(args));
         args = cdr(args);
         if(!(t = io_sout(calloc(2, 1), 2)))
@@ -1036,7 +1043,7 @@ static cell *subr_format(lisp *l, cell *args) {
         return cret;
 fail:   free(t->p.str);
         io_close(t);
-        RECOVER(l, "\"format error\" %S", args);
+        RECOVER(l, "\"format error\"\n %S", args);
         return gsym_error();
 }
 
@@ -1054,9 +1061,9 @@ static cell *subr_tr(lisp *l, cell *args) {
         memset(&st, 0, sizeof(st));
         switch(tr_init(&st, mode, (uint8_t*)s1, (uint8_t*)s2)) {
                 case TR_OK:      break;
-                case TR_EINVAL:  RECOVER(l, "\"invalid mode\" \"%s\"", mode);
-                case TR_DELMODE: RECOVER(l, "\"set 2 not NULL\" '%S", args);
-                default:         RECOVER(l, "\"unknown tr error\" '%S", args);
+                case TR_EINVAL:  RECOVER(l, "\"invalid mode\"\n \"%s\"", mode);
+                case TR_DELMODE: RECOVER(l, "\"set 2 not NULL\"\n '%S", args);
+                default:         RECOVER(l, "\"unknown tr error\"\n '%S", args);
         }
         if(!(ret = calloc(len + 1, 1)))
                 HALT(l, "\"%s\"", "out of memory");
@@ -1099,13 +1106,8 @@ static cell *subr_top_env(lisp *l, cell *args) { UNUSED(args);
 }
 
 static cell *subr_is_closed(lisp *l, cell *args) {  UNUSED(l);
-        if(!cklen(args, 1)) RECOVER(l, "\"expected (any) '%S", args);
+        if(!cklen(args, 1)) RECOVER(l, "\"expected (any)\"\n '%S", args);
         return is_closed(car(args)) ? gsym_tee() : gsym_nil();
-}
-
-static cell *subr_mapcar(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
-        /**@todo implement this**/
-        return gsym_nil();
 }
 
 static cell *subr_environment(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
@@ -1114,5 +1116,31 @@ static cell *subr_environment(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
 
 static cell *subr_raw(lisp *l, cell *args) {
         return mk_int(l, (intptr_t)get_raw(car(args)));
+}
+
+static cell *subr_errno(lisp *l, cell *args) { UNUSED(args);
+        int e = errno;
+        errno = 0;
+        return mk_int(l, e);
+}
+
+static cell *subr_strerror(lisp *l, cell *args) {
+        return mk_str(l, lstrdup(strerror(get_int(car(args)))));
+}
+
+static cell *subr_foldl(lisp *l, cell *args) {
+        cell *f, *start, *tmp, *ret;
+        f     =  car(args);
+        tmp   =  CADR(args);
+        start =  car(tmp);
+        tmp   =  cdr(tmp);
+        for(ret = start; !is_nil(tmp); tmp = cdr(tmp)) {
+                ret = cons(l, gsym_quote(), cons(l, ret, gsym_nil()));
+                ret = eval(l, l->cur_depth, 
+                                cons(l, f, 
+                                 cons(l, car(tmp),
+                                  cons(l, ret, gsym_nil()))), l->cur_env);
+        }
+        return ret;
 }
 

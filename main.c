@@ -204,10 +204,12 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef USE_ABORT_HANDLER
+#ifdef __unix__
         if(signal(SIGABRT, sig_abrt_handler) == SIG_ERR) {
                 PRINT_ERROR("\"%s\"", "could not install SIGABRT handler");
                 goto fail;
         }
+#endif
 #endif
 
 #ifdef USE_INITRC

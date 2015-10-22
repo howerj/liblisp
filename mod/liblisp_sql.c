@@ -3,7 +3,9 @@
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later 
  *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
- *  @email      howe.r.j.89@gmail.com**/
+ *  @email      howe.r.j.89@gmail.com
+ *  
+ *  @todo Improve interface, add prepared statements, ...**/
 #include <assert.h>
 #include <liblisp.h>
 #include <sqlite3.h>
@@ -95,6 +97,7 @@ static void destruct(void)  { }
 #elif _WIN32
 #include <windows.h>
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
+        UNUSED(hinstDLL); UNUSED(lpvReserved);
         switch (fdwReason) {
             case DLL_PROCESS_ATTACH: initialize(); break;
             case DLL_PROCESS_DETACH: break;

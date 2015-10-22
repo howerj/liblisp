@@ -81,6 +81,7 @@ static void destruct(void)  { }
 #elif _WIN32
 #include <windows.h>
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
+        UNUSED(hinstDLL); UNUSED(lpvReserved);
         switch (fdwReason) {
             case DLL_PROCESS_ATTACH: initialize(); break;
             case DLL_PROCESS_DETACH: break;
@@ -91,5 +92,4 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
         return TRUE;
 }
 #endif
-
 

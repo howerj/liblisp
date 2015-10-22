@@ -79,7 +79,7 @@ main.o: main.c lib$(TARGET).h
 	$(CC) $(CFLAGS_RELAXED) $(DEFINES) $(VCS_DEFINES) $< -c -o $@
 
 $(TARGET): main.o lib$(TARGET).$(DLL)
-	$(CC) $(CFLAGS) -Wl,-E $(RPATH) $^ $(LINK) -o $@
+	$(CC) $(CFLAGS) -rdynamic -Wl,-E $(RPATH) $^ $(LINK) -o $(TARGET)
 
 unit: unit.c lib$(TARGET).$(DLL)
 	$(CC) $(CFLAGS) $(RPATH) $^ -o $@
@@ -87,8 +87,8 @@ unit: unit.c lib$(TARGET).$(DLL)
 test: unit
 	./unit
 
-# @bug recursive make considered harmful!
 # Make as many modules as is possible
+# @bug recursive make considered harmful!
 modules: lib$(TARGET).$(DLL) $(TARGET)
 	-make -kC mod
 
@@ -98,17 +98,20 @@ run: all
 	@echo running the executable with default arguments
 	./$(TARGET) $(RUN_FLAGS) init.lsp -
 
+# From <http://valgrind.org/>
 valgrind: all
 	@echo running the executable through leak detection program, valgrind
 	valgrind ./$(TARGET) $(RUN_FLAGS) init.lsp -
 
 ### documentation ############################################################
 
+# From <https://daringfireball.net/projects/markdown/>
 lib$(TARGET).htm: lib$(TARGET).md
 	markdown $^ > $@
 
 doc: lib$(TARGET).htm doxygen
 
+# From <http://www.stack.nl/~dimitri/doxygen/>
 doxygen: 
 	doxygen -g 
 	doxygen Doxyfile 2> doxygen.log
@@ -126,49 +129,51 @@ TARBALL=$(subst $(space),,$(TARGET)-$(VERSION).tgz) # Remove spaces
 dist: $(TARGET) lib$(TARGET).a lib$(TARGET).$(DLL) lib$(TARGET).htm modules
 	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) *.a *.1 *.3
 
-
 # @bug does not work on Windows {only Linux}, config.mk needs updating
 install: all 
-	$(CP) -f $(TARGET) $(DESTDIR)$(PREFIX)/bin
-	$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(PREFIX)/bin
-	$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(MANPREFIX)/man1
-	$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(MANPREFIX)/man3
-	$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(PREFIX)/lib
-	$(SED) "s/VERSION/$(VERSION)/g" < $(TARGET).1    > $(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1
-	$(SED) "s/VERSION/$(VERSION)/g" < lib$(TARGET).3 > $(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3
-	$(CP) $(CP_FLAGS) lib$(TARGET).a $(DESTDIR)$(PREFIX)/lib
-	$(CP) $(CP_FLAGS) lib$(TARGET).$(DLL) $(DESTDIR)$(PREFIX)/lib
-	$(CP) $(CP_FLAGS) lib$(TARGET).h $(DESTDIR)$(PREFIX)/include
-	$(CHMOD) 755 $(DESTDIR)$(PREFIX)/bin/$(TARGET)
-	$(CHMOD) 644 $(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1
-	$(CHMOD) 644 $(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3
-	$(CHMOD) 755 $(DESTDIR)$(PREFIX)/lib/lib$(TARGET).a
-	$(CHMOD) 755 $(DESTDIR)$(PREFIX)/lib/lib$(TARGET).$(DLL)
-	$(CHMOD) 644 $(DESTDIR)$(PREFIX)/include/lib$(TARGET).h
+	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(PREFIX)$(FS)bin
+	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(PREFIX)$(FS)lib
+	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(PREFIX)$(FS)include
+	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(MANPREFIX)$(FS)man1
+	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(MANPREFIX)$(FS)man3
+	$(CP) $(CP_FLAGS) $(TARGET)$(EXE) $(DESTDIR)$(PREFIX)$(FS)bin
+	$(SED) "s/VERSION/$(VERSION)/g" < $(TARGET).1    > $(DESTDIR)$(MANPREFIX)$(FS)man1$(FS)$(TARGET).1
+	$(SED) "s/VERSION/$(VERSION)/g" < lib$(TARGET).3 > $(DESTDIR)$(MANPREFIX)$(FS)man3$(FS)lib$(TARGET).3
+	$(CP) $(CP_FLAGS) lib$(TARGET).a $(DESTDIR)$(PREFIX)$(FS)lib
+	$(CP) $(CP_FLAGS) lib$(TARGET).$(DLL) $(DESTDIR)$(PREFIX)$(FS)lib
+	$(CP) $(CP_FLAGS) lib$(TARGET).h $(DESTDIR)$(PREFIX)$(FS)include
+	$(CHMOD) 755 $(DESTDIR)$(PREFIX)$(FS)bin$(FS)$(TARGET)
+	$(CHMOD) 644 $(DESTDIR)$(MANPREFIX)$(FS)man1$(FS)$(TARGET).1
+	$(CHMOD) 644 $(DESTDIR)$(MANPREFIX)$(FS)man3$(FS)lib$(TARGET).3
+	$(CHMOD) 755 $(DESTDIR)$(PREFIX)$(FS)lib$(FS)lib$(TARGET).a
+	$(CHMOD) 755 $(DESTDIR)$(PREFIX)$(FS)lib$(FS)lib$(TARGET).$(DLL)
+	$(CHMOD) 644 $(DESTDIR)$(PREFIX)$(FS)include$(FS)lib$(TARGET).h
 	$(LDCONFIG)
 	@echo "installation complete"
 
 uninstall:
-	@echo uninstalling $(TARGET)
-	@$(RM) -vf $(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1
-	@$(RM) -vf $(DESTDIR)$(PREFIX)/bin/$(TARGET)
-	@$(RM) -vf $(DESTDIR)$(PREFIX)/lib/lib$(TARGET).a
-	@$(RM) -vf $(DESTDIR)$(PREFIX)/lib/lib$(TARGET).$(DLL)
-	@$(RM) -vf $(DESTDIR)$(PREFIX)/include/lib$(TARGET).h
+	@echo uninstalling $(TARGET)$(EXE)
+	$(RM) $(RM_FLAGS) $(DESTDIR)$(MANPREFIX)$(FS)man1$(FS)$(TARGET).1
+	$(RM) $(RM_FLAGS) $(DESTDIR)$(PREFIX)$(FS)bin$(FS)$(TARGET)$(EXE)
+	$(RM) $(RM_FLAGS) $(DESTDIR)$(PREFIX)$(FS)lib$(FS)lib$(TARGET).a
+	$(RM) $(RM_FLAGS) $(DESTDIR)$(PREFIX)$(FS)lib$(FS)lib$(TARGET).$(DLL)
+	$(RM) $(RM_FLAGS) $(DESTDIR)$(PREFIX)$(FS)include$(FS)lib$(TARGET).h
 
+# From <http://ctags.sourceforge.net/>
 TAGS:
 	ctags -R .
 
+# From <https://www.gnu.org/software/indent/>
 indent:
 	indent -linux -l 110 *.c *.h */*.c */*.h
 	$(RM) $(RM_FLAGS) *~ 
-	$(RM) $(RM_FLAGS) */*~
+	$(RM) $(RM_FLAGS) *$(FS)*~
 
 ### clean up #################################################################
 
 clean:
 	@echo Cleaning repository.
-	-$(RM) $(RM_FLAGS) $(TARGET) 
+	-$(RM) $(RM_FLAGS) $(TARGET)$(EXE)
 	-$(RM) $(RM_FLAGS) *.$(DLL) 
 	-$(RM) $(RM_FLAGS) *.a 
 	-$(RM) $(RM_FLAGS) *.o 
