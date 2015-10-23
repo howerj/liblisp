@@ -26,33 +26,33 @@
 #define BORDER_WIDTH    (10u)  /**< default border width*/
 
 #define SUBROUTINE_XLIST\
-        X(subr_draw_line,      "draw-line")\
-        X(subr_erase_line,     "erase-line")\
-        X(subr_draw_text,      "draw-text")\
-        X(subr_erase_text,     "erase-text")\
-        X(subr_clear_window,   "clear-window")\
-        X(subr_resize_window,  "resize-window")\
-        X(subr_raise_window,   "raise-window")\
-        X(subr_draw_arc,       "draw-arc")\
-        X(subr_draw_rectangle, "draw-rectangle")\
-        X(subr_fill_arc,       "fill-arc")\
-        X(subr_fill_rectangle, "fill-rectangle")\
-        X(subr_select_input,   "select-input")\
-        X(subr_create_window,  "create-window")\
-        X(subr_destroy_window, "destroy-window")\
-        X(subr_window_info,    "window-information")\
-        X(subr_set_font,       "set-font")\
-        X(subr_set_foreground, "set-foreground")\
-        X(subr_set_background, "set-background")
+  X("clear-window",       subr_clear_window,   NULL, "clear a window")\
+  X("create-window",      subr_create_window,  NULL, "create a new X11 window")\
+  X("destroy-window",     subr_destroy_window, NULL, "destroy an X11 window")\
+  X("draw-arc",           subr_draw_arc,       NULL, "draw a arc on a X11 window")\
+  X("draw-line",          subr_draw_line,      NULL, "draw a line on a X11 window")\
+  X("draw-rectangle",     subr_draw_rectangle, NULL, "draw a rectangle X11 window")\
+  X("draw-text",          subr_draw_text,      NULL, "draw text on a X11 window")\
+  X("erase-line",         subr_erase_line,     NULL, "erase a line on a X11 window")\
+  X("erase-text",         subr_erase_text,     NULL, "erase text on a X11 window")\
+  X("fill-arc",           subr_fill_arc,       NULL, "create a filled arc on a X11 window")\
+  X("fill-rectangle",     subr_fill_rectangle, NULL, "fill a rectangle on a X11 window")\
+  X("raise-window",       subr_raise_window,   NULL, "raise a X11 window")\
+  X("resize-window",      subr_resize_window,  NULL, "resize a X11 window")\
+  X("select-input",       subr_select_input,   NULL, "block until a X11 window gets an event")\
+  X("set-background",     subr_set_background, NULL, "set the back ground color of an X11 window")\
+  X("set-font",           subr_set_font,       NULL, "set the font for drawing text of all X11 windows")\
+  X("set-foreground",     subr_set_foreground, NULL, "set the foreground drawing color of an X11 window")\
+  X("window-information", subr_window_info,    NULL, "get information about an X11 window")
 
-#define X(SUBR, NAME) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
 #undef X
 
-#define X(SUBR, NAME) { SUBR, NAME },
-static struct module_subroutines { subr p; char *name; } primitives[] = {
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) { SUBR, NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING) },
+static struct module_subroutines { subr p; char *name, *validation, *docstring; } primitives[] = {
         SUBROUTINE_XLIST /*all of the subr functions*/
-        {NULL, NULL} /*must be terminated with NULLs*/
+        {NULL, NULL, NULL, NULL} /*must be terminated with NULLs*/
 };
 #undef X
 
@@ -371,7 +371,9 @@ static int initialize(void) {
         if(ud_x11 < 0)
                 goto fail;
         for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
-                if(!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p, NULL, NULL))
+                if(!lisp_add_subr(lglobal, 
+                        primitives[i].name, primitives[i].p, 
+                        primitives[i].validation, primitives[i].docstring))
                         goto fail;
         if(!(xdisplay = XOpenDisplay(""))) {
                 lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "cannot open display\n");

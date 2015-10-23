@@ -72,7 +72,7 @@ static int print_type_string(lisp *l, const char *msg, unsigned len, const char 
                 lisp_printf(l, e, 0, "%y'%s%t", s);
                 if(*fmt) io_putc(' ', e);
         }
-        return lisp_printf(l, e, 1, ")\n %S)\n", args);
+        return lisp_printf(l, e, 1, ") %S)\n", args);
 }
 
 size_t validate_arg_count(const char *fmt) {

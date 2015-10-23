@@ -1,5 +1,5 @@
 /** @file       print.c
- *  @brief      print out S-expression
+ *  @brief      print out S-expressions
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com 
@@ -9,7 +9,16 @@
  *          serialization easier. "read.c" should be modified to add a new
  *          syntax for reading in such objects, which could be generalized
  *          to new user defined types.
- **/
+ * @note    Instead of printing out "<subr:%p>", it would make sense to print
+ *          out the name of the symbol that represents it, ie:
+ *              + => "<subr:%p>" <=> {+}
+ *          This would aide in the serialization of objects, potentially,
+ *          but would require subroutines carried around unique names with
+ *          them.
+ * @warning The colorization is not really that portable and relies on the
+ *          terminal it is running under being able to cope with ANSI escape
+ *          sequences, it can be turned off though. **/
+
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>

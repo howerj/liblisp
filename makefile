@@ -85,7 +85,7 @@ unit: unit.c lib$(TARGET).$(DLL)
 	$(CC) $(CFLAGS) $(RPATH) $^ -o $@
 
 test: unit
-	./unit
+	./unit -c
 
 # Make as many modules as is possible
 # @bug recursive make considered harmful!

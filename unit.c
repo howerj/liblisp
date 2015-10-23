@@ -6,85 +6,150 @@
  *  @email    howe.r.j.89@gmail.com
  *
  *  @todo     Each (major) function in each file should have tests written
- *            for it, this does not include accessor functions like "get_int"
+ *            for it, this does (might) not include accessor functions like 
+ *            "get_int"
  *  @note     This could be moved to "util.c" so it can be reused.
  *  @note     Other functionality could include generating a random test
- *            vector, optional colorizing, logging and more!
+ *            vector, logging and more!
+ *  @note     While it is not imperative that each test has the memory
+ *            it uses released, it is desired.
+ *  @note     All functions under test should have assertions turned on
+ *            when they were compiled. This test suite can handle SIGABRT
+ *            signals being generated, it will fail the unit that caused
+ *            it and continue processing the next tests.
  **/
 
 /*** module to test ***/
 #include "liblisp.h"
 /**********************/
 
-#ifdef NDEBUG 
-#undef NDEBUG /*@warning do not remove this*/
-#endif
-
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
+#include <setjmp.h>
+#include <signal.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 /*** very minimal test framework ***/
 
 static unsigned passed, failed;
-static int color = 0;
+static double timer;
+static clock_t start_time, end_time;
+static time_t rawtime;
 
-static char *reset(void)  { return color ? "\x1b[0m"  : ""; }
-static char *red(void)    { return color ? "\x1b[31m" : ""; }
-static char *green(void)  { return color ? "\x1b[32m" : ""; }
-static char *yellow(void) { return color ? "\x1b[33m" : ""; }
-static char *blue(void)   { return color ? "\x1b[34m" : ""; }
-static void pass(void)    { passed++; }
-static void fail(void)    { failed++; }
+int color_on = 0, jmpbuf_active = 0;
+jmp_buf current_test;
+unsigned current_line = 0;
+const char *current_expr;
+
+static const char *reset(void)  { return color_on ? "\x1b[0m"  : ""; }
+static const char *red(void)    { return color_on ? "\x1b[31m" : ""; }
+static const char *green(void)  { return color_on ? "\x1b[32m" : ""; }
+static const char *yellow(void) { return color_on ? "\x1b[33m" : ""; }
+static const char *blue(void)   { return color_on ? "\x1b[34m" : ""; }
+
+static void unit_tester(int test, const char *msg, unsigned line) {
+        if(test) passed++, printf("      %sok%s:\t%s\n", green(), reset(), msg); 
+        else     failed++, printf("  %sFAILED%s:\t%s (line %d)\n", red(), reset(), msg, line);
+}
+
+static void print_statement(char *stmt) {
+        printf("   %sstate%s:\t%s\n", blue(), reset(), stmt);
+}
+
 static void print_note(char *name) { printf("%s%s%s\n", yellow(), name, reset()); }
 
-/**@brief Advance the test suite by testing and executing an expression. 
+#define MAX_SIGNALS (256)
+static char *(sig_lookup[]) = { /*List of C89 signals and their names*/
+        [SIGABRT]       = "SIGABRT",
+        [SIGFPE]        = "SIGFPE",
+        [SIGILL]        = "SIGILL",
+        [SIGINT]        = "SIGINT",
+        [SIGSEGV]       = "SIGSEGV",
+        [SIGTERM]       = "SIGTERM",
+        [MAX_SIGNALS]   = NULL
+};
+
+static void sig_abrt_handler(int sig) {
+        char *sig_name = "UNKNOWN SIGNAL";
+        if((sig > 0) && (sig < MAX_SIGNALS) && sig_lookup[sig])
+                sig_name = sig_lookup[sig];
+        printf("Caught %s (signal number %d)\n", sig_name, sig);
+        if(jmpbuf_active) {
+                jmpbuf_active = 0;
+                longjmp(current_test, 1);
+        }
+}
+
+/**@brief Advance the test suite by testing and executing an expression. This
+ *        framework can catch assertions that have failed within the expression
+ *        being tested.
  * @param EXPR The expression should yield non zero on success **/
-#define test(EXPR) do {\
-        if(!(EXPR)) printf("  %sFAILED%s:\t" #EXPR " (line '%d')\n", red(), reset(), __LINE__), fail();\
-        else        printf("      %sok%s:\t" #EXPR "\n", green(), reset()), pass();\
+#define test(EXPR)\
+        do {\
+                current_line = __LINE__;\
+                current_expr = #EXPR;\
+                signal(SIGABRT, sig_abrt_handler);\
+                if(!setjmp(current_test)) {\
+                        jmpbuf_active = 1;\
+                        unit_tester( ((EXPR) != 0), current_expr, current_line);\
+                } else {\
+                        unit_tester(0, current_expr, current_line);\
+                        signal(SIGABRT, sig_abrt_handler);\
+                }\
+                signal(SIGABRT, SIG_DFL);\
+                jmpbuf_active = 0;\
         } while(0);
 
 /**@brief print out and execute a statement that is needed to further a test
  * @param STMT A statement to print out (stringify first) and then execute**/
-#define state(STMT) do{\
-                    printf("   %sstate%s:\t" #STMT "\n", blue(), reset());\
-                    STMT;\
-        } while(0);
+#define state(STMT) do{ print_statement( #STMT ); STMT; } while(0);
 
-/*** end minimal test framework ***/
+/**@brief As signals are caught (such as those generated by abort()), we exit
+ *        the unit test function by returning from it instead. */
+#define return_if(EXPR) if((EXPR)) { printf("unit test framework failed on line '%d'\n", __LINE__); return -1;}
 
-static int sstrcmp(char *s1, char *s2) {
-        if(!s1 || !s2) return -1;
+static int sstrcmp(const char *s1, const char *s2) {
+        if(!s1 || !s2) return -256;
         return strcmp(s1, s2);
 }
 
-int main(int argc, char **argv) {
-        double timer;
-        clock_t start, end;
-        time_t rawtime;
+static int unit_test_start(const char *unit_name) {
         time(&rawtime);
+        if(signal(SIGABRT, sig_abrt_handler) == SIG_ERR) {
+                printf("signal handler installation failed");
+                return -1;
+        }
+        start_time = clock();
+        printf("%s unit tests\n%sbegin:\n\n", unit_name, asctime(localtime(&rawtime)));
+        return 0;
+}
 
+static unsigned unit_test_end(const char *unit_name) {
+        end_time = clock();
+        timer = ((double) (end_time - start_time)) / CLOCKS_PER_SEC;
+        printf("\n\n%s unit tests\npassed  %u/%u\ntime    %fs\n", unit_name, passed, passed+failed, timer);
+        return failed;
+}
+
+/*** end minimal test framework ***/
+
+int main(int argc, char **argv) {
         if(argc > 1)
-                while(++argv,--argc)
+                while(++argv, --argc)
                         if(!strcmp("-c", argv[0])) {
-                                color = 1;
+                                color_on = 1;
                         } else if (!strcmp("-h", argv[0])) {
                                 printf("liblisp unit tests\n\tusage ./%s (-c)? (-h)?\n", argv[0]);
                         } else {
-                                fprintf(stderr, "unknown argument '%s'\n", argv[0]);
+                                printf("unknown argument '%s'\n", argv[0]);
                         }
 
-        printf("liblisp unit tests\n%sbegin:\n\n", asctime(localtime(&rawtime)));
+        unit_test_start("liblisp");
 
-        start = clock();
         /** @todo tr.c, io.c, valid.c, read.c, print.c, eval.c,
          *        compile.c, subr.c, ... */
         { 
-                bitfield *b;
-                char *s;
                 print_note("util.c");
 
                 test(ilog2(0)   == INT32_MIN);
@@ -109,7 +174,9 @@ int main(int argc, char **argv) {
                 test(balance("(a (b) c (d (e (f) \")\" g)))") == 0);
                 test(balance("((a b) c") == 1);
 
-                test(b = bit_new(1024));
+                bitfield *b = NULL;
+                state(b = bit_new(1024));
+                return_if(!b);
 
                 state(bit_set(b, 1023));
                 state(bit_set(b, 37));
@@ -138,18 +205,22 @@ int main(int argc, char **argv) {
                 test(!match("aaa*","XXaaaXX"));
                 test(match(".bc","abc"));
                 test(match("a.c","aXc"));
-                test(!sstrcmp("a,b,c,,foo,bar", s = vstrcatsep(",", "a", "b", "c", "", "foo", "bar", NULL)));
+
+                char *s = NULL;
+                state(s = vstrcatsep(",", "a", "b", "c", "", "foo", "bar", NULL));
+                test(!sstrcmp("a,b,c,,foo,bar", s));
                 free(s);
-                /* @todo lstrdup, regex_match, djb2, lstrcatend,
+
+                /* @todo regex_match, djb2, lstrcatend,
                  * ipow, xorshift128plus
                  */ 
         }
 
         { /* hash.c hash table tests */
-                hashtable *h;
+                hashtable *h = NULL;
                 print_note("hash.c");
                 state(h = hash_create(64));
-                assert(h);
+                return_if(!h);
                 test(!hash_insert(h, "key1", "val1"));
                 test(!hash_insert(h, "key2", "val2"));
                 test(!hash_insert(h, "heliotropes", "val3")); 
@@ -179,29 +250,34 @@ int main(int argc, char **argv) {
 
         { /* lisp.c (and the lisp interpreter in general) */
                 lisp *l;
-                cell *x;
 
                 print_note("lisp.c");
                 /*while unit testing eschews state being held across tests it is makes
                  *little sense in this case*/
                 state(l = lisp_init()); 
-                assert(l);
+                test(!lisp_set_logging(l, io_nout()));
+                return_if(!l);
+                test(!lisp_eval_string(l, ""));
                 test(get_int(lisp_eval_string(l, "(+ 2 2)")) == 4);
                 test(get_int(lisp_eval_string(l, "(* 3 2)")) == 6);
                 test(!strcmp(get_str(lisp_eval_string(l, "(join \" \" \"Hello\" \"World!\")")), "Hello World!"));
-                test(x =  intern(l, lstrdup("foo")));
-                test(x == intern(l, lstrdup("foo")));
-                test(x != intern(l, lstrdup("bar")));
+
+                cell *x = NULL, *y = NULL, *z = NULL;
+
+                state(x = intern(l, lstrdup("foo")));
+                state(y = intern(l, lstrdup("foo")));
+                state(z = intern(l, lstrdup("bar")));
+                test(x == y && x != NULL);
+                test(x != z);
+
+                test(gsym_error() == lisp_eval_string(l, "(> 'a 1)"));
                 test(is_sym(x));
                 test(is_asciiz(x));
                 test(!is_str(x));
+                test(gsym_error() == lisp_eval_string(l, "(eval (cons quote 0))"));
 
                 state(lisp_destroy(l));
         }
-        end = clock();
-
-        timer = ((double) (end - start)) / CLOCKS_PER_SEC;
-        printf("\npassed  %u/%u\ntime    %fs\n", passed, passed+failed, timer);
-        return failed; /*should be zero!*/
+        return unit_test_end("liblisp");; /*should be zero!*/
 }
 

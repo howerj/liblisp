@@ -69,6 +69,8 @@
     (test = (ilog2 5)               2)
     (test = (ilog2 8)               3)
     (test = (substring "hello, world" 2 12) "llo, world")
+    (test = (median '(1 7 3 13))    5)
+    (test float-equal (standard-deviation '(206 76 -224 36 -94)) 147.322775)
     (test 
       (lambda 
           (tst pat) 

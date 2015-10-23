@@ -45,24 +45,24 @@
  *       subroutine name (as it appears with in the interpreter) */
 #define SUBROUTINE_XLIST\
   X("assoc",       subr_assoc,     "A c",  "lookup a variable in an 'a-list'")\
-  X("ilog2",       subr_ilog2,    "d",    "compute the binary logarithm of an integer")\
-  X("ipow",        subr_ipow,      "d d",  "compute the integer exponentiation of two numbers")\
   X("car",         subr_car,       "c",    "return the first object in a list")\
   X("cdr",         subr_cdr,       "c",    "return every object apart from the first in a list")\
-  X("close",       subr_close,     "P",    "close a port, invalidating it")\
   X("closed?",     subr_is_closed, NULL,   "is a object closed?")\
+  X("close",       subr_close,     "P",    "close a port, invalidating it")\
   X("coerce",      subr_coerce,    NULL,   "coerce a variable from one type to another")\
   X("cons",        subr_cons,      "A A",  "allocate a new cons cell with two arguments")\
   X("date",        subr_date,      "",     "return a list representing the date (GMT) (not thread safe)")\
   X("define-eval", subr_define_eval, "s A", "extend the top level environment with a computed symbol")\
   X("documentation-string", subr_doc_string, "x", "return the documentation string from a procedure")\
+  X("environment", subr_environment, "",    "get the current environment")\
   X("eof?",        subr_eofp,      "P",    "is the EOF flag set on a port?")\
   X("eq",          subr_eq,        "A A",  "equality operation")\
+  X("errno",       subr_errno,     "",      "return the current errno")\
   X("eval",        subr_eval,      NULL,   "evaluate an expression")\
   X("ferror",      subr_ferror,    "P",    "is the error flag set on a port")\
   X("flush",       subr_flush,     NULL,   "flush a port")\
+  X("foldl",       subr_foldl,      "x c",  "left fold; reduce a list given a function")\
   X("format",      subr_format,    NULL,   "print a string given a format and arguments")\
-  X("validation-string", subr_validation_string, "x", "return the format string from a procedure")\
   X("gc",          subr_gc,        "",     "force the collection of garbage")\
   X("get-char",    subr_getchar,   "i",    "read in a character from a port")\
   X("get-delim",   subr_getdelim,  "i C",  "read in a string delimited by a character from a port")\
@@ -70,7 +70,9 @@
   X("hash-create", subr_hcreate,   NULL,   "create a new hash")\
   X("hash-insert", subr_hinsert,   "h Z A", "insert a variable into a hash")\
   X("hash-lookup", subr_hlookup,   "h Z",  "loop up a variable in a hash")\
+  X("ilog2",       subr_ilog2,    "d",    "compute the binary logarithm of an integer")\
   X("input?",      subr_inp,       "A",    "is an object an input port?")\
+  X("ipow",        subr_ipow,      "d d",  "compute the integer exponentiation of two numbers")\
   X("join",        subr_join,      NULL,   "join a list of strings together with a separator")\
   X("length",      subr_length,    "A",    "return the length of a list or string")\
   X("list",        subr_list,      NULL,   "create a list from the arguments")\
@@ -85,6 +87,7 @@
   X("put",         subr_puts,      "o Z",  "write a string to a output port")\
   X("raise",       subr_raise,     "d",    "raise a signal")\
   X("random",      subr_rand,      "",     "return a pseudo random number generator")\
+  X("raw",         subr_raw,       "A",     "get the raw value of an object")\
   X("read",        subr_read,      "I",    "read in an s-expression from a port or a string")\
   X("regex-span",  subr_regexspan, "Z Z",  "get the span of a regex match on a string")\
   X("remove",      subr_remove,    "Z",    "remove a file")\
@@ -96,6 +99,7 @@
   X("seed",        subr_seed,      "d d",  "seed the pseudo random number generator")\
   X("seek",        subr_seek,      "P d d", "perform a seek on a port (moving the port position indicator)")\
   X("split",       subr_split,     "Z Z",  "split a string given a regular expression")\
+  X("strerror",    subr_strerror,  "d",     "convert an errno into a string describing that error")\
   X("&",           subr_band,      "d d",  "bit-wise and of two integers")\
   X("~",           subr_binv,      "d",    "bit-wise inversion of an integers")\
   X("|",           subr_bor,       "d d",  "bit-wise or of two integers")\
@@ -113,22 +117,18 @@
   X("tell",        subr_tell,      "P",    "return the position indicator of a port")\
   X("timed-eval",  subr_timed_eval, NULL,  "time an evaluation")\
   X("time",        subr_time,      "",     "create a list representing the time")\
+  X("top-environment", subr_top_env, "",   "return the top level environment")\
   X("trace!",      subr_trace,     "b",    "turn tracing on or off")\
   X("tr",          subr_tr,        "Z Z Z Z", "translate a string given a format and mode")\
   X("type-of",     subr_typeof,    "A",    "return an integer representing the type of an object")\
-  X("top-environment", subr_top_env, "",   "return the top level environment")\
   X("validate",    subr_validate,  "d Z c", "validate an argument list against a format string")\
-  X("environment", subr_environment, "",    "get the current environment")\
-  X("raw",         subr_raw,       "A",     "get the raw value of an object")\
-  X("errno",       subr_errno,     "",      "return the current errno")\
-  X("strerror",    subr_strerror,  "d",     "convert an errno into a string describing that error")\
-  X("foldl",       subr_foldl,      "x c",  "left fold; reduce a list given a function")
+  X("validation-string", subr_validation_string, "x", "return the format string from a procedure")
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
 #undef X
 
-#define X(NAME, SUBR, VALIDATION, DOCSTRING) { SUBR, NAME, VALIDATION, "(" NAME ") : " DOCSTRING },
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) { SUBR, NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING) },
 static struct all_subroutines { subr p; const char *name, *validate, *docstring; } primitives[] = {
         SUBROUTINE_XLIST /*all of the subr functions*/
         {NULL, NULL, NULL, NULL} /*must be terminated with NULLs*/
@@ -988,7 +988,10 @@ static cell *subr_format(lisp *l, cell *args) {
         /** @note This function has a lot of scope for improvement;
          *        colorization, printing different base numbers, leading
          *        zeros on numbers, printing repeated characters and even
-         *        string interpolation ("$x" could look up 'x). */
+         *        string interpolation ("$x" could look up 'x), as well
+         *        as printing out escaped strings.
+         *  @todo This should just return a formatted string which can
+         *        be printed out with put */
         cell *cret;
         io *o = NULL, *t;
         char *fmt, c;
@@ -1030,8 +1033,16 @@ static cell *subr_format(lisp *l, cell *args) {
                                    ret = printer(l, t, car(args), 0); 
                                    args = cdr(args);
                                    break;
+                     /* case 'd': // number */
+                     /* case 'u': // unsigned */
+                     /* case 'x': // hex */
+                     /* case 'o': // octal */
+                     /* case 'b': // binary */
+                     /* case '$': // literal '$'*/
+                     /* case '*': // repeat next char get_int(car(arg)) times */
                         default:   goto fail;
                         }
+             /* } else if ('$' == c) { // interpolate */
                 } else {
                         ret = io_putc(c, t);
                 }

@@ -49,11 +49,11 @@ static cell *subr_modf(lisp *l, cell *args) {
         return cons(l, mk_float(l, intpart), mk_float(l, fracpart));
 }
 
-#define X(SUBR, VALIDATION, DOCSTRING) { # SUBR, VALIDATION, "(" #SUBR "):" __FILE__ ":" DOCSTRING, subr_ ## SUBR },
+#define X(SUBR, VALIDATION, DOCSTRING) { # SUBR, VALIDATION, MK_DOCSTR( #SUBR, DOCSTRING), subr_ ## SUBR },
 static struct module_subroutines { char *name, *validate, *docstring; subr p; } primitives[] = {
         MATH_UNARY_LIST /*all of the subr functions*/
-        { "modf", "a",   "(modf):" __FILE__ ":split a float into integer and fractional parts",   subr_modf },
-        { "pow",  "a a", "(pow):" __FILE__ ":raise a base to a power",   subr_pow },
+        { "modf", "a",   MK_DOCSTR("modf", "split a float into integer and fractional parts"),   subr_modf },
+        { "pow",  "a a", MK_DOCSTR("pow:", "raise a base to a power"),   subr_pow },
         { NULL,   NULL,  NULL, NULL} /*must be terminated with NULLs*/
 };
 #undef X

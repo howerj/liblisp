@@ -1041,6 +1041,16 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
 #define CADDDR(X)  car(cdr(cdr(cdr((X)))))
 #define CADDDDR(X) car(cdr(cdr(cdr(cdr((X))))))
 
+#define BEL "\007" /**< ASCII Bell */
+#define ESC "\033" /**< ASCII Escape*/
+#define GS  "\035" /**< ASCII Group Separator*/
+#define RS  "\036" /**< ASCII Record Separator*/
+#define US  "\037" /**< ASCII Unit Separator*/
+#define DEL "\177" /**< ASCII Delete */
+
+#define SEP ":"    /**< Separator for docstrings */
+#define MK_DOCSTR(NAME, DOCSTR) NAME SEP __FILE__ SEP DOCSTR
+
 #ifdef __cplusplus
 }
 #endif

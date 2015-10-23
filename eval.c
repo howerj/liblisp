@@ -5,7 +5,10 @@
  *  @email      howe.r.j.89@gmail.com
  *
  *  This is the main evaluator and associated function, the built in
- *  subroutines for the interpreter are defined elsewhere. **/
+ *  subroutines for the interpreter are defined elsewhere. 
+ *
+ *  @bug (eval (cons quote 2)) fails, as do other dotted pair evals
+ *  **/
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>

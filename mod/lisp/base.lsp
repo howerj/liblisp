@@ -379,6 +379,49 @@
     (cadr 
       (assoc (type-of x) *type-names*))))
 
+(define square
+  (lambda (x)
+    (* x x)))
+
+(define map1
+  (lambda (f l)
+    (if (nil? l)
+      nil
+      (cons (f (car l))
+            (map1 f (cdr l))))))
+
+(define arithmetic-mean
+  (lambda (l)
+    (/ (foldl + l) (length l))))
+
+(define average
+  (lambda (l)
+    (arithmetic-mean l)))
+
+(define geometric-mean ; requires math module
+  (lambda (l)
+    (pow (foldl * l) (/ 1. (length l)))))
+
+(define median
+  (lambda (l)
+    (let 
+      (len (length l))
+      (half (/ len 2))
+      (if 
+        (odd? len)
+        (nth half (sort l))
+        (let 
+          (middle (sublist (sort l) (- half 1) half))
+          (/ (+ (car middle) (cadr middle)) 2))))))
+
+(define variance
+  (lambda (l)
+    (/ (foldl + (map1 square l)) (length l))))
+
+(define standard-deviation ; requires math module
+  (lambda (l)
+    (sqrt (variance l))))
+
 ; is a variable defined or not?
 (define defined?
   (lambda (x)
@@ -386,5 +429,4 @@
     (assoc x (top-environment))
      t
      nil)))
-
 
