@@ -9,7 +9,7 @@
  *  <http://math.msu.su/~vvb/2course/Borisenko/CppProjects/GWindow/xintro.html>
  *
  *  @todo Finish functionality
- *  @bug  Check return status of X-Window functions
+ *  @bug  Return statuses of X-Window functions is not checked
  *  **/
 
 #include <X11/Xlib.h>
@@ -263,7 +263,7 @@ static cell* subr_fill_arc(lisp *l, cell *args) {
         int x, y, width, height, angle1, angle2; 
         cell *v;
         if(!cklen(args, 7) || !is_usertype(car(args), ud_x11))
-                RECOVER(l, "\"expected (window x y width height angle-1 angle-2)\" '%S", args);
+                goto fail;
         for(v = cdr(args); !is_nil(v); v = cdr(v))
                 if(!is_int(car(v)))
                         goto fail;
@@ -311,13 +311,10 @@ static cell* subr_window_info(lisp *l, cell *args) {
                 RECOVER(l, "\"expected (window)\" '%S", args);
         XGetGeometry(xdisplay, (Window)get_user(car(args)), &rw,
                         &x, &y, &width, &height, &border_width, &bit_depth);
-        return cons(l, mk_user(l, (void*)rw, ud_x11),
-                cons(l, mk_int(l, x),
-                cons(l, mk_int(l, y),
-                cons(l, mk_int(l, width),
-                cons(l, mk_int(l, height),
-                cons(l, mk_int(l, border_width),
-                cons(l, mk_int(l, bit_depth), gsym_nil())))))));
+        return mk_list(l, mk_user(l, (void*)rw, ud_x11),
+                mk_int(l, x),            mk_int(l, y),
+                mk_int(l, width),        mk_int(l, height),
+                mk_int(l, border_width), mk_int(l, bit_depth), NULL);
 }
 
 static cell* subr_select_input(lisp *l, cell *args) { /*for event loop*/
@@ -336,7 +333,7 @@ static cell* subr_select_input(lisp *l, cell *args) { /*for event loop*/
                 ks = mk_str(l, lstrdup(text));
         if(e.type == ButtonPress)
                 mx = mk_int(l, e.xbutton.x), my = mk_int(l, e.xbutton.y);
-        return cons(l, rd, cons(l, ks, cons(l, mx, cons(l, my, gsym_nil()))));
+        return mk_list(l, rd, ks, mx, my, NULL);
 }
 
 static cell* subr_set_font(lisp *l, cell *args) { 

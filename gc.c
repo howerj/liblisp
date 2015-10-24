@@ -32,12 +32,15 @@ static void gc_mark(lisp *l, cell* op) { assert(op); /**<recursively mark reacha
         if(op->uncollectable || op->mark) return;
         op->mark = 1;
         switch(op->type) {
-        case INTEGER: case SYMBOL: case SUBR: 
+        case INTEGER: case SYMBOL: 
         case STRING:  case IO:     case FLOAT:  break;
+        case SUBR: gc_mark(l, get_subr_docstring(op)); 
+                   break;
         case FPROC: case PROC: 
                    gc_mark(l, get_proc_args(op)); 
                    gc_mark(l, get_proc_code(op));
                    gc_mark(l, get_proc_env(op));
+                   gc_mark(l, get_proc_docstring(op));
                    break;
         case CONS: gc_mark(l, car(op));
                    gc_mark(l, cdr(op));

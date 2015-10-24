@@ -95,8 +95,11 @@ typedef struct hashentry {      /**< linked list of entries in a bin*/
 } hashentry;
 
 struct hashtable {                /**< a hash table*/
-        size_t len;               /**< number of 'bins' in the hash table*/
         struct hashentry **table; /**< table of linked lists*/
+        size_t len,  /**< number of 'bins' in the hash table*/
+               collisions,   /**< number of collisions */
+               replacements, /**< number of entries replaced*/
+               used          /**< number of bins used*/;
 };
 
 struct io {

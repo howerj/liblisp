@@ -9,13 +9,16 @@
 # This makefile will build under Linux {Debian 7 and 8} and Windows 
 # {Tested on Windows 7}.
 #
+MAKEFLAGS += --no-builtin-rules
+
+.SUFFIXES:
+.PHONY: all clean dist doc doxygen valgrind run modules test
 
 include config.mk
 
 TARGET = lisp
-.PHONY: all clean dist doc doxygen valgrind run modules test
 
-all: shorthelp $(TARGET) lib$(TARGET).$(DLL) lib$(TARGET).a modules unit
+all: shorthelp $(TARGET)$(EXE) lib$(TARGET).$(DLL) lib$(TARGET).a modules unit$(EXE)
 
 shorthelp:
 	@echo "Use 'make help' for a list of options."
@@ -43,7 +46,7 @@ help:
 	@echo "     dist        make a distribution tar.gz file"
 	@echo "     install     install the example executable, library and man pages"
 	@echo "     uninstall   uninstall the example executable, library and man pages"
-	@echo "     $(TARGET)        build the example executable"
+	@echo "     $(TARGET)$(EXE)      build the example executable"
 	@echo "     lib$(TARGET).$(DLL)  build the library (dynamic)"
 	@echo "     lib$(TARGET).a   build the library (static)"
 	@echo "     modules     make as many modules as is possible (ignoring failures)"
@@ -54,7 +57,7 @@ help:
 	@echo "     doc         make html and doxygen documentation"
 	@echo "     TAGS        update project tags table (ctags)"
 	@echo "     indent      indent the source code sensibly (instead of what I like)"
-	@echo "     unit        executable for performing unit tests on liblisp"
+	@echo "     unit$(EXE)  executable for performing unit tests on liblisp"
 	@echo "     test	run the unit tests"
 	@echo ""
 
@@ -78,18 +81,18 @@ VCS_DEFINES=-DVCS_ORIGIN="$(VCS_ORIGIN)" -DVCS_COMMIT="$(VCS_COMMIT)" -DVERSION=
 main.o: main.c lib$(TARGET).h 
 	$(CC) $(CFLAGS_RELAXED) $(DEFINES) $(VCS_DEFINES) $< -c -o $@
 
-$(TARGET): main.o lib$(TARGET).$(DLL)
-	$(CC) $(CFLAGS) -rdynamic -Wl,-E $(RPATH) $^ $(LINK) -o $(TARGET)
+$(TARGET)$(EXE): main.o lib$(TARGET).$(DLL)
+	$(CC) $(CFLAGS) -Wl,-E $(RPATH) $^ $(LINK) -o $(TARGET)
 
-unit: unit.c lib$(TARGET).$(DLL)
-	$(CC) $(CFLAGS) $(RPATH) $^ -o $@
+unit$(EXE): unit.c lib$(TARGET).$(DLL)
+	$(CC) $(CFLAGS) $(RPATH) $^ -o unit$(EXE)
 
-test: unit
+test: unit$(EXE)
 	./unit -c
 
 # Make as many modules as is possible
 # @bug recursive make considered harmful!
-modules: lib$(TARGET).$(DLL) $(TARGET)
+modules: lib$(TARGET).$(DLL) $(TARGET)$(EXE)
 	-make -kC mod
 
 ### running ##################################################################
@@ -125,11 +128,9 @@ space +=
 TARBALL=$(subst $(space),,$(TARGET)-$(VERSION).tgz) # Remove spaces 
 # make distribution tarball
 # @bug this currently creates a "tarbomb"
-# @bug does not work on Windows {only Linux}
 dist: $(TARGET) lib$(TARGET).a lib$(TARGET).$(DLL) lib$(TARGET).htm modules
 	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) *.a *.1 *.3
 
-# @bug does not work on Windows {only Linux}, config.mk needs updating
 install: all 
 	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(PREFIX)$(FS)bin
 	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(PREFIX)$(FS)lib

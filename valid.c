@@ -86,9 +86,11 @@ size_t validate_arg_count(const char *fmt) {
 }
 
 int lisp_validate_cell(lisp *l, cell *x, cell *args, int recover) {
-        char *msg, *fmt;
+        char *fmt, *msg;
+        cell *ds;
         assert(x && is_func(x));
-        msg = is_subr(x) ? get_subr_docstring(x) : get_proc_docstring(x);
+        ds = is_subr(x) ? get_subr_docstring(x) : get_proc_docstring(x);
+        msg = get_str(ds);
         msg = msg ? msg : "";
         fmt = is_subr(x) ? get_subr_format(x) : get_proc_format(x);
         if(!fmt)

@@ -53,7 +53,8 @@ int match(char *pat, char *str) { assert(pat && str);
         return matcher(pat, str, LARGE_DEFAULT_LEN, &bf);
 }
 
-/*This regex engine is a bit of a mess and needs to be rewritten*/
+/**This regex engine is a bit of a mess and needs to be rewritten,
+ * it could be replaced with the one from <https://github.com/cesanta/slre>. **/
 regex_result regex_match(char *regexp, char *text) { assert(regexp && text);
         regex_result rr = {text, text, 0};
         size_t depth = 0;

@@ -5,10 +5,7 @@
  *  @email      howe.r.j.89@gmail.com
  *
  *  This is the main evaluator and associated function, the built in
- *  subroutines for the interpreter are defined elsewhere. 
- *
- *  @bug (eval (cons quote 2)) fails, as do other dotted pair evals
- *  **/
+ *  subroutines for the interpreter are defined elsewhere. **/
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
@@ -92,6 +89,20 @@ static cell *mk_asciiz(lisp *l, char *s, lisp_type type) {
         return x;
 }
 static cell *mk_sym(lisp *l, char *s) { return mk_asciiz(l, s, SYMBOL); }
+
+cell *mk_list(lisp *l, cell *x, ...) { assert(x);
+        size_t i;
+        cell *head, *op, *next;
+        va_list ap;
+        head = op = cons(l, x, gsym_nil());
+        va_start(ap, x);
+        for(i = 1;(next = va_arg(ap, cell*)); op = cdr(op), i++)
+                set_cdr(op, cons(l, next, gsym_nil()));
+        va_end(ap);
+        head->len = i;
+        return head;
+}
+
 cell *mk_int(lisp *l, intptr_t d) { assert(l); return mk(l, INTEGER, 1, (cell*) d); }
 cell *mk_io(lisp *l, io *x)    { assert(l && x); return mk(l, IO, 1, (cell*)x); }
 
@@ -104,16 +115,25 @@ cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc) { assert(l && p
                 t->len = tlen;
         }
         t->p[1].v = (void*)fmt;
-        t->p[2].v = (void*)doc;
+        t->p[2].v = (void*)mk_str(l, lstrdup(doc ? doc : ""));
         return t;
 }
 
-cell *mk_proc(lisp *l, cell *x, cell *y, cell *z)  { assert(x); return mk(l, PROC,  5, x, y, z, NULL, NULL); }
-cell *mk_fproc(lisp *l, cell *x, cell *y, cell *z) { assert(x); return mk(l, FPROC, 5, x, y, z, NULL, NULL); }
+cell *mk_proc(lisp *l, cell *args, cell *code, cell *env)  { assert(l && args && code && env); 
+        cell *ds = mk_str(l, lstrdup(""));
+        return mk(l, PROC,  5, args, code, env, NULL, ds); 
+}
+
+cell *mk_fproc(lisp *l, cell *args, cell *code, cell *env) { assert(l && args && code && env); 
+        cell *ds = mk_str(l, lstrdup(""));
+        return mk(l, FPROC, 5, args, code, env, NULL, ds); 
+}
+
 cell *mk_float(lisp *l, lfloat f) { assert(l); return mk(l, FLOAT, 1, f); }
 cell *mk_str(lisp *l, char *s) { return mk_asciiz(l, s, STRING); }
 cell *mk_hash(lisp *l, hashtable *h) { return mk(l, HASH, 1, (cell *)h); }
-cell *mk_user(lisp *l, void *x, intptr_t type) { assert(l && x);
+cell *mk_user(lisp *l, void *x, intptr_t type) { 
+        assert(l && x && type >= 0 && type < l->user_defined_types_used);
         cell *ret = mk(l, USERDEF, 2, x);
         ret->p[1].v = (void*) type;
         return ret;
@@ -126,12 +146,12 @@ subr  get_subr(cell *x)            { assert(x && is_subr(x)); return x->p[0].pri
 /**@note it might make sense to merge get_subr_docstring and get_proc_docstring
  *       as well as get_subr_format and get_proc_format */
 char *get_subr_format(cell *x)     { assert(x && is_subr(x)); return (char *) x->p[1].v; }
-char *get_subr_docstring(cell *x)  { assert(x && is_subr(x)); return (char *) x->p[2].v; }
+cell *get_subr_docstring(cell *x)  { assert(x && is_subr(x)); return x->p[2].v; }
 cell *get_proc_args(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[0].v; }
 cell *get_proc_code(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[1].v; }
 cell *get_proc_env(cell *x)        { assert(x && (is_proc(x) || is_fproc(x))); return x->p[2].v; }
 char *get_proc_format(cell *x)     { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[3].v; }
-char *get_proc_docstring(cell *x)  { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[4].v; }
+cell *get_proc_docstring(cell *x)  { assert(x && (is_proc(x) || is_fproc(x))); return x->p[4].v; }
 io   *get_io(cell *x)           { assert(x && x->type == IO);  return (io*)(x->p[0].v); }
 char *get_sym(cell *x)          { assert(x && is_asciiz(x));   return (char *)(x->p[0].v); }
 char *get_str(cell *x)          { assert(x && is_asciiz(x));   return (char *)(x->p[0].v); }
@@ -181,7 +201,7 @@ static cell *multiple_extend(lisp *l, cell *env, cell *syms, cell *vals) {
 }
 
 cell *extend_top(lisp *l, cell *sym, cell *val) { assert(l && sym && val);
-        if(!hash_insert(get_hash(l->top_hash), get_str(sym), cons(l, sym, val)) < 0)
+        if(hash_insert(get_hash(l->top_hash), get_str(sym), cons(l, sym, val)) < 0)
                 HALT(l, "\"%s\"", "out of memory");
         return val;
 }
@@ -233,7 +253,10 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
         case CONS:
                 first = car(exp);
                 exp   = cdr(exp);
-                /**@note if first is cons eval it?*/
+                if(!is_nil(exp) && !is_proper_cons(exp))
+                        RECOVER(l, "'evaluation\n \"cannot eval dotted pair\"\n %S", exp);
+                if(is_cons(first))
+                        first = eval(l, depth+1, first, env);
                 if(first == l->iif) {
                         VALIDATE(l, "if", 3, "A A A", exp, 1);
                         exp = !is_nil(eval(l, depth+1, car(exp), env)) ?
@@ -310,7 +333,8 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         }
                         return eval(l, depth+1, car(exp), env);
                 }
-                /**@bug loop/return and tail call optimization do not mix*/
+                /**@bug  loop/return and tail call optimization do not mix
+                 * @todo improve looping constructs */
                 if(first == l->progn) { 
                         cell *head = exp, *tmp;
                         if(is_nil(exp)) return l->nil;

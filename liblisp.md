@@ -45,7 +45,7 @@ The following functionality would be nice to put in to the core interpreter;
 Support for matrices and complex numbers (c99 \_Complex), UTF-8 support, text
 processing (diff, grep, sed, à la perl), map and looping constructs
 from scheme, doc-strings, optional parsing of strings and float, apply,
-proper constant and a prolog engine.
+proper constants and a prolog engine.
 
 But this is more of a wish list than anything. Complex number support has
 been added in a branch of the [git][] repository. Another interesting
@@ -127,8 +127,20 @@ following commands should all work for their respective compilers:
 
 The preprocessor defines that add or change functionality are:
 
-        USE_DL    Add the dynamic loader interface
-        NDEBUG    The interpreter liberally uses assertions
+        USE_DL:   
+                Add the dynamic loader interface
+        NDEBUG:    
+                The interpreter liberally uses assertions, this
+                disables them.
+        USE_INITRC:
+                Add functionality to read from an initialization
+                file ("~/.lisprc" or "%HOMEPATH%\.lisprc").
+        USE_ABORT_HANDLER
+                This adds a handler for the SIGABRT, which is
+                raised by assert(). It adds a signal handler
+                which catches the signal, prints out a stack
+                trace using backtrace from "execinfo.h" and then
+                continues with the abort.
 
 Using the makefile instead (either "make" or "make all") will build the "lisp"
 executable as well as the "liblisp.a" library. It will also build "liblisp.so"
@@ -145,8 +157,8 @@ has been compiled with "USE\_DL", and if the line editing library is available
 on your platform.
 
 Color support can be optionally enabled on all output channels and is reliant
-on [ANSI escape codes][] on it being displayed correctly, if it is not simply
-do not enable color, it is only a minor feature.
+on [ANSI escape codes][] on the terminal being displayed correctly. If it is 
+not simply do not enable color, it is only a minor feature.
 
 <div id='Deviations from other lisps'/>
 ## Deviations from other lisps
@@ -172,6 +184,15 @@ implementation is the standard for now, which is a downside.
 Another major deviation is that comments are represented by '#' as well as ';'
 so that source code can easily be run as a Unix script with no special syntax
 in the usual manner.
+
+* Subtly different functions
+
+Functions may behave differently from those with the same name defined in
+another language.
+
+* F-Expressions
+
+As they were easy to add, F-expressions were added.
 
 <div id='BUGS'/>
 ## BUGS
@@ -274,14 +295,10 @@ successful.
 
 There are several issues that need resolving with the interpreter.
 
-#### liblisp.c
+#### liblisp
 
 * Environment lookup should be split into top level hash and cons
 list for efficiency.
-* Linear probing should be used for the hash function instead of
-chained hashing, experimental code has been added for a fully working
-linear probing hash implementation, but the lisp interpreter is dependent
-on the internal representation of the hash functionality.
 * The "struct hack" could be applied strings and other types, as
 well as the length field being encoded in the variable length
 section of the object.
@@ -294,8 +311,11 @@ added as well.
 * Anonymous recursion would be a good thing to have.
 * The semantics of the default IO port to **print** and **format**
 to be worked out when it comes to printing color and pretty printing.
-* There is currently no decent way of handling binary data.
+* There is currently no decent way of handling binary data, strings could be
+  changed so that they could, but this would require reworking the
+  entire interpreter.
 * Modules for matrix arithmetic should be added.
+* Macros are probably better than F-Expressions...
 
 <div id='Test programs'/>
 ## Test programs
@@ -559,7 +579,6 @@ dialect that has a nice tutorial.
 * Strings
  - Normal Strings
  - "Characters"
- - Character literals
 * Floats
 * Integers
 * Symbols
@@ -1715,6 +1734,9 @@ the first argument, it is quite simple (for now).
         %c      print out a character, argument can either be an integer
                 or string of length one
         %S      print out an expression
+        %*x     print out character 'x' multiple times, expects integer
+        %f      print out a float or integer as a float
+        %d      print out a integer or float as a integer
 
 Any other character is printed out. If an argument is mismatched, there are too
 few arguments, or there are too many, an error is thrown.
@@ -1734,12 +1756,12 @@ few arguments, or there are too many, an error is thrown.
 
         # (regex-span STRING STRING)
 
-* raise
+* raise-signal
 
 Raise a signal, this function affects the entire program and can cause it to
 halt.
 
-        # (signal INTEGER)
+        # (raise-signal INTEGER)
 
 * isalnum?
 
@@ -2164,7 +2186,7 @@ Glossary of all of defined subroutine primitives and variables.
         substring          Make a substring from a string
         format             Print out a list of objects based on a format string
         regex              Match a regular expression on a string
-        raise              Raise a signal
+        raise-signal       Raise a signal
         isalnum?           Is string or integer alphanumeric only?
         isalpha?           Is string or integer alphabetic only?
         iscntrl?           Is string or integer control character?

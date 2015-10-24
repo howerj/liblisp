@@ -94,3 +94,32 @@
     (put *output* "Self-Test Passed\n")
     t))
 
+;; so slow
+; (define all 
+;   (make-set 
+;     (map1 
+;       (lambda (x) 
+;         (coerce *string* x)) 
+;       (map1 
+;         (lambda (x) 
+;           (if (atom? x) x (car x))) 
+;         (coerce *cons* (cadr (top-environment)))))))
+; 
+; (define save 
+;   (flambda (x) 
+;            (format *output* 'log.txt "%S\n" x)))
+; 
+; (define find 
+;   (lambda (x) 
+;     (map1 
+;       (lambda (y) 
+;         (if 
+;           (match 
+;             (join "" "*" x "*") y) y nil)) all)))
+; 
+; (define print-me 
+;   (flambda (x) 
+;     (map1 
+;       (lambda (y) 
+;         (format *output* "%S\n" y)) x)))
+

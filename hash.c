@@ -66,19 +66,22 @@ int hash_insert(hashtable *ht, const char *key, void *val) { assert(ht && key &&
         hashentry *cur = ht->table[hash], *newt, *last = NULL;
 
         for(;cur && cur->key && strcmp(key, cur->key); cur = cur->next)
-                last = cur;
+                last = cur; 
 
         if (cur && cur->key && !strcmp(key, cur->key)) {
-                cur->val = val;
+                cur->val = val; /*replace*/
         } else {
                 if(!(newt = hash_new_pair(key, val))) 
                         return -1;
-                if (cur == ht->table[hash]) {
+                ht->used++;
+                if (cur == ht->table[hash]) { /*collisions, insert head*/
+                        ht->collisions++;
                         newt->next = cur;
                         ht->table[hash] = newt;
-                } else if (!cur) {
+                } else if (!cur) { /*free bin*/
                         last->next = newt;
-                } else {
+                } else { /*collision, insertions*/
+                        ht->collisions++;
                         newt->next = cur;
                         last->next = newt;
                 }
@@ -86,11 +89,10 @@ int hash_insert(hashtable *ht, const char *key, void *val) { assert(ht && key &&
         return 0;
 }
 
-void *hash_foreach(hashtable *h, hash_func func) {
+void *hash_foreach(hashtable *h, hash_func func) { assert(h && func);
         size_t i;
         hashentry *cur;
         void *ret;
-        if (!h || !func) return NULL;
         for(i = 0; i < h->len; i++)
                 if(h->table[i])
                         for(cur = h->table[i]; cur; cur = cur->next)
@@ -103,7 +105,11 @@ static void *hprint(const char *key, void *val) { assert(key);
         return printf("(\"%s\" %p)\n", key, val), NULL;
 }
 
-void hash_print(hashtable *h) { assert(h); hash_foreach(h, hprint); }
+void hash_print(hashtable *h)                 { assert(h); hash_foreach(h, hprint); }
+double hash_get_load_factor(hashtable *h)     { assert(h && h->used); return (double)h->used / h->len; }
+size_t hash_get_collision_count(hashtable *h) { assert(h); return h->collisions; }
+size_t hash_get_replacements(hashtable *h)    { assert(h); return h->replacements; }
+size_t hash_get_number_of_bins(hashtable *h)  { assert(h); return h->len; }
 
 void* hash_lookup(hashtable *h, const char *key) {
         uint32_t hash;

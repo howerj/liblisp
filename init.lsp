@@ -6,23 +6,30 @@
 ;
 ; type checking information
 ;
-; @todo file path conversion unix <==> windows
 ; @todo file name escaping "a b" ==> "a\ b"
 ; @todo more utility functions
 ; @todo tabs for formating
 
 (progn
- ; @bug Incorrect, evaluates all args
- (define and (lambda (x y) (if x (if y t nil) nil)))
- ; @bug Incorrect, evaluates all args
- (define or (lambda (x y) (cond (x t) (y t) (t nil))))
- (define type?      (lambda (type-enum x) (eq type-enum (type-of x))))
- (define symbol?    (lambda (x) (type? *symbol* x)))
- (define string?    (lambda (x) (type? *string* x)))
- (define exit       (lambda ()  (raise *sig-term*)))
- (define not        (lambda (x) (null? x)))
- (define string->symbol (lambda (sym) (coerce *symbol* sym)))
- t)
+        ; @bug Incorrect, evaluates all args
+        (define and     (lambda (x y) (if x (if y t nil) nil)))
+        ; @bug Incorrect, evaluates all args
+        (define or      (lambda (x y) (cond (x t) (y t) (t nil))))
+        (define type?   (lambda (type-enum x) (eq type-enum (type-of x))))
+        (define symbol? (lambda (x) (type? *symbol* x)))
+        (define string? (lambda (x) (type? *string* x)))
+        (define exit    (lambda ()  (raise-signal *sig-term*)))
+        (define string->symbol (lambda (sym) (coerce *symbol* sym)))
+        (define *file-separator* 
+                (cond 
+        	        ((= *os* "unix") "/")
+		        ((= *os* "windows") "\\")
+                        (t "/")))
+        (define make-path
+                (lambda	(l)
+                        (join *file-separator* l)))
+ 'ok)
+
 ; Evaluate an entire file, stopping on 'error
 ; (eval-file string-or-input-port)
 (define eval-file
@@ -56,16 +63,6 @@
           (put *error* "(error \"Not a file name or a output IO type\" %S)\n" file) 
           'error))))))
 
-(define *file-separator* 
-	(cond 
-		((= *os* "unix") "/")
-		((= *os* "windows") "\\")
-		(t "/")))
-
-(define make-path
-	(lambda	(l)
-		(join *file-separator* l)))
-
 (let
  (exit-if-not-eof
   (lambda (in file) 
@@ -73,10 +70,11 @@
     t
     (progn (format *error* "(error \"eval-file failed\" %S %S)\n" in file) (exit)))))
  (progn
-  (eval-file (make-path '(mod lisp mods.lsp)) exit-if-not-eof nil)
-  (eval-file (make-path '(mod lisp base.lsp)) exit-if-not-eof nil)
-  (eval-file (make-path '(mod lisp sets.lsp)) exit-if-not-eof nil)
-  (eval-file (make-path '(mod lisp symb.lsp)) exit-if-not-eof nil)
-  (eval-file (make-path '(mod lisp test.lsp)) exit-if-not-eof nil)
- t))
+  (eval-file (make-path '(mod lsp mods.lsp)) exit-if-not-eof nil)
+  (eval-file (make-path '(mod lsp base.lsp)) exit-if-not-eof nil)
+  (eval-file (make-path '(mod lsp data.lsp)) exit-if-not-eof nil)
+  (eval-file (make-path '(mod lsp sets.lsp)) exit-if-not-eof nil)
+  (eval-file (make-path '(mod lsp symb.lsp)) exit-if-not-eof nil)
+  (eval-file (make-path '(mod lsp test.lsp)) exit-if-not-eof nil)
+ 'ok))
 

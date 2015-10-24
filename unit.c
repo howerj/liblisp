@@ -16,7 +16,7 @@
  *  @note     All functions under test should have assertions turned on
  *            when they were compiled. This test suite can handle SIGABRT
  *            signals being generated, it will fail the unit that caused
- *            it and continue processing the next tests.
+ *            it and continue processing the next tests. 
  **/
 
 /*** module to test ***/
@@ -136,7 +136,7 @@ static unsigned unit_test_end(const char *unit_name) {
 
 int main(int argc, char **argv) {
         if(argc > 1)
-                while(++argv, --argc)
+                while(++argv, --argc) {
                         if(!strcmp("-c", argv[0])) {
                                 color_on = 1;
                         } else if (!strcmp("-h", argv[0])) {
@@ -144,6 +144,7 @@ int main(int argc, char **argv) {
                         } else {
                                 printf("unknown argument '%s'\n", argv[0]);
                         }
+                }
 
         unit_test_start("liblisp");
 

@@ -307,6 +307,27 @@ LIBLISP_API void *hash_foreach(hashtable *h, hash_func func);
  *  @param   h table to print out**/
 LIBLISP_API void hash_print(hashtable *h);
 
+/** @brief  Get the load factor of a hash (or number of entries / number of
+ *          buckets). Depending on the internals this might go over one.
+ *  @param  h      hash to query 
+ *  @return double load factor **/
+LIBLISP_API double hash_get_load_factor(hashtable *h);
+
+/** @brief  Get the number of records that have collided.
+ *  @param  h      hash to query 
+ *  @return size_t number of record collisions **/
+LIBLISP_API size_t hash_get_collision_count(hashtable *h);
+
+/** @brief  Get the number of replacements
+ *  @param  h      hash to query 
+ *  @return size_t number of replacements **/
+LIBLISP_API size_t hash_get_replacements(hashtable *h);
+
+/** @brief  Get the current number of bins in a hash
+ *  @param  h     hash to query 
+ *  @return size_t number of bins **/
+LIBLISP_API size_t hash_get_number_of_bins(hashtable *h);
+
 /******************* I/O for reading/writing to strings or files *************/
 
 /* A generic set of functions for reading and writing to files, but also
@@ -541,13 +562,14 @@ LIBLISP_API int  is_userdef(cell *x); /**< true if 'x' is a user defined type*/
 LIBLISP_API int  is_usertype(cell *x, int type); /**< is a specific user defined type*/
 LIBLISP_API int  is_func(cell *x);   /**< true if 'x' can be applied (is a function) */
 LIBLISP_API int  is_closed(cell *x); /**< true if 'x' is 'closed' or invalidated*/
+LIBLISP_API cell *mk_list(lisp *l, cell *x, ...); /**< make a proper list (terminate args with NULL)*/
 LIBLISP_API cell *mk_int(lisp *l, intptr_t d); /**< make a lisp cell from an integer*/
 LIBLISP_API cell *mk_float(lisp *l, lfloat f); /**< make a lisp cell from a float*/
 LIBLISP_API cell *mk_io(lisp *l, io *x); /**< make lisp cell from an I/O stream*/
 /** @brief long version of subroutine creation function, fmt and doc can be NULL */
 LIBLISP_API cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc);
-LIBLISP_API cell *mk_proc(lisp *l, cell *x, cell *y, cell *z); /**< make a lisp cell/proc*/
-LIBLISP_API cell *mk_fproc(lisp *l, cell *x, cell *y, cell *z); /**< make a lisp cell/fproc*/
+LIBLISP_API cell *mk_proc(lisp *l, cell *args, cell *code, cell *env); /**< make a lisp cell/proc*/
+LIBLISP_API cell *mk_fproc(lisp *l, cell *args, cell *code, cell *env); /**< make a lisp cell/fproc*/
 LIBLISP_API cell *mk_str(lisp *l, char *s); /**< make lisp cell (string) from a string*/
 /*LIBLISP_API cell *mksym(lisp *l, char *s); // use intern instead to get a unique symbol*/
 LIBLISP_API cell *mk_hash(lisp *l, hashtable *h); /**< make lisp cell from hash*/
@@ -558,12 +580,12 @@ LIBLISP_API intptr_t get_int(cell *x); /**< cast *any* lisp cell to integer*/
 LIBLISP_API io   *get_io(cell *x);    /**< get lisp cell to I/O stream*/
 LIBLISP_API subr  get_subr(cell *x); /**< get a lisp cell to a primitive func ptr*/
 LIBLISP_API char *get_subr_format(cell *x);   /**< get the type validation string for a subroutine*/
-LIBLISP_API char *get_subr_docstring(cell *x); /**< get the documentation string for a subroutine*/
+LIBLISP_API cell *get_subr_docstring(cell *x); /**< get the documentation string for a subroutine*/
 LIBLISP_API cell *get_proc_args(cell *x);   /**< get args to a procedure/f-expr */
 LIBLISP_API cell *get_proc_code(cell *x);   /**< get code from a procedure/f-expr */
 LIBLISP_API cell *get_proc_env(cell *x);    /**< get procedure/f-expr environment*/
 LIBLISP_API char *get_proc_format(cell *x);   /**< get the type validation string for a procedure/f-expr */
-LIBLISP_API char *get_proc_docstring(cell *x); /**< get the documentation string for a procedure/f-expr */
+LIBLISP_API cell *get_proc_docstring(cell *x); /**< get the documentation string for a procedure/f-expr */
 LIBLISP_API int   get_user_type(cell *x); /**< get the user-defined-value identifier*/
 LIBLISP_API char *get_str(cell *x); /**< get string from a lisp cell*/
 LIBLISP_API char *get_sym(cell *x); /**< get string (symbol) from a lisp cell*/
@@ -1049,7 +1071,7 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
 #define DEL "\177" /**< ASCII Delete */
 
 #define SEP ":"    /**< Separator for docstrings */
-#define MK_DOCSTR(NAME, DOCSTR) NAME SEP __FILE__ SEP DOCSTR
+#define MK_DOCSTR(NAME, DOCSTR) (NAME SEP __FILE__ SEP DOCSTR)
 
 #ifdef __cplusplus
 }
