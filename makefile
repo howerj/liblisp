@@ -155,6 +155,7 @@ install: all
 uninstall:
 	@echo uninstalling $(TARGET)$(EXE)
 	$(RM) $(RM_FLAGS) $(DESTDIR)$(MANPREFIX)$(FS)man1$(FS)$(TARGET).1
+	$(RM) $(RM_FLAGS) $(DESTDIR)$(MANPREFIX)$(FS)man3$(FS)lib$(TARGET).3
 	$(RM) $(RM_FLAGS) $(DESTDIR)$(PREFIX)$(FS)bin$(FS)$(TARGET)$(EXE)
 	$(RM) $(RM_FLAGS) $(DESTDIR)$(PREFIX)$(FS)lib$(FS)lib$(TARGET).a
 	$(RM) $(RM_FLAGS) $(DESTDIR)$(PREFIX)$(FS)lib$(FS)lib$(TARGET).$(DLL)

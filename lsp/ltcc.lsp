@@ -14,11 +14,10 @@
     ; This is a simple C test function, it will square a number
     "#include <liblisp.h> /*liblisp needs to be installed and on include path*/
     cell *square(lisp *l, cell *args) { /*simple test function*/
-          if(!cklen(args, 1) || !is_arith(car(args)))
-                  RECOVER(l, \"\\\"expected (number)\\\" '%S \", args);
+          VALIDATE(l, \"square\", 1, \"a\", args, 0);
           if(is_float(car(args)))
-              return mk_float(l, val_float(car(args)) * val_float(car(args)));
+              return mk_float(l, get_float(car(args)) * get_float(car(args)));
           else
-              return mk_int(l, val_int(car(args)) * val_int(car(args)));
+              return mk_int(l, get_int(car(args)) * get_int(car(args)));
     }"))
 

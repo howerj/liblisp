@@ -11,6 +11,11 @@
 ; @todo tabs for formating
 
 (progn
+        (define join
+                (lambda (sep l)
+                        (foldl 
+                        (lambda (a b) (scons a (scons sep b)))
+                (reverse l))))
         ; @bug Incorrect, evaluates all args
         (define and     (lambda (x y) (if x (if y t nil) nil)))
         ; @bug Incorrect, evaluates all args
@@ -70,11 +75,13 @@
     t
     (progn (format *error* "(error \"eval-file failed\" %S %S)\n" in file) (exit)))))
  (progn
-  (eval-file (make-path '(mod lsp mods.lsp)) exit-if-not-eof nil)
-  (eval-file (make-path '(mod lsp base.lsp)) exit-if-not-eof nil)
-  (eval-file (make-path '(mod lsp data.lsp)) exit-if-not-eof nil)
-  (eval-file (make-path '(mod lsp sets.lsp)) exit-if-not-eof nil)
-  (eval-file (make-path '(mod lsp symb.lsp)) exit-if-not-eof nil)
-  (eval-file (make-path '(mod lsp test.lsp)) exit-if-not-eof nil)
+  (eval-file (make-path '("lsp" "mods.lsp")) exit-if-not-eof nil)
+  (eval-file (make-path '("lsp" "base.lsp")) exit-if-not-eof nil)
+  (eval-file (make-path '("lsp" "data.lsp")) exit-if-not-eof nil)
+  (eval-file (make-path '("lsp" "sets.lsp")) exit-if-not-eof nil)
+  (eval-file (make-path '("lsp" "symb.lsp")) exit-if-not-eof nil)
+  (eval-file (make-path '("lsp" "test.lsp")) exit-if-not-eof nil)
+; (eval-file (make-path '("lsp" "ltcc.lsp")) exit-if-not-eof nil) ; requires liblisp_tcc.so
  'ok))
+
 

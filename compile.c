@@ -22,10 +22,10 @@ static cell *compile_inner(lisp *l, unsigned depth, cell *exp, cell *env) { asse
         case FPROC:   case FLOAT: case USERDEF:
                 return exp;
 
-        case PROC:    break;
+        case PROC:    break; /*look into procedure*/
 
-        case SYMBOL:  break;
-        case CONS:    break;
+        case SYMBOL:  break; /*look up symbol and replace*/
+        case CONS:    break; /*process the rest of the expression*/
 
         case INVALID:
         default:  HALT(l, "%s", "internal inconsistency: unknown type");
@@ -39,6 +39,6 @@ cell *compile_expression(lisp *l, unsigned depth, cell *exp, cell *env) { assert
         /**/
         ret = compile_inner(l, depth+1, cdr(exp), env);
 
-        return mk_proc(l, car(exp), ret, env);
+        return ret;
 }
 

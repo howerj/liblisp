@@ -261,7 +261,6 @@ int main(int argc, char **argv) {
                 test(!lisp_eval_string(l, ""));
                 test(get_int(lisp_eval_string(l, "(+ 2 2)")) == 4);
                 test(get_int(lisp_eval_string(l, "(* 3 2)")) == 6);
-                test(!strcmp(get_str(lisp_eval_string(l, "(join \" \" \"Hello\" \"World!\")")), "Hello World!"));
 
                 cell *x = NULL, *y = NULL, *z = NULL;
 

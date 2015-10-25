@@ -155,6 +155,7 @@ struct lisp {
              *output,      /**< interpreter output stream*/
              *logging,     /**< interpreter logging/error stream*/
              *cur_env,     /**< current interpreter depth*/
+             *empty_docstr,/**< empty doc string */
             **gc_stack;    /**< garbage collection stack for working items*/
         gc_list *gc_head;  /**< linked list of all allocated objects*/
         char *token /**< one token of put back for parser*/, 

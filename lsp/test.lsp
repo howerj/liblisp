@@ -3,14 +3,9 @@
 ; should be tested here to both document functionality and make the
 ; test suite as comprehensive as possible.
 
-; random floating point number between zero and one
-(define frandom (lambda () (fabs (/ (coerce *float* (random)) *random-max*))))
-(define sum-of-squares (lambda (x y) (+ (* x x) (* y y))))
-
-; determine the value of pi with Monte-Carlo methods,
-; more iterations creates a better approximation
 (define monte-carlo-pi
   (lambda (iter)
+    "determine the approximate value of pi with Monte-Carlo methods, more iterations produces a better approximation"
     (let
         (inner ; hit?
           (lambda ()
@@ -23,7 +18,7 @@
                (i iter)
                (c 0)
                (progn
-                 (set! i (- i 1))
+                 (set! i (dec i))
                  (set! c (+ (inner) c))
                  (if 
                    (<= i 0)
@@ -35,7 +30,7 @@
 ; This is a series of simple tests that is not comprehensive
 ; at the moment.
 (let
-  (test (lambda
+  (test (lambda "execute a unit test, if it fails then exit the interpreter"
     (compare expr result)
     (if 
       (compare expr result)

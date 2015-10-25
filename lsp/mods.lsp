@@ -6,9 +6,9 @@
     (if 
       (and 
         *have-dynamic-loader* 
-        (= (dynamic-open (string->symbol (join "" "liblisp_" name (if (= *os* "unix") ".so" ".dll")))) 'error))
-         (define-eval (string->symbol (join "" "*have-" name "*")) nil)
-         (define-eval (string->symbol (join "" "*have-" name "*")) t))))
+        (= (dynamic-open (string->symbol (join "" (list "liblisp_" name (if (= *os* "unix") ".so" ".dll"))))) 'error))
+         (define-eval (string->symbol (join "" (list "*have-" name "*"))) nil)
+         (define-eval (string->symbol (join "" (list "*have-" name "*"))) t))))
 
 (progn ; load all known modules
  (load-module "unix")   ; unix interface module

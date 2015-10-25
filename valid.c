@@ -5,19 +5,13 @@
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com 
  *  
- *  @todo print the doc string for the subroutine or procedure if available
- *  @todo Improve the format options with; variable length validation,
- *        groups of type (such as argument one can be either a string or
- *        and I/O port), optional arguments, etcetera. This will require 
- *        making a strsep() function for "util.c".
- *  @todo add checks for *specific* user defined values, this will
- *        require turning lisp_validate_args into a variadic function, something
- *        like %u will pop an integer off the argument stack to test
- *        against.
- *  @todo make sure the expected argument length format string agree
- *  @todo instead of explicitly passing in the validation string and length
- *        the subroutine or procedure that contains the information could
- *        be passed in.
+ *  @todo    Add checks for *specific* user defined values, this will
+ *           require turning lisp_validate_args into a variadic function, 
+ *           something like %u will pop an integer off the argument stack 
+ *           to test against.
+ *  @warning The number of arguments in the string and the number of arguments
+ *           passed into the validation string must be the same, this is the
+ *           responsibility of the user of these functions
  **/
  
 #include "liblisp.h"
@@ -79,7 +73,7 @@ size_t validate_arg_count(const char *fmt) {
         size_t i = 0;
         if(!fmt) return 0;
         for(;*fmt; i++) {
-                while(*fmt && isspace(*fmt++));
+                while(*fmt &&  isspace(*fmt++));
                 while(*fmt && !isspace(*fmt++));
         }
         return i;

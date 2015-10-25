@@ -568,7 +568,7 @@ LIBLISP_API cell *mk_float(lisp *l, lfloat f); /**< make a lisp cell from a floa
 LIBLISP_API cell *mk_io(lisp *l, io *x); /**< make lisp cell from an I/O stream*/
 /** @brief long version of subroutine creation function, fmt and doc can be NULL */
 LIBLISP_API cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc);
-LIBLISP_API cell *mk_proc(lisp *l, cell *args, cell *code, cell *env); /**< make a lisp cell/proc*/
+LIBLISP_API cell *mk_proc(lisp *l, cell *args, cell *code, cell *env, cell *doc); /**< make a lisp cell/proc*/
 LIBLISP_API cell *mk_fproc(lisp *l, cell *args, cell *code, cell *env); /**< make a lisp cell/fproc*/
 LIBLISP_API cell *mk_str(lisp *l, char *s); /**< make lisp cell (string) from a string*/
 /*LIBLISP_API cell *mksym(lisp *l, char *s); // use intern instead to get a unique symbol*/

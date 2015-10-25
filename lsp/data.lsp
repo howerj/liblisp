@@ -10,8 +10,10 @@
   '((0 Sunday)  (1 Monday)  (2 Tuesday) (3 Wednesday)
     (4 Thurday) (5 Friday)  (6 Saturday)))
 
-(define date-string ; make a nicely formatted date string
-  (lambda ()
+(define date-string 
+  (lambda 
+    "make a nicely formatted data string" 
+    ()
     (let 
       (d (date))
       (month (cadr (assoc (cadr d)  *months*)))
@@ -37,8 +39,8 @@
       "Floating point number" "Lambda procedure"     "Primitive subroutine" 
       "F-Expression")))
 
-(define type-name ; Get a string representing the name of a type
-  (lambda (x) 
+(define type-name 
+  (lambda "get a string representing the name of a type" (x) 
     (cadr 
       (assoc (type-of x) *type-names*))))
 
@@ -79,6 +81,6 @@
   (0175 . "\175") (0176 . "\176") (0177 . "\177")))
 
 (define integer->ascii
-  (lambda (x)
+  (lambda "convert an ASCII integer into character (string)" (x)
     (if (> x 0177) nil (cdr (assoc x ascii-integers)))))
 

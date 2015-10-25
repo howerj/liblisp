@@ -119,13 +119,12 @@ cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc) { assert(l && p
         return t;
 }
 
-cell *mk_proc(lisp *l, cell *args, cell *code, cell *env)  { assert(l && args && code && env); 
-        cell *ds = mk_str(l, lstrdup(""));
-        return mk(l, PROC,  5, args, code, env, NULL, ds); 
+cell *mk_proc(lisp *l, cell *args, cell *code, cell *env, cell *doc)  { assert(l && args && code && env); 
+        return mk(l, PROC,  5, args, code, env, NULL, doc); 
 }
 
 cell *mk_fproc(lisp *l, cell *args, cell *code, cell *env) { assert(l && args && code && env); 
-        cell *ds = mk_str(l, lstrdup(""));
+        cell *ds = l->empty_docstr;
         return mk(l, FPROC, 5, args, code, env, NULL, ds); 
 }
 
@@ -265,13 +264,22 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         goto tail;
                 }
                 if(first == l->lambda) {
+                        cell *doc;
                         if(get_length(exp) < 2)
-                                RECOVER(l, "'lambda \"argc < 2 in %S\"", exp);
+                                RECOVER(l, "'lambda \"argc < 2\" '%S\"", exp);
+                        if(!is_nil(car(exp)) && is_asciiz(car(exp))) { /*have docstring*/
+                                doc = car(exp);
+                                exp = cdr(exp);
+                        } else {
+                                doc = l->empty_docstr;
+                        }
+                        if(!is_nil(car(exp)) && !is_cons(car(exp)))
+                                RECOVER(l, "'lambda\n \"not an argument list (or nil)\"\n '%S", exp);
                         for(tmp = car(exp); !is_nil(tmp); tmp = cdr(tmp)) 
                                 if(!is_sym(car(tmp)) || !is_proper_cons(tmp))
                                         RECOVER(l, "'lambda\n \"expected only symbols (or nil) as arguments\"\n %S", exp);
                         l->gc_stack_used = gc_stack_save;
-                        tmp = mk_proc(l, car(exp), cdr(exp), env);
+                        tmp = mk_proc(l, car(exp), cdr(exp), env, doc);
                         return gc_add(l, tmp);
                 }
                 if(first == l->flambda) {
@@ -371,7 +379,8 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 }
                 if(is_proc(proc) || is_fproc(proc)) {
                         if(get_proc_args(proc)->len != vals->len)
-                                RECOVER(l, "'proc \"expected %S\" '%S", 
+                                RECOVER(l, "%y'lambda%t\n %S\n %y'expected%t %S\n '%S", 
+                                                get_proc_docstring(proc), 
                                                 get_proc_args(proc), vals);
                         if(get_proc_args(proc)->len)
                                 env = multiple_extend(l, 

@@ -313,7 +313,8 @@ added as well.
 to be worked out when it comes to printing color and pretty printing.
 * There is currently no decent way of handling binary data, strings could be
   changed so that they could, but this would require reworking the
-  entire interpreter.
+  entire interpreter. Not only that, all string operations are pure,
+  there is no way to mutate strings.
 * Modules for matrix arithmetic should be added.
 * Macros are probably better than F-Expressions...
 
@@ -1708,13 +1709,6 @@ Split a string based on a regular expression.
         # (split STRING)
         # (split STRING STRING)
 
-* join
-
-Join a list of strings together with a separator between them.
-
-        # (join STRING STRING...)
-        # (join STRING (STRING...))
-
 * substring
 
 Create a substring from a string. There are two forms of this function, the
@@ -2182,7 +2176,6 @@ Glossary of all of defined subroutine primitives and variables.
         timed-eval         Eval with execution time
         reverse            Reverse a string, a list or a hash
         split              Split a string based
-        join               Join a list of strings together
         substring          Make a substring from a string
         format             Print out a list of objects based on a format string
         regex              Match a regular expression on a string

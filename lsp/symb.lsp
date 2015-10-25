@@ -204,9 +204,10 @@
             ((eq 1 (first-term poly)) 1) ))
        (t poly))))
 
-; Repeatedly apply simplify1 until there is no change
 (define simplify
-  (lambda (poly)
+  (lambda 
+    "repeatedly simplify a tree of arity-2 functions until there is no change."
+    (poly)
     (let (poly1 ()) 
       (progn
         (set! poly1 (simplify1 poly))
@@ -216,9 +217,10 @@
           loop
           error))))
 
-; turn infix (2 + 2) to prefix (+ 2 2)
 (define infix->prefix
-  (lambda (poly)
+  (lambda 
+    "turn an infix expression into a postfix expression: (2 + 2) => (+ 2 2), arity has to be 2." 
+    (poly)
     (cond
       ((list? poly) 
        (list 
@@ -227,9 +229,10 @@
          (infix->prefix (caddr poly))))
       (t poly))))
 
-; turn prefix (+ 2 2) to infix (2 + 2)
 (define prefix->infix
-  (lambda (poly)
+  (lambda 
+    "turn a prefix expression to a postfix expression: (+ 2 2) => (2 + 2). Arity has to be 2."
+    (poly)
     (cond
     ((list? poly)
      (list

@@ -30,6 +30,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include <locale.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -73,7 +74,6 @@
   X("ilog2",       subr_ilog2,    "d",    "compute the binary logarithm of an integer")\
   X("input?",      subr_inp,       "A",    "is an object an input port?")\
   X("ipow",        subr_ipow,      "d d",  "compute the integer exponentiation of two numbers")\
-  X("join",        subr_join,      NULL,   "join a list of strings together with a separator")\
   X("length",      subr_length,    "A",    "return the length of a list or string")\
   X("list",        subr_list,      NULL,   "create a list from the arguments")\
   X("locale!",     subr_setlocale, "d Z",  "set the locale, this affects global state!")\
@@ -234,6 +234,8 @@ lisp *lisp_init(void) {
 CELL_XLIST
 #undef X
 
+        assert(MAX_RECURSION_DEPTH < UINT_MAX);
+
         l->random_state[0] = 0xCAFEBABE; /*Are these good seeds?*/
         l->random_state[1] = 0xDEADC0DE;
         for(i = 0; i < LARGE_DEFAULT_LEN; i++) /*discard first N numbers*/
@@ -256,6 +258,7 @@ CELL_XLIST
         if(!(l->input   = mk_io(l, ifp))) goto fail;
         if(!(l->output  = mk_io(l, ofp))) goto fail;
         if(!(l->logging = mk_io(l, efp))) goto fail;
+        if(!(l->empty_docstr = mk_str(l, lstrdup("")))) goto fail;
 
         l->input->uncollectable = l->output->uncollectable = l->logging->uncollectable = 1;
 
@@ -864,37 +867,6 @@ fail:   RECOVER(l, "\"expected () (string) (list) (hash)\"\n '%S", args);
         return gsym_error();
 }
 
-static cell *subr_join(lisp *l, cell *args) {
-        char *sep = "", *r, *tmp;
-        if(get_length(args) < 2u || !is_asciiz(car(args))) 
-                goto fail;
-        sep = get_str(car(args));
-        if(!is_asciiz(CADR(args))) {
-                if(is_cons(CADR(args))) {
-                        args = CADR(args);
-                        if(!is_asciiz(car(args)))
-                                goto fail;
-                } else {
-                        goto fail;
-                }
-        } else {
-                args = cdr(args);
-        }
-        r = lstrdup(get_str(car(args)));
-        for(args = cdr(args); !is_nil(args); args = cdr(args)) {
-                if(!is_asciiz(car(args))) {
-                        free(r);
-                        goto fail;
-                }
-                tmp = vstrcatsep(sep, r, get_str(car(args)), NULL);
-                free(r);
-                r = tmp;
-        }
-        return mk_str(l, r);
-fail:   RECOVER(l, "\"expected (str str...) or (string (str ...))\"\n '%S", args);
-        return gsym_error();
-}
-
 static cell *subr_regexspan(lisp *l, cell *args) { 
         regex_result rr;
         cell *m = gsym_nil();
@@ -1053,6 +1025,7 @@ static cell *subr_format(lisp *l, cell *args) {
                      /* case 'o': // octal */
                      /* case 'b': // binary */
                      /* case '$': // literal '$'*/
+                     /* case '0': case '1': case '2': case '3': // char literal*/
                         default:   goto fail;
                         }
              /* } else if ('$' == c) { // interpolate */
