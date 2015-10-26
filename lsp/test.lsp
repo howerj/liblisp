@@ -7,21 +7,21 @@
   (lambda (iter)
     "determine the approximate value of pi with Monte-Carlo methods, more iterations produces a better approximation"
     (let
-        (inner ; hit?
-          (lambda ()
-            (if (<= (sum-of-squares (frandom) (frandom)) 1)
+        (inner 
+          (compile "calculate a hit" ()
+            (if (< (sum-of-squares (frandom) (frandom)) 1)
               1
               0)))
-        (outer ; loop "iter" times
-           (lambda (iter)
+        (outer 
+           (compile "loop iter amount of times" (iter)
              (let 
                (i iter)
                (c 0)
                (progn
-                 (set! i (dec i))
+                 (set! i (- i 1))
                  (set! c (+ (inner) c))
                  (if 
-                   (<= i 0)
+                   (< i 0)
                    (return c)
                    loop)
                  ()))))
@@ -30,7 +30,7 @@
 ; This is a series of simple tests that is not comprehensive
 ; at the moment.
 (let
-  (test (lambda "execute a unit test, if it fails then exit the interpreter"
+  (test (compile "execute a unit test, if it fails then exit the interpreter"
     (compare expr result)
     (if 
       (compare expr result)

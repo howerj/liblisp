@@ -11,36 +11,35 @@
       ((hash? x)    (eq (coerce *cons* x) nil))
       (t (eq nil x)))))  
 
-(define not        (lambda (x) (null? x)))
-(define list?      (lambda "is x a list?" (x) (type? *cons* x)))
-(define atom?      (lambda "is x an atom? (not a list)" (x) (if (list? x) nil t)))
-(define float?     (lambda "is x a floating point number?" (x) (type? *float* x)))
-(define integer?   (lambda "is x a integer type?" (x) (type? *integer* x)))
-(define io?        (lambda "is x a input/output port?" (x) (type? *io* x)))
-(define hash?      (lambda "is x a hash table?" (x) (type? *hash* x)))
-(define string?    (lambda "is x a string?" (x) (type? *string* x)))
-(define procedure? (lambda "is x a procedure?" (x) (type? *procedure* x)))
-(define primitive? (lambda "is x a primitive type?" (x) (type? *primitive* x)))
-(define char?      (lambda "is x a character? (string of length 1)" (x) (and (string? x) (= (length x) 1))))
-(define dotted?    (lambda "is x a dotted pair?" (x) (and (list? x) (not (list? (cdr x))))))
-(define arithmetic?(lambda "is x an arithmetic type? (integer or float)" (x) (or (integer? x) (float? x))))
+(define not        (compile "if x nil?" (x) (if x nil t)))
+(define nil?       (compile "is x nil?" (x) (if x nil t)))
+(define list?      (compile "is x a list?" (x) (type? *cons* x)))
+(define atom?      (compile "is x an atom? (not a list)" (x) (if (list? x) nil t)))
+(define float?     (compile "is x a floating point number?" (x) (type? *float* x)))
+(define integer?   (compile "is x a integer type?" (x) (type? *integer* x)))
+(define io?        (compile "is x a input/output port?" (x) (type? *io* x)))
+(define hash?      (compile "is x a hash table?" (x) (type? *hash* x)))
+(define string?    (compile "is x a string?" (x) (type? *string* x)))
+(define procedure? (compile "is x a procedure?" (x) (type? *procedure* x)))
+(define primitive? (compile "is x a primitive type?" (x) (type? *primitive* x)))
+(define char?      (compile "is x a character? (string of length 1)" (x) (and (string? x) (= (length x) 1))))
+(define dotted?    (compile "is x a dotted pair?" (x) (and (list? x) (not (list? (cdr x))))))
+(define arithmetic?(compile "is x an arithmetic type? (integer or float)" (x) (or (integer? x) (float? x))))
 
-(define nil? (lambda "is x nil?" (x) (if x nil t)))
-
-; these are only defined because they are used elsewhere
-(define caar   (lambda (x) (car (car x))))
-(define cadr   (lambda (x) (car (cdr x))))
-(define cdar   (lambda (x) (cdr (car x))))
-(define cddr   (lambda (x) (cdr (cdr x))))
-(define cadar  (lambda (x) (car (cdr (car x)))))
-(define caddr  (lambda (x) (car (cdr (cdr x)))))
-(define cdddr  (lambda (x) (cdr (cdr (cdr x)))))
-(define cddddr (lambda (x) (cdr (cdr (cdr (cdr x))))))
-(define caddar (lambda (x) (car (cdr (cdr (car x))))))
-(define cadddr (lambda (x) (car (cdr (cdr (cdr x))))))
+; @note these are only defined because they are used elsewhere
+(define caar   (compile "caar"   (x) (car (car x))))
+(define cadr   (compile "cadr"   (x) (car (cdr x))))
+(define cdar   (compile "cdar"   (x) (cdr (car x))))
+(define cddr   (compile "cddr"   (x) (cdr (cdr x))))
+(define cadar  (compile "cadar"  (x) (car (cdr (car x)))))
+(define caddr  (compile "caddr"  (x) (car (cdr (cdr x)))))
+(define cdddr  (compile "cddr"   (x) (cdr (cdr (cdr x)))))
+(define cddddr (compile "cddddr" (x) (cdr (cdr (cdr (cdr x))))))
+(define caddar (compile "caddar" (x) (car (cdr (cdr (car x))))))
+(define cadddr (compile "cadddr" (x) (car (cdr (cdr (cdr x))))))
 
 (define subst 
-  (lambda 
+  (compile
     "substitute all y for x in tree z" 
     (x y z)
     (if (atom? z)
@@ -50,41 +49,42 @@
 
 ; ¬(x ∧ y)
 (define nand
-  (lambda (x y)
-    (or (not x) (not y))))
+  (compile "not-and of two arguments" 
+           (x y)
+           (or (not x) (not y))))
 
-; ¬(x ∨ y)
-(define nor
-  (lambda 
+(define nor ; ¬(x ∨ y)
+  (compile
     "compute \"nor\" of 'x and 'y" 
     (x y)
     (and (not x) (not y))))
 
 (define zero? 
-  (lambda (x)
+  (compile 
     "is x zero?"
+    (x)
     (if (= x 0) t nil)))
 
 (define max
-  (lambda 
+  (compile
     "maximum of two arithmetic types or string"
     (x y)
     (if (> x y) x y)))
 
 (define min
-  (lambda 
+  (compile
     "minimum of two arithmetic types or string"
     (x y)
     (if (< x y) x y)))
 
 (define abs
-  (lambda 
+  (compile
     "absolute value of a number"
     (x)
     (if (> 0 x) (* x -1) x)))
 
 (define signum
-  (lambda 
+  (compile
     "the signum function"
     (x)
     (cond
@@ -93,24 +93,24 @@
       (t 0))))
 
 (define positive?
-  (lambda 
+  (compile
     "is x a positive number?"
     (x)
     (if (< x 0) nil t)))
 
 (define negative?
-  (lambda "is x a negative number?" (x) (not (positive? x))))
+  (compile "is x a negative number?" (x) (not (positive? x))))
 
 (define even?
-  (lambda "is x an even integer?" (x)
+  (compile "is x an even integer?" (x)
     (if (= (% x 2) 0) t nil)))
 
 (define odd?
-  (lambda "is x an odd integer?" (x)
+  (compile "is x an odd integer?" (x)
     (not (even? x))))
 
 (define nth
-  (lambda 
+  (compile
     "get the nth (i) element of a string or a list (x)" 
     (i x)
     (if (zero? i)
@@ -118,7 +118,7 @@
       (nth (- i 1) (if (string? x) (scdr x) (cdr x))))))
 
 (define append
-  (lambda 
+  (compile
     "append two lists together"
     (x y)
     (cond
@@ -127,7 +127,7 @@
                (append (cdr x) y))))))
 
 (define pair 
-  (lambda 
+  (compile
     "turn two lists into list of pairs (a-list): (pair '(a b c) '(1 2 3)) => ((a 1) (b 2) (c 3))"
     (x y) 
     (cond 
@@ -137,7 +137,7 @@
              (pair (cdr x) (cdr y)))))))
 
 (define last 
-  (lambda 
+  (compile
     "get the last element in a list"
     (x)
     (if (list? (cdr x))
@@ -145,7 +145,7 @@
       (car x))))
 
 (define pair? 
-  (lambda 
+  (compile
     "is x a pair? eg. (a b)"
     (x)
     (cond 
@@ -155,8 +155,8 @@
       ((nil? (cdr (cdr x))) t)
       (t nil))))
 
-(define <= (lambda "is x less than or equal to y" (x y) (or (< x y) (= x y))))
-(define >= (lambda "is x greater than or equal to y" (x y) (or (> x y) (= x y))))
+(define <= (compile "is x less than or equal to y" (x y) (or (< x y) (= x y))))
+(define >= (compile "is x greater than or equal to y" (x y) (or (> x y) (= x y))))
 
 (define sort
   (let
@@ -170,7 +170,7 @@
          (cons 
           (car l)
           (sort-insert x (cdr l)))))))
-  (lambda 
+  (compile
     "A super inefficient sort on a list of integers/floats or strings"
     (l)
     (if (nil? l)
@@ -179,9 +179,10 @@
         (car l) 
         (sort (cdr l)))))))
 
-; @warning this is not actually correct, see <http://floating-point-gui.de/errors/comparison/>
+; @warning this is not actually correct, 
+;          see <http://floating-point-gui.de/errors/comparison/>
 (define float-equal
-  (lambda 
+  (compile
     "inexact floating point equality"
     (x y)
     (<
@@ -189,13 +190,13 @@
       0.00001)))
 
 (define rewind 
-  (lambda
+  (compile
     "rewind an IO port to point to the beginning of its input or output"
     (port) 
     (seek port 0 *seek-set*)))
 
 (define flatten 
-  (lambda 
+  (compile
     "flatten a tree (flatten '((a b (c) d) e)) => (a b c d e)"
     (l)
     (cond
@@ -205,13 +206,13 @@
                  (flatten (cdr l)))))))
 
 (define explode
-  (lambda 
+  (compile
     "turn a string into a list of characters"
     (s)
     (coerce *cons* s)))
 
 (define implode
-  (lambda
+  (compile
     "turn a list of characters into a string"
     (s)
     (if
@@ -220,19 +221,19 @@
       (scons (car s) (implode (cdr s))))))
 
 (define get-line
-  (lambda 
+  (compile
     "read in a single line from an input port"
     (in)
     (get-delim in "\n")))
 
 (define slurp
-  (lambda 
+  (compile
     "read in an entire file (from an input port) into a string"
     (in)
     (get-delim in *eof*)))
 
 (define lat?
-  (lambda 
+  (compile
     "is 'l a list of atoms?"
     (l)
     (cond
@@ -241,7 +242,7 @@
       (t nil))))
 
 (define member?
-  (lambda 
+  (compile
     "find an atom in a list of atoms"
     (a lat)
     (cond
@@ -250,7 +251,7 @@
                 (member? a (cdr lat)))))))
 
 (define remove-member 
-  (lambda 
+  (compile
     "remove a member from a list of atoms"
     (a lat)
     (cond
@@ -260,15 +261,15 @@
                   (remove-member a (cdr lat)))))))
 
 (define regex 
-  (lambda 
+  (compile
     "match a pattern on a string, return 't if found, 'nil if not."
     (pattern str)
     (car (regex-span pattern str))))
 
-(define newline (lambda "print a newline" () (put *output* "\n")))
+(define newline (compile "print a newline" () (put *output* "\n")))
 
 (define list-tail
-  (lambda 
+  (compile
     "exclude all the elements from 0 to k in a list"
     (l k)
     (cond
@@ -276,7 +277,7 @@
       (t (list-tail (cdr l) (- k 1))))))
 
 (define list-head 
-  (lambda 
+  (compile
     "get all the elements from 0 to k in a list"
     (l k)
     (cond
@@ -284,13 +285,13 @@
       (t (cons (car l) (list-head (cdr l) (- k 1)))))))
 
 (define sublist
-  (lambda 
+  (compile
     "get a sub sequence from a list"
     (l start end)
     (list-tail (list-head l end) start)))
 
 (define random-element
-  (lambda 
+  (compile
     "pick a random element from a list"
     (x)
     (if (list? x)
@@ -303,7 +304,7 @@
 ; of elements in each tree. It would be nice to make this function
 ; more generic than it already is.
 (define tree-walk
-  (lambda (f x y)
+  (compile "walk a tree and apply a function returning a bool" (f x y)
         (cond 
           ((and (atom? x) (atom? y))
            (f x y))
@@ -314,30 +315,30 @@
           (t nil))))
 
 (define equal
-  (lambda 
+  (compile
     "are two trees equal?"
     (x y)
     (tree-walk eq x y)))
 
 (define struct-iso?
-  (lambda 
+  (compile
     "are two trees structurally isomorphic?"
     (x y)
     (tree-walk (lambda (x y) t) x y)))
 
 (define type-iso?
-  (lambda 
+  (compile
     "are two trees both structurally and type isomorphic?"
     (x y)
     (tree-walk (lambda (x y) (eq (type-of x) (type-of y))) x y)))
 
-(define inc (lambda "increment a value" (x) (+ x 1)))
-(define dec (lambda "decrement a value" (x) (- x 1)))
+(define inc (compile "increment a value" (x) (+ x 1)))
+(define dec (compile "decrement a value" (x) (- x 1)))
 
-(define bye  (lambda "quit the interpreter" () (exit)))  ; quit the interpreter
-(define quit (lambda "quit the interpreter" () (exit)))  ; quit the interpreter
+(define bye  (compile "quit the interpreter" () (exit)))  ; quit the interpreter
+(define quit (compile "quit the interpreter" () (exit)))  ; quit the interpreter
 
-(define symbol->string (lambda "coerce a symbol into a string" (s) (coerce *string* s)))
+(define symbol->string (compile "coerce a symbol into a string" (s) (coerce *string* s)))
 
 (define gensym-counter 0) ; *GLOBAL* counter for gensym
 (define gensym
@@ -346,11 +347,11 @@
       (coerce *symbol*
         (join
           "-"
-          "GENSYM"
-          (symbol->string gensym-counter)))))
+          (list "GENSYM"
+                (symbol->string gensym-counter))))))
 
 (define map1
-  (lambda 
+  (compile
     "map a function onto a list returning a list of the function applied to each element"
     (f l)
     (if (nil? l)
@@ -359,23 +360,23 @@
             (map1 f (cdr l))))))
 
 (define square
-  (lambda 
+  (compile
     "square a number"
     (x)
     (* x x)))
 
 (define frandom 
-  (lambda "create a random number in the range of 0.0 and 1.0" () 
+  (compile "create a random number in the range of 0.0 and 1.0" () 
     (fabs (/ (coerce *float* (random)) *random-max*))))
 
 (define sum-of-squares 
-  (lambda 
+  (compile
     "return the sum of the squares of two numbers"
     (x y) 
-    (+ (square x) (square y))))
+    (+ (* x x) (* y y))))
 
 (define gcd
- (lambda "compute the greatest common divisor of two integers" (x y) 
+ (compile "compute the greatest common divisor of two integers" (x y) 
   (if 
    (= 0 y) 
    x 
@@ -383,21 +384,21 @@
     (% x y)))))
 
 (define lcm
-  (lambda "compute the lowest common multiple of two integers" (x y)
+  (compile "compute the lowest common multiple of two integers" (x y)
     (* (/ x (gcd x y)) y)))
 
 (define factorial
-  (lambda "compute the factorial of a integer" (x)
+  (compile "compute the factorial of a integer" (x)
     (if (< x 2)
         1
         (* x (factorial (- x 1))))))
 
 (define arithmetic-mean
-  (lambda "return the arithmetic mean of a list of numbers" (l)
+  (compile "return the arithmetic mean of a list of numbers" (l)
     (/ (foldl + l) (length l))))
 
 (define average
-  (lambda "return the arithmetic mean of a list of numbers" (l)
+  (compile "return the arithmetic mean of a list of numbers" (l)
     (arithmetic-mean l)))
 
 (define geometric-mean 
@@ -405,7 +406,7 @@
     (pow (foldl * l) (/ 1. (length l)))))
 
 (define median
-  (lambda "compute the median value of a list of numbers" (l)
+  (compile "compute the median value of a list of numbers" (l)
     (let 
       (len (length l))
       (half (/ len 2))
@@ -417,7 +418,7 @@
           (/ (+ (car middle) (cadr middle)) 2))))))
 
 (define variance
-  (lambda "compute the variance of a list of numbers" (l)
+  (compile "compute the variance of a list of numbers" (l)
     (/ (foldl + (map1 square l)) (length l))))
 
 (define standard-deviation
@@ -425,11 +426,11 @@
     (sqrt (variance l))))
 
 (define degrees->radians
-  (lambda "convert degrees into radians" (deg)
+  (compile "convert degrees into radians" (deg)
     (* (/ pi 180.) deg)))
 
 (define radians->degrees
-  (lambda "convert radians into degrees" (rad)
+  (compile "convert radians into degrees" (rad)
     (* (/ 180. pi) rad)))
 
 (define cartesian->polar 
@@ -449,7 +450,7 @@
       (* (sin (cdr pol)) (car pol)))))
 
 (define defined?
-  (lambda 
+  (compile
     "is a variable defined or not? (argument should be quoted)"
     (x)
     (if
@@ -458,32 +459,32 @@
       nil)))
 
 (define lower->upper 
-  (lambda 
+  (compile
     "convert a string to upper case" 
     (s) 
     (tr "" "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ" s)))
 
 (define 
   upper->lower 
-  (lambda 
+  (compile
     "convert a string to lower case"
     (s) 
     (tr "" "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "abcdefghijklmnopqrstuvwxyz" s)))
 
 (define unix->windows 
-  (lambda 
+  (compile
     "convert a Unix file path to a Windows file path"
     (p) 
     (tr "" "/" "\\\\" p))) 
 
 (define windows->unix 
-  (lambda 
+  (compile
     "convert a Windows file path to a Unix file path"
     (p) 
     (tr "" "\\\\" "/" p)))
 
 (define help
-  (lambda 
+  (compile
     "print out as much information about a function as is known"
     (func) 
     (map1

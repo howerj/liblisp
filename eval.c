@@ -5,7 +5,13 @@
  *  @email      howe.r.j.89@gmail.com
  *
  *  This is the main evaluator and associated function, the built in
- *  subroutines for the interpreter are defined elsewhere. **/
+ *  subroutines for the interpreter are defined elsewhere. 
+ *  
+ *  @note constants could be added by performing checks in "define" and
+ *        "set!" against a new flag in a lisp cell, and they would refuse
+ *        to operate by redefining or modifying what the symbols eval
+ *        to. The same could be done for operations that mutate data.
+ *  **/
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
@@ -222,6 +228,41 @@ cell *assoc(cell *key, cell *alist) { assert(key && alist);
 
 /******************************** evaluator ***********************************/
 
+/** @brief "Compile" an expression, that is, perform optimizations
+ *         and bind as many variables as possible. This function
+ *         is a work in progress.
+ *  @note Things that can be done here; partial argument checking,
+ *        optimizing called procedures, constant folding and
+ *        inlining small procedures. This function could also
+ *        use set_car to replace the current list to save memory.
+ **/        
+static cell *compiler(lisp *l, unsigned depth, cell *exp, cell *env) {
+        size_t i;
+        cell *head, *op, *tmp, *code = gsym_nil();
+        if(depth > MAX_RECURSION_DEPTH)
+                RECOVER(l, "'recursion-depth-reached %d", depth);
+        if(is_sym(car(exp)) && !is_nil(tmp = assoc(car(exp), env))) 
+                op = cdr(tmp);
+        else if (is_cons(car(exp)))
+                op = compiler(l, depth + 1, car(exp), env);
+        else 
+                op = car(exp);
+        head = op = cons(l, op, gsym_nil());
+        exp = cdr(exp);
+        for(i = 1; !is_nil(exp); exp = cdr(exp), op = cdr(op), i++) {
+                code = car(exp);
+                if(is_sym(car(exp)) && !is_nil(tmp = assoc(car(exp), env)))
+                        code = cdr(tmp);
+                if(is_cons(car(exp)))
+                        code = compiler(l, depth+1, car(exp), env);
+                set_cdr(op, cons(l, code, gsym_nil()));
+        }
+        head->len = i;
+        for(op = cdr(head); !is_nil(op); op = cdr(op))
+                op->len = --i;
+        return head;
+}
+
 static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env);
 cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
         size_t gc_stack_save = l->gc_stack_used;
@@ -322,13 +363,19 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         return newval;
                 }
                 if(first == l->compile) {
-                        VALIDATE(l, "compile", 2, "L c", exp, 1);
-                        return compile_expression(l, depth+1, exp, env);
+                        cell *doc;
+                        VALIDATE(l, "compile", 3, "Z L c", exp, 1);
+                        doc = car(exp);
+                        for(tmp = CADR(exp); !is_nil(tmp); tmp = cdr(tmp)) 
+                                if(!is_sym(car(tmp)) || !is_proper_cons(tmp))
+                                        RECOVER(l, "'lambda\n \"expected only symbols (or nil) as arguments\"\n %S", exp);
+                        tmp = compiler(l, depth+1, CADDR(exp), env);
+                        return mk_proc(l, CADR(exp), cons(l, tmp, gsym_nil()), env, doc);
                 }
                 if(first == l->let) {
                         cell *r = NULL, *s = NULL;
                         if(exp->len < 2)
-                                RECOVER(l, "'let \"argc < 2 in %S\"", exp);
+                                  RECOVER(l, "'let \"argc < 2 in %S\"", exp);
                         tmp = exp;
                         for(; !is_nil(cdr(exp)); exp = cdr(exp)) {
                                 if(!is_cons(car(exp)) || !cklen(car(exp), 2))

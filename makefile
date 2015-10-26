@@ -64,7 +64,7 @@ help:
 ### building #################################################################
 
 OBJFILES=hash.o io.o util.o gc.o read.o print.o subr.o\
-	repl.o eval.o lisp.o tr.o valid.o compile.o
+	repl.o eval.o lisp.o tr.o valid.o 
 
 lib$(TARGET).a: $(OBJFILES)
 	$(AR) $(AR_FLAGS) $@ $^
@@ -176,6 +176,7 @@ indent:
 clean:
 	@echo Cleaning repository.
 	-$(RM) $(RM_FLAGS) $(TARGET)$(EXE)
+	-$(RM) $(RM_FLAGS) unit$(EXE)
 	-$(RM) $(RM_FLAGS) *.$(DLL) 
 	-$(RM) $(RM_FLAGS) *.a 
 	-$(RM) $(RM_FLAGS) *.o 

@@ -242,15 +242,6 @@ cell *extend_top(lisp *l, cell *sym, cell *val);
  * @return argument count**/
 size_t validate_arg_count(const char *fmt);
 
-/**@brief Compile an expression, that is, do as much evaluation and
- *        optimization as is possible on an expression.
- * @param l      initialized lisp environment
- * @param depth  current interpreter depth
- * @param exp    expression to compile
- * @param env    environment to compile expression in
- * @return compiled expression **/
-cell *compile_expression(lisp *l, unsigned depth, cell *exp, cell *env);
-
 #ifdef __cplusplus
 }
 #endif

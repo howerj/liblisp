@@ -443,6 +443,8 @@ static cell *subr_list(lisp *l, cell *args) {
         for(i = 1; !is_nil(args); args = cdr(args), op = cdr(op), i++)
                 set_cdr(op, cons(l, car(args), gsym_nil()));
         head->len = i;
+        for(op = cdr(head); !is_nil(op); op = cdr(op))
+                op->len = --i;
         return head;
 }
 
