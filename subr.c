@@ -23,6 +23,8 @@
  *  @note More functions should be added like "lambda-eval" (or maybe macros
  *        instead in eval.c), map, apply, generate (a list of
  *        integers in a range).
+ *  @bug  Anything that uses set_cdr needs to be checked so that it sets
+ *        the length of the list it creates correctly.
  **/
 
 #include "liblisp.h"
@@ -860,12 +862,10 @@ static cell *subr_reverse(lisp *l, cell *args) {
                                 y = cons(l, car(x), y);
                         return y;
                 } break;
-        case HASH: /**@bug implement me*/
-                break;
         default:   
                 break;
         }
-fail:   RECOVER(l, "\"expected () (string) (list) (hash)\"\n '%S", args);
+fail:   RECOVER(l, "\"expected () (string) (list)\"\n '%S", args);
         return gsym_error();
 }
 
@@ -888,6 +888,7 @@ static cell *subr_raise(lisp *l, cell *args) { UNUSED(l);
 }
 
 static cell *subr_split(lisp *l, cell *args) {
+        size_t i;
         char *pat, *s, *f;
         cell *op = gsym_nil(), *head;
         regex_result rr;
@@ -895,7 +896,7 @@ static cell *subr_split(lisp *l, cell *args) {
         if(!(f = s = lstrdup(get_str(CADR(args))))) 
                 HALT(l, "\"%s\"", "out of memory");
         head = op = cons(l, gsym_nil(), gsym_nil());
-        for(;;) {
+        for(i = 1;;i++) {
                 rr = regex_match(pat, s);
                 if(!rr.result || rr.end == rr.start) {
                         set_cdr(op, cons(l, mk_str(l, lstrdup(s)), gsym_nil()));
@@ -906,6 +907,9 @@ static cell *subr_split(lisp *l, cell *args) {
                 op = cdr(op);
                 s = rr.end;
         }
+        head->len = i;
+        for(op = head; !is_nil(op); op = cdr(op))
+                op->len = --i;
         free(f);
         return cdr(head);
 }

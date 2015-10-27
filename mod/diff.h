@@ -10,5 +10,6 @@ typedef struct {
 } diff;
 
 diff *lcs(char *x[], size_t xlen, char *y[], size_t ylen);
-
+void print_diff_inner(diff *d, char *x[], char *y[], size_t i, size_t j);
+void print_diff(diff *d, char **x, char **y);
 

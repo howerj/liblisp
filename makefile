@@ -121,15 +121,11 @@ doxygen:
 
 ### distribution and installation ############################################
 
-# "space :=" and "space +=" are a hack along with "subst" to stop
-# 'make' adding spaces to things when it should not.
-space := 
-space +=
-TARBALL=$(subst $(space),,$(TARGET)-$(VERSION).tgz) # Remove spaces 
+TARBALL=$(strip $(TARGET)-$(VERSION)).tgz
 # make distribution tarball
 # @bug this currently creates a "tarbomb"
 dist: $(TARGET) lib$(TARGET).a lib$(TARGET).$(DLL) lib$(TARGET).htm modules
-	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) *.a *.1 *.3
+	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) *.a *.1 *.3 *$(FS)*.$(DLL)
 
 install: all 
 	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(PREFIX)$(FS)bin

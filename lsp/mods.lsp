@@ -2,7 +2,9 @@
 ;; depends on init.lsp ;;
 
 (define load-module ; load a module {.so or .dll depending on the operating system}
-  (lambda (name)
+  (compile 
+    "load a compiled module (a shared object or DLL)"   
+    (name)
     (if 
       (and 
         *have-dynamic-loader* 

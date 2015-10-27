@@ -17,12 +17,12 @@
 ; D[(u^n),x]=nu^(n-1)D[u,x]
  
 ; helper functions
-(define function    (lambda (poly) (car poly)))
-(define first-term  (lambda (poly) (cadr poly)))
-(define second-term (lambda (poly) (caddr poly)))
+(define function    (lambda "get the function from a expression" (poly) (car poly)))
+(define first-term  (lambda "get the first term of a expression" (poly) (cadr poly)))
+(define second-term (lambda "get the second term of a expression" (poly) (caddr poly)))
 
 (define derive
-  (lambda (poly var)
+  (lambda "differentiate a expression" (poly var)
     (cond
       ((atom? poly) (derv-atom poly var))
       ((eq '+ (function poly))
@@ -35,25 +35,25 @@
        (derv-pow poly var)))))
 
 (define derv-atom
-  (lambda (poly var)
+  (lambda "differentiate an atom" (poly var)
     (cond
       ((eq poly var) 1)
       (t 0))))
 
 (define derv-sum
-  (lambda (poly var)
+  (lambda "differentiate a sum" (poly var)
     (list '+
           (derive (first-term poly) var)
           (derive (second-term poly) var))))
 
 (define derv-minus
-  (lambda (poly var)
+  (lambda "differentiate a subtraction" (poly var)
     (list '-
           (derive (first-term poly) var)
           (derive (second-term poly) var))))
 
 (define derv-prod
-  (lambda (poly var)
+  (lambda "differentiate a product" (poly var)
     (list '+
           (list '*
                 (first-term poly)
@@ -63,7 +63,7 @@
                 (derive (first-term poly) var)))))
 
 (define derv-pow
-  (lambda (poly var)
+  (lambda "differentiate an power term" (poly var)
     (list '*
           (list '*
                 (second-term poly)
@@ -95,6 +95,10 @@
 ;    pow ? 1          ?
 ;    pow 0 ?          0
 ;    pow 1 ?          1
+;    exp 1            e
+;    exp 0            1
+;    log 1            0
+;    log e            1
 ;
 ;    x is a symbol
 ;
@@ -118,107 +122,132 @@
 ;    cos pi          -1
 ;    ...
 ;
-;    More simplifications can be done if:
-;    * simplify can peek into expressions before hand, such
-;      as:
-;       (log (exp x)) -> x
-;       (exp (log x)) -> x
-;       (* (* x x) (* x x)) -> (pow x 4)
-;    * symbols can be resolved:
-;         x <= 3
-;         (simplify '(+ (* x x) y) environment) => (+ 9 y)
-;      or even just to allow function replacement
-;         & := <SUBR:4215008>
-;         (simplify '(& x x)) => (<SUBR:4215008> x x)
-;    * unknown function symbols have their arguments simplified
-;         (define square (lambda (x) (* x x)))
-;         (simplify '(square (+ 2 2)))
-;      -> (square 4)
-;
-;    This would be the start of an optimizing compiler.
+;    @warning special care should be taken with floating point
+;             numbers, because the simplify function does not.
 ;
 
+; @todo There should be an option to turn this off
 (define constant-term?
-  (lambda (poly) 
+  (lambda "is the term composed of only constants?" (poly) 
     (and 
       (arithmetic? (first-term poly)) 
       (arithmetic? (second-term poly)))))
 
-; (define operations '((* t) (+ t) (- t) (/ t) (pow t)))
+(define simplifyn
+  (compile "simplify an arity-n expression"
+    (poly)
+    (let 
+      (len (length poly))
+      (cond
+        ((= len 3) (simplify2 poly))
+        ((= len 2) (simplify1 poly))
+        ((= len 1) poly)
+        ((= len 0) poly)
+        (t (append
+             (list (function poly))
+             (map1 simplifyn (cdr poly))))))))
 
-(define simplify1 (lambda (poly)
-  (cond
-       ((atom? poly) poly)
-       ((eq '/ (function poly))
-        (cond
-          ((eq 0 (second-term poly)) error)
-          ((constant-term? poly) 
-            (/ (first-term poly) (second-term poly)))
-          ((eq 1 (second-term poly)) (first-term poly))
-          ((eq (first-term poly) (second-term poly)) 1)
-          (t (list '/
-              (simplify1 (first-term poly))
-              (simplify1 (second-term poly))))))
-       ((eq '* (function poly))
-         (cond
-           ((constant-term? poly) 
-            (* (first-term poly) (second-term poly)))
-           ((eq 0 (first-term poly)) 0)
-           ((eq 0 (second-term poly)) 0)
-           ((eq 1 (first-term poly))
-            (simplify1 (second-term poly)))
-           ((eq 1 (second-term poly))
-            (simplify1 (first-term poly)))
-           (t (list '*
-               (simplify1 (first-term poly))
-               (simplify1 (second-term poly))))))
-        ((eq '+ (function poly))
-         (cond 
-           ((constant-term? poly) 
-            (+ (first-term poly) (second-term poly)))
-           ((eq 0 (first-term poly))
-            (simplify1 (second-term poly)))
-           ((eq 0 (second-term poly))
-            (simplify1 (first-term poly)))
-           (t (list '+
-               (simplify1 (first-term poly))
-               (simplify1 (second-term poly))))))
-        ((eq '- (function poly))
+(define simplify1
+  (lambda "simplify an arity-1 expression"
+    (poly)
+    (cond
+      ((atom? poly) poly)
+      ; @bug x-partially-equal only works when "?" is an atom 
+      ((x-partially-equal '(log (exp ?)) poly) (simplifyn (cadadr poly)))
+      ((x-partially-equal '(exp (log ?)) poly) (simplifyn (cadadr poly)))
+      ((eq 'exp (function poly))
+       (cond
+         ((eq 0 (first-term poly)) 1)
+         ((eq 1 (first-term poly)) 'e)
+         (t (list 'exp (simplifyn (first-term poly))))))
+      ((eq 'log (function poly))
+       (cond
+         ((eq  1 (first-term poly)) 0)
+         ((eq 'e (first-term poly)) 1)
+         (t (list 'log (simplifyn (first-term poly))))))
+      (t (list (function poly)
+               (simplifyn (first-term poly)))))))
+
+(define simplify2 
+  (lambda "simplify an arity-2 expression" 
+    (poly)
+    (cond
+         ((atom? poly) poly)
+         ((eq '/ (function poly))
           (cond
+            ((eq 0 (second-term poly)) error)
             ((constant-term? poly) 
-             (- (first-term poly) (second-term poly)))
-            ((eq (first-term poly) (second-term poly)) 0)
-            ((eq 0 (second-term poly))
-             (simplify1 (first-term poly)))
-            (t (list '-
-                (simplify1 (first-term  poly))
-                (simplify1 (second-term poly))))))
-        ((eq 'pow (function poly))
-          (cond
-            ((constant-term? poly)
-             (pow (first-term poly) (second-term poly)))
-            ((eq 0 (second-term poly)) 1)
-            ((eq 1 (second-term poly))
-             (simplify1 (first-term poly)))
-            ((eq 0 (first-term poly)) 0)
-            ((eq 1 (first-term poly)) 1) ))
-       (t poly))))
+              (/ (first-term poly) (second-term poly)))
+            ((eq 1 (second-term poly)) (first-term poly))
+            ((eq (first-term poly) (second-term poly)) 1)
+            (t (list '/
+                (simplifyn (first-term poly))
+                (simplifyn (second-term poly))))))
+         ((eq '* (function poly))
+           (cond
+             ((constant-term? poly) 
+              (* (first-term poly) (second-term poly)))
+             ((eq 0 (first-term poly)) 0)
+             ((eq 0 (second-term poly)) 0)
+             ((eq 1 (first-term poly))
+              (simplifyn (second-term poly)))
+             ((eq 1 (second-term poly))
+              (simplifyn (first-term poly)))
+             (t (list '*
+                 (simplifyn (first-term poly))
+                 (simplifyn (second-term poly))))))
+          ((eq '+ (function poly))
+           (cond 
+             ((constant-term? poly) 
+              (+ (first-term poly) (second-term poly)))
+             ((eq 0 (first-term poly))
+              (simplifyn (second-term poly)))
+             ((eq 0 (second-term poly))
+              (simplifyn (first-term poly)))
+             (t (list '+
+                 (simplifyn (first-term poly))
+                 (simplifyn (second-term poly))))))
+          ((eq '- (function poly))
+            (cond
+              ((constant-term? poly) 
+               (- (first-term poly) (second-term poly)))
+              ((eq (first-term poly) (second-term poly)) 0)
+              ((eq 0 (second-term poly))
+               (simplifyn (first-term poly)))
+              (t (list '-
+                  (simplifyn (first-term  poly))
+                  (simplifyn (second-term poly))))))
+          ((eq 'pow (function poly))
+            (cond
+              ((constant-term? poly)
+               (pow (first-term poly) (second-term poly)))
+              ((eq 0 (second-term poly)) 1)
+              ((eq 1 (second-term poly))
+               (simplifyn (first-term poly)))
+              ((eq 0 (first-term poly)) 0)
+              ((eq 1 (first-term poly)) 1) 
+              (t (list 'pow
+                       (simplifyn (first-term poly))
+                       (simplifyn (second-term poly))))))
+         (t (list (function poly) ; simplify the terms to an unknown expression
+                  (simplifyn (first-term poly))
+                  (simplifyn (second-term poly))))))) 
 
 (define simplify
-  (lambda 
+  (lambda
     "repeatedly simplify a tree of arity-2 functions until there is no change."
     (poly)
-    (let (poly1 ()) 
+    (let (poly-new ()) 
       (progn
-        (set! poly1 (simplify1 poly))
-        (if (equal poly1 poly) 
+        (set! poly-new (simplifyn poly))
+        (if (equal poly-new poly) 
           (return poly)
-          (set! poly poly1))
+          (set! poly poly-new))
           loop
           error))))
 
 (define infix->prefix
-  (lambda 
+  (lambda
     "turn an infix expression into a postfix expression: (2 + 2) => (+ 2 2), arity has to be 2." 
     (poly)
     (cond
@@ -230,7 +259,7 @@
       (t poly))))
 
 (define prefix->infix
-  (lambda 
+  (lambda
     "turn a prefix expression to a postfix expression: (+ 2 2) => (2 + 2). Arity has to be 2."
     (poly)
     (cond

@@ -173,6 +173,12 @@ LIBLISP_API regex_result regex_match(char *regexp, char *text);
  *  @return  uint32_t      the resulting hash **/
 LIBLISP_API uint32_t djb2(const char *s, size_t len);
 
+/** @brief  Knuths multiplicative hash, works best on numbers with
+ *          a non-uniform distribution (eg. pointers).
+ *  @param  number to hash
+ *  @return hashed value**/
+LIBLISP_API uint32_t knuth(uint32_t i);
+
 /** @brief   get a line text from a file
  *  @param   in    an input file
  *  @return  char* a line of input, without the newline**/

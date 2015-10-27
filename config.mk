@@ -31,15 +31,15 @@ RUN_FLAGS=-Epc
 # Version control variables and information
 ## These commands will depend on what version control is being run, or
 ## if any is being used at all. Currently git is being used.
-VERSION    = $(shell git describe) 
-VCS_COMMIT = $(shell git rev-parse --verify HEAD)
-VCS_ORIGIN = $(shell git config --get remote.origin.url)
+VERSION    =$(shell git describe) 
+VCS_COMMIT =$(shell git rev-parse --verify HEAD)
+VCS_ORIGIN =$(shell git config --get remote.origin.url)
 
 CC       ?= gcc
 # The CFLAGS_RELAXED is used to compile main.c, main.c uses
 # several libraries that require a cast from "void*" to a
 # function pointer, which causes warnings which are unnecessary.
-CFLAGS_RELAXED ?= -Wall -Wextra -g -fwrapv -O2 -Wmissing-prototypes
+CFLAGS_RELAXED = -Wall -Wextra -g -fwrapv -O2 -Wmissing-prototypes
 CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 
 # Compilation options
@@ -52,10 +52,10 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 #                ~/.lisprc which is run before the interpreter is.
 #   USE_ABORT_HANDLER This adds in a handler that catches SIGABRT
 #                and prints out a stack trace if it can.
-DEFINES ?= -DUSE_DL -DUSE_INITRC -DUSE_ABORT_HANDLER
-LINK    ?= -ldl
+DEFINES = -DUSE_DL -DUSE_INITRC -DUSE_ABORT_HANDLER
+LINK    = -ldl
 # This is for convenience only, it may cause problems.
-RPATH   ?= -Wl,-rpath=. -Wl,-rpath=./mod 
+RPATH   = -Wl,-rpath=. -Wl,-rpath=./mod 
 
 # And the rest of the OS dependent nonsense
 ## @warning This is not done in a declarative style, it 

@@ -1,7 +1,7 @@
 ;;; SQL functions ;;;
 
 (define sql-show-all 
-  (lambda 
+  (compile
     "show all tables in an SQL database"
     (db) 
     (sql db "SELECT * FROM sqlite_master")))

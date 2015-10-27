@@ -125,6 +125,10 @@ uint32_t djb2(const char *s, size_t len) { assert(s);
         return h;
 }
 
+uint32_t knuth(uint32_t i) {
+        return i*2654435761ul;
+}
+
 char *getadelim(FILE *in, int delim) { assert(in);
         io io_in;
         memset(&io_in, 0, sizeof(io_in));

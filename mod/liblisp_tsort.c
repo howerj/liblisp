@@ -18,7 +18,7 @@ static cell* subr_tsort(lisp *l, cell *args) {
 
 static int initialize(void) {
         assert(lglobal);
-        if(!(lisp_add_subr(lglobal, "", subr_tsort, NULL, NULL))) goto fail;
+        if(!(lisp_add_subr(lglobal, "tsort", subr_tsort, NULL, NULL))) goto fail;
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: tsort loaded\n");
         return 0;
 fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: tsort load failure\n");

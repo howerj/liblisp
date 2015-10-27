@@ -88,7 +88,7 @@ void print_diff(diff *d, char **x, char **y) {
         print_diff_inner(d, x, y, d->m, d->n);
 }
 
-#if 0
+#ifdef TEST
 char **fill_array_with_lines(FILE *f, size_t *returned_length) {
         char *line = NULL, **s = NULL;
         size_t ignore = 0, nl = 1;

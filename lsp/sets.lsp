@@ -4,7 +4,7 @@
 ; @todo Functions should return sorted sets
 
 (define set? 
-  (lambda 
+  (compile
     "is a list a set (no repeated symbols)"
     (lat)
     (cond
@@ -24,7 +24,7 @@
     (*make-set (sort lat)))))
 
 (define subset? ; A ⊆ B
-  (lambda 
+  (compile
     "is set A a subset of set B?"
     (A B)
     (cond 

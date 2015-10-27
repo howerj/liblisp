@@ -37,6 +37,7 @@
 (define cddddr (compile "cddddr" (x) (cdr (cdr (cdr (cdr x))))))
 (define caddar (compile "caddar" (x) (car (cdr (cdr (car x))))))
 (define cadddr (compile "cadddr" (x) (car (cdr (cdr (cdr x))))))
+(define cadadr (compile "cadadr" (x)  (car (cdr (car (cdr x))))))
 
 (define subst 
   (compile
@@ -47,8 +48,7 @@
       (cons (subst x y (car z))
             (subst x y (cdr z))))))
 
-; ¬(x ∧ y)
-(define nand
+(define nand ; ¬(x ∧ y)
   (compile "not-and of two arguments" 
            (x y)
            (or (not x) (not y))))
@@ -319,6 +319,18 @@
     "are two trees equal?"
     (x y)
     (tree-walk eq x y)))
+
+(define partially-equal
+  (compile
+    "are two trees equal? The symbol '? can be used to match any atom in either tree"
+    (x y)
+    (tree-walk (lambda (x y) (or (= x y) (or (= x '?) (= y '?)))) x y)))
+
+(define x-partially-equal
+  (compile
+    "are two trees equal? The symbol \"?\" when it appears in x can match any atom in y"
+    (x y)
+    (tree-walk (lambda (x y) (or (= x y) (= x '?))) x y)))
 
 (define struct-iso?
   (compile
