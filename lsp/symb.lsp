@@ -235,7 +235,7 @@
 
 (define simplify
   (lambda
-    "repeatedly simplify a tree of arity-2 functions until there is no change."
+    "repeatedly simplify a tree of arity-n functions until there is no change."
     (poly)
     (let (poly-new ()) 
       (progn

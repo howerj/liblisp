@@ -48,6 +48,7 @@
  *       subroutine name (as it appears with in the interpreter) */
 #define SUBROUTINE_XLIST\
   X("assoc",       subr_assoc,     "A c",  "lookup a variable in an 'a-list'")\
+  X("all-symbols", subr_all_syms,  "",     "get a hash of all the symbols encountered so far")\
   X("car",         subr_car,       "c",    "return the first object in a list")\
   X("cdr",         subr_cdr,       "c",    "return every object apart from the first in a list")\
   X("closed?",     subr_is_closed, NULL,   "is a object closed?")\
@@ -180,7 +181,6 @@ static struct special_cell_list { cell *internal; } special_cells[] = {
         { NULL }
 };
 #undef X
-
 
 #define X(FNAME, IGNORE) cell *gsym_ ## FNAME (void) { return FNAME ; }
 CELL_XLIST /**< defines functions to get a lisp "cell" for the built in special symbols*/
@@ -1131,6 +1131,10 @@ static cell *subr_errno(lisp *l, cell *args) { UNUSED(args);
 
 static cell *subr_strerror(lisp *l, cell *args) {
         return mk_str(l, lstrdup(strerror(get_int(car(args)))));
+}
+
+static cell *subr_all_syms(lisp *l, cell *args) { UNUSED(args);
+        return l->all_symbols;
 }
 
 static cell *subr_foldl(lisp *l, cell *args) {

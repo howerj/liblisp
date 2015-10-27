@@ -90,16 +90,30 @@ int hash_insert(hashtable *ht, const char *key, void *val) { assert(ht && key &&
 }
 
 void *hash_foreach(hashtable *h, hash_func func) { assert(h && func);
-        size_t i;
-        hashentry *cur;
+        size_t i = 0;
+        hashentry *cur = NULL;
         void *ret;
+        if(h->foreach) {
+                i   = h->foreach_index;
+                cur = h->foreach_cur;
+                goto resume;
+        }
+        h->foreach = 1;
         for(i = 0; i < h->len; i++)
                 if(h->table[i])
-                        for(cur = h->table[i]; cur; cur = cur->next)
-                                if((ret = (*func)(cur->key, cur->val)))
+                        for(cur = h->table[i]; cur; ) {
+                                if((ret = (*func)(cur->key, cur->val))) {
+                                        h->foreach_index = i;
+                                        h->foreach_cur = cur;
                                         return ret;
+                                }
+                        resume: cur = cur->next;
+                        }
+        h->foreach = 0;
         return NULL;
 }
+
+void hash_reset_foreach(hashtable *h) { h->foreach = 0; }
 
 static void *hprint(const char *key, void *val) { assert(key);
         return printf("(\"%s\" %p)\n", key, val), NULL;

@@ -29,6 +29,10 @@ cell *lisp_add_subr(lisp *l, const char *name, subr func, const char *fmt, const
         return extend_top(l, intern(l, lstrdup(name)), mk_subr(l, func, fmt, doc));
 }
 
+cell *lisp_get_all_symbols(lisp *l) {
+        return l->all_symbols;
+}
+
 cell *lisp_intern(lisp *l, cell *ob) { assert(l && ob); /**@bug this is incorrect! it does not intern*/
         if(hash_insert(get_hash(l->all_symbols), get_sym(ob) , ob)) return NULL;
         return l->tee;

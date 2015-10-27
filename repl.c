@@ -2,7 +2,12 @@
  *  @brief      An example REPL for the liblisp interpreter
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com**/
+ *  @email      howe.r.j.89@gmail.com
+ *
+ *  @note The -H flag causes the interpreter to halt on an error, however
+ *        this will also cause it to halt if an eval ran from within the
+ *        interpreter fails.
+ *  **/
 
 
 #include "liblisp.h"
@@ -34,7 +39,7 @@ static int getoptions(lisp *l, char *arg, char *arg_0)
                 case 'c': l->color_on  = 1; break; /*colorize output*/
                 case 'p': l->prompt_on = 1; break; /*turn standard prompt when reading stdin*/
                 case 'E': l->editor_on = 1; break; /*turn line editor on when reading stdin*/
-                case 'H': l->errors_halt = 1; break;
+                case 'H': l->errors_halt = 1; break; 
                 case 'e': return go_in_string; 
                 case 'o': return go_out_file; 
                 default:  fprintf(stderr, "unknown option '%c'\n", c);

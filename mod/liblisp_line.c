@@ -35,6 +35,30 @@ static void sig_int_handler(int sig) {
 
 static char *histfile = ".lisp";
 
+static void *get_hash_key(const char *key, void *val) {
+        if(!key || !val)
+                return NULL;
+        return (void*)key;
+}
+
+static void completion_callback(const char *line, size_t pos, line_completions *lc) { assert(line && lglobal);
+        hashtable *h;
+        char *key, *comp, *linecopy;
+        if(!pos)
+                return;
+        h = get_hash(lisp_get_all_symbols(lglobal));
+        linecopy = lstrdup(line);
+
+        if(!(comp = VSTRCAT("*", linecopy, "*"))) /*match any symbol with key in it*/
+                fprintf(stderr, "(error \"out of memory\")\n"), exit(1);
+        while((key = (char*) hash_foreach(h, get_hash_key))) {
+                if(match(comp, key) > 0)
+                        line_add_completion(lc, key);
+        }
+        free(comp);
+        free(linecopy);
+}
+
 static char *line_editing_function(const char *prompt) {
         static int warned = 0; /**< have we warned the user we cannot write to
                                     the history file?*/
@@ -102,6 +126,7 @@ static int initialize(void) {
         lisp_set_line_editor(lglobal, line_editing_function);
         line_history_load(histfile);
         line_set_vi_mode(1); /*start up in a sane editing mode*/
+        line_set_completion_callback(completion_callback);
         lisp_add_cell(lglobal, "*history-file*", mk_str(lglobal, lstrdup(histfile)));
 
         for(i = 0; primitives[i].p; i++) /*add primitives from this module*/

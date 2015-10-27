@@ -302,11 +302,21 @@ LIBLISP_API void *hash_lookup(hashtable *table, const char *key);
 
 /** @brief  Apply "func" on each key-val pair in the hash table until
  *          the function returns non-NULL or it has been applied to all
- *          the key-value pairs
+ *          the key-value pairs. The callback might be passed NULL
+ *          as either the key or the value. The hash remembers the
+ *          position of the previous call to hash_foreach, a subsequent 
+ *          call will carry onto the next element, unless there are
+ *          no more elements left in the hash.
  *  @param  h      table to apply func on
  *  @param  func   function to apply
  *  @return void*  the result of the first non-NULL function application**/
 LIBLISP_API void *hash_foreach(hashtable *h, hash_func func);
+
+/** @brief This resets a hash foreach function to the beginning of the
+ *         table, so new calls to hash_foreach begin at the first element
+ *         in the table.
+ *  @param hash table to reset foreach loop in**/
+LIBLISP_API void hash_reset_foreach(hashtable *h);
 
 /** @brief   print out the key-value pairs in a table, keys are
  *           printed as strings, values as the pointer value
@@ -729,6 +739,15 @@ LIBLISP_API int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...);
  *  @param  ob   cell to add
  *  @return cell* NULL on failure, not NULL on success**/
 LIBLISP_API cell *lisp_intern(lisp *l, cell *ob);
+
+/** @brief  return a hash-symbol containing all the interned symbols
+ *          in a lisp environment, these are not defined symbols, but
+ *          all symbols encountered (possibly as data or in error). The
+ *          hash contains the symbol name for the key value, which points
+ *          to a lisp symbol cell containing the same string.
+ *  @param  l     lisp environment to get symbols from
+ *  @return cell* hash-symbol of all interned symbols*/
+LIBLISP_API cell *lisp_get_all_symbols(lisp *l);
 
 /** @brief  add a symbol-val pair and intern a lisp cell
  *  @param  l    lisp environment to add pair to

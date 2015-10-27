@@ -100,6 +100,10 @@ struct hashtable {                /**< a hash table*/
                collisions,   /**< number of collisions */
                replacements, /**< number of entries replaced*/
                used          /**< number of bins used*/;
+        /*state used for the foreach loop*/
+        int foreach;          /**< if true, we are in a foreach loop*/
+        size_t foreach_index; /**< index into foreach loop*/
+        void *foreach_cur;    /**< current entry in foreach loop*/
 };
 
 struct io {

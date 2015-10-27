@@ -32,9 +32,9 @@ static cell *mk(lisp *l, lisp_type type, size_t count, ...)
 
         va_start(ap, count);
         if(!(ret = calloc(1, sizeof(cell) + (count - 1) * sizeof(cell_data))))
-                HALT(l, "%s", "out of memory");
+                HALT(l, "\"%s\"", "out of memory");
         if(!(node = calloc(1, sizeof(gc_list))))
-                HALT(l, "%s", "out of memory");
+                HALT(l, "\"%s\"", "out of memory");
         ret->type = type;
         for(i = 0; i < count; i++) 
                 if     (FLOAT == type) ret->p[i].f    = va_arg(ap, double);
@@ -240,7 +240,7 @@ static cell *compiler(lisp *l, unsigned depth, cell *exp, cell *env) {
         size_t i;
         cell *head, *op, *tmp, *code = gsym_nil();
         if(depth > MAX_RECURSION_DEPTH)
-                RECOVER(l, "'recursion-depth-reached %d", depth);
+                RECOVER(l, "%y'recursion-depth-reached%t %d", depth);
         if(is_sym(car(exp)) && !is_nil(tmp = assoc(car(exp), env))) 
                 op = cdr(tmp);
         else if (is_cons(car(exp)))
@@ -268,7 +268,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
         size_t gc_stack_save = l->gc_stack_used;
         cell *tmp, *first, *proc, *vals = gsym_nil();
         if(depth > MAX_RECURSION_DEPTH)
-                RECOVER(l, "'recursion-depth-reached %d", depth);
+                RECOVER(l, "%y'recursion-depth-reached%t %d", depth);
         gc_add(l, exp);
         gc_add(l, env);
         tail:
@@ -288,13 +288,13 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 /* checks could be added here so special forms are not looked
                  * up, but only if this improves the speed of things*/
                 if(is_nil(tmp = assoc(exp, env)))
-                        RECOVER(l, "\"unbound symbol\" '%s", get_sym(exp));
+                        RECOVER(l, "%r\"unbound symbol\"%t\n '%s", get_sym(exp));
                 return cdr(tmp);
         case CONS:
                 first = car(exp);
                 exp   = cdr(exp);
                 if(!is_nil(exp) && !is_proper_cons(exp))
-                        RECOVER(l, "'evaluation\n \"cannot eval dotted pair\"\n %S", exp);
+                        RECOVER(l, "%y'evaluation\n %r\"cannot eval dotted pair\"%t\n '%S", exp);
                 if(is_cons(first))
                         first = eval(l, depth+1, first, env);
                 if(first == l->iif) {
@@ -307,7 +307,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 if(first == l->lambda) {
                         cell *doc;
                         if(get_length(exp) < 2)
-                                RECOVER(l, "'lambda \"argc < 2\" '%S\"", exp);
+                                RECOVER(l, "%y'lambda\n %r\"argc < 2\"%t\n '%S\"", exp);
                         if(!is_nil(car(exp)) && is_asciiz(car(exp))) { /*have docstring*/
                                 doc = car(exp);
                                 exp = cdr(exp);
@@ -318,16 +318,16 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                                 RECOVER(l, "'lambda\n \"not an argument list (or nil)\"\n '%S", exp);
                         for(tmp = car(exp); !is_nil(tmp); tmp = cdr(tmp)) 
                                 if(!is_sym(car(tmp)) || !is_proper_cons(tmp))
-                                        RECOVER(l, "'lambda\n \"expected only symbols (or nil) as arguments\"\n %S", exp);
+                                        RECOVER(l, "%y'lambda\n %r\"expected only symbols (or nil) as arguments\"%t\n '%S", exp);
                         l->gc_stack_used = gc_stack_save;
                         tmp = mk_proc(l, car(exp), cdr(exp), env, doc);
                         return gc_add(l, tmp);
                 }
                 if(first == l->flambda) {
                         if(exp->len < 2)
-                                RECOVER(l, "'flambda \"argc < 2 in %S\"", exp);
+                                RECOVER(l, "%y'flambda\n %r\"argc < 2\"%t\n '%S", exp);
                         if(!cklen(car(exp), 1) || !is_sym(car(car(exp)))) 
-                                RECOVER(l, "'flambda\n \"only one symbol argument allowed\"\n '%S", exp);
+                                RECOVER(l, "%y'flambda\n %r\"only one symbol argument allowed\"%t\n '%S", exp);
                         l->gc_stack_used = gc_stack_save;
                         return gc_add(l, mk_fproc(l, car(exp), cdr(exp), env));
                 }
@@ -357,7 +357,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         cell *pair, *newval;
                         VALIDATE(l, "set!", 2, "s A", exp, 1);
                         if(is_nil(pair = assoc(car(exp), env)))
-                                RECOVER(l, "'set! \"undefined variable\" '%S", exp);
+                                RECOVER(l, "%y'set!\n %r\"undefined variable\"%t\n '%S", exp);
                         newval = eval(l, depth+1, CADR(exp), env);
                         set_cdr(pair, newval);
                         return newval;
@@ -368,18 +368,18 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         doc = car(exp);
                         for(tmp = CADR(exp); !is_nil(tmp); tmp = cdr(tmp)) 
                                 if(!is_sym(car(tmp)) || !is_proper_cons(tmp))
-                                        RECOVER(l, "'lambda\n \"expected only symbols (or nil) as arguments\"\n %S", exp);
+                                        RECOVER(l, "%y'lambda\n %r\"expected only symbols (or nil) as arguments\"%t\n %S", exp);
                         tmp = compiler(l, depth+1, CADDR(exp), env);
                         return mk_proc(l, CADR(exp), cons(l, tmp, gsym_nil()), env, doc);
                 }
                 if(first == l->let) {
                         cell *r = NULL, *s = NULL;
                         if(exp->len < 2)
-                                  RECOVER(l, "'let \"argc < 2 in %S\"", exp);
+                                  RECOVER(l, "%y'let\n %r\"argc < 2\"%t\n '%S", exp);
                         tmp = exp;
                         for(; !is_nil(cdr(exp)); exp = cdr(exp)) {
                                 if(!is_cons(car(exp)) || !cklen(car(exp), 2))
-                                   RECOVER(l, "'let \"expected list of length 2: '%S '%S\"",
+                                   RECOVER(l, "%y'let\n %r\"expected list of length 2\"%t\n '%S\n '%S",
                                                    car(exp), tmp);
                                 s = env = extend(l, env, CAAR(exp), l->nil);
                                 r = env = extend(l, env, CAAR(exp),
@@ -413,7 +413,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 } else if(is_fproc(proc)) { /*f-expr do not eval their args*/
                         vals = cons(l, exp, l->nil);
                 } else { 
-                        RECOVER(l, "\"not a procedure\" '%S", first);
+                        RECOVER(l, "%r\"not a procedure\"%t\n '%S", first);
                 }
                 l->cur_depth = depth; /*tucked away for function use*/
                 l->cur_env   = env;   /*also tucked away*/
@@ -426,7 +426,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 }
                 if(is_proc(proc) || is_fproc(proc)) {
                         if(get_proc_args(proc)->len != vals->len)
-                                RECOVER(l, "%y'lambda%t\n %S\n %y'expected%t %S\n '%S", 
+                                RECOVER(l, "%y'lambda%t\n '%S\n %y'expected%t\n '%S\n '%S", 
                                                 get_proc_docstring(proc), 
                                                 get_proc_args(proc), vals);
                         if(get_proc_args(proc)->len)
@@ -436,11 +436,11 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         exp = cons(l, l->progn, get_proc_code(proc));
                         goto tail;
                 }
-                RECOVER(l, "\"not a procedure\" '%S", first);
+                RECOVER(l, "%r\"not a procedure\"%t\n '%S", first);
         case INVALID: 
-        default:     HALT(l, "%s", "internal inconsistency: unknown type");
+        default:     HALT(l, "%r\"%s\"%t", "internal inconsistency: unknown type");
         }
-        HALT(l, "%s", "internal inconsistency: reached the unreachable");
+        HALT(l, "%r\"%s\"%t", "internal inconsistency: reached the unreachable");
         return exp; 
 }
 
@@ -461,7 +461,7 @@ static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env) { /**< evalua
         }
         head->len = i;
         return head;
-fail:   RECOVER(l, "\"evlis cannot eval dotted pairs\" '%S", start);
+fail:   RECOVER(l, "%r\"evlis cannot eval dotted pairs\"%t\n '%S", start);
         return gsym_error();
 }
 

@@ -246,6 +246,7 @@ int main(int argc, char **argv) {
                 test(!sstrcmp("val9", hash_lookup(h, "")));
                 test(!sstrcmp("",     hash_lookup(h, "nil")));
                 test(!sstrcmp("z",    hash_lookup(h, "a")));
+
                 state(hash_destroy(h));
         }
 
