@@ -129,9 +129,8 @@ cell *mk_proc(lisp *l, cell *args, cell *code, cell *env, cell *doc)  { assert(l
         return mk(l, PROC,  5, args, code, env, NULL, doc); 
 }
 
-cell *mk_fproc(lisp *l, cell *args, cell *code, cell *env) { assert(l && args && code && env); 
-        cell *ds = l->empty_docstr;
-        return mk(l, FPROC, 5, args, code, env, NULL, ds); 
+cell *mk_fproc(lisp *l, cell *args, cell *code, cell *env, cell *doc) { assert(l && args && code && env); 
+        return mk(l, FPROC, 5, args, code, env, NULL, doc); 
 }
 
 cell *mk_float(lisp *l, lfloat f) { assert(l); return mk(l, FLOAT, 1, f); }
@@ -308,7 +307,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         cell *doc;
                         if(get_length(exp) < 2)
                                 RECOVER(l, "%y'lambda\n %r\"argc < 2\"%t\n '%S\"", exp);
-                        if(!is_nil(car(exp)) && is_asciiz(car(exp))) { /*have docstring*/
+                        if(!is_nil(car(exp)) && is_str(car(exp))) { /*have docstring*/
                                 doc = car(exp);
                                 exp = cdr(exp);
                         } else {
@@ -324,12 +323,12 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         return gc_add(l, tmp);
                 }
                 if(first == l->flambda) {
-                        if(exp->len < 2)
-                                RECOVER(l, "%y'flambda\n %r\"argc < 2\"%t\n '%S", exp);
-                        if(!cklen(car(exp), 1) || !is_sym(car(car(exp)))) 
+                        if(get_length(exp) < 3 || !is_str(car(exp)) || !is_cons(CADR(exp)))
+                                RECOVER(l, "%y'flambda\n %r\"expected (string (arg) code...)\"%t\n '%S", exp);
+                        if(!cklen(CADR(exp), 1) || !is_sym(car(CADR(exp)))) 
                                 RECOVER(l, "%y'flambda\n %r\"only one symbol argument allowed\"%t\n '%S", exp);
                         l->gc_stack_used = gc_stack_save;
-                        return gc_add(l, mk_fproc(l, car(exp), cdr(exp), env));
+                        return gc_add(l, mk_fproc(l, CADR(exp), CDDR(exp), env, car(exp)));
                 }
                 if(first == l->cond) {
                         if(cklen(exp, 0)) return l->nil;

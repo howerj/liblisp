@@ -1,16 +1,5 @@
 ;;; base software library ;;;
 
-(define null? ; weaker version of nil
-  (lambda 
-    "is x an empty object? (\"\", 0, 0.0 or empty hash, ...)"
-    (x)
-    (cond
-      ((string? x)  (eq x ""))
-      ((float? x)   (eq x 0.0))
-      ((integer? x) (eq x 0))
-      ((hash? x)    (eq (coerce *cons* x) nil))
-      (t (eq nil x)))))  
-
 (define not        (compile "if x nil?" (x) (if x nil t)))
 (define nil?       (compile "is x nil?" (x) (if x nil t)))
 (define list?      (compile "is x a list?" (x) (type? *cons* x)))
@@ -25,6 +14,17 @@
 (define char?      (compile "is x a character? (string of length 1)" (x) (and (string? x) (= (length x) 1))))
 (define dotted?    (compile "is x a dotted pair?" (x) (and (list? x) (not (list? (cdr x))))))
 (define arithmetic?(compile "is x an arithmetic type? (integer or float)" (x) (or (integer? x) (float? x))))
+
+(define empty?
+  (compile
+    "is x an empty object? (\"\", 0, 0.0 or empty hash, ...)"
+    (x)
+    (cond
+      ((string? x)  (eq x ""))
+      ((float? x)   (eq x 0.0))
+      ((integer? x) (eq x 0))
+      ((hash? x)    (eq (coerce *cons* x) nil))
+      (t (eq nil x)))))  
 
 ; @note these are only defined because they are used elsewhere
 (define caar   (compile "caar"   (x) (car (car x))))
@@ -122,7 +122,7 @@
     "append two lists together"
     (x y)
     (cond
-      ((null? x)  y)
+      ((nil? x)  y)
       (t (cons (car x) 
                (append (cdr x) y))))))
 
@@ -131,7 +131,7 @@
     "turn two lists into list of pairs (a-list): (pair '(a b c) '(1 2 3)) => ((a 1) (b 2) (c 3))"
     (x y) 
     (cond 
-      ((and (null? x) (null? y)) nil)
+      ((and (nil? x) (nil? y)) nil)
       ((and (not (atom? x)) (not (atom? y)))
        (cons (list (car x) (car y))
              (pair (cdr x) (cdr y)))))))
@@ -200,7 +200,7 @@
     "flatten a tree (flatten '((a b (c) d) e)) => (a b c d e)"
     (l)
     (cond
-      ((null? l) nil)
+      ((nil? l) nil)
       ((atom? l) (list l))
       (t (append (flatten (car l))
                  (flatten (cdr l)))))))
@@ -237,7 +237,7 @@
     "is 'l a list of atoms?"
     (l)
     (cond
-      ((null? l) t)
+      ((nil? l) t)
       ((atom? (car l)) (lat? (cdr l)))
       (t nil))))
 
@@ -246,7 +246,7 @@
     "find an atom in a list of atoms"
     (a lat)
     (cond
-      ((null? lat) ())
+      ((nil? lat) ())
       (t (or (equal (car lat) a)
                 (member? a (cdr lat)))))))
 
@@ -255,7 +255,7 @@
     "remove a member from a list of atoms"
     (a lat)
     (cond
-      ((null? lat) nil)
+      ((nil? lat) nil)
       ((equal (car lat) a) (remove-member a (cdr lat)))
       (t (cons (car lat)
                   (remove-member a (cdr lat)))))))
@@ -502,4 +502,18 @@
     (map1
       (lambda (x) (format *output* "%s\n" x)) 
       (split ":" (documentation-string func)))))
+
+(define quote-list
+  (flambda "return all arguments unevaluated" (x) x))
+
+(define defun
+  (flambda "define a new function" (x)
+           (let 
+             (name (car x))
+             (args (cadr x))
+             (code (caddr x))
+             (eval (list define name (list lambda args code)) (environment)))))
+
+(define identity 
+        (lambda "return its argument" (x) x))
 

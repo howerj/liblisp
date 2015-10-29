@@ -109,26 +109,41 @@
 ;    &   ? 0          0
 ;    &   a b         a&b
 ;    &   x x          x
+;    &   M x          x
+;    &   x M          x
 ;    |   0 ?          ?
 ;    |   ? 0          ?
 ;    |   x x          x
+;    |   M x          M
+;    |   x M          M
 ;    |   a b         a|b
 ;    ^   ? 0          ?
 ;    ^   0 ?          ?
 ;    ^   a b         a^b
 ;    ^   x x          0
+;    ^   M x         ~x
+;    ^   x M         ~x
 ;    ~   x           ~x
 ;    sin pi           0
 ;    cos pi          -1
 ;    ...
+;
+;    'M' is all bits set
+;
+;    There are established rules for simplification of logic, but
+;    doing it well and generally means changing the approach taken
+;    here. However the general approach is NP hard.
+;
+;    Constant folding can also be applied to strings as well.
 ;
 ;    @warning special care should be taken with floating point
 ;             numbers, because the simplify function does not.
 ;
 
 ; @todo There should be an option to turn this off
+
 (define constant-term?
-  (lambda "is the term composed of only constants?" (poly) 
+  (lambda "is the arity-2 term composed of only constants?" (poly) 
     (and 
       (arithmetic? (first-term poly)) 
       (arithmetic? (second-term poly)))))
@@ -168,6 +183,9 @@
       (t (list (function poly)
                (simplifyn (first-term poly)))))))
 
+(define *all-bits-set* -1)
+
+; @todo error propagation (any-function error ?) or (any-function ? error) => error
 (define simplify2 
   (lambda "simplify an arity-2 expression" 
     (poly)
@@ -189,10 +207,8 @@
               (* (first-term poly) (second-term poly)))
              ((eq 0 (first-term poly)) 0)
              ((eq 0 (second-term poly)) 0)
-             ((eq 1 (first-term poly))
-              (simplifyn (second-term poly)))
-             ((eq 1 (second-term poly))
-              (simplifyn (first-term poly)))
+             ((eq 1 (first-term poly))  (second-term poly))
+             ((eq 1 (second-term poly)) (first-term  poly))
              (t (list '*
                  (simplifyn (first-term poly))
                  (simplifyn (second-term poly))))))
@@ -200,10 +216,8 @@
            (cond 
              ((constant-term? poly) 
               (+ (first-term poly) (second-term poly)))
-             ((eq 0 (first-term poly))
-              (simplifyn (second-term poly)))
-             ((eq 0 (second-term poly))
-              (simplifyn (first-term poly)))
+             ((eq 0 (first-term poly))  (second-term poly))
+             ((eq 0 (second-term poly)) (first-term poly))
              (t (list '+
                  (simplifyn (first-term poly))
                  (simplifyn (second-term poly))))))
@@ -212,18 +226,51 @@
               ((constant-term? poly) 
                (- (first-term poly) (second-term poly)))
               ((eq (first-term poly) (second-term poly)) 0)
-              ((eq 0 (second-term poly))
-               (simplifyn (first-term poly)))
+              ((eq 0 (second-term poly)) (first-term poly))
               (t (list '-
                   (simplifyn (first-term  poly))
+                  (simplifyn (second-term poly))))))
+          ((eq '& (function poly))
+            (cond
+              ((constant-term? poly) 
+               (& (first-term poly) (second-term poly)))
+              ((eq (first-term poly) (second-term poly))
+               (first-term poly))
+              ((eq 0 (first-term  poly)) 0)
+              ((eq 0 (second-term poly)) 0)
+              ((eq *all-bits-set* (first-term  poly)) (second-term poly))
+              ((eq *all-bits-set* (second-term poly)) (first-term  poly))
+              (t (list '&
+                  (simplifyn (first-term poly))
+                  (simplifyn (second-term poly))))))
+          ((eq '| (function poly))
+            (cond
+              ((constant-term? poly) 
+               (| (first-term poly) (second-term poly)))
+              ((eq 0 (first-term  poly)) (second-term poly))
+              ((eq 0 (second-term poly)) (first-term  poly))
+              ((eq *all-bits-set* (first-term  poly)) *all-bits-set*)
+              ((eq *all-bits-set* (second-term poly)) *all-bits-set*)
+              ((eq (first-term poly) (second-term poly)) (first-term poly))
+              (t (list '|
+                  (simplifyn (first-term poly))
+                  (simplifyn (second-term poly))))))                   
+          ((eq '^ (function poly))
+            (cond
+              ((constant-term? poly) 
+               (^ (first-term poly) (second-term poly)))
+              ((eq (first-term poly) (second-term poly)) 0)
+              ((eq 0 (first-term  poly)) (second-term poly))
+              ((eq 0 (second-term poly)) (first-term  poly))
+              (t (list '^
+                  (simplifyn (first-term poly))
                   (simplifyn (second-term poly))))))
           ((eq 'pow (function poly))
             (cond
               ((constant-term? poly)
                (pow (first-term poly) (second-term poly)))
               ((eq 0 (second-term poly)) 1)
-              ((eq 1 (second-term poly))
-               (simplifyn (first-term poly)))
+              ((eq 1 (second-term poly)) (first-term poly))
               ((eq 0 (first-term poly)) 0)
               ((eq 1 (first-term poly)) 1) 
               (t (list 'pow

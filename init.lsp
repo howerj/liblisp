@@ -2,17 +2,16 @@
 ; Initialization code
 ;
 ; The job of the initialization code is to define enough functionality to
-; sensibly load modules.
+; sensibly load modules and other lisp files.
 ;
-; type checking information
+; @todo The doc-strings could be made a lot longer, giving examples on
+;       their use.
+; @note I could use tabs for formatting
 ;
-; @todo file name escaping "a b" ==> "a\ b"
-; @todo more utility functions
-; @todo tabs for formating
 
 (progn
         (define join
-                (lambda "" (sep l)
+                (compile "join a list of strings" (sep l)
                         (foldl 
                         (lambda (a b) (scons a (scons sep b)))
                         (reverse l))))
@@ -24,12 +23,12 @@
                   (if x 
                     (if y t nil) nil)))
         ; @bug Incorrect, evaluates all args
-        (define or      (compile "" (x y) (cond (x t) (y t) (t nil))))
-        (define type?   (compile "" (type-enum x) (eq type-enum (type-of x))))
-        (define symbol? (compile "" (x) (type? *symbol* x)))
-        (define string? (compile "" (x) (type? *string* x)))
-        (define exit    (compile "" ()  (raise-signal *sig-term*)))
-        (define string->symbol (lambda (sym) (coerce *symbol* sym)))
+        (define or      (compile "return r if either arguments evaluate to true" (x y) (cond (x t) (y t) (t nil))))
+        (define type?   (compile "is a object of a certain type" (type-enum x) (eq type-enum (type-of x))))
+        (define symbol? (compile "is x a symbol" (x) (type? *symbol* x)))
+        (define string? (compile "is x a string" (x) (type? *string* x)))
+        (define exit    (compile "exit the interpreter" ()  (raise-signal *sig-term*)))
+        (define string->symbol (compile "coerce a symbol into a string" (sym) (coerce *symbol* sym)))
         (define *file-separator* 
                 (cond 
         	        ((= *os* "unix") "/")
@@ -70,23 +69,20 @@
                 (progn
                   (put *error* "(error \"Not a file name or a output IO type\" %S)\n" file) 
                   'error))))))
+        (let
+         (exit-if-not-eof
+          (lambda (in file) 
+           (if (eof? in)
+            t
+            (progn (format *error* "(error \"eval-file failed\" %S %S)\n" in file) (exit)))))
+         (progn
+          (eval-file (make-path '("lsp" "mods.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("lsp" "base.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("lsp" "data.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("lsp" "sets.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("lsp" "symb.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("lsp" "test.lsp")) exit-if-not-eof nil)
+        ; (eval-file (make-path '("lsp" "ltcc.lsp")) exit-if-not-eof nil) ; requires liblisp_tcc.so
+         'done))
  'ok)
-
-
-(let
- (exit-if-not-eof
-  (lambda (in file) 
-   (if (eof? in)
-    t
-    (progn (format *error* "(error \"eval-file failed\" %S %S)\n" in file) (exit)))))
- (progn
-  (eval-file (make-path '("lsp" "mods.lsp")) exit-if-not-eof nil)
-  (eval-file (make-path '("lsp" "base.lsp")) exit-if-not-eof nil)
-  (eval-file (make-path '("lsp" "data.lsp")) exit-if-not-eof nil)
-  (eval-file (make-path '("lsp" "sets.lsp")) exit-if-not-eof nil)
-  (eval-file (make-path '("lsp" "symb.lsp")) exit-if-not-eof nil)
-  (eval-file (make-path '("lsp" "test.lsp")) exit-if-not-eof nil)
-; (eval-file (make-path '("lsp" "ltcc.lsp")) exit-if-not-eof nil) ; requires liblisp_tcc.so
- 'ok))
-
 

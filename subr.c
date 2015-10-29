@@ -57,6 +57,7 @@
   X("cons",        subr_cons,      "A A",  "allocate a new cons cell with two arguments")\
   X("date",        subr_date,      "",     "return a list representing the date (GMT) (not thread safe)")\
   X("define-eval", subr_define_eval, "s A", "extend the top level environment with a computed symbol")\
+  X("depth",       subr_depth,     "",      "get the current evaluation depth")\
   X("documentation-string", subr_doc_string, "x", "return the documentation string from a procedure")\
   X("environment", subr_environment, "",    "get the current environment")\
   X("eof?",        subr_eofp,      "P",    "is the EOF flag set on a port?")\
@@ -72,6 +73,7 @@
   X("get-delim",   subr_getdelim,  "i C",  "read in a string delimited by a character from a port")\
   X("getenv",      subr_getenv,    "Z",    "get an environment variable (not thread safe)")\
   X("hash-create", subr_hcreate,   NULL,   "create a new hash")\
+  X("hash-info",   subr_hinfo,     "h",    "get information about a hash")\
   X("hash-insert", subr_hinsert,   "h Z A", "insert a variable into a hash")\
   X("hash-lookup", subr_hlookup,   "h Z",  "loop up a variable in a hash")\
   X("ilog2",       subr_ilog2,    "d",    "compute the binary logarithm of an integer")\
@@ -665,6 +667,15 @@ fail:   hash_destroy(ht);
         return gsym_error();
 }
 
+static cell* subr_hinfo(lisp *l, cell *args) {
+        hashtable *ht = get_hash(car(args));
+        return mk_list(l, 
+                        mk_float(l, hash_get_load_factor(ht)),
+                        mk_int(l, hash_get_replacements(ht)),
+                        mk_int(l, hash_get_collision_count(ht)),
+                        mk_int(l, hash_get_number_of_bins(ht)), NULL);
+}
+
 static cell* subr_coerce(lisp *l, cell *args) { 
         char *fltend = NULL;
         intptr_t d = 0;
@@ -962,18 +973,22 @@ static cell *subr_format(lisp *l, cell *args) {
          *        colorization, printing different base numbers, leading
          *        zeros on numbers, printing repeated characters and even
          *        string interpolation ("$x" could look up 'x), as well
-         *        as printing out escaped strings.
-         *  @todo This should just return a formatted string which can
-         *        be printed out with put */
+         *        as printing out escaped strings. */
         cell *cret;
-        io *o = NULL, *t;
+        io *o = NULL, *t = NULL;
         char *fmt, c;
         int ret = 0, pchar;
         intptr_t d;
-        if((get_length(args) < 2) || !is_out(car(args)) || !is_asciiz(CADR(args)))
-                RECOVER(l, "\"expected () (io str any...)\"\n '%S", args);
-        o = get_io(car(args));
-        args = cdr(args);
+        size_t len;
+        len = get_length(args);
+        if(len < 1) 
+                goto argfail;
+        if(is_out(car(args))) {
+                o = get_io(car(args));
+                args = cdr(args);
+        }
+        if(len < 1 || !is_asciiz(car(args)))
+                goto fail;
         if(!(t = io_sout(calloc(2, 1), 2)))
                 HALT(l, "\"%s\"", "out of memory");
         fmt = get_str(car(args));
@@ -1040,10 +1055,12 @@ static cell *subr_format(lisp *l, cell *args) {
                 }
         if(!is_nil(args))
                 goto fail;
-        io_puts(t->p.str, o);
+        if(o)
+                io_puts(t->p.str, o);
         cret = mk_str(l, t->p.str); /*t->p.str is not freed by io_close*/
         io_close(t);
         return cret;
+argfail: RECOVER(l, "\"expected () (io? str any...)\"\n '%S", args);
 fail:   free(t->p.str);
         io_close(t);
         RECOVER(l, "\"format error\"\n %S", args);
@@ -1108,6 +1125,10 @@ static cell *subr_doc_string(lisp *l, cell *args) { UNUSED(l);
 
 static cell *subr_top_env(lisp *l, cell *args) { UNUSED(args);
         return l->top_env;
+}
+
+static cell *subr_depth(lisp *l, cell *args) { UNUSED(args);
+        return mk_int(l, l->cur_depth);
 }
 
 static cell *subr_is_closed(lisp *l, cell *args) {  UNUSED(l);

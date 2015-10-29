@@ -40,7 +40,7 @@ static int ud_bignum_print(io *o, unsigned depth, cell *f) {
         int ret;
         char *s;
         s = bignum_bigtostr(get_user(f), 10);
-        ret = lisp_printf(NULL, o, depth, "%m{bignum-%s}%t", s);
+        ret = lisp_printf(NULL, o, depth, "%m{bignum:%s}%t", s);
         free(s);
         return ret;
 }

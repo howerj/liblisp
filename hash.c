@@ -69,6 +69,7 @@ int hash_insert(hashtable *ht, const char *key, void *val) { assert(ht && key &&
                 last = cur; 
 
         if (cur && cur->key && !strcmp(key, cur->key)) {
+                ht->replacements++;
                 cur->val = val; /*replace*/
         } else {
                 if(!(newt = hash_new_pair(key, val))) 

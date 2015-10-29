@@ -78,7 +78,7 @@
     (test equal (list 'a 'b 'c) '(a b c))
     (test equal (subst 'm 'b '(a b (a b c) d)) '(a m (a m c) d))
     ; module tests
-    (if
+    '(if
       *have-line* 
       (progn
         (test = (line-editor-mode t) t)
