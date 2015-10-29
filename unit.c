@@ -171,6 +171,7 @@ int main(int argc, char **argv) {
                 test(balance("(((") == 3);
                 test(balance("))") == -2);
                 test(balance("") == 0);
+                test(balance("\"(") == 0);
                 test(balance("( \"))))(()()()(()\\\"())\")") == 0);
                 test(balance("(a (b) c (d (e (f) \")\" g)))") == 0);
                 test(balance("((a b) c") == 1);

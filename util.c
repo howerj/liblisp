@@ -205,13 +205,14 @@ int balance(const char *sexpr) { assert(sexpr);
         while((c = *sexpr++))
                 if     (c == '(') bal++;
                 else if(c == ')') bal--;
-                else if(c == '"')
+                else if(c == '"') {
                         while((c = *sexpr++)) {
                                 if (c == '\\' && '"' == *sexpr) sexpr++;
                                 else if (c == '"') break;
                                 else continue;
                         }
-                else continue;
+                        if(!c) return bal;
+                } else continue;
         return bal;
 }
 

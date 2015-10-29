@@ -65,11 +65,26 @@ static void completion_callback(const char *line, size_t pos, line_completions *
 static char *line_editing_function(const char *prompt) {
         static int warned = 0; /**< have we warned the user we cannot write to
                                     the history file?*/
-        char *line;
+        char *line, *new = NULL, *conc = NULL;
         running = 0; /*SIGINT handling off when reading input*/
         line = line_editor(prompt);
         /*do not add blank lines*/
         if(!line || !line[strspn(line, " \t\r\n")]) return line;
+        while(balance(line) > 0) {
+                if(!(new = line_editor("==> "))) {
+                        free(line);
+                        return NULL;
+                }
+                if(!(conc = VSTRCATSEP(" ", line, new))) {
+                        free(new);
+                        free(line);
+                        return NULL;
+                }
+                free(new);
+                free(line);
+                line = conc;
+        }
+
         line_history_add(line);
         if(line_history_save(histfile) && !warned) {
                 PRINT_ERROR("\"could not save history\" \"%s\"", histfile);
