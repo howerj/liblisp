@@ -8,6 +8,9 @@
 (define (rule-pattern rule) (car rule))
 (define (rule-answers rule) (cdr rule))
 
+(define (list1 z) (cons z '()))
+(define (atom? x) (not (or (pair? x) (null? x))))
+
 (define (get-rules)
   '(((hello)
      (How do you do -- please state your problem))
@@ -159,3 +162,5 @@
 (define random-element
   (lambda (lst)
     (list-ref lst (random (length lst)))))
+
+(eliza)

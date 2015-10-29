@@ -3,7 +3,9 @@
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later 
  *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
- *  @email      howe.r.j.89@gmail.com**/
+ *  @email      howe.r.j.89@gmail.com
+ *  @todo       Add readline subroutine
+ *  **/
 #include <assert.h>
 #include <libline.h>
 #include <liblisp.h>
@@ -31,7 +33,8 @@ static void sig_int_handler(int sig) {
 #define SUBROUTINE_XLIST\
         X("line-editor-mode", subr_line_editor_mode, "b", "set the line editor mode (t = vi-mode)")\
         X("clear-screen",     subr_clear_screen,     "",  "clear the screen")\
-        X("history-length",   subr_hist_len,         "d", "set the length of the history file")
+        X("history-length",   subr_hist_len,         "d", "set the length of the history file")\
+        X("readline",         subr_readline,         "Z", "read a line of input with the libline library")
 
 static char *histfile = ".lisp";
 
@@ -93,6 +96,11 @@ static cell *subr_hist_len(lisp *l, cell *args) {
 static cell *subr_clear_screen(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
         line_clearscreen();
         return gsym_tee();
+}
+
+static cell *subr_readline(lisp *l, cell *args) {
+        char *prompt = get_str(car(args)), *line;
+        return mk_str(l, (line = line_editing_function(prompt)) ? line : lstrdup(""));
 }
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
