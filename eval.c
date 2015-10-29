@@ -143,26 +143,22 @@ cell *mk_user(lisp *l, void *x, intptr_t type) {
         return ret;
 }
 
-unsigned get_length(cell *x)       { assert(x); return x->len; }
-void *get_raw(cell *x)             { assert(x); return x->p[0].v; }
-intptr_t get_int(cell *x)          { return !x ? 0 : (intptr_t)(x->p[0].v); }
-subr  get_subr(cell *x)            { assert(x && is_subr(x)); return x->p[0].prim; }
-/**@note it might make sense to merge get_subr_docstring and get_proc_docstring
- *       as well as get_subr_format and get_proc_format */
-char *get_subr_format(cell *x)     { assert(x && is_subr(x)); return (char *) x->p[1].v; }
-cell *get_subr_docstring(cell *x)  { assert(x && is_subr(x)); return x->p[2].v; }
-cell *get_proc_args(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[0].v; }
-cell *get_proc_code(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[1].v; }
-cell *get_proc_env(cell *x)        { assert(x && (is_proc(x) || is_fproc(x))); return x->p[2].v; }
-char *get_proc_format(cell *x)     { assert(x && (is_proc(x) || is_fproc(x))); return (char *) x->p[3].v; }
-cell *get_proc_docstring(cell *x)  { assert(x && (is_proc(x) || is_fproc(x))); return x->p[4].v; }
-io   *get_io(cell *x)           { assert(x && x->type == IO);  return (io*)(x->p[0].v); }
-char *get_sym(cell *x)          { assert(x && is_asciiz(x));   return (char *)(x->p[0].v); }
-char *get_str(cell *x)          { assert(x && is_asciiz(x));   return (char *)(x->p[0].v); }
-void *get_user(cell *x)         { assert(x && x->type == USERDEF); return (void *)(x->p[0].v); }
-int   get_user_type(cell *x)    { assert(x && x->type == USERDEF); return (intptr_t)x->p[1].v; }
-hashtable *get_hash(cell *x)    { assert(x && is_hash(x));     return (hashtable *)(x->p[0].v); }
-lfloat get_float(cell *x)       { assert(x && is_floating(x)); return x->p[0].f; }
+unsigned get_length(cell *x)      { assert(x); return x->len; }
+void *get_raw(cell *x)            { assert(x); return x->p[0].v; }
+intptr_t get_int(cell *x)         { return !x ? 0 : (intptr_t)(x->p[0].v); }
+subr  get_subr(cell *x)           { assert(x && is_subr(x)); return x->p[0].prim; }
+cell *get_proc_args(cell *x)      { assert(x && (is_proc(x) || is_fproc(x))); return x->p[0].v; }
+cell *get_proc_code(cell *x)      { assert(x && (is_proc(x) || is_fproc(x))); return x->p[1].v; }
+cell *get_proc_env(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[2].v; }
+cell *get_func_docstring(cell *x) { assert(x && is_func(x)); return is_subr(x) ? x->p[2].v : x->p[4].v; }
+char *get_func_format(cell *x)    { assert(x && is_func(x)); return is_subr(x) ? x->p[1].v : x->p[3].v; }
+io   *get_io(cell *x)             { assert(x && x->type == IO);  return (io*)(x->p[0].v); }
+char *get_sym(cell *x)            { assert(x && is_asciiz(x));   return (char *)(x->p[0].v); }
+char *get_str(cell *x)            { assert(x && is_asciiz(x));   return (char *)(x->p[0].v); }
+void *get_user(cell *x)           { assert(x && x->type == USERDEF); return (void *)(x->p[0].v); }
+int   get_user_type(cell *x)      { assert(x && x->type == USERDEF); return (intptr_t)x->p[1].v; }
+hashtable *get_hash(cell *x)      { assert(x && is_hash(x));     return (hashtable *)(x->p[0].v); }
+lfloat get_float(cell *x)         { assert(x && is_floating(x)); return x->p[0].f; }
 intptr_t get_a2i(cell *x) { assert(x && is_arith(x));
        return is_int(x) ? get_int(x) : (intptr_t) get_float(x);
 }
@@ -234,6 +230,7 @@ cell *assoc(cell *key, cell *alist) { assert(key && alist);
  *        optimizing called procedures, constant folding and
  *        inlining small procedures. This function could also
  *        use set_car to replace the current list to save memory.
+ *  @bug  F-Expressions should be prevent compilation of their arguments
  **/        
 static cell *compiler(lisp *l, unsigned depth, cell *exp, cell *env) {
         size_t i;
@@ -426,7 +423,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 if(is_proc(proc) || is_fproc(proc)) {
                         if(get_proc_args(proc)->len != vals->len)
                                 RECOVER(l, "%y'lambda%t\n '%S\n %y'expected%t\n '%S\n '%S", 
-                                                get_proc_docstring(proc), 
+                                                get_func_docstring(proc), 
                                                 get_proc_args(proc), vals);
                         if(get_proc_args(proc)->len)
                                 env = multiple_extend(l, 

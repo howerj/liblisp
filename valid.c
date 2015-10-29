@@ -83,10 +83,10 @@ int lisp_validate_cell(lisp *l, cell *x, cell *args, int recover) {
         char *fmt, *msg;
         cell *ds;
         assert(x && is_func(x));
-        ds = is_subr(x) ? get_subr_docstring(x) : get_proc_docstring(x);
+        ds = get_func_docstring(x);
         msg = get_str(ds);
         msg = msg ? msg : "";
-        fmt = is_subr(x) ? get_subr_format(x) : get_proc_format(x);
+        fmt = get_func_format(x);
         if(!fmt)
                 return 1; /*as there is no validation string, its up to the function*/
         return lisp_validate_args(l, msg, get_length(x), fmt, args, recover);

@@ -3,14 +3,17 @@ CXX=g++
 CFLAGS= -Wall -Wextra -O2 -g -pedantic -std=c99 
 CXXFLAGS= -Wall -Wextra -O2 -g -pedantic
 .PHONY: all clean
-TARGETS=cc thread hash monte
+TARGETS=cc thread hash monte prolog
+RPATH   = -Wl,-rpath=..
 all: $(TARGETS)
-../liblisp.a:
+../liblisp.so:
 	make -C ../ -f makefile
-cc: ../liblisp.a cc.cpp
-	$(CXX) $(CXXFLAGS) -I../ -L../  $^ -llisp -o $@
-thread: ../liblisp.a thread.c 
-	$(CC) $(CFLAGS) -I../ -L../  $^ -llisp -lpthread -o $@
+cc: ../liblisp.so cc.cpp
+	$(CXX) $(CXXFLAGS) -I../ -L../ $(RPATH)  $^ -llisp -o $@
+prolog: prolog.cpp
+	$(CXX) $(CXXFLAGS) $^ -o $@
+thread: ../liblisp.so thread.c 
+	$(CC) $(CFLAGS) -I../ -L../ $(RPATH) $^ -llisp -lpthread -o $@
 hash: hash_linear.c
 	$(CC) $(CFLAGS) $^ -o $@
 monte: monte.c

@@ -159,7 +159,8 @@ static struct all_subroutines { subr p; const char *name, *validate, *docstring;
         X("*user-defined*", USERDEF)      X("*eof*",         EOF)\
         X("*sig-abrt*",     SIGABRT)      X("*sig-fpe*",     SIGFPE)\
         X("*sig-ill*",      SIGILL)       X("*sig-int*",     SIGINT)\
-        X("*sig-segv*",     SIGSEGV)      X("*sig-term*",    SIGTERM)
+        X("*sig-segv*",     SIGSEGV)      X("*sig-term*",    SIGTERM)\
+        X("*integer-bits*", (CHAR_BIT * sizeof(intptr_t)))
 
 #define X(NAME, VAL) { NAME, VAL }, 
 static struct integer_list { char *name; intptr_t val; } integers[] = {
@@ -310,29 +311,12 @@ fail:   l->gc_off = 0;
         return NULL;
 }
 
-static cell *subr_band(lisp *l, cell *args) {
-        return mk_int(l, get_int(car(args)) & get_int(CADR(args)));
-}
-
-static cell *subr_bor(lisp *l, cell *args) {
-        return mk_int(l, get_int(car(args)) | get_int(CADR(args)));
-}
-
-static cell *subr_bxor(lisp *l, cell *args) { 
-        return mk_int(l, get_int(car(args)) ^ get_int(CADR(args)));
-}
-
-static cell *subr_binv(lisp *l, cell *args) {
-        return mk_int(l, ~get_int(car(args)));
-}
-
-static cell *subr_ilog2(lisp *l, cell *args) { 
-        return mk_int(l, ilog2(get_int(car(args))));
-}
-
-static cell *subr_ipow(lisp *l, cell *args) {
-        return mk_int(l, ipow(get_int(car(args)), get_int(CADR(args))));
-}
+static cell *subr_band(lisp *l, cell *args)  { return mk_int(l, get_int(car(args)) & get_int(CADR(args))); }
+static cell *subr_bor(lisp *l, cell *args)   { return mk_int(l, get_int(car(args)) | get_int(CADR(args))); }
+static cell *subr_bxor(lisp *l, cell *args)  { return mk_int(l, get_int(car(args)) ^ get_int(CADR(args))); }
+static cell *subr_binv(lisp *l, cell *args)  { return mk_int(l, ~get_int(car(args))); }
+static cell *subr_ilog2(lisp *l, cell *args) { return mk_int(l, ilog2(get_int(car(args)))); }
+static cell *subr_ipow(lisp *l, cell *args)  { return mk_int(l, ipow(get_int(car(args)), get_int(CADR(args)))); }
 
 static cell *subr_sum(lisp *l, cell *args) { 
         cell *x = car(args), *y = CADR(args);
@@ -425,17 +409,9 @@ static cell *subr_eq(lisp *l, cell *args) {
         return gsym_nil();
 }
 
-static cell *subr_cons(lisp *l, cell *args) {
-        return cons(l, car(args), CADR(args)); 
-}
-
-static cell *subr_car(lisp *l, cell *args) { UNUSED(l);
-        return CAAR(args); 
-}
-
-static cell *subr_cdr(lisp *l, cell *args) { UNUSED(l);
-        return CDAR(args); 
-}
+static cell *subr_cons(lisp *l, cell *args) { return cons(l, car(args), CADR(args)); }
+static cell *subr_car(lisp *l, cell *args)  { UNUSED(l); return CAAR(args); }
+static cell *subr_cdr(lisp *l, cell *args)  { UNUSED(l); return CDAR(args); }
 
 static cell *subr_list(lisp *l, cell *args) {
         size_t i;
@@ -1091,57 +1067,33 @@ static cell *subr_tr(lisp *l, cell *args) {
         return mk_str(l, ret);
 }
 
-static cell *subr_define_eval(lisp *l, cell *args) {
-        return extend_top(l, car(args), CADR(args));
-}
 
 static cell *subr_validate(lisp *l, cell *args) {
         return VALIDATE(l, "validate", get_int(car(args)), get_str(CADR(args)), CADDR(args), 0) ? gsym_tee() : gsym_nil();
 }
 
-static cell *subr_proc_code(lisp *l, cell *args) { UNUSED(l);
-        return car(get_proc_code(car(args)));
-}
-
-static cell *subr_proc_args(lisp *l, cell *args) { UNUSED(l);
-        return get_proc_args(car(args));
-}
-
-static cell *subr_proc_env(lisp *l, cell *args) { UNUSED(l);
-        return get_proc_env(car(args));
-}
+static cell *subr_define_eval(lisp *l, cell *args) { return extend_top(l, car(args), CADR(args)); }
+static cell *subr_proc_code(lisp *l, cell *args) { UNUSED(l); return car(get_proc_code(car(args))); }
+static cell *subr_proc_args(lisp *l, cell *args) { UNUSED(l); return get_proc_args(car(args)); }
+static cell *subr_proc_env(lisp *l, cell *args)  { UNUSED(l); return get_proc_env(car(args)); }
+static cell *subr_top_env(lisp *l, cell *args) { UNUSED(args); return l->top_env; }
+static cell *subr_depth(lisp *l, cell *args) { UNUSED(args); return mk_int(l, l->cur_depth); }
+static cell *subr_raw(lisp *l, cell *args) { return mk_int(l, (intptr_t)get_raw(car(args))); }
+static cell *subr_environment(lisp *l, cell *args) { UNUSED(l); UNUSED(args); return l->cur_env; }
+static cell *subr_strerror(lisp *l, cell *args) { return mk_str(l, lstrdup(strerror(get_int(car(args))))); }
+static cell *subr_all_syms(lisp *l, cell *args) { UNUSED(args); return l->all_symbols; }
+static cell *subr_doc_string(lisp *l, cell *args) { UNUSED(l); return get_func_docstring(car(args)); }
 
 static cell *subr_validation_string(lisp *l, cell *args) {
-        char *s;
-        if(is_subr(car(args))) s = get_subr_format(car(args));
-        else                   s = get_proc_format(car(args));
+        char *s = get_func_format(car(args));
         return s ? mk_str(l, lstrdup(s)) : gsym_nil();
 }
 
-static cell *subr_doc_string(lisp *l, cell *args) { UNUSED(l);
-        return is_subr(car(args)) ? get_subr_docstring(car(args)) : 
-                                    get_proc_docstring(car(args));
-}
 
-static cell *subr_top_env(lisp *l, cell *args) { UNUSED(args);
-        return l->top_env;
-}
-
-static cell *subr_depth(lisp *l, cell *args) { UNUSED(args);
-        return mk_int(l, l->cur_depth);
-}
 
 static cell *subr_is_closed(lisp *l, cell *args) {  UNUSED(l);
         if(!cklen(args, 1)) RECOVER(l, "\"expected (any)\"\n '%S", args);
         return is_closed(car(args)) ? gsym_tee() : gsym_nil();
-}
-
-static cell *subr_environment(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
-        return l->cur_env;
-}
-
-static cell *subr_raw(lisp *l, cell *args) {
-        return mk_int(l, (intptr_t)get_raw(car(args)));
 }
 
 static cell *subr_errno(lisp *l, cell *args) { UNUSED(args);
@@ -1150,13 +1102,6 @@ static cell *subr_errno(lisp *l, cell *args) { UNUSED(args);
         return mk_int(l, e);
 }
 
-static cell *subr_strerror(lisp *l, cell *args) {
-        return mk_str(l, lstrdup(strerror(get_int(car(args)))));
-}
-
-static cell *subr_all_syms(lisp *l, cell *args) { UNUSED(args);
-        return l->all_symbols;
-}
 
 static cell *subr_foldl(lisp *l, cell *args) {
         cell *f, *start, *tmp, *ret;

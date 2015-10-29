@@ -21,7 +21,7 @@
                  (set! i (- i 1))
                  (set! c (+ (inner) c))
                  (if 
-                   (< i 0)
+                   (< i 1)
                    (return c)
                    loop)
                  ()))))

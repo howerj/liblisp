@@ -5,14 +5,12 @@
  *  @email      howe.r.j.89@gmail.com 
  *  
  *  An S-Expression parser, it takes it's input from a generic input
- *  port that can be set up to read from a string or a file. It would
- *  be nice if this S-Expression parser could be made so parsing of
- *  different things could be turned on or off, such as strings. This
- *  parser needs rewriting as well, parts of it are quite ugly.
+ *  port that can be set up to read from a string or a file.
  *
- *  @todo parser options to turn on/off parsing of: char literals in strings,
- *        strings, comments, dotted pairs, integers and floats
- *  @todo better error messages
+ *  @todo Error messages could be improved. Some kind of limited evaluation 
+ *        could go here as well. Giving meaning to different forms of parenthesis 
+ *        (such as "{}", "<>", and "[]") could improve readability or be used
+ *        for syntax.
  *  @note there is no option to strip colors of parsed input.
  *  **/
  
@@ -22,6 +20,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+
+static const int parse_strings = 1, parse_floats = 1, parse_ints = 1, parse_dotted = 1;
 
 static int comment(io *i) { /**@brief process a comment from I/O stream**/
         int c; 
@@ -130,16 +130,18 @@ cell *reader(lisp *l, io *i) { /*read in s-expr, this should be rewritten*/
         if(!token) return NULL;
         switch(token[0]) {
         case ')':  free(token); 
-                   RECOVER(l, "\"unmatched %s\"", "')");
+                   RECOVER(l, "%r\"unmatched %s\"%t", "%r\")\"%t");
         case '(':  free(token); return readlist(l, i);
-        case '"':  free(token); return readstring(l, i);
+        case '"':  if(!parse_strings) goto nostring; free(token); return readstring(l, i);
         case '\'': free(token); return cons(l, gsym_quote(), cons(l, reader(l,i), gsym_nil()));
-        default:   if(is_number(token)) {
+        default:   
+        nostring:
+                   if(parse_ints && is_number(token)) {
                            ret = mk_int(l, strtol(token, NULL, 0));
                            free(token);
                            return ret;
                    }
-                   if(is_fnumber(token)) {
+                   if(parse_floats && is_fnumber(token)) {
                         flt = strtod(token, &fltend);
                         if(!fltend[0]) {
                                 free(token);
@@ -159,11 +161,13 @@ static cell *readlist(lisp *l, io *i) { /**< read in a list*/
         if(!token) return NULL;
         switch(token[0]){
         case ')': return free(token), gsym_nil();
-        case '.': if(!(tmp = reader(l, i))) return NULL;
+        case '.': if(!parse_dotted) 
+                          goto nodots;
+                  if(!(tmp = reader(l, i))) return NULL;
                   if(!(stok = gettoken(l, i))) return NULL;
                   if(strcmp(stok, ")")) {
                           free(stok);
-                          RECOVER(l, "'invalid-cons \"%s\"", 
+                          RECOVER(l, "%y'invalid-cons%t %r\"%s\"%t", 
                                         "unexpected right parenthesis");
                   }
                   free(token);
@@ -171,7 +175,7 @@ static cell *readlist(lisp *l, io *i) { /**< read in a list*/
                   return tmp;
         default:  break;
         }
-        ungettok(l, token);
+nodots: ungettok(l, token);
         if(!(tmp = reader(l, i))) return NULL; /* force evaluation order */
         return cons(l, tmp, readlist(l, i));
 }

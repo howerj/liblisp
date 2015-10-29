@@ -34,13 +34,13 @@ static void gc_mark(lisp *l, cell* op) { /*assert(op);*/ /**<recursively mark re
         switch(op->type) {
         case INTEGER: case SYMBOL: 
         case STRING:  case IO:     case FLOAT:  break;
-        case SUBR: gc_mark(l, get_subr_docstring(op)); 
+        case SUBR: gc_mark(l, get_func_docstring(op)); 
                    break;
         case FPROC: case PROC: 
                    gc_mark(l, get_proc_args(op)); 
                    gc_mark(l, get_proc_code(op));
                    gc_mark(l, get_proc_env(op));
-                   gc_mark(l, get_proc_docstring(op));
+                   gc_mark(l, get_func_docstring(op));
                    break;
         case CONS: gc_mark(l, car(op));
                    gc_mark(l, cdr(op));

@@ -283,7 +283,8 @@ LIBLISP_API int bit_get(bitfield *bf, size_t idx);
 LIBLISP_API hashtable *hash_create(size_t len);
 
 /** @brief   destroy and invalidate a hash table, this will not attempt to
- *           free the values associated with a key.
+ *           free the values associated with a key, or the keys, this is
+ *           the responsibility of the caller of hash_insert.
  *  @param   h table to destroy or NULL**/
 LIBLISP_API void hash_destroy(hashtable *h);
 
@@ -595,13 +596,11 @@ LIBLISP_API void  *get_raw(cell *x); /**< get raw lisp value */
 LIBLISP_API intptr_t get_int(cell *x); /**< cast *any* lisp cell to integer*/
 LIBLISP_API io   *get_io(cell *x);    /**< get lisp cell to I/O stream*/
 LIBLISP_API subr  get_subr(cell *x); /**< get a lisp cell to a primitive func ptr*/
-LIBLISP_API char *get_subr_format(cell *x);   /**< get the type validation string for a subroutine*/
-LIBLISP_API cell *get_subr_docstring(cell *x); /**< get the documentation string for a subroutine*/
 LIBLISP_API cell *get_proc_args(cell *x);   /**< get args to a procedure/f-expr */
 LIBLISP_API cell *get_proc_code(cell *x);   /**< get code from a procedure/f-expr */
 LIBLISP_API cell *get_proc_env(cell *x);    /**< get procedure/f-expr environment*/
-LIBLISP_API char *get_proc_format(cell *x);   /**< get the type validation string for a procedure/f-expr */
-LIBLISP_API cell *get_proc_docstring(cell *x); /**< get the documentation string for a procedure/f-expr */
+LIBLISP_API cell *get_func_docstring(cell *x); /**< get the documentation string for a lambda/f-expr/subroutine*/
+LIBLISP_API char *get_func_format(cell *x);  /**< get the type validation string for lambda/f-expr/subroutine*/
 LIBLISP_API int   get_user_type(cell *x); /**< get the user-defined-value identifier*/
 LIBLISP_API char *get_str(cell *x); /**< get string from a lisp cell*/
 LIBLISP_API char *get_sym(cell *x); /**< get string (symbol) from a lisp cell*/

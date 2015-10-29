@@ -169,11 +169,11 @@ int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
                       break;
         case STRING:  print_escaped_string(l, o, depth, get_str(op));       break;
         case SUBR:    lisp_printf(l, o, depth, "%B<SUBR:%d>", get_int(op)); break;
-        case PROC: case FPROC: /**@todo add docstring printing*/
+        case PROC: case FPROC: 
                       lisp_printf(l, o, depth+1, 
                                 is_proc(op) ? "(%ylambda%t %S %S " :
                                               "(%yflambda%t %S %S ", 
-                                                get_proc_docstring(op), get_proc_args(op));
+                                                get_func_docstring(op), get_proc_args(op));
                       for(tmp = get_proc_code(op); !is_nil(tmp); tmp = cdr(tmp)) {
                               printer(l, o, car(tmp), depth+1);
                               if(!is_nil(cdr(tmp)))
