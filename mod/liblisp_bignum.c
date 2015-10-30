@@ -3,7 +3,12 @@
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later 
  *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
- *  @email      howe.r.j.89@gmail.com **/
+ *  @email      howe.r.j.89@gmail.com 
+ *  @bug        There are possible memory leaks in bignum.c or the interaction
+ *              between bignum.c and other things in the interpreter. Also,
+ *              invalid bignums or strings to the bignum.c are not handled
+ *              correctly.
+ *  **/
 #include <assert.h>
 #include <liblisp.h>
 #include <stdlib.h>
@@ -11,12 +16,13 @@
 #include "bignum.h"
 
 #define SUBROUTINE_XLIST\
-        X("bignum",             subr_bignum_create,     NULL, "create a bignum")\
+        X("bignum",             subr_bignum_create,     "d", "create a bignum from an integer")\
         X("bignum-multiply",    subr_bignum_multiply,   NULL, "multiply two bignums")\
         X("bignum-add",         subr_bignum_add,        NULL, "add two bignums")\
         X("bignum-subtract",    subr_bignum_subtract,   NULL, "subtract one bignum from another")\
         X("bignum-divide",      subr_bignum_divide,     NULL, "bignum division")\
-        X("bignum-to-string",   subr_bignum_to_string,  NULL, "convert a bignum to a string")
+        X("bignum-to-string",   subr_bignum_to_string,  NULL, "convert a bignum to a string")\
+        X("bignum-from-string", subr_bignum_from_string, "S", "create a bignum from a string")
 
 #define X(NAME, SUBR, VALIDATION , DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
@@ -46,39 +52,37 @@ static int ud_bignum_print(io *o, unsigned depth, cell *f) {
 }
 
 static cell* subr_bignum_create(lisp *l, cell *args) {
-        cell *ret;
-        if(!cklen(args, 1) || !is_int(car(args)))
-                RECOVER(l, "\"expected (integer)\" '%S", args);
-        if(!(ret = mk_user(l, (void*)bignum_create(get_int(car(args)), 16), ud_bignum)))
+        bignum *b;
+        if(!(b = bignum_create(get_int(car(args)), 16)))
                 HALT(l, "\"%s\"", "out of memory");
-        return ret;
+        return mk_user(l, b, ud_bignum);
 }
 
 static cell* subr_bignum_multiply(lisp *l, cell *args) {
-        cell *ret;
+        bignum *b;
         if(!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
                 RECOVER(l, "\"expected (bignum bignum)\" '%S", args);
-        if(!(ret = mk_user(l, (void*)bignum_multiply(get_user(car(args)), get_user(CADR(args))), ud_bignum)))
+        if(!(b = bignum_multiply(get_user(car(args)), get_user(CADR(args)))))
                 HALT(l, "\"%s\"", "out of memory");
-        return ret;
+        return mk_user(l, b, ud_bignum);
 }
 
 static cell* subr_bignum_add(lisp *l, cell *args) {
-        cell *ret;
+        bignum *b;
         if(!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
                 RECOVER(l, "\"expected (bignum bignum)\" '%S", args);
-        if(!(ret = mk_user(l, (void*)bignum_add(get_user(car(args)), get_user(CADR(args))), ud_bignum)))
+        if(!(b = bignum_add(get_user(car(args)), get_user(CADR(args)))))
                 HALT(l, "\"%s\"", "out of memory");
-        return ret;
+        return mk_user(l, b, ud_bignum);
 }
 
 static cell* subr_bignum_subtract(lisp *l, cell *args) {
-        cell *ret;
+        bignum *b;
         if(!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
                 RECOVER(l, "\"expected (bignum bignum)\" '%S", args);
-        if(!(ret = mk_user(l, (void*)bignum_subtract(get_user(car(args)), get_user(CADR(args))), ud_bignum)))
+        if(!(b = bignum_subtract(get_user(car(args)), get_user(CADR(args)))))
                 HALT(l, "\"%s\"", "out of memory");
-        return ret;
+        return mk_user(l, b, ud_bignum);
 }
 
 static cell* subr_bignum_divide(lisp *l, cell *args) {
@@ -100,6 +104,13 @@ static cell* subr_bignum_to_string(lisp *l, cell *args) {
         if(!(s = bignum_bigtostr(get_user(car(args)), 10)))
                 HALT(l, "\"%s\"", "out of memory");
         return mk_str(l, s);
+}
+
+static cell *subr_bignum_from_string(lisp *l, cell *args) {
+        bignum *b;
+        if(!(b = bignum_strtobig(get_str(car(args)), 10)))
+                HALT(l, "\"%s\"", "out of memory");
+        return mk_user(l, b, ud_bignum);
 }
 
 static int initialize(void) {
