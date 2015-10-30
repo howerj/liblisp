@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static const int dynamic_on = 0; /**< 0 for lexical scoping, !0 for dynamic scoping*/
+
 static cell *mk(lisp *l, lisp_type type, size_t count, ...) 
 { /**@brief make new lisp cells and perform garbage bookkeeping/collection*/
         assert(l && type != INVALID && count);
@@ -150,11 +152,11 @@ subr  get_subr(cell *x)           { assert(x && is_subr(x)); return x->p[0].prim
 cell *get_proc_args(cell *x)      { assert(x && (is_proc(x) || is_fproc(x))); return x->p[0].v; }
 cell *get_proc_code(cell *x)      { assert(x && (is_proc(x) || is_fproc(x))); return x->p[1].v; }
 cell *get_proc_env(cell *x)       { assert(x && (is_proc(x) || is_fproc(x))); return x->p[2].v; }
-cell *get_func_docstring(cell *x) { assert(x && is_func(x)); return is_subr(x) ? x->p[2].v : x->p[4].v; }
-char *get_func_format(cell *x)    { assert(x && is_func(x)); return is_subr(x) ? x->p[1].v : x->p[3].v; }
-io   *get_io(cell *x)             { assert(x && x->type == IO);  return (io*)(x->p[0].v); }
-char *get_sym(cell *x)            { assert(x && is_asciiz(x));   return (char *)(x->p[0].v); }
-char *get_str(cell *x)            { assert(x && is_asciiz(x));   return (char *)(x->p[0].v); }
+cell *get_func_docstring(cell *x) { assert(x && is_func(x));    return is_subr(x) ? x->p[2].v : x->p[4].v; }
+char *get_func_format(cell *x)    { assert(x && is_func(x));    return is_subr(x) ? x->p[1].v : x->p[3].v; }
+io   *get_io(cell *x)             { assert(x && x->type == IO); return (io*)(x->p[0].v); }
+char *get_sym(cell *x)            { assert(x && is_asciiz(x));  return (char *)(x->p[0].v); }
+char *get_str(cell *x)            { assert(x && is_asciiz(x));  return (char *)(x->p[0].v); }
 void *get_user(cell *x)           { assert(x && x->type == USERDEF); return (void *)(x->p[0].v); }
 int   get_user_type(cell *x)      { assert(x && x->type == USERDEF); return (intptr_t)x->p[1].v; }
 hashtable *get_hash(cell *x)      { assert(x && is_hash(x));     return (hashtable *)(x->p[0].v); }
@@ -427,8 +429,8 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                                                 get_proc_args(proc), vals);
                         if(get_proc_args(proc)->len)
                                 env = multiple_extend(l, 
-                                       get_proc_env(proc), 
-                                        get_proc_args(proc), vals);
+                                       (dynamic_on ? env : get_proc_env(proc)), 
+                                         get_proc_args(proc), vals);
                         exp = cons(l, l->progn, get_proc_code(proc));
                         goto tail;
                 }

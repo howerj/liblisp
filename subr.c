@@ -219,6 +219,15 @@ static cell *subr_ ## NAME (lisp *l, cell *args) { UNUSED(l);\
 ISX_LIST /*defines lisp subroutines for checking whether a string only contains a character class*/
 #undef X
 
+/** @warning This function should be used with care, preferably not
+ *           at all, as it forces out previous interned symbols
+ *           (which should not be allowed).  **/
+static cell *forced_add_symbol(lisp *l, cell *ob) { assert(l && ob); 
+        assert(hash_lookup(get_hash(l->all_symbols), get_sym(ob)) == NULL);
+        if(hash_insert(get_hash(l->all_symbols), get_sym(ob) , ob) < 0) return NULL;
+        return l->tee;
+}
+
 lisp *lisp_init(void) {
         lisp *l;
         io *ifp, *ofp, *efp;
@@ -279,7 +288,7 @@ CELL_XLIST
         if(!lisp_add_cell(l, "*stderr*", mk_io(l, io_fout(stderr)))) goto fail;
 
         for(i = 0; special_cells[i].internal; i++) { /*add special cells*/
-                if(!lisp_intern(l, special_cells[i].internal)) /**@bug lisp_intern does not do what you think it does!*/
+                if(!forced_add_symbol(l, special_cells[i].internal))
                         goto fail;
                 if(!extend_top(l, special_cells[i].internal, 
                                   special_cells[i].internal))

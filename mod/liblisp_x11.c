@@ -56,6 +56,7 @@ static struct module_subroutines { subr p; char *name, *validation, *docstring; 
 };
 #undef X
 
+static int initialized = 0;
 static Display *xdisplay; /**< the display to be used by this module*/
 static int xscreen;       /**< the screen to use*/
 static XSizeHints xhints; /**< hints for the window, such as its size*/
@@ -380,13 +381,15 @@ static int initialize(void) {
         xrootwin = RootWindow(xdisplay, xscreen);
         /*w = open_window();*/
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: x11 loaded\n");
+        initialized = 1;
         return 0;
 fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: x11 load failure\n");
 	return -1;
 }
 
 static void cleanup(void) {
-        XCloseDisplay(xdisplay);
+        if(initialized)
+                XCloseDisplay(xdisplay);
 }
 
 #ifdef __unix__

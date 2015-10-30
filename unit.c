@@ -8,6 +8,8 @@
  *  @todo     Each (major) function in each file should have tests written
  *            for it, this does (might) not include accessor functions like 
  *            "get_int"
+ *  @todo     It is possible to test if a function throws an
+ *            assertion when passed invalid data.
  *  @note     This could be moved to "util.c" so it can be reused.
  *  @note     Other functionality could include generating a random test
  *            vector, logging and more!
@@ -161,6 +163,13 @@ int main(int argc, char **argv) {
                 test(ilog2(256) == 8);
                 test(ilog2(UINT64_MAX) == 63);
 
+                test(ipow(0, 0) == 1);
+                test(ipow(0, 1) == 0);
+                test(ipow(3, 3) == 27);
+                test(ipow(3, 4) == 81);
+                test(ipow(2, 25) == (1 << 25));
+                test(ipow(24, 2) == 576);
+
                 test(is_number("0xfAb"));
                 test(is_number("-01234567"));
                 test(is_number("+1000000000000000000000000000003"));
@@ -213,9 +222,7 @@ int main(int argc, char **argv) {
                 test(!sstrcmp("a,b,c,,foo,bar", s));
                 free(s);
 
-                /* @todo regex_match, djb2, lstrcatend,
-                 * ipow, xorshift128plus
-                 */ 
+                /* @todo regex_match, djb2, lstrcatend, xorshift128plus, knuth*/ 
         }
 
         { /* hash.c hash table tests */

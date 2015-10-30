@@ -33,11 +33,6 @@ cell *lisp_get_all_symbols(lisp *l) {
         return l->all_symbols;
 }
 
-cell *lisp_intern(lisp *l, cell *ob) { assert(l && ob); /**@bug this is incorrect! it does not intern*/
-        if(hash_insert(get_hash(l->all_symbols), get_sym(ob) , ob)) return NULL;
-        return l->tee;
-}
-
 cell *lisp_add_cell(lisp *l, const char *sym, cell *val) { assert(l && sym && val);
         return extend_top(l, intern(l, lstrdup(sym)), val);
 }

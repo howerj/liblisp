@@ -733,12 +733,6 @@ LIBLISP_API void lisp_throw(lisp *l, int ret);
  *  @return int    >= 0 on success, less than 0 on failure**/
 LIBLISP_API int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...);
 
-/** @brief  add a symbol to the list of all symbols
- *  @param  l    lisp environment to add cell to
- *  @param  ob   cell to add
- *  @return cell* NULL on failure, not NULL on success**/
-LIBLISP_API cell *lisp_intern(lisp *l, cell *ob);
-
 /** @brief  return a hash-symbol containing all the interned symbols
  *          in a lisp environment, these are not defined symbols, but
  *          all symbols encountered (possibly as data or in error). The
