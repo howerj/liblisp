@@ -59,12 +59,13 @@ cell* cons(lisp *l, cell *x, cell *y) {
         return z;
 }
 
-cell *car(cell *x)              { assert(x && is_cons(x)); return x->p[0].v; }
-cell *cdr(cell *x)              { assert(x && is_cons(x)); return x->p[1].v; }
-void set_car(cell *x, cell *y)  { assert(x && is_cons(x) && y); x->p[0].v = y; }
-void set_cdr(cell *x, cell *y)  { assert(x && is_cons(x) && y); x->p[1].v = y; }
+cell *car(cell *con)              { assert(con && is_cons(con)); return con->p[0].v; }
+cell *cdr(cell *con)              { assert(con && is_cons(con)); return con->p[1].v; }
+void set_car(cell *con, cell *val)  { assert(con && is_cons(con) && val); con->p[0].v = val; }
+void set_cdr(cell *con, cell *val)  { assert(con && is_cons(con) && val); con->p[1].v = val; }
 void close_cell(cell *x)        { assert(x); x->close = 1; }
 int  cklen(cell *x, size_t expect) { assert(x); return x->len == expect; }
+void set_length(cell *x, size_t len) { assert(x); x->len = len; }
 int  is_nil(cell *x)          { assert(x); return x == gsym_nil(); }
 int  is_int(cell *x)          { assert(x); return x->type == INTEGER; }
 int  is_floating(cell *x)     { assert(x); return x->type == FLOAT; }
@@ -85,6 +86,19 @@ int  is_asciiz(cell *x)       { assert(x); return is_str(x) || is_sym(x); }
 int  is_arith(cell *x)        { assert(x); return is_int(x) || is_floating(x); }
 int  is_func(cell *x)         { assert(x); return is_proc(x) || is_fproc(x) || is_subr(x); }
 int  is_closed(cell *x)       { assert(x); return x->close; }
+
+int  is_list(cell *x) { assert(x);
+        for(;!is_nil(x); x = cdr(x))
+                if(!is_cons(cdr(x)) && !is_nil(cdr(x)))
+                        return 0;
+        return 1;
+}
+
+void fix_list_len(cell *x, size_t l) { assert(x);
+        for(;!is_nil(x); x = cdr(x))
+                x->len = l--;
+        assert(!l);
+}
 
 static cell *mk_asciiz(lisp *l, char *s, lisp_type type) {
         size_t slen;
@@ -107,7 +121,7 @@ cell *mk_list(lisp *l, cell *x, ...) { assert(x);
         for(i = 1;(next = va_arg(ap, cell*)); op = cdr(op), i++)
                 set_cdr(op, cons(l, next, gsym_nil()));
         va_end(ap);
-        head->len = i;
+        fix_list_len(head, i);
         return head;
 }
 
@@ -255,9 +269,7 @@ static cell *compiler(lisp *l, unsigned depth, cell *exp, cell *env) {
                         code = compiler(l, depth+1, car(exp), env);
                 set_cdr(op, cons(l, code, gsym_nil()));
         }
-        head->len = i;
-        for(op = cdr(head); !is_nil(op); op = cdr(op))
-                op->len = --i;
+        fix_list_len(head, i);
         return head;
 }
 
@@ -372,7 +384,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 }
                 if(first == l->let) {
                         cell *r = NULL, *s = NULL;
-                        if(exp->len < 2)
+                        if(get_length(exp) < 2)
                                   RECOVER(l, "%y'let\n %r\"argc < 2\"%t\n '%S", exp);
                         tmp = exp;
                         for(; !is_nil(cdr(exp)); exp = cdr(exp)) {
@@ -423,11 +435,11 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         return (*get_subr(proc))(l, vals);
                 }
                 if(is_proc(proc) || is_fproc(proc)) {
-                        if(get_proc_args(proc)->len != vals->len)
+                        if(get_length(get_proc_args(proc)) != get_length(vals))
                                 RECOVER(l, "%y'lambda%t\n '%S\n %y'expected%t\n '%S\n '%S", 
                                                 get_func_docstring(proc), 
                                                 get_proc_args(proc), vals);
-                        if(get_proc_args(proc)->len)
+                        if(get_length(get_proc_args(proc)))
                                 env = multiple_extend(l, 
                                        (dynamic_on ? env : get_proc_env(proc)), 
                                          get_proc_args(proc), vals);
@@ -457,7 +469,7 @@ static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env) { /**< evalua
                         goto fail;
                 set_cdr(op, cons(l, eval(l, depth+1, car(exps), env), gsym_nil()));
         }
-        head->len = i;
+        fix_list_len(head, i);
         return head;
 fail:   RECOVER(l, "%r\"evlis cannot eval dotted pairs\"%t\n '%S", start);
         return gsym_error();

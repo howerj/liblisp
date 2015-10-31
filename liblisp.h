@@ -549,11 +549,16 @@ LIBLISP_API size_t tr_block(tr_state *tr, uint8_t *in, uint8_t *out, size_t len)
  * for manipulating lisp cells; for accessing them, creating new
  * cells and testing their type. */
 
-LIBLISP_API cell *car(cell *x); /**< get car cell from cons*/
-LIBLISP_API cell *cdr(cell *x); /**< get cdr cell from cons*/
-LIBLISP_API void set_car(cell *x, cell *y); /**< set cdr cell of a cons cell*/
-LIBLISP_API void set_cdr(cell *x, cell *y); /**< set car cell of a cons cell*/
+LIBLISP_API cell *car(cell *con); /**< get car cell from cons*/
+LIBLISP_API cell *cdr(cell *con); /**< get cdr cell from cons*/
+LIBLISP_API void set_car(cell *con, cell *val); /**< set car cell of a cons cell*/
+
+/**@brief   set cdr cell of a cons cell
+ * @warning set cdr does not maintain the internal list length in each
+ *          cons cell node correctly.*/
+LIBLISP_API void set_cdr(cell *con, cell *val); 
 LIBLISP_API int  cklen(cell *x, size_t expect); /**< get length of list*/
+LIBLISP_API void set_length(cell *x, size_t len); /**< set the length field of a cell*/
 LIBLISP_API void close_cell(cell *x); /**< close a cell (io and userdef only)*/
 LIBLISP_API cell *cons(lisp *l, cell *x, cell *y); /**< create a new cons cell*/
 LIBLISP_API cell *extend(lisp *l, cell *env, cell *sym, cell *val);
@@ -579,6 +584,7 @@ LIBLISP_API int  is_userdef(cell *x); /**< true if 'x' is a user defined type*/
 LIBLISP_API int  is_usertype(cell *x, int type); /**< is a specific user defined type*/
 LIBLISP_API int  is_func(cell *x);   /**< true if 'x' can be applied (is a function) */
 LIBLISP_API int  is_closed(cell *x); /**< true if 'x' is 'closed' or invalidated*/
+LIBLISP_API int  is_list(cell *x);   /**< true if 'x' is a proper list*/
 LIBLISP_API cell *mk_list(lisp *l, cell *x, ...); /**< make a proper list (terminate args with NULL)*/
 LIBLISP_API cell *mk_int(lisp *l, intptr_t d); /**< make a lisp cell from an integer*/
 LIBLISP_API cell *mk_float(lisp *l, lfloat f); /**< make a lisp cell from a float*/
@@ -624,6 +630,8 @@ LIBLISP_API cell *gsym_let(void);     /**< return the let symbol*/
 LIBLISP_API cell *gsym_ret(void);     /**< return the return symbol*/
 LIBLISP_API cell *gsym_loop(void);    /**< return the loop symbol*/
 LIBLISP_API cell *gsym_compile(void); /**< return the compile symbol*/
+
+LIBLISP_API void fix_list_len(cell *x, size_t l); /**< fix a lists length after calls to set_cdr*/
 
 /**@brief  return a new token representing a new type
  * @param  l lisp environment to put the new type in

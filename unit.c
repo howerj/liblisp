@@ -7,10 +7,15 @@
  *
  *  @todo     Each (major) function in each file should have tests written
  *            for it, this does (might) not include accessor functions like 
- *            "get_int"
+ *            "get_int".
  *  @todo     It is possible to test if a function throws an
- *            assertion when passed invalid data.
- *  @note     This could be moved to "util.c" so it can be reused.
+ *            assertion when passed invalid data. If it does not throw
+ *            an assertion it might irrevocably corrupt the program
+ *            state.
+ *  @note     This could be moved to "util.c" so it can be reused, the
+ *            unit test functionality has been encapsulated in a series
+ *            of functions here that should be quite module, if limited
+ *            to single threaded applications.
  *  @note     Other functionality could include generating a random test
  *            vector, logging and more!
  *  @note     While it is not imperative that each test has the memory
@@ -25,6 +30,7 @@
 #include "liblisp.h"
 /**********************/
 
+#include <assert.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stdint.h>
@@ -72,11 +78,16 @@ static char *(sig_lookup[]) = { /*List of C89 signals and their names*/
         [MAX_SIGNALS]   = NULL
 };
 
-static void sig_abrt_handler(int sig) {
+static int caught_signal;
+static void print_caught_signal_name(void) {
         char *sig_name = "UNKNOWN SIGNAL";
-        if((sig > 0) && (sig < MAX_SIGNALS) && sig_lookup[sig])
-                sig_name = sig_lookup[sig];
-        printf("Caught %s (signal number %d)\n", sig_name, sig);
+        if((caught_signal > 0) && (caught_signal < MAX_SIGNALS) && sig_lookup[caught_signal])
+                sig_name = sig_lookup[caught_signal];
+        printf("Caught %s (signal number %d)\n", sig_name, caught_signal);\
+}
+
+static void sig_abrt_handler(int sig) {
+        caught_signal = sig;
         if(jmpbuf_active) {
                 jmpbuf_active = 0;
                 longjmp(current_test, 1);
@@ -96,6 +107,7 @@ static void sig_abrt_handler(int sig) {
                         jmpbuf_active = 1;\
                         unit_tester( ((EXPR) != 0), current_expr, current_line);\
                 } else {\
+                        print_caught_signal_name();\
                         unit_tester(0, current_expr, current_line);\
                         signal(SIGABRT, sig_abrt_handler);\
                 }\
@@ -139,13 +151,12 @@ static unsigned unit_test_end(const char *unit_name) {
 int main(int argc, char **argv) {
         if(argc > 1)
                 while(++argv, --argc) {
-                        if(!strcmp("-c", argv[0])) {
+                        if(!strcmp("-c", argv[0]))
                                 color_on = 1;
-                        } else if (!strcmp("-h", argv[0])) {
+                        else if (!strcmp("-h", argv[0]))
                                 printf("liblisp unit tests\n\tusage ./%s (-c)? (-h)?\n", argv[0]);
-                        } else {
+                        else
                                 printf("unknown argument '%s'\n", argv[0]);
-                        }
                 }
 
         unit_test_start("liblisp");
@@ -202,6 +213,9 @@ int main(int argc, char **argv) {
                 bit_delete(b);
 
                 test(!is_fnumber(""));
+                test(!is_fnumber("1e"));
+                test(!is_fnumber("-1e"));
+                test(!is_fnumber("1-e"));
                 test(is_fnumber("+0."));
                 test(is_fnumber("123")); /*this passes, see header*/
                 test(is_fnumber("1e-3"));
@@ -216,6 +230,8 @@ int main(int argc, char **argv) {
                 test(!match("aaa*","XXaaaXX"));
                 test(match(".bc","abc"));
                 test(match("a.c","aXc"));
+                test(!match("a\\.c","aXc"));
+                test(match("a\\.c","a.c"));
 
                 char *s = NULL;
                 state(s = vstrcatsep(",", "a", "b", "c", "", "foo", "bar", NULL));
@@ -278,6 +294,11 @@ int main(int argc, char **argv) {
                 state(z = intern(l, lstrdup("bar")));
                 test(x == y && x != NULL);
                 test(x != z);
+
+                test(!is_list(cons(l, gsym_tee(), gsym_tee())));
+                test(is_list(cons(l,  gsym_tee(), gsym_nil())));
+                test(!is_list(cons(l, gsym_nil(), cons(l, gsym_tee(), gsym_tee()))));
+                test(is_list(mk_list(l, gsym_tee(), gsym_nil(), gsym_tee(), NULL)));
 
                 test(gsym_error() == lisp_eval_string(l, "(> 'a 1)"));
                 test(is_sym(x));
