@@ -13,7 +13,7 @@
         (define join
                 (compile "join a list of strings" (sep l)
                         (foldl 
-                        (lambda (a b) (scons a (scons sep b)))
+                        (lambda (_join1 _join2) (scons _join1 (scons sep _join2)))
                         (reverse l))))
         ; @bug Incorrect, evaluates all args
         (define and     

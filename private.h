@@ -74,7 +74,9 @@ typedef union cell_data { /**< ideally we would use void* for everything*/
  *
  * See:
  * <http://www.more-magic.net/posts/internals-data-representation.html>
- * For more details.
+ * For more details. The premise is to use the lowest bits of a pointer
+ * to store information, they have to be zero for an allocated pointer,
+ * so if they are set then it follows that the object cannot be a pointer.
  *
  * The cell uses the "struct hack", see
  * <http://c-faq.com/struct/structhack.html> **/
@@ -86,7 +88,7 @@ struct cell {
                  len:     BITS_IN_LENGTH; /**< length of data p*/
         cell_data p[1]; /**< uses the "struct hack", 
                              c99 does not quite work here*/
-}; 
+} /*__attribute__((packed)) <- saves a fair bit of space */;  
 
 typedef struct hashentry {      /**< linked list of entries in a bin*/
         char *key;              /**< ASCII nul delimited string*/

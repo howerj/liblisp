@@ -9,16 +9,23 @@
 # This makefile will build under Linux {Debian 7 and 8} and Windows 
 # {Tested on Windows 7}.
 #
+# This makefile should be changed so that it does not make use of recursive
+# makes, examples of doing things the right way can be found:
+# <https://stackoverflow.com/questions/559216/what-is-your-experience-with-non-recursive-make>
+# and specifically:
+# <https://github.com/dmoulding/boilermake>
 MAKEFLAGS += --no-builtin-rules
 
 .SUFFIXES:
-.PHONY: all clean dist doc doxygen valgrind run modules test
+.PHONY: all clean dist doc doxygen valgrind run test
 
 include config.mk
 
 TARGET = lisp
 
 all: shorthelp $(TARGET)$(EXE) lib$(TARGET).$(DLL) lib$(TARGET).a modules unit$(EXE)
+
+include mod/makefile.in
 
 shorthelp:
 	@echo "Use 'make help' for a list of options."
@@ -63,8 +70,7 @@ help:
 
 ### building #################################################################
 
-OBJFILES=hash.o io.o util.o gc.o read.o print.o subr.o\
-	repl.o eval.o lisp.o tr.o valid.o 
+OBJFILES=hash.o io.o util.o gc.o read.o print.o subr.o repl.o eval.o lisp.o valid.o 
 
 lib$(TARGET).a: $(OBJFILES)
 	$(AR) $(AR_FLAGS) $@ $^
@@ -89,11 +95,6 @@ unit$(EXE): unit.c lib$(TARGET).$(DLL)
 
 test: unit$(EXE)
 	./unit -c
-
-# Make as many modules as is possible
-# @bug recursive make considered harmful!
-modules: lib$(TARGET).$(DLL) $(TARGET)$(EXE)
-	-make -kC mod
 
 ### running ##################################################################
 
@@ -124,38 +125,38 @@ doxygen:
 TARBALL=$(strip $(TARGET)-$(VERSION)).tgz
 # make distribution tarball
 # @bug this currently creates a "tarbomb"
-dist: $(TARGET) lib$(TARGET).a lib$(TARGET).$(DLL) lib$(TARGET).htm modules
-	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) *.a *.1 *.3 *$(FS)*.$(DLL)
+dist: $(TARGET) lib$(TARGET).a lib$(TARGET).$(DLL) lib$(TARGET).htm lib$(TARGET).h modules
+	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) lib$(TARGET).h *.a *.1 *.3 
 
 install: all 
-	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(PREFIX)$(FS)bin
-	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(PREFIX)$(FS)lib
-	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(PREFIX)$(FS)include
-	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(MANPREFIX)$(FS)man1
-	-$(MKDIR) $(MKDIR_FLAGS) $(DESTDIR)$(MANPREFIX)$(FS)man3
-	$(CP) $(CP_FLAGS) $(TARGET)$(EXE) $(DESTDIR)$(PREFIX)$(FS)bin
-	$(SED) "s/VERSION/$(VERSION)/g" < $(TARGET).1    > $(DESTDIR)$(MANPREFIX)$(FS)man1$(FS)$(TARGET).1
-	$(SED) "s/VERSION/$(VERSION)/g" < lib$(TARGET).3 > $(DESTDIR)$(MANPREFIX)$(FS)man3$(FS)lib$(TARGET).3
-	$(CP) $(CP_FLAGS) lib$(TARGET).a $(DESTDIR)$(PREFIX)$(FS)lib
-	$(CP) $(CP_FLAGS) lib$(TARGET).$(DLL) $(DESTDIR)$(PREFIX)$(FS)lib
-	$(CP) $(CP_FLAGS) lib$(TARGET).h $(DESTDIR)$(PREFIX)$(FS)include
-	$(CHMOD) 755 $(DESTDIR)$(PREFIX)$(FS)bin$(FS)$(TARGET)
-	$(CHMOD) 644 $(DESTDIR)$(MANPREFIX)$(FS)man1$(FS)$(TARGET).1
-	$(CHMOD) 644 $(DESTDIR)$(MANPREFIX)$(FS)man3$(FS)lib$(TARGET).3
-	$(CHMOD) 755 $(DESTDIR)$(PREFIX)$(FS)lib$(FS)lib$(TARGET).a
-	$(CHMOD) 755 $(DESTDIR)$(PREFIX)$(FS)lib$(FS)lib$(TARGET).$(DLL)
-	$(CHMOD) 644 $(DESTDIR)$(PREFIX)$(FS)include$(FS)lib$(TARGET).h
+	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/bin)
+	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/lib)
+	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/include)
+	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1)
+	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3)
+	$(CP) $(CP_FLAGS) $(TARGET)$(EXE) $(call FixPath,$(DESTDIR)$(PREFIX)/bin)
+	$(SED) "s/VERSION/$(VERSION)/g" < $(TARGET).1    > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
+	$(SED) "s/VERSION/$(VERSION)/g" < lib$(TARGET).3 > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
+	$(CP) $(CP_FLAGS) lib$(TARGET).a $(call FixPath,$(DESTDIR)$(PREFIX)/lib)
+	$(CP) $(CP_FLAGS) lib$(TARGET).$(DLL) $(call FixPath,$(DESTDIR)$(PREFIX)/lib)
+	$(CP) $(CP_FLAGS) lib$(TARGET).h $(call FixPath,$(DESTDIR)$(PREFIX)/include)
+	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(PREFIX)/bin/$(TARGET))
+	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
+	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
+	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(PREFIX)/lib/lib$(TARGET).a)
+	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(PREFIX)/lib/lib$(TARGET).$(DLL))
+	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(PREFIX)/include/lib$(TARGET).h)
 	$(LDCONFIG)
 	@echo "installation complete"
 
 uninstall:
 	@echo uninstalling $(TARGET)$(EXE)
-	$(RM) $(RM_FLAGS) $(DESTDIR)$(MANPREFIX)$(FS)man1$(FS)$(TARGET).1
-	$(RM) $(RM_FLAGS) $(DESTDIR)$(MANPREFIX)$(FS)man3$(FS)lib$(TARGET).3
-	$(RM) $(RM_FLAGS) $(DESTDIR)$(PREFIX)$(FS)bin$(FS)$(TARGET)$(EXE)
-	$(RM) $(RM_FLAGS) $(DESTDIR)$(PREFIX)$(FS)lib$(FS)lib$(TARGET).a
-	$(RM) $(RM_FLAGS) $(DESTDIR)$(PREFIX)$(FS)lib$(FS)lib$(TARGET).$(DLL)
-	$(RM) $(RM_FLAGS) $(DESTDIR)$(PREFIX)$(FS)include$(FS)lib$(TARGET).h
+	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
+	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
+	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/bin/$(TARGET)$(EXE))
+	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/lib/lib$(TARGET).a)
+	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/lib/lib$(TARGET).$(DLL))
+	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/include/lib$(TARGET).h)
 
 # From <http://ctags.sourceforge.net/>
 TAGS:

@@ -238,7 +238,13 @@ int main(int argc, char **argv) {
                 test(!sstrcmp("a,b,c,,foo,bar", s));
                 free(s);
 
-                /* @todo regex_match, djb2, lstrcatend, xorshift128plus, knuth*/ 
+                char *t = NULL, *s1 = "Hello,", *s2 = " World!";
+                state(t = calloc(16,1));
+                state(strcpy(t, s1));
+                test(((size_t)(lstrcatend(t, s2) - t)) == (strlen(s1) + strlen(s2)));
+                free(t);
+
+                /* @todo regex_match, djb2, xorshift128plus, knuth*/ 
         }
 
         { /* hash.c hash table tests */

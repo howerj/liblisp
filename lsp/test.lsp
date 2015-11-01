@@ -3,29 +3,29 @@
 ; should be tested here to both document functionality and make the
 ; test suite as comprehensive as possible.
 
-(define monte-carlo-pi
-  (lambda (iter)
-    "determine the approximate value of pi with Monte-Carlo methods, more iterations produces a better approximation"
-    (let
-        (inner 
-          (compile "calculate a hit" ()
-            (if (< (sum-of-squares (frandom) (frandom)) 1)
-              1
-              0)))
-        (outer 
-           (compile "loop iter amount of times" (iter)
-             (let 
-               (i iter)
-               (c 0)
-               (progn
-                 (set! i (- i 1))
-                 (set! c (+ (inner) c))
-                 (if 
-                   (< i 1)
-                   (return c)
-                   loop)
-                 ()))))
-    (* (/ (coerce *float* (outer iter)) iter) 4))))
+(let
+  (inner 
+    (compile "calculate a hit" ()
+      (if (< (sum-of-squares (frandom) (frandom)) 1)
+        1
+        0)))
+  (outer 
+     (compile "loop iter amount of times" (iter)
+       (let 
+         (i iter)
+         (c 0)
+         (progn
+           (set! i (- i 1))
+           (set! c (+ (inner) c))
+           (if 
+             (< i 1)
+             (return c)
+             loop)
+           ()))))
+  (define monte-carlo-pi
+    (lambda (iter)
+      "determine the approximate value of pi with Monte-Carlo methods, more iterations produces a better approximation"
+      (* (/ (coerce *float* (outer iter)) iter) 4))))
 
 ; This is a series of simple tests that is not comprehensive
 ; at the moment.
@@ -90,16 +90,16 @@
     t))
 
 ;; so slow
-; (define all 
-;   (make-set 
-;     (map1 
-;       (lambda (x) 
-;         (coerce *string* x)) 
-;       (map1 
-;         (lambda (x) 
-;           (if (atom? x) x (car x))) 
-;         (coerce *cons* (cadr (top-environment)))))))
-; 
+;  (define all 
+;    (make-set 
+;      (map1 
+;        (lambda (x) 
+;          (coerce *string* x)) 
+;        (map1 
+;          (lambda (x) 
+;            (if (atom? x) x (car x))) 
+;          (coerce *cons* (cadr (top-environment)))))))
+; ; 
 ; (define save 
 ;   (flambda (x) 
 ;            (format *output* 'log.txt "%S\n" x)))

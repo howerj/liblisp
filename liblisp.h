@@ -22,6 +22,7 @@ extern "C" {
 #include <stdio.h>
 #include <inttypes.h>
 #include <stdint.h>
+#include <float.h>
 
 #ifdef __unix__
         #define LIBLISP_API /**< not needed*/
@@ -44,7 +45,18 @@ extern "C" {
  *  functions. They should be opaque types if possible to hide the
  *  implementation details. **/
 
+#ifndef USE_SINGLE_PRECISION_FLOATS
 typedef double lfloat;                /**< float type used by this lisp*/
+#define LFLT_EPSILON  DBL_EPSILON
+#define LFLT_MIN      DBL_MIN
+#define LFLT_MAX      DBL_MAX
+#else
+typedef float  lfloat;
+#define LFLT_EPSILON  FLT_EPSILON
+#define LFLT_MIN      FLT_MIN
+#define LFLT_MAX      FLT_MAX
+#endif
+
 typedef struct io io;                 /**< generic I/O to files, strings, ...*/
 typedef struct hashtable hashtable;   /**< standard hash table implementation */
 typedef struct tr_state tr_state;     /**< state for translation functions */
@@ -394,7 +406,7 @@ LIBLISP_API int io_ungetc(char c, io *i);
  *  @return int  same character as you put in, EOF on failure**/
 LIBLISP_API int io_putc(char c, io *o);
 
-/** @brief  write a string to an I/O stream
+/** @brief  write a string (NUL delimited) to an I/O stream
  *  @param  s    string to write
  *  @param  o    I/O stream, must be setup for writing
  *  @return int  >= 0 is success, < 0 is failure**/
@@ -551,13 +563,30 @@ LIBLISP_API size_t tr_block(tr_state *tr, uint8_t *in, uint8_t *out, size_t len)
 
 LIBLISP_API cell *car(cell *con); /**< get car cell from cons*/
 LIBLISP_API cell *cdr(cell *con); /**< get cdr cell from cons*/
-LIBLISP_API void set_car(cell *con, cell *val); /**< set car cell of a cons cell*/
 
-/**@brief   set cdr cell of a cons cell
+/**@brief Set the first value in a cons cell. Unlike most functions
+ *        this mutates data. The first cell is called the "car" cell
+ *        for historical reasons.
+ * @param con Cons Cell modify
+ * @param val Value to put into car of cons cell, this should be
+ *            another lisp cell.**/
+LIBLISP_API void set_car(cell *con, cell *val); 
+
+/**@brief set cdr cell of a cons cell
+ * @param con Cons Cell to modify
+ * @param val Value to put into the second cell of a cons cell, this
+ *            should be another lisp cell.
  * @warning set cdr does not maintain the internal list length in each
  *          cons cell node correctly.*/
 LIBLISP_API void set_cdr(cell *con, cell *val); 
-LIBLISP_API int  cklen(cell *x, size_t expect); /**< get length of list*/
+
+/**@brief Given a lisp cell, check that its length field equals an
+ *        expected value.
+ * @param x      cell to check
+ * @param expect expected value
+ * @return int !0 if they match, 0 if they do not**/
+LIBLISP_API int  cklen(cell *x, size_t expect);
+
 LIBLISP_API void set_length(cell *x, size_t len); /**< set the length field of a cell*/
 LIBLISP_API void close_cell(cell *x); /**< close a cell (io and userdef only)*/
 LIBLISP_API cell *cons(lisp *l, cell *x, cell *y); /**< create a new cons cell*/
@@ -589,7 +618,7 @@ LIBLISP_API cell *mk_list(lisp *l, cell *x, ...); /**< make a proper list (termi
 LIBLISP_API cell *mk_int(lisp *l, intptr_t d); /**< make a lisp cell from an integer*/
 LIBLISP_API cell *mk_float(lisp *l, lfloat f); /**< make a lisp cell from a float*/
 LIBLISP_API cell *mk_io(lisp *l, io *x); /**< make lisp cell from an I/O stream*/
-/** @brief long version of subroutine creation function, fmt and doc can be NULL */
+/** @brief subroutine creation function*/
 LIBLISP_API cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc);
 LIBLISP_API cell *mk_proc(lisp *l, cell *args, cell *code, cell *env, cell *doc); /**< make a lisp cell/proc*/
 LIBLISP_API cell *mk_fproc(lisp *l, cell *args, cell *code, cell *env, cell *doc); /**< make a lisp cell/fproc*/

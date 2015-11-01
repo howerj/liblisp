@@ -158,9 +158,8 @@
 (define <= (compile "is x less than or equal to y" (x y) (or (< x y) (= x y))))
 (define >= (compile "is x greater than or equal to y" (x y) (or (> x y) (= x y))))
 
-(define sort
-  (let
-   (sort-insert (lambda (x l)
+(let
+  (sort-insert (lambda "" (x l)
     (if 
      (nil? l)
       (list x)
@@ -170,7 +169,8 @@
          (cons 
           (car l)
           (sort-insert x (cdr l)))))))
-  (compile
+ (define sort
+   (compile
     "A super inefficient sort on a list of integers/floats or strings"
     (l)
     (if (nil? l)
@@ -510,9 +510,10 @@
   (flambda "define a new function" (x)
            (let 
              (name (car x))
-             (args (cadr x))
-             (code (caddr x))
-             (eval (list define name (list lambda args code)) (environment)))))
+             (doc  (cadr x))   ; documentation string
+             (args (caddr x))  ; function arguments
+             (code (cadddr x))
+             (eval (list define name (list lambda doc args code)) (environment)))))
 
 (define identity 
         (lambda "return its argument" (x) x))

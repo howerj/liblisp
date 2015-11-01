@@ -20,8 +20,7 @@
  (load-module "line")   ; line editing library and module
  (load-module "math")   ; math module
  (load-module "x11")    ; x11 window module
- (load-module "diff")   ; diff module
- (load-module "tsort")  ; tsort module
+ (load-module "text")   ; diff, more string handling and tsort module
  (load-module "bignum") ; bignum module
  t)
 

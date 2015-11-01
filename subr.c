@@ -159,12 +159,25 @@ static struct all_subroutines { subr p; const char *name, *validate, *docstring;
         X("*sig-abrt*",     SIGABRT)      X("*sig-fpe*",     SIGFPE)\
         X("*sig-ill*",      SIGILL)       X("*sig-int*",     SIGINT)\
         X("*sig-segv*",     SIGSEGV)      X("*sig-term*",    SIGTERM)\
-        X("*integer-bits*", (CHAR_BIT * sizeof(intptr_t)))
+        X("*integer-bits*", (CHAR_BIT * sizeof(intptr_t)))\
+        X("*float-radix*",  FLT_RADIX)    X("*float-rounds*", FLT_ROUNDS)
 
 #define X(NAME, VAL) { NAME, VAL }, 
 static struct integer_list { char *name; intptr_t val; } integers[] = {
         INTEGER_XLIST
         {NULL, 0}
+};
+#undef X
+
+#define FLOAT_XLIST\
+        X("pi", 3.14159265358979323846) X("e", 2.71828182845904523536)\
+        X("*epsilon*",   LFLT_EPSILON)  X("*float-smallest*", LFLT_MIN)\
+        X("*float-biggest*", LFLT_MAX)
+
+#define X(NAME, VAL) { NAME, VAL },
+static struct float_list { char *name; lfloat val; } floats[] = {
+        FLOAT_XLIST
+        {NULL, 0.0 }
 };
 #undef X
 
@@ -294,14 +307,13 @@ CELL_XLIST
                         goto fail;
         }
 
-        if(!lisp_add_cell(l, "pi", mk_float(l, 3.14159265358979323846))) 
-                goto fail;
-        if(!lisp_add_cell(l, "e",  mk_float(l, 2.71828182845904523536))) 
-                goto fail;
-
         for(i = 0; integers[i].name; i++) /*add all integers*/
                 if(!lisp_add_cell(l, integers[i].name, 
                                         mk_int(l, integers[i].val)))
+                        goto fail;
+        for(i = 0; floats[i].name; i++) /**/
+                if(!lisp_add_cell(l, floats[i].name,
+                                        mk_float(l, floats[i].val)))
                         goto fail;
         for(i = 0; primitives[i].p; i++) /*add all primitives*/
                 if(!lisp_add_subr(l, 
@@ -692,14 +704,14 @@ static cell* subr_coerce(lisp *l, cell *args) {
                       for(j = 0, i = 0; i < h->len; i++)
                         if(h->table[i])
                           for(cur = h->table[i]; cur; cur = cur->next, j++) {
-                            y = mk_str(l, lstrdup(cur->key));
-                            set_cdr(x, cons(l, y, gsym_nil()));
-                            x = cdr(x);
-                            set_cdr(x, cons(l, (cell*)cur->val, gsym_nil()));
+                            cell *tmp = (cell*)cur->val;
+                            if(!is_cons(tmp)) /*handle special case for all_symbols hash*/
+                                    tmp = cons(l, tmp, tmp);
+                            set_cdr(x, cons(l, tmp, gsym_nil()));
                             x = cdr(x);
                           }
-                          fix_list_len(cdr(head), j);
-                          return cdr(head);
+                      fix_list_len(cdr(head), j);
+                      return cdr(head);
                     }
                     break;
         case STRING:if(is_int(from)) { /*int to string*/

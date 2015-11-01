@@ -7,6 +7,7 @@
  *  @bug        This is very buggy!**/
 
 #include "diff.h"
+#include "tsort.h"
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -72,12 +73,18 @@ cleanup:
         return gsym_error();
 }
 
+static cell* subr_tsort(lisp *l, cell *args) { /**@todo implement me!*/
+        UNUSED(l); UNUSED(args);
+        return gsym_nil();
+}
+
 static int initialize(void) {
         assert(lglobal);
         if(!(lisp_add_subr(lglobal, "diff", subr_diff, "c c", "print the diff of two lists of strings"))) goto fail;
-        lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: diff loaded\n");
+        if(!(lisp_add_subr(lglobal, "tsort", subr_tsort, "", "perform a topological sort on a list of dependencies"))) goto fail;
+        lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: text loaded\n");
         return 0;
-fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: diff load failure\n");
+fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: text load failure\n");
 	return -1;
 }
 
