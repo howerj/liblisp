@@ -223,8 +223,6 @@ cell *extend_top(lisp *l, cell *sym, cell *val) { assert(l && sym && val);
 }
 
 cell *assoc(cell *key, cell *alist) { assert(key && alist);
-        /*@note assoc is the main offender when it comes to slowing
-         *      the interpreter down, speeding this up will greatly help*/
         cell *lookup;
         for(;!is_nil(alist); alist = cdr(alist))
                 if(is_cons(car(alist))) { /*normal assoc*/
@@ -272,25 +270,6 @@ static cell *compiler(lisp *l, unsigned depth, cell *exp, cell *env) {
         fix_list_len(head, i);
         return head;
 }
-/** // alternate version to work on:
-static cell *compiler(lisp *l, unsigned depth, cell *exp, cell *env) {
-        size_t i;
-        cell *head, *tmp, *code = gsym_nil();
-        if(depth > MAX_RECURSION_DEPTH)
-                RECOVER(l, "%y'recursion-depth-reached%t %d", depth);
-        for(head = exp, i = 0; !is_nil(exp); exp = cdr(exp), i++) {
-                code = car(exp);
-                if(is_sym(car(exp)) && !is_nil(tmp = assoc(car(exp), env)))
-                        code = cdr(tmp);
-                if(!i && is_fproc(code))
-                        return exp;
-                if(is_cons(car(exp)))
-                        code = compiler(l, depth+1, car(exp), env);
-                set_car(exp, code);
-        }
-        fix_list_len(head, i);
-        return head;
-} **/
 
 static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env);
 cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);

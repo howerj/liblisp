@@ -614,16 +614,13 @@ LIBLISP_API cell *cons(lisp *l, cell *x, cell *y);
  * @return cell* Non-NULL on success, NULL on failure */
 LIBLISP_API cell *extend(lisp *l, cell *env, cell *sym, cell *val);
 
-/**@brief  find a previously used symbol
- * @param  l
- * @param  name
- * @return cell* */
-LIBLISP_API cell *findsym(lisp *l, char *name);
-
-/**@brief  add a new symbol
- * @param  l
- * @param  name
- * @return cell* */
+/**@brief  add a new symbol to the list of all symbols, two interned
+ *         symbols containing the same name will compare equal with
+ *         a pointer comparison, they will be the same object.
+ * @param  l    an initialized lisp structure, used for error handling
+ *              and keeping track of interned symbols
+ * @param  name name of symbol
+ * @return cell* a unique symbol cell*/
 LIBLISP_API cell *intern(lisp *l, char *name);
 
 /**@brief  true if 'x' is equal to nil
@@ -774,22 +771,25 @@ LIBLISP_API cell *mk_io(lisp *l, io *x);
  * @return cell* returns a new lisp subroutine object */
 LIBLISP_API cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc);
 
-/**@brief  make a lisp cell/proc
+/**@brief  make a lisp lambda procedure cell.
  * @param  l    lisp environment for error handling and garbage collection
- * @param  args
- * @param  code
- * @param  env
- * @param  doc
- * @return cell* */
+ * @param  args a list of argument names to the function
+ * @param  code the code of the procedure
+ * @param  env  the environment the procedure should execute in, this should
+ *              be an association list
+ * @param  doc  The documentation string for the lambda
+ * @return cell* a new procedure cell */
 LIBLISP_API cell *mk_proc(lisp *l, cell *args, cell *code, cell *env, cell *doc);
 
-/**@brief  make a lisp cell/fproc
+/**@brief  make a lisp F-expression cell, F-expressions are like lambdas except
+ *         they do not evaluate their arguments and bind all their arguments to
+ *         a single variable as a list.
  * @param  l    lisp environment for error handling and garbage collection
- * @param  args
- * @param  code
- * @param  env
- * @param  doc
- * @return cell* */
+ * @param  args a list of one argument name for the function
+ * @param  code the code of the F-expression
+ * @param  env  the environment in which to execute the F-expression in
+ * @param  doc  the documentation string for the F-expression
+ * @return cell* a new f-expression */
 LIBLISP_API cell *mk_fproc(lisp *l, cell *args, cell *code, cell *env, cell *doc);
 
 /**@brief  make lisp cell (string) from a string
@@ -843,17 +843,17 @@ LIBLISP_API intptr_t get_int(cell *x);
 
 /**@brief  get lisp cell to I/O stream
  * @param  x   'x' must be a lisp object of an I/O port type
- * @return io* */
+ * @return io* an input or an output port*/
 LIBLISP_API io *get_io(cell *x);
 
 /**@brief  get a lisp cell to a primitive func ptr
- * @param  x
- * @return subr */
+ * @param  x    'x' must be a lisp object of a subroutine type
+ * @return subr an internal lisp subroutine function*/
 LIBLISP_API subr get_subr(cell *x);
 
 /**@brief  get args to a procedure/f-expr 
- * @param  x
- * @return cell* */
+ * @param  x     'x' must be a lisp object of a lambda or f-expression type
+ * @return cell* the arguments list to a lambda or f-expression procedure*/
 LIBLISP_API cell *get_proc_args(cell *x);
 
 /**@brief  get code from a procedure/f-expr 
@@ -976,9 +976,11 @@ LIBLISP_API cell *gsym_loop(void);
  * @return cell* */
 LIBLISP_API cell *gsym_compile(void);
 
-/**@brief fix a lists length after calls to set_cda
- * @param x 
- * @param l */
+/**@brief fix a lists length after calls to set_cdr
+ * @warning This function, along with set_car and set_cdr
+ *        should probably be private.
+ * @param x 'x' should be a list
+ * @param l l should be the expected length*/
 LIBLISP_API void fix_list_len(cell *x, size_t l); 
 
 /**@brief  return a new token representing a new type
