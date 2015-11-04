@@ -59,11 +59,11 @@ cell* cons(lisp *l, cell *x, cell *y) {
         return z;
 }
 
-cell *car(cell *con)              { assert(con && is_cons(con)); return con->p[0].v; }
-cell *cdr(cell *con)              { assert(con && is_cons(con)); return con->p[1].v; }
+cell *car(cell *con)          { assert(con && is_cons(con)); return con->p[0].v; }
+cell *cdr(cell *con)          { assert(con && is_cons(con)); return con->p[1].v; }
 void set_car(cell *con, cell *val)  { assert(con && is_cons(con) && val); con->p[0].v = val; }
 void set_cdr(cell *con, cell *val)  { assert(con && is_cons(con) && val); con->p[1].v = val; }
-void close_cell(cell *x)        { assert(x); x->close = 1; }
+void close_cell(cell *x)      { assert(x); x->close = 1; }
 int  cklen(cell *x, size_t expect) { assert(x); return x->len == expect; }
 void set_length(cell *x, size_t len) { assert(x); x->len = len; }
 int  is_nil(cell *x)          { assert(x); return x == gsym_nil(); }
@@ -79,7 +79,7 @@ int  is_sym(cell *x)          { assert(x); return x->type == SYMBOL; }
 int  is_subr(cell *x)         { assert(x); return x->type == SUBR; }
 int  is_hash(cell *x)         { assert(x); return x->type == HASH; }
 int  is_userdef(cell *x)      { assert(x); return x->type == USERDEF && !x->close; }
-int  is_usertype(cell *x, int type) { assert(x);
+int  is_usertype(cell *x, int type) { assert(x && type < MAX_USER_TYPES && type >= 0);
         return x->type == USERDEF && get_user_type(x) == type && !x->close;
 }
 int  is_asciiz(cell *x)       { assert(x); return is_str(x) || is_sym(x); }
@@ -418,7 +418,8 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                         return eval(l, depth+1, car(exp), env);
                 }
                 /**@bug  loop/return and tail call optimization do not mix
-                 * @todo improve looping constructs */
+                 * @todo improve looping constructs, also the current lambda
+                 *       could be stored and used. */
                 if(first == l->progn) { 
                         cell *head = exp, *tmp;
                         if(is_nil(exp)) return l->nil;

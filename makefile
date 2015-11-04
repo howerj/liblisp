@@ -135,11 +135,11 @@ install: all
 	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1)
 	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3)
 	$(CP) $(CP_FLAGS) $(TARGET)$(EXE) $(call FixPath,$(DESTDIR)$(PREFIX)/bin)
+	$(CP) $(CP_FLAGS) *.a $(call FixPath,$(DESTDIR)$(PREFIX)/lib)
+	$(CP) $(CP_FLAGS) *.$(DLL) $(call FixPath,$(DESTDIR)$(PREFIX)/lib)
+	$(CP) $(CP_FLAGS) lib$(TARGET).h $(call FixPath,$(DESTDIR)$(PREFIX)/include)
 	$(SED) "s/VERSION/$(VERSION)/g" < $(TARGET).1    > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
 	$(SED) "s/VERSION/$(VERSION)/g" < lib$(TARGET).3 > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
-	$(CP) $(CP_FLAGS) lib$(TARGET).a $(call FixPath,$(DESTDIR)$(PREFIX)/lib)
-	$(CP) $(CP_FLAGS) lib$(TARGET).$(DLL) $(call FixPath,$(DESTDIR)$(PREFIX)/lib)
-	$(CP) $(CP_FLAGS) lib$(TARGET).h $(call FixPath,$(DESTDIR)$(PREFIX)/include)
 	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(PREFIX)/bin/$(TARGET))
 	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
 	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
@@ -155,7 +155,7 @@ uninstall:
 	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
 	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/bin/$(TARGET)$(EXE))
 	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/lib/lib$(TARGET).a)
-	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/lib/lib$(TARGET).$(DLL))
+	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/lib/*.$(DLL))
 	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/include/lib$(TARGET).h)
 
 # From <http://ctags.sourceforge.net/>

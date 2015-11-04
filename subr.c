@@ -536,9 +536,8 @@ static cell* subr_open(lisp *l, cell *args) {
 static cell* subr_getchar(lisp *l, cell *args) { return mk_int(l, io_getc(get_io(car(args)))); }
 
 static cell* subr_getdelim(lisp *l, cell *args) {
-        int ch;
         char *s; 
-        ch = is_asciiz(CADR(args)) ? get_str(CADR(args))[0] : get_int(CADR(args));
+        int ch = is_asciiz(CADR(args)) ? get_str(CADR(args))[0] : get_int(CADR(args));
         return (s = io_getdelim(get_io(car(args)), ch)) ? mk_str(l, s) : gsym_nil();
 }
 

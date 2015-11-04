@@ -13,6 +13,23 @@
 #include <stdlib.h>
 #include <liblisp.h>
 
+#define SUBROUTINE_XLIST\
+        X("diff",  subr_diff,  "c c", "print the diff of two lists of strings")\
+        X("tsort", subr_tsort, "",    "perform a topological sort on a list of dependencies")
+        /*strstr, strerr (move from subr.c), strpbrk, strrchr, strspn, thread
+         * safe strtok, ...*/
+
+#define X(NAME, SUBR, VALIDATION , DOCSTRING) static cell* SUBR (lisp *l, cell *args);
+SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
+#undef X
+
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
+static struct module_subroutines { char *name, *validate, *docstring; subr p; } primitives[] = {
+        SUBROUTINE_XLIST /*all of the subr functions*/
+        {NULL, NULL, NULL, NULL} /*must be terminated with NULLs*/
+};
+#undef X
+
 static cell *make_diff_inner(lisp *l, diff *d, char *x[], char *y[], size_t i, size_t j, cell *pp, cell *mm) {
         if (i > 0 && j > 0 && !strcmp(x[i-1], y[j-1])) {
                 return cons(l, 
@@ -78,10 +95,17 @@ static cell* subr_tsort(lisp *l, cell *args) { /**@todo implement me!*/
         return gsym_nil();
 }
 
+static cell* subr_string_span(lisp *l, cell *args) {
+}
+
 static int initialize(void) {
+        size_t i;
         assert(lglobal);
-        if(!(lisp_add_subr(lglobal, "diff", subr_diff, "c c", "print the diff of two lists of strings"))) goto fail;
-        if(!(lisp_add_subr(lglobal, "tsort", subr_tsort, "", "perform a topological sort on a list of dependencies"))) goto fail;
+        for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
+                if(!lisp_add_subr(lglobal, 
+                                primitives[i].name, primitives[i].p, 
+                                primitives[i].validate, primitives[i].docstring))
+                        goto fail;
         lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: text loaded\n");
         return 0;
 fail:   lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: text load failure\n");

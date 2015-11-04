@@ -46,15 +46,15 @@ extern "C" {
  *  implementation details. **/
 
 #ifndef USE_SINGLE_PRECISION_FLOATS
-typedef double lfloat;                /**< float type used by this lisp*/
-#define LFLT_EPSILON  DBL_EPSILON
-#define LFLT_MIN      DBL_MIN
-#define LFLT_MAX      DBL_MAX
+typedef double lfloat; /**< float type used by this lisp*/
+#define LFLT_EPSILON  DBL_EPSILON /**< machine epsilon of lfloat**/
+#define LFLT_MIN      DBL_MIN /**< smallest decimal representable by lfloat**/
+#define LFLT_MAX      DBL_MAX /**< maximum representable lfloat number **/
 #else
-typedef float  lfloat;
-#define LFLT_EPSILON  FLT_EPSILON
-#define LFLT_MIN      FLT_MIN
-#define LFLT_MAX      FLT_MAX
+typedef float  lfloat; /**< alternate float type used by this lisp, best for 32-bit systems*/
+#define LFLT_EPSILON  FLT_EPSILON /**< machine epsilon of lfloat**/
+#define LFLT_MIN      FLT_MIN /**< smallest decimal representable by lfloat**/
+#define LFLT_MAX      FLT_MAX /**< maximum representable lfloat number **/
 #endif
 
 typedef struct io io;                 /**< generic I/O to files, strings, ...*/
@@ -187,8 +187,8 @@ LIBLISP_API uint32_t djb2(const char *s, size_t len);
 
 /** @brief  Knuths multiplicative hash, works best on numbers with
  *          a non-uniform distribution (eg. pointers).
- *  @param  number to hash
- *  @return hashed value**/
+ *  @param  i        number to hash
+ *  @return uint32_t hashed value**/
 LIBLISP_API uint32_t knuth(uint32_t i);
 
 /** @brief   get a line text from a file
@@ -251,7 +251,7 @@ LIBLISP_API uint64_t xorshift128plus(uint64_t s[2]);
 LIBLISP_API int balance(const char *sexpr);
 
 /* These bit field functions have been adapted from this post on stackoverflow:
- * https://stackoverflow.com/questions/1590893/error-trying-to-define-a-1-024-bit-128-byte-bit-field 
+ * https://stackoverflow.com/questions/1590893/error-trying-to-define-a-1-024-bit-128-byte-bit-field
  * They could be inlined in this header.*/
 
 /** @brief create a new bit field that can hold at least maxbits
@@ -317,7 +317,7 @@ LIBLISP_API void *hash_lookup(hashtable *table, const char *key);
  *          the function returns non-NULL or it has been applied to all
  *          the key-value pairs. The callback might be passed NULL
  *          as either the key or the value. The hash remembers the
- *          position of the previous call to hash_foreach, a subsequent 
+ *          position of the previous call to hash_foreach, a subsequent
  *          call will carry onto the next element, unless there are
  *          no more elements left in the hash.
  *  @param  h      table to apply func on
@@ -328,7 +328,7 @@ LIBLISP_API void *hash_foreach(hashtable *h, hash_func func);
 /** @brief This resets a hash foreach function to the beginning of the
  *         table, so new calls to hash_foreach begin at the first element
  *         in the table.
- *  @param hash table to reset foreach loop in**/
+ *  @param h hash table to reset foreach loop in**/
 LIBLISP_API void hash_reset_foreach(hashtable *h);
 
 /** @brief   print out the key-value pairs in a table, keys are
@@ -338,22 +338,22 @@ LIBLISP_API void hash_print(hashtable *h);
 
 /** @brief  Get the load factor of a hash (or number of entries / number of
  *          buckets). Depending on the internals this might go over one.
- *  @param  h      hash to query 
+ *  @param  h      hash to query
  *  @return double load factor **/
 LIBLISP_API double hash_get_load_factor(hashtable *h);
 
 /** @brief  Get the number of records that have collided.
- *  @param  h      hash to query 
+ *  @param  h      hash to query
  *  @return size_t number of record collisions **/
 LIBLISP_API size_t hash_get_collision_count(hashtable *h);
 
 /** @brief  Get the number of replacements
- *  @param  h      hash to query 
+ *  @param  h      hash to query
  *  @return size_t number of replacements **/
 LIBLISP_API size_t hash_get_replacements(hashtable *h);
 
 /** @brief  Get the current number of bins in a hash
- *  @param  h     hash to query 
+ *  @param  h     hash to query
  *  @return size_t number of bins **/
 LIBLISP_API size_t hash_get_number_of_bins(hashtable *h);
 
@@ -570,7 +570,7 @@ LIBLISP_API cell *cdr(cell *con); /**< get cdr cell from cons*/
  * @param con Cons Cell modify
  * @param val Value to put into car of cons cell, this should be
  *            another lisp cell.**/
-LIBLISP_API void set_car(cell *con, cell *val); 
+LIBLISP_API void set_car(cell *con, cell *val);
 
 /**@brief set cdr cell of a cons cell
  * @param con Cons Cell to modify
@@ -578,7 +578,7 @@ LIBLISP_API void set_car(cell *con, cell *val);
  *            should be another lisp cell.
  * @warning set cdr does not maintain the internal list length in each
  *          cons cell node correctly.*/
-LIBLISP_API void set_cdr(cell *con, cell *val); 
+LIBLISP_API void set_cdr(cell *con, cell *val);
 
 /**@brief Given a lisp cell, check that its length field equals an
  *        expected value.
@@ -587,80 +587,399 @@ LIBLISP_API void set_cdr(cell *con, cell *val);
  * @return int !0 if they match, 0 if they do not**/
 LIBLISP_API int  cklen(cell *x, size_t expect);
 
-LIBLISP_API void set_length(cell *x, size_t len); /**< set the length field of a cell*/
-LIBLISP_API void close_cell(cell *x); /**< close a cell (io and userdef only)*/
-LIBLISP_API cell *cons(lisp *l, cell *x, cell *y); /**< create a new cons cell*/
-LIBLISP_API cell *extend(lisp *l, cell *env, cell *sym, cell *val);
-LIBLISP_API cell *findsym(lisp *l, char *name); /**< find a previously used symbol*/
-LIBLISP_API cell *intern(lisp *l, char *name); /**< add a new symbol*/
-LIBLISP_API int  is_nil(cell *x);    /**< true if 'x' is equal to nil*/
-LIBLISP_API int  is_int(cell *x);    /**< true if 'x' is a integer */
-LIBLISP_API int  is_floating(cell *x);  /**< true if 'x' is a floating point number*/
-LIBLISP_API int  is_cons(cell *x);   /**< true if 'x' is a cons cell*/
-LIBLISP_API int  is_proper_cons(cell *x); /**< true if 'x' is not a dotted pair cons cell*/
-LIBLISP_API int  is_io(cell *x);     /**< true if 'x' is a I/O type*/
-LIBLISP_API int  is_proc(cell *x);   /**< true if 'x' is a lambda procedure*/
-LIBLISP_API int  is_fproc(cell *x);  /**< true if 'x' is a flambda procedure*/
-LIBLISP_API int  is_str(cell *x);    /**< true if 'x' is a string*/
-LIBLISP_API int  is_sym(cell *x);    /**< true if 'x' is a symbol*/
-LIBLISP_API int  is_subr(cell *x);   /**< true if 'x' is a language primitive*/
-LIBLISP_API int  is_asciiz(cell *x); /**< true if 'x' is a ASCII nul delimited string*/
-LIBLISP_API int  is_arith(cell *x);  /**< true if 'x' is integer or float*/
-LIBLISP_API int  is_in(cell *x);     /**< true if 'x' is an input I/O type*/
-LIBLISP_API int  is_out(cell *x);    /**< true if 'x' is an output I/O type*/
-LIBLISP_API int  is_hash(cell *x);   /**< true if 'x' is a hash table type*/
-LIBLISP_API int  is_userdef(cell *x); /**< true if 'x' is a user defined type*/
-LIBLISP_API int  is_usertype(cell *x, int type); /**< is a specific user defined type*/
-LIBLISP_API int  is_func(cell *x);   /**< true if 'x' can be applied (is a function) */
-LIBLISP_API int  is_closed(cell *x); /**< true if 'x' is 'closed' or invalidated*/
-LIBLISP_API int  is_list(cell *x);   /**< true if 'x' is a proper list*/
-LIBLISP_API cell *mk_list(lisp *l, cell *x, ...); /**< make a proper list (terminate args with NULL)*/
-LIBLISP_API cell *mk_int(lisp *l, intptr_t d); /**< make a lisp cell from an integer*/
-LIBLISP_API cell *mk_float(lisp *l, lfloat f); /**< make a lisp cell from a float*/
-LIBLISP_API cell *mk_io(lisp *l, io *x); /**< make lisp cell from an I/O stream*/
-/** @brief subroutine creation function*/
-LIBLISP_API cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc);
-LIBLISP_API cell *mk_proc(lisp *l, cell *args, cell *code, cell *env, cell *doc); /**< make a lisp cell/proc*/
-LIBLISP_API cell *mk_fproc(lisp *l, cell *args, cell *code, cell *env, cell *doc); /**< make a lisp cell/fproc*/
-LIBLISP_API cell *mk_str(lisp *l, char *s); /**< make lisp cell (string) from a string*/
-/*LIBLISP_API cell *mksym(lisp *l, char *s); // use intern instead to get a unique symbol*/
-LIBLISP_API cell *mk_hash(lisp *l, hashtable *h); /**< make lisp cell from hash*/
-LIBLISP_API cell *mk_user(lisp *l, void *x, intptr_t type); /**< make a user defined type*/
-LIBLISP_API unsigned get_length(cell *x); /**< get lisp length */
-LIBLISP_API void  *get_raw(cell *x); /**< get raw lisp value */
-LIBLISP_API intptr_t get_int(cell *x); /**< cast *any* lisp cell to integer*/
-LIBLISP_API io   *get_io(cell *x);    /**< get lisp cell to I/O stream*/
-LIBLISP_API subr  get_subr(cell *x); /**< get a lisp cell to a primitive func ptr*/
-LIBLISP_API cell *get_proc_args(cell *x);   /**< get args to a procedure/f-expr */
-LIBLISP_API cell *get_proc_code(cell *x);   /**< get code from a procedure/f-expr */
-LIBLISP_API cell *get_proc_env(cell *x);    /**< get procedure/f-expr environment*/
-LIBLISP_API cell *get_func_docstring(cell *x); /**< get the documentation string for a lambda/f-expr/subroutine*/
-LIBLISP_API char *get_func_format(cell *x);  /**< get the type validation string for lambda/f-expr/subroutine*/
-LIBLISP_API int   get_user_type(cell *x); /**< get the user-defined-value identifier*/
-LIBLISP_API char *get_str(cell *x); /**< get string from a lisp cell*/
-LIBLISP_API char *get_sym(cell *x); /**< get string (symbol) from a lisp cell*/
-LIBLISP_API void *get_user(cell *x); /**< get data from user defined type*/
-LIBLISP_API lfloat get_float(cell *x); /**< get floating point val from lisp cell*/
-LIBLISP_API hashtable *get_hash(cell *x); /**< get hash table from a lisp cell*/
-LIBLISP_API intptr_t get_a2i(cell *x); /** float/int to int */
-LIBLISP_API lfloat get_a2f(cell *x);   /** float/int to float */
-LIBLISP_API cell *gsym_nil(void);     /**< return the nil symbol*/
-LIBLISP_API cell *gsym_tee(void);     /**< return the tee symbol*/
-LIBLISP_API cell *gsym_quote(void);   /**< return the quote symbol */
-LIBLISP_API cell *gsym_iif(void);     /**< return the if symbol*/
-LIBLISP_API cell *gsym_lambda(void);  /**< return the lambda symbol*/
-LIBLISP_API cell *gsym_flambda(void); /**< return the flambda symbol*/
-LIBLISP_API cell *gsym_define(void);  /**< return the define symbol*/
-LIBLISP_API cell *gsym_set(void);     /**< return the set! symbol*/
-LIBLISP_API cell *gsym_progn(void);   /**< return the progn symbol*/
-LIBLISP_API cell *gsym_cond(void);    /**< return the cond symbol*/
-LIBLISP_API cell *gsym_error(void);   /**< return the error symbol*/
-LIBLISP_API cell *gsym_let(void);     /**< return the let symbol*/
-LIBLISP_API cell *gsym_ret(void);     /**< return the return symbol*/
-LIBLISP_API cell *gsym_loop(void);    /**< return the loop symbol*/
-LIBLISP_API cell *gsym_compile(void); /**< return the compile symbol*/
+/**@brief set the length field of a cell
+ * @param x   cell to set the length field of
+ * @param len length to set the cell to*/
+LIBLISP_API void set_length(cell *x, size_t len);
 
-LIBLISP_API void fix_list_len(cell *x, size_t l); /**< fix a lists length after calls to set_cdr*/
+/**@brief close a cell (io and userdef only)
+ * @param x close a cell, invalidating it for further use and freeing any
+ *          resources associated with it. */
+LIBLISP_API void close_cell(cell *x);
+
+/**@brief  Create a new cons cell from a pair of values, this primitive
+ *         is used to construct the basic data structures (lists and trees)
+ *         that make lisp, lisp. 
+ * @param  l lisp environment used for error handling
+ * @param  x lisp cell to become the first, or "car", value of a cons cell.
+ * @param  y lisp cell to become the second, or "cdr", value of a cons cell.
+ * @return cell* new cons cell. */
+LIBLISP_API cell *cons(lisp *l, cell *x, cell *y);
+
+/**@brief  extend an environment with a symbol-value pair 
+ * @param  l   initialized lisp structure, used for error handling.
+ * @param  env a lisp environment (an association list).
+ * @param  sym symbol to associate with a value
+ * @param  val value to associate with a symbol
+ * @return cell* Non-NULL on success, NULL on failure */
+LIBLISP_API cell *extend(lisp *l, cell *env, cell *sym, cell *val);
+
+/**@brief  find a previously used symbol
+ * @param  l
+ * @param  name
+ * @return cell* */
+LIBLISP_API cell *findsym(lisp *l, char *name);
+
+/**@brief  add a new symbol
+ * @param  l
+ * @param  name
+ * @return cell* */
+LIBLISP_API cell *intern(lisp *l, char *name);
+
+/**@brief  true if 'x' is equal to nil
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_nil(cell *x);
+
+/**@brief  true if 'x' is a integer 
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_int(cell *x);
+
+/**@brief  true if 'x' is a floating point number
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_floating(cell *x);
+
+/**@brief  true if 'x' is a cons cell
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_cons(cell *x);
+
+/**@brief  true if 'x' is not a dotted pair cons cell
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_proper_cons(cell *x);
+
+/**@brief  true if 'x' is a I/O type
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_io(cell *x);
+
+/**@brief  true if 'x' is a lambda procedure
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_proc(cell *x);
+
+/**@brief  true if 'x' is a flambda procedure
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_fproc(cell *x);
+
+/**@brief  true if 'x' is a string
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_str(cell *x);
+
+/**@brief  true if 'x' is a symbol
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_sym(cell *x);
+
+/**@brief  true if 'x' is a language primitive
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_subr(cell *x);
+
+/**@brief  true if 'x' is a ASCII nul delimited string
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_asciiz(cell *x);
+
+/**@brief  true if 'x' is integer or float
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_arith(cell *x);
+
+/**@brief  true if 'x' is an input I/O type
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_in(cell *x);
+
+/**@brief  true if 'x' is an output I/O type
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_out(cell *x);
+
+/**@brief  true if 'x' is a hash table type
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_hash(cell *x);
+
+/**@brief  true if 'x' is a user defined type
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_userdef(cell *x);
+
+/**@brief Is 'x' a specific user defined type? For this to be true
+ *        'x' has to be both a user defined type. 
+ * @param  x    value to perform check on
+ * @param  type this is a number that represents a user defined type,
+ *              it should have been assigned by "new_user_defined_type"
+ * @return int zero if check fails, non zero if check passes  */
+LIBLISP_API int  is_usertype(cell *x, int type);
+
+/**@brief  true if 'x' can be applied (is a function) 
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes  */
+LIBLISP_API int  is_func(cell *x);
+
+/**@brief  true if 'x' is 'closed' or invalidated
+ * @param  x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_closed(cell *x);
+
+/**@brief  true if 'x' is a proper list
+ * @return x   value to perform check on
+ * @return int zero if check fails, non zero if check passes */
+LIBLISP_API int  is_list(cell *x);
+
+/**@brief Make a proper list (terminate args with NULL) from a series
+ *        of list cells.
+ * @param  l  initialized lisp structure
+ * @param  x   first cell, there must be at least one argument
+ * @param  ... a list of arguments, each of them lisp cells, terminated
+ *             with a NULL
+ * @return cell* a new list of values */
+LIBLISP_API cell *mk_list(lisp *l, cell *x, ...);
+
+/**@brief  Make a lisp cell from an integer
+ * @param  l lisp environment for error handling and garbage collection
+ * @param  d value of new integer
+ * @return cell* new integer lisp cell */
+LIBLISP_API cell *mk_int(lisp *l, intptr_t d);
+
+/**@brief  Make a lisp cell from a float
+ * @param  l lisp environment for error handling and garbage collection
+ * @param  f value of new float
+ * @return cell* new float lisp cell */
+LIBLISP_API cell *mk_float(lisp *l, lfloat f);
+
+/**@brief  Make lisp cell from an I/O stream
+ * @param  l lisp environment for error handling and garbage collection
+ * @param  x I/O stream to add
+ * @return cell* new I/O lisp cell */
+LIBLISP_API cell *mk_io(lisp *l, io *x);
+
+/**@brief  Subroutine creation function. This allows the interpreter
+ *         to be extended with arbitrary lisp functions
+ * @param  l    lisp environment for error handling and garbage collection
+ * @param  p    function to make into a lisp subroutine usable by the
+ *              interpreter, the function should be of the "subr" type,
+ *              accepting a lisp* and an argument list.
+ * @param  fmt  format of function validation string, the can be NULL if
+ *              the function is to perform its own checking.
+ * @param  doc  documentation string, a string containing information about
+ *              the subroutine, this can be NULL.
+ * @return cell* returns a new lisp subroutine object */
+LIBLISP_API cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc);
+
+/**@brief  make a lisp cell/proc
+ * @param  l    lisp environment for error handling and garbage collection
+ * @param  args
+ * @param  code
+ * @param  env
+ * @param  doc
+ * @return cell* */
+LIBLISP_API cell *mk_proc(lisp *l, cell *args, cell *code, cell *env, cell *doc);
+
+/**@brief  make a lisp cell/fproc
+ * @param  l    lisp environment for error handling and garbage collection
+ * @param  args
+ * @param  code
+ * @param  env
+ * @param  doc
+ * @return cell* */
+LIBLISP_API cell *mk_fproc(lisp *l, cell *args, cell *code, cell *env, cell *doc);
+
+/**@brief  make lisp cell (string) from a string
+ * @param  l lisp environment for error handling and garbage collection
+ * @param  s a string, the lisp interpreter *will* try to free this
+ *           string when it decides to collect this cell. 
+ * @return cell* a new lisp cell containing a string */
+LIBLISP_API cell *mk_str(lisp *l, char *s);
+
+/*LIBLISP_API cell *mksym(lisp *l, char *s); // use intern instead to get a unique symbol*/
+
+/**@brief  make lisp cell from hash
+ * @param  l lisp environment for error handling and garbage collection
+ * @param  h an allocated hash table
+ * @return cell* a hash table accessible from a lisp interpreter */
+LIBLISP_API cell *mk_hash(lisp *l, hashtable *h);
+
+/**@brief  make a user defined type
+ * @param  l lisp environment for error handling and garbage collection
+ * @param  x    data field for the new user defined type
+ * @param  type the specific type to check, there is no way for this
+ *              function to check whether the data passed in is valid.
+ * @return cell* */
+LIBLISP_API cell *mk_user(lisp *l, void *x, intptr_t type);
+
+/**@brief  Get lisp length, this will get the length field of any object,
+ *         even if it does not make sense. The length field is currently
+ *         meaningless for integer and floating point types, but could be used
+ *         in the future to implement arrays of those types. For strings it
+ *         contains the length of that string, for functions it contains the
+ *         expected argument length, for lists it contains the length of that
+ *         list.
+ * @param  x        lisp cell to get the length field from
+ * @return unsigned the contents of the internal length field */
+LIBLISP_API unsigned get_length(cell *x);
+
+/**@brief  Get raw lisp value 
+ * @param  x    This can be of any lisp cell type.
+ * @return void*  It will always return the first value of the lisp cell, 
+ *              regardless of how much other data is in the lisp object. This
+ *              could be NULL, or anything that can fit into void*  */
+LIBLISP_API void  *get_raw(cell *x);
+
+/**@brief  cast *any* lisp cell to integer
+ * @param  x   This can be of any lisp cell type, but finds most use with
+ *             lisp integer types
+ * @return intptr_t an intptr_t of whatever was in the first cell of a lisp
+ *             object, for a lisp integer object, it will be the integer it
+ *             contains, for any other type it could be anything.*/
+LIBLISP_API intptr_t get_int(cell *x);
+
+/**@brief  get lisp cell to I/O stream
+ * @param  x   'x' must be a lisp object of an I/O port type
+ * @return io* */
+LIBLISP_API io *get_io(cell *x);
+
+/**@brief  get a lisp cell to a primitive func ptr
+ * @param  x
+ * @return subr */
+LIBLISP_API subr get_subr(cell *x);
+
+/**@brief  get args to a procedure/f-expr 
+ * @param  x
+ * @return cell* */
+LIBLISP_API cell *get_proc_args(cell *x);
+
+/**@brief  get code from a procedure/f-expr 
+ * @param  x
+ * @return cell* */
+LIBLISP_API cell *get_proc_code(cell *x);
+
+/**@brief  get procedure/f-expr environment
+ * @param  x
+ * @return cell* */
+LIBLISP_API cell *get_proc_env(cell *x);
+
+/**@brief  get the documentation string for a lambda/f-expr/subroutine
+ * @param  x
+ * @return cell* */
+LIBLISP_API cell *get_func_docstring(cell *x);
+
+/**@brief  get the type validation string for lambda/f-expr/subroutine
+ * @param  x
+ * @return char * */
+LIBLISP_API char *get_func_format(cell *x);
+
+/**@brief  get the user-defined-value identifier
+ * @param  x
+ * @return int */
+LIBLISP_API int   get_user_type(cell *x);
+
+/**@brief  get string from a lisp cell
+ * @param  x
+ * @return char* */
+LIBLISP_API char *get_str(cell *x);
+
+/**@brief  get string (symbol) from a lisp cell
+ * @param  x
+ * @return char* */
+LIBLISP_API char *get_sym(cell *x);
+
+/**@brief  get data from user defined type
+ * @param  x
+ * @return void* */
+LIBLISP_API void *get_user(cell *x);
+
+/**@brief  get floating point val from lisp cell
+ * @param  x
+ * @return lfloat */
+LIBLISP_API lfloat get_float(cell *x);
+
+/**@brief  get hash table from a lisp cell
+ * @param  x
+ * @return hashtable* */
+LIBLISP_API hashtable *get_hash(cell *x);
+
+/**@brief  float/int to int 
+ * @param  x
+ * @return intptr_t */
+LIBLISP_API intptr_t get_a2i(cell *x);
+
+/**@brief  float/int to float 
+ * @param  x
+ * @return lfloat */
+LIBLISP_API lfloat get_a2f(cell *x);
+
+/**@brief  return the nil symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_nil(void);
+
+/**@brief  return the tee symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_tee(void);
+
+/**@brief  return the quote symbol 
+ * @return cell* */
+LIBLISP_API cell *gsym_quote(void);
+
+/**@brief  return the if symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_iif(void);
+
+/**@brief  return the lambda symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_lambda(void);
+
+/**@brief  return the flambda symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_flambda(void);
+
+/**@brief  return the define symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_define(void);
+
+/**@brief  return the set! symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_set(void);
+
+/**@brief  return the progn symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_progn(void);
+
+/**@brief  return the cond symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_cond(void);
+
+/**@brief  return the error symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_error(void);
+
+/**@brief  return the let symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_let(void);
+
+/**@brief  return the return symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_ret(void);
+
+/**@brief  return the loop symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_loop(void);
+
+/**@brief  return the compile symbol
+ * @return cell* */
+LIBLISP_API cell *gsym_compile(void);
+
+/**@brief fix a lists length after calls to set_cda
+ * @param x 
+ * @param l */
+LIBLISP_API void fix_list_len(cell *x, size_t l); 
 
 /**@brief  return a new token representing a new type
  * @param  l lisp environment to put the new type in
@@ -959,7 +1278,7 @@ LIBLISP_API int lisp_validate_args(lisp *l, const char *msg, unsigned len, const
 /** @brief  validate a function (subroutine, procedure or f-expression) against
  *          the information it carries around within itself, if this is not
  *          available the function returns 1 as if the validation had been
- *          successful. this can either longjmp to an error handler if recover 
+ *          successful. this can either longjmp to an error handler if recover
  *          is non zero or return a integer.
  *  @param l       lisp environment for error handling
  *  @param x       function to validate
@@ -968,6 +1287,40 @@ LIBLISP_API int lisp_validate_args(lisp *l, const char *msg, unsigned len, const
  *                 of returning.
  *  @return 0 if invalid (or lonjmp if recover is non zero), 1 if valid***/
 int lisp_validate_cell(lisp *l, cell *x, cell *args, int recover);
+
+/**@brief mark a lisp cell (recursively) to prevent it being collected in
+ *        the next collection cycle.
+ * @param l  lisp environment, used for error handling and carrying around
+ *           any functions added for marking user defined types.
+ * @param op object to mark*/
+void gc_mark(lisp *l, cell* op);
+
+/**@brief Mark all reachable objects then perform a sweep. To prevent
+ *        an object from being collected during the next garbage collection
+ *        cycle, you can use gc_mark(). This will only prevent the objects
+ *        collection on this cycle, not the cycle after this one.
+ * @param l      the lisp environment to perform the mark and sweep in**/
+void gc_mark_and_sweep(lisp *l);
+
+/**@brief  Get the status of the garbage collector in a lisp environment,
+ *         that is whether it is currently enabled. It defaults to being
+ *         on.
+ * @param  l   the lisp environment to check in
+ * @return int non-zero if the garbage collector is enabled, zero if it
+ *             is disabled. */
+int  gc_status(lisp *l);
+
+/**@brief Turn the garbage collector on, this will allow the interpreter to
+ *        call gc_mark_and_sweep() and an indeterminate time in the future,
+ *        when it has become necessary to do so.
+ * @param l lisp environment to enable garbage collection in.*/
+void gc_on(lisp *l);
+
+/**@brief Turn off the garbage collector, objects can still be collected
+ *        at a later time, but that time will be postponed indefinitely until
+ *        gc_on() is called.
+ * @param l lisp environment to disable garbage collection in*/
+void gc_off(lisp *l);
 
 /************************ test environment ***********************************/
 

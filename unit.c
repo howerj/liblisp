@@ -244,7 +244,28 @@ int main(int argc, char **argv) {
                 test(((size_t)(lstrcatend(t, s2) - t)) == (strlen(s1) + strlen(s2)));
                 free(t);
 
-                /* @todo regex_match, djb2, xorshift128plus, knuth*/ 
+                size_t trinsz = 0;
+                uint8_t trout[128] = {0}, *trin = (uint8_t*)"aaabbbcdaacccdeeefxxxa";
+                tr_state *tr1;
+                state(tr1 = tr_new());
+                state(trinsz = strlen((char*)trin));
+                test(tr_init(tr1, "", (uint8_t*)"abc", (uint8_t*)"def") == TR_OK);
+                test(tr_block(tr1, trin, trout, trinsz) == trinsz);
+                test(!strcmp((char*)trout, "dddeeefdddfffdeeefxxxd"));
+                test(tr_init(tr1, "s", (uint8_t*)"abc", (uint8_t*)"def") == TR_OK);
+                state(memset(trout, 0, 128));
+                test(tr_block(tr1, trin, trout, trinsz) <= trinsz);
+                test(!strcmp((char*)trout, "defddfdeeefxxxd"));
+                state(tr_delete(tr1));
+
+
+                /*know collisions for the djb2 hash algorithm*/
+                test(djb2("heliotropes", strlen("heliotropes")) == djb2("neurospora", strlen("neurospora")));
+                test(djb2("depravement", strlen("depravement")) == djb2("serafins", strlen("serafins")));
+                /*should not collide*/
+                test(djb2("heliotropes", strlen("heliotropes")) != djb2("serafins", strlen("serafins")));
+
+                /* @todo regex_match, xorshift128plus, knuth*/ 
         }
 
         { /* hash.c hash table tests */
@@ -290,6 +311,7 @@ int main(int argc, char **argv) {
                 test(!lisp_set_logging(l, io_nout()));
                 return_if(!l);
                 test(!lisp_eval_string(l, ""));
+                test(is_int(lisp_eval_string(l, "2")));
                 test(get_int(lisp_eval_string(l, "(+ 2 2)")) == 4);
                 test(get_int(lisp_eval_string(l, "(* 3 2)")) == 6);
 
@@ -300,6 +322,9 @@ int main(int argc, char **argv) {
                 state(z = intern(l, lstrdup("bar")));
                 test(x == y && x != NULL);
                 test(x != z);
+
+                test(is_proc(lisp_eval_string(l, "(define square (lambda (x) (* x x)))")));
+                test(get_int(lisp_eval_string(l, "(square 4)")) == 16);
 
                 test(!is_list(cons(l, gsym_tee(), gsym_tee())));
                 test(is_list(cons(l,  gsym_tee(), gsym_nil())));

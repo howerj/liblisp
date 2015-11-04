@@ -28,7 +28,7 @@ static void gc_free(lisp *l, cell *ob) { /*assert(op)*/ /**< free a lisp cell*/
         }
 }
 
-static void gc_mark(lisp *l, cell* op) { /*assert(op);*/ /**<recursively mark reachable cells*/
+void gc_mark(lisp *l, cell* op) { /*assert(op);*/ /**<recursively mark reachable cells*/
         if(!op || op->uncollectable || op->mark) return;
         op->mark = 1;
         switch(op->type) {
@@ -95,6 +95,10 @@ cell *gc_add(lisp *l, cell* op) { /**< add a cell to the working set*/
         l->gc_stack[l->gc_stack_used - 1] = op; /**<anything reachable in here is not freed*/
         return op;
 }
+
+int  gc_status(lisp *l) { return !l->gc_off; }
+void gc_on(lisp *l)    { l->gc_off = 0; }
+void gc_off(lisp *l)   { l->gc_off = 1; }
 
 void gc_mark_and_sweep(lisp *l) {
         size_t i;

@@ -198,10 +198,6 @@ struct lisp {
  * @return cell* the added cell, or NULL when an internal allocation failed**/
 cell *gc_add(lisp *l, cell* op);
 
-/**@brief Mark all reachable objects then perform a sweep.
- * @param l      the lisp environment to perform the mark and sweep in**/
-void gc_mark_and_sweep(lisp *l);
-
 /**@brief This only performs a sweep, no objects are marked, this effectively
  *        invalidates the lisp environment!
  * @param l      the lisp environment to sweep and invalidate**/

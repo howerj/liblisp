@@ -317,6 +317,7 @@ int tr_init(tr_state *tr, char *mode, uint8_t *s1, uint8_t *s2) {
         unsigned i = 0;
         int c, d, cp, dp;
         assert(tr && mode && s1); /*s2 is optional*/
+        memset(tr, 0, sizeof(*tr));
         while((c = mode[i++]))
                 switch(c){
                         case 'x': break;
