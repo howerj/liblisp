@@ -5,21 +5,18 @@
  *            <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
  *  @email    howe.r.j.89@gmail.com
  *
- *  @todo     Each (major) function in each file should have tests written
- *            for it, this does (might) not include accessor functions like 
- *            "get_int".
  *  @todo     It is possible to test if a function throws an
  *            assertion when passed invalid data. If it does not throw
  *            an assertion it might irrevocably corrupt the program
  *            state.
+ *  @todo     This unit test framework should aim for 100% coverage in
+ *            each file, however difficult it might be, Gcov can be
+ *            used to get the current coverage percentage:
+ *            (see <https://gcc.gnu.org/onlinedocs/gcc/Gcov.html>).
  *  @note     This could be moved to "util.c" so it can be reused, the
  *            unit test functionality has been encapsulated in a series
  *            of functions here that should be quite module, if limited
  *            to single threaded applications.
- *  @note     Other functionality could include generating a random test
- *            vector, logging and more!
- *  @note     While it is not imperative that each test has the memory
- *            it uses released, it is desired.
  *  @note     All functions under test should have assertions turned on
  *            when they were compiled. This test suite can handle SIGABRT
  *            signals being generated, it will fail the unit that caused
@@ -160,9 +157,6 @@ int main(int argc, char **argv) {
                 }
 
         unit_test_start("liblisp");
-
-        /** @todo tr.c, io.c, valid.c, read.c, print.c, eval.c,
-         *        compile.c, subr.c, ... */
         { 
                 print_note("util.c");
 
@@ -244,6 +238,7 @@ int main(int argc, char **argv) {
                 test(((size_t)(lstrcatend(t, s2) - t)) == (strlen(s1) + strlen(s2)));
                 free(t);
 
+                /*test tr, or translate, functionality*/
                 size_t trinsz = 0;
                 uint8_t trout[128] = {0}, *trin = (uint8_t*)"aaabbbcdaacccdeeefxxxa";
                 tr_state *tr1;
@@ -258,7 +253,6 @@ int main(int argc, char **argv) {
                 test(!strcmp((char*)trout, "defddfdeeefxxxd"));
                 state(tr_delete(tr1));
 
-
                 /*know collisions for the djb2 hash algorithm*/
                 test(djb2("heliotropes", strlen("heliotropes")) == djb2("neurospora", strlen("neurospora")));
                 test(djb2("depravement", strlen("depravement")) == djb2("serafins", strlen("serafins")));
@@ -268,13 +262,70 @@ int main(int argc, char **argv) {
                 /* @todo regex_match, xorshift128plus, knuth*/ 
         }
 
+        { /*io.c test; @todo file input and output*/
+                io *in, *out;
+                print_note("io.c");
+
+                /*string input*/
+                state(in = io_sin("Hello\n"));
+                test(io_is_in(in));
+                test(io_getc(in) == 'H');
+                test(io_getc(in) == 'e');
+                test(io_getc(in) == 'l');
+                test(io_getc(in) == 'l');
+                test(io_getc(in) == 'o');
+                test(io_getc(in) == '\n');
+                test(io_getc(in) == EOF);
+                test(io_getc(in) == EOF);
+                test(!io_error(in));
+                test(io_seek(in, 0, SEEK_SET) >= 0);
+                test(io_getc(in) == 'H');
+                test(io_seek(in, 3, SEEK_SET) >= 0);
+                test(io_getc(in) == 'l');
+                test(io_ungetc('x', in) == 'x');
+                test(io_getc(in) == 'x');
+                test(io_getc(in) == 'o');
+                state(io_close(in));
+
+                /*string output*/
+                char *s = NULL;
+                state(in = io_sin("Hello,\n\tWorld!\n"));
+                test(!strcmp(s = io_getline(in), "Hello,"));
+                s = (free(s), NULL);
+                test(!strcmp(s = io_getline(in), "\tWorld!"));
+                s = (free(s), NULL);
+                test(!io_getline(in));
+                test(io_seek(in, 0, SEEK_SET) >= 0);
+                test(!strcmp(s = io_getdelim(in, EOF), "Hello,\n\tWorld!\n"));
+                s = (free(s), NULL);
+                state(io_close(in));
+
+                state(out = io_sout(calloc(1,1),1));
+                test(io_puts("Hello, World", out) != EOF);
+                test(!strcmp("Hello, World", io_get_string(out)));
+                test(io_putc('\n', out) != EOF);
+                test(!strcmp("Hello, World\n", io_get_string(out)));
+                test(io_seek(out, -6, SEEK_CUR) >= 0);
+                test(io_puts("Mars\n", out) != EOF);
+                test(!strcmp("Hello, Mars\n\n", io_get_string(out)));
+                free(io_get_string(out));
+                state(io_close(out));
+
+        }
+
         { /* hash.c hash table tests */
                 hashtable *h = NULL;
                 print_note("hash.c");
-                state(h = hash_create(64));
+                state(h = hash_create(1));
                 return_if(!h);
                 test(!hash_insert(h, "key1", "val1"));
                 test(!hash_insert(h, "key2", "val2"));
+                /* assuming the hash algorithm is djb2, then
+                 *  "heliotropes"  collides with "neurospora"
+                 *  "depravement"  collides with "serafins"
+                 *  "playwright"   collides with "snush" (for djb2a)
+                 * See:
+                 * <https://programmers.stackexchange.com/questions/49550/which-hashing-algorithm-is-best-for-uniqueness-and-speed> */
                 test(!hash_insert(h, "heliotropes", "val3")); 
                 test(!hash_insert(h, "neurospora",  "val4"));
                 test(!hash_insert(h, "depravement", "val5"));
@@ -297,6 +348,7 @@ int main(int argc, char **argv) {
                 test(!sstrcmp("val9", hash_lookup(h, "")));
                 test(!sstrcmp("",     hash_lookup(h, "nil")));
                 test(!sstrcmp("z",    hash_lookup(h, "a")));
+                test(!hash_get_load_factor(h) <= 0.75f);
 
                 state(hash_destroy(h));
         }
@@ -308,6 +360,7 @@ int main(int argc, char **argv) {
                 /*while unit testing eschews state being held across tests it is makes
                  *little sense in this case*/
                 state(l = lisp_init()); 
+                state(io_close(lisp_get_logging(l)));
                 test(!lisp_set_logging(l, io_nout()));
                 return_if(!l);
                 test(!lisp_eval_string(l, ""));
@@ -316,12 +369,13 @@ int main(int argc, char **argv) {
                 test(get_int(lisp_eval_string(l, "(* 3 2)")) == 6);
 
                 cell *x = NULL, *y = NULL, *z = NULL;
-
+                char *t = NULL;
                 state(x = intern(l, lstrdup("foo")));
-                state(y = intern(l, lstrdup("foo")));
+                state(y = intern(l, t = lstrdup("foo"))); /*this one needs freeing!*/
                 state(z = intern(l, lstrdup("bar")));
                 test(x == y && x != NULL);
                 test(x != z);
+                free(t); /*free the non-interned string*/
 
                 test(is_proc(lisp_eval_string(l, "(define square (lambda (x) (* x x)))")));
                 test(get_int(lisp_eval_string(l, "(square 4)")) == 16);
@@ -339,6 +393,6 @@ int main(int argc, char **argv) {
 
                 state(lisp_destroy(l));
         }
-        return unit_test_end("liblisp");; /*should be zero!*/
+        return unit_test_end("liblisp"); /*should be zero!*/
 }
 

@@ -11,17 +11,19 @@
  *        could go here as well. Giving meaning to different forms of parenthesis 
  *        (such as "{}", "<>", and "[]") could improve readability or be used
  *        for syntax.
- *  @note there is no option to strip colors of parsed input.
- *  **/
- 
-
+ *  @note there is no option to strip colors of parsed input. **/
 #include "liblisp.h"
 #include "private.h"
+#include <assert.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 
-static const int parse_strings = 1, parse_floats = 1, parse_ints = 1, parse_dotted = 1;
+/* These are options that control what gets parsed */
+static const int parse_strings = 1, /*parse strings? e.g. "Hello" */
+                 parse_floats  = 1, /*parse floating point numbers? e.g. 1.3e4 */
+                 parse_ints    = 1, /*parse integers? e.g. 3 */
+                 parse_dotted  = 1  /*parse dotted pairs? e.g. (a . b) */;
 
 static int comment(io *i) { /**@brief process a comment from I/O stream**/
         int c; 
@@ -29,7 +31,8 @@ static int comment(io *i) { /**@brief process a comment from I/O stream**/
         return c; 
 } 
 
-static void add_char(lisp *l, char ch)  { /**< add a char to the token buffer*/
+/**@brief add a char to the token buffer*/
+static void add_char(lisp *l, char ch)  { assert(l);
         char *tmp; 
         if(l->buf_used > l->buf_allocated - 1) {
                 l->buf_allocated = l->buf_used * 2;
@@ -42,19 +45,21 @@ static void add_char(lisp *l, char ch)  { /**< add a char to the token buffer*/
         l->buf[l->buf_used++] = ch; 
 }
 
-static char *new_token(lisp *l) { /**< allocate a new token*/
+/**@brief allocate a new token */
+static char *new_token(lisp *l) { assert(l);
         char *s;
         l->buf[l->buf_used++] = '\0';
         if(!(s = lstrdup(l->buf))) HALT(l, "%s", "out of memory");
         return s;
 }
 
-static void ungettok(lisp *l, char *token) { /**< push back a token*/
+/**@brief push back a single token */
+static void unget_token(lisp *l, char *token) { assert(l && token);
         l->token = token; 
         l->ungettok = 1; 
 }
 
-static char *gettoken(lisp *l, io *i) { /**< lexer*/
+static char *lexer(lisp *l, io *i) { assert(l && i); /**< lexer*/
         int ch, end = 0;
         l->buf_used = 0;
         if(l->ungettok)
@@ -80,7 +85,7 @@ static char *gettoken(lisp *l, io *i) { /**< lexer*/
         }
 }
 
-static cell *readstring(lisp *l, io* i) { /**< handle parsing a string*/
+static cell *read_string(lisp *l, io* i) { assert(l && i); /**< handle parsing a string*/
         int ch;
         char num[4] = {0,0,0,0};
         l->buf_used = 0;
@@ -123,18 +128,22 @@ static cell *readstring(lisp *l, io* i) { /**< handle parsing a string*/
 }
 
 static cell *readlist(lisp *l, io *i);
-cell *reader(lisp *l, io *i) { /*read in s-expr, this should be rewritten*/
-        char *token = gettoken(l, i), *fltend = NULL;
+cell *reader(lisp *l, io *i) { assert(l && i);
+        char *token = lexer(l, i), *fltend = NULL;
         double flt; 
         cell *ret;
         if(!token) return NULL;
         switch(token[0]) {
         case ')':  free(token); 
-                   RECOVER(l, "%r\"unmatched %s\"%t", "%r\")\"%t");
+                   RECOVER(l, "%r\"unmatched %s\"%t", "')'");
         case '(':  free(token); return readlist(l, i);
-        case '"':  if(!parse_strings) goto nostring; free(token); return readstring(l, i);
-        case '\'': free(token); return cons(l, gsym_quote(), cons(l, reader(l,i), gsym_nil()));
-        default:   
+        case '"':  if(!parse_strings) 
+                           goto nostring; 
+                   free(token); 
+                   return read_string(l, i);
+        case '\'': free(token); 
+                   return mk_list(l, gsym_quote(), reader(l, i), NULL);
+        default: 
         nostring:
                    if(parse_ints && is_number(token)) {
                            ret = mk_int(l, strtol(token, NULL, 0));
@@ -155,8 +164,9 @@ cell *reader(lisp *l, io *i) { /*read in s-expr, this should be rewritten*/
         return gsym_nil();
 }
 
-static cell *readlist(lisp *l, io *i) { /**< read in a list*/
-        char *token = gettoken(l, i), *stok;
+/**@brief read in a list*/
+static cell *readlist(lisp *l, io *i) { assert(l && i); 
+        char *token = lexer(l, i), *stok;
         cell *tmp;
         if(!token) return NULL;
         switch(token[0]){
@@ -164,7 +174,7 @@ static cell *readlist(lisp *l, io *i) { /**< read in a list*/
         case '.': if(!parse_dotted) 
                           goto nodots;
                   if(!(tmp = reader(l, i))) return NULL;
-                  if(!(stok = gettoken(l, i))) return NULL;
+                  if(!(stok = lexer(l, i))) return NULL;
                   if(strcmp(stok, ")")) {
                           free(stok);
                           RECOVER(l, "%y'invalid-cons%t %r\"%s\"%t", 
@@ -175,7 +185,7 @@ static cell *readlist(lisp *l, io *i) { /**< read in a list*/
                   return tmp;
         default:  break;
         }
-nodots: ungettok(l, token);
+nodots: unget_token(l, token);
         if(!(tmp = reader(l, i))) return NULL; /* force evaluation order */
         return cons(l, tmp, readlist(l, i));
 }

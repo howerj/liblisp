@@ -394,6 +394,20 @@ LIBLISP_API int io_is_null(io *n);
  *  @return int same as getc, char on success EOF on failure**/
 LIBLISP_API int io_getc(io *i);
 
+/** @brief Get the string from an I/O port, if a port is of an
+ *         output type if might have reallocated its string, so
+ *         this function should be used after each call that could have
+ *         modified the internal pointer (that is any write to that
+ *         string, output port).
+ *  @param  x     I/O port, of string type (asserts x && io_is_string(x))
+ *  @return char* internal string**/
+LIBLISP_API char *io_get_string(io *x);
+
+/** @brief  Get the internal file handle used by a file I/O port.
+ *  @param  x     I/O port, of a file type (asserts x && io_is_file(x))
+ *  @return FILE* internal file handle **/
+LIBLISP_API FILE *io_get_file(io *x);  
+
 /** @brief  single character of put-back into I/O stream
  *  @param  c   character to put back
  *  @param  i   I/O stream, must be set up for reading

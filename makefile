@@ -44,6 +44,10 @@ CC= gcc
 # function pointer, which causes warnings which are unnecessary.
 CFLAGS_RELAXED = -Wall -Wextra -g -fwrapv -O2 -Wmissing-prototypes
 CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
+# Add the following to CFLAGS_RELAXED:
+#  -fprofile-arcs -ftest-coverage
+# For profiling information, see:
+#  <https://gcc.gnu.org/onlinedocs/gcc/Gcov.html>
 
 # Compilation options
 

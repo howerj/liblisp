@@ -245,18 +245,23 @@ cell *assoc(cell *key, cell *alist) { assert(key && alist);
  *        inlining small procedures. This function could also
  *        use set_car to replace the current list to save memory.
  *  @bug  F-Expressions should be prevent compilation of their arguments
+ *  @bug  This function is not aware of lambdas or F-expressions and
+ *        will replace symbols in argument lists for definitions of those
+ *        functions.
  **/
 static cell *compiler(lisp *l, unsigned depth, cell *exp, cell *env) {
         size_t i;
         cell *head, *op, *tmp, *code = gsym_nil();
         if(depth > MAX_RECURSION_DEPTH)
                 RECOVER(l, "%y'recursion-depth-reached%t %d", depth);
+
         if(is_sym(car(exp)) && !is_nil(tmp = assoc(car(exp), env))) 
                 op = cdr(tmp);
         else if (is_cons(car(exp)))
                 op = compiler(l, depth + 1, car(exp), env);
         else 
                 op = car(exp);
+
         head = op = cons(l, op, gsym_nil());
         exp = cdr(exp);
         for(i = 1; !is_nil(exp); exp = cdr(exp), op = cdr(op), i++) {
@@ -461,7 +466,7 @@ static cell *evlis(lisp *l, unsigned depth, cell *exps, cell *env) { /**< evalua
         op = car(exps);
         exps = cdr(exps);
         head = op = cons(l, eval(l, depth+1, op, env), gsym_nil());
-        if(!is_nil(exps) && !is_cons(exps)) /*is there a better way of doing this?*/
+        if(!is_nil(exps) && !is_cons(exps))
                 goto fail;
         for(i = 1; !is_nil(exps); exps = cdr(exps), op = cdr(op), i++) {
                 if(!is_nil(cdr(exps)) && !is_cons(cdr(exps)))

@@ -46,6 +46,9 @@ int io_getc(io *i) { assert(i);
         return i->eof = 1, EOF;
 }
 
+char* io_get_string(io *x) { assert(x && io_is_string(x)); return x->p.str; }
+FILE* io_get_file(io *x)   { assert(x && io_is_file(x));   return x->p.file; }
+
 int io_ungetc(char c, io *i) { assert(i);
         if(i->ungetc) return i->eof = 1, EOF;
         i->c = c;

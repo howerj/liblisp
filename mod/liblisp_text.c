@@ -95,9 +95,6 @@ static cell* subr_tsort(lisp *l, cell *args) { /**@todo implement me!*/
         return gsym_nil();
 }
 
-static cell* subr_string_span(lisp *l, cell *args) {
-}
-
 static int initialize(void) {
         size_t i;
         assert(lglobal);

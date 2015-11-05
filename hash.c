@@ -2,15 +2,7 @@
  *  @brief      A small hash library
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com
- *
- *  @todo This hash library should be tested against the linear probing
- *        version to determine if there is any performance difference.
- *  @todo Resizing, deletion, ...
- *  @todo The lisp interpreter symbols a strings that are "interned",
- *        or there is a unique pointer representing each symbol, this
- *        means we could use a pointer instead of a string comparison.
- **/
+ *  @email      howe.r.j.89@gmail.com **/
 
 #include "liblisp.h"
 #include "private.h"

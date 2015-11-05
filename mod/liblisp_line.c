@@ -132,6 +132,7 @@ static struct module_subroutines { char *name, *validate, *docstring; subr p; } 
 static int initialize(void) {
         size_t i;
         io *e;
+        char *sep = "/";
         assert(lglobal);
         e = lisp_get_logging(lglobal);
 
@@ -141,9 +142,14 @@ static int initialize(void) {
         }
         /* This adds line editor functionality from the "libline" library,
          * this is a fork of the "linenoise" library.*/
+#ifdef __unix__
         homedir = getenv("HOME"); /*Unix home path*/
+#elif _WIN32
+        homedir = getenv("HOMEPATH");
+        sep = "\\";
+#endif
         if(homedir) /*if found put the history file there*/
-                histfile = VSTRCATSEP("/", homedir, histfile);
+                histfile = VSTRCATSEP(sep, homedir, histfile);
         if(!histfile)
                 PRINT_ERROR("\"%s\"", "VSTRCATSEP allocation failed");
         lisp_set_line_editor(lglobal, line_editing_function);
@@ -176,11 +182,14 @@ static void destruct(void)  {
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
         UNUSED(hinstDLL); UNUSED(lpvReserved);
         switch (fdwReason) {
-            case DLL_PROCESS_ATTACH: initialize(); break;
-            case DLL_PROCESS_DETACH: break;
-            case DLL_THREAD_ATTACH:  break;
-            case DLL_THREAD_DETACH:  break;
-            default: break;
+        case DLL_PROCESS_ATTACH: 
+                initialize(); 
+                printf("warning: the line editor module is very buggy under Windows\n");
+                break;
+        case DLL_PROCESS_DETACH: break;
+        case DLL_THREAD_ATTACH:  break;
+        case DLL_THREAD_DETACH:  break;
+        default: break;
         }
         return TRUE;
 }

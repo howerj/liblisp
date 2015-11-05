@@ -1039,12 +1039,12 @@ static cell *subr_format(lisp *l, cell *args) {
         if(!is_nil(args))
                 goto fail;
         if(o)
-                io_puts(t->p.str, o);
-        cret = mk_str(l, t->p.str); /*t->p.str is not freed by io_close*/
+                io_puts(io_get_string(t), o);
+        cret = mk_str(l, io_get_string(t)); /*t->p.str is not freed by io_close*/
         io_close(t);
         return cret;
 argfail: RECOVER(l, "\"expected () (io? str any...)\"\n '%S", args);
-fail:   free(t->p.str);
+fail:   free(io_get_string(t));
         io_close(t);
         RECOVER(l, "\"format error\"\n %S", args);
         return gsym_error();
