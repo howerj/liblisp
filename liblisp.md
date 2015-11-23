@@ -236,6 +236,32 @@ matching.
 
 Currently the interpreter cannot print out expressions 
 
+### Design Faults
+
+* Using the C stack
+
+Instead of using the C stack for the interpreter stack it would have been much
+better to use a heap allocated stack, this would mean closure could be
+implemented easily and portably. Not only this but the stack could grow without
+worrying about overflow.
+
+* Making a pure interpreter instead of a register machine
+
+A pure interpreter is easy to implement, but limited, it would be better to
+make a lisp interpreter based around a register machine built for executing
+lisp.
+
+* Using pointers
+
+If indexes into arrays (or data and function pointers) it would be easier to
+store program state as an image, which is a nice feature. It would mean that
+memory usage could be brought down a lot in a *portable* manner. 
+
+* F-Expressions
+
+F-Expressions are very easy to implement, but very difficult to use, a proper
+macro system should be implemented instead of relying on F-Expressions.
+
 ### Testing and bug mitigation
 
 There are a few methods used (or aspired to) in this interpreter when it comes

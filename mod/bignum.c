@@ -1,3 +1,9 @@
+/**@file  bignum.c
+ * @brief An arbitrary precision arithmetic library
+ * @todo  Finish library; make more efficient, convert other bases to and
+ *        from internal base, use an internal base that is a power of 2, not
+ *        10. Fix memory leaks. **/
+
 #ifndef BIGNUM_H
 #define BIGNUM_H
 #ifdef __cplusplus

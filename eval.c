@@ -222,6 +222,8 @@ cell *extend_top(lisp *l, cell *sym, cell *val) { assert(l && sym && val);
         return val;
 }
 
+/**@todo an rassoc, that would search for a value and return a key, would be
+ *       very useful*/
 cell *assoc(cell *key, cell *alist) { assert(key && alist);
         cell *lookup;
         for(;!is_nil(alist); alist = cdr(alist))
@@ -403,7 +405,9 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env) { assert(l);
                 }
                 /**@bug  loop/return and tail call optimization do not mix
                  * @todo improve looping constructs, also the current lambda
-                 *       could be stored and used. */
+                 *       could be stored and used. "while" should really
+                 *       replace these looping constructions along with
+                 *       macros. */
                 if(first == l->progn) { 
                         cell *head = exp, *tmp;
                         if(is_nil(exp)) return l->nil;
