@@ -159,6 +159,7 @@ int main(int argc, char **argv) {
         unit_test_start("liblisp");
         { 
                 print_note("util.c");
+                /**@todo lltostr*/
 
                 test(ilog2(0)   == INT32_MIN);
                 test(ilog2(1)   == 0);

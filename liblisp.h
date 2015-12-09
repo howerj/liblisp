@@ -250,6 +250,19 @@ LIBLISP_API uint64_t xorshift128plus(uint64_t s[2]);
  *  @return int  positive more '(', negative more ')', zero == balanced**/
 LIBLISP_API int balance(const char *sexpr);
 
+/** @brief reverse a block of characters *in place* of a given length
+ *  @param  char* character string to reverse
+ *  @param  len   length of block to reverse
+ *  @return char* reversed block **/
+char *breverse(char *s, size_t len);
+
+/** @brief  convert an integer into a string in a given base, the string
+ *          should be freed when no longer needed.
+ *  @param  d     an integer!
+ *  @param  base  base to print in assert(base > 1 && base < 37);
+ *  @return char* a string representing the number or NULL on out of memory**/
+LIBLISP_API char* lltostr(intptr_t d, unsigned base);
+
 /* These bit field functions have been adapted from this post on stackoverflow:
  * https://stackoverflow.com/questions/1590893/error-trying-to-define-a-1-024-bit-128-byte-bit-field
  * They could be inlined in this header.*/
@@ -437,11 +450,12 @@ LIBLISP_API char *io_getline(io *i);
  *  @return char*  A character delimited record**/
 LIBLISP_API char *io_getdelim(io *i, int delim);
 
-/** @brief  print an integer to an I/O stream
+/** @brief  print an integer to an I/O stream (base 10)
  *  @param  d   an integer!
  *  @param  o   I/O stream, must be set up for writing
  *  @return int 0 on success, EOF on failure**/
 LIBLISP_API int io_printd(intptr_t d, io *o);
+
 
 /** @brief  print a floating point number to an I/O stream
  *  @param  f   a floating point number

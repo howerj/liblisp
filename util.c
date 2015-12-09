@@ -253,6 +253,32 @@ expon:  buf = buf + i + 1;
         return 0;
 }
 
+char *breverse(char *s, size_t len) {
+        char c;
+        size_t i = 0;
+        do {
+                c = s[i];
+                s[i] = s[len - i];
+                s[len - i] = c;
+        } while(i++ < (len / 2));
+        return s;
+}
+
+char *lltostr(intptr_t d, unsigned base) { assert(base > 1 && base < 37);
+        intptr_t i = 0, neg = d;
+        uint64_t x = d;
+        char s[64 + 2] = "";
+        static const char conv[] = "0123456789abcdefghijklmnopqrstuvwxzy";
+        if(x > INT64_MAX)
+                x = -x;
+        do {
+                s[i++] = conv[x % base];
+        } while((x /= base) > 0);
+        if(neg < 0)
+                s[i++] = '-';
+        return lstrdup(breverse(s, i-1));
+}
+
 /* bit field functionality */
 
 bitfield *bit_new(size_t maxbits) { assert(maxbits > 0);

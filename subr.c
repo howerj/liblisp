@@ -46,6 +46,7 @@
 #define SUBROUTINE_XLIST\
   X("assoc",       subr_assoc,     "A c",  "lookup a variable in an 'a-list'")\
   X("all-symbols", subr_all_syms,  "",     "get a hash of all the symbols encountered so far")\
+  X("base",        subr_base,      "d d",  "convert a integer into a string in a base")\
   X("car",         subr_car,       "c",    "return the first object in a list")\
   X("cdr",         subr_cdr,       "c",    "return every object apart from the first in a list")\
   X("closed?",     subr_is_closed, NULL,   "is a object closed?")\
@@ -836,18 +837,13 @@ static cell *subr_reverse(lisp *l, cell *args) {
         switch(car(args)->type) {
         case STRING:
                 {       
-                        char *s = lstrdup(get_str(car(args))), c;
-                        size_t i = 0, len;
+                        char *s = lstrdup(get_str(car(args)));
+                        size_t len;
                         if(!s) HALT(l, "\"%s\"", "out of memory");
                         if(!cklen(args, 0))
                                 return mk_str(l, s);
-                        len = get_length(car(args)) - 1;
-                        do {
-                                c = s[i];
-                                s[i] = s[len - i];
-                                s[len - i] = c;
-                        } while(i++ < (len / 2));
-                        return mk_str(l, s);
+                        len = get_length(car(args));
+                        return mk_str(l, breverse(s, len -1));
                 } break;
         case CONS:
                 {
@@ -1097,7 +1093,7 @@ static cell *subr_validation_string(lisp *l, cell *args) {
 }
 
 static cell *subr_is_closed(lisp *l, cell *args) {  UNUSED(l);
-        if(!cklen(args, 1)) RECOVER(l, "\"expected (any)\"\n '%S", args);
+        if(!cklen(args, 1)) RECOVER(l, "%r\"expected (any)\"%t\n '%S", args);
         return is_closed(car(args)) ? gsym_tee() : gsym_nil();
 }
 
@@ -1118,5 +1114,12 @@ static cell *subr_foldl(lisp *l, cell *args) {
                 ret = eval(l, l->cur_depth, mk_list(l, f, car(tmp), ret, NULL) , l->cur_env);
         }
         return ret;
+}
+
+static cell *subr_base(lisp *l, cell *args) {
+        intptr_t base = get_int(CADR(args));
+        if(base < 2 || base > 36)
+                RECOVER(l, "%r\"base < 2 || base > 36\"%t\n '%S", args);
+        return mk_str(l, lltostr(get_int(car(args)), base));
 }
 
