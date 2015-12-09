@@ -266,10 +266,10 @@ char *breverse(char *s, size_t len) {
 
 char *lltostr(intptr_t d, unsigned base) { assert(base > 1 && base < 37);
         intptr_t i = 0, neg = d;
-        uint64_t x = d;
+        uintptr_t x = d;
         char s[64 + 2] = "";
         static const char conv[] = "0123456789abcdefghijklmnopqrstuvwxzy";
-        if(x > INT64_MAX)
+        if(x > INTPTR_MAX)
                 x = -x;
         do {
                 s[i++] = conv[x % base];
