@@ -159,7 +159,6 @@ int main(int argc, char **argv) {
         unit_test_start("liblisp");
         { 
                 print_note("util.c");
-                /**@todo lltostr*/
 
                 test(ilog2(0)   == INT32_MIN);
                 test(ilog2(1)   == 0);
@@ -191,7 +190,7 @@ int main(int argc, char **argv) {
                 test(balance("(a (b) c (d (e (f) \")\" g)))") == 0);
                 test(balance("((a b) c") == 1);
 
-                bitfield *b = NULL;
+                bitfield *a = NULL, *b = NULL;
                 state(b = bit_new(1024));
                 return_if(!b);
 
@@ -205,6 +204,11 @@ int main(int argc, char **argv) {
                 test(!bit_get(b, 37));
                 test(!bit_get(b, 0));
 
+                state(a = bit_copy(b));
+
+                test(!bit_compare(a, b));
+
+                bit_delete(a);
                 bit_delete(b);
 
                 test(!is_fnumber(""));

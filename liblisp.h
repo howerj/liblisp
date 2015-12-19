@@ -258,10 +258,19 @@ char *breverse(char *s, size_t len);
 
 /** @brief  convert an integer into a string in a given base, the string
  *          should be freed when no longer needed.
- *  @param  d     an integer!
+ *  @warning The current implementation assumes a twos compliment
+ *           representation of signed integers
+ *  @param  d     an signed integer!
  *  @param  base  base to print in assert(base > 1 && base < 37);
  *  @return char* a string representing the number or NULL on out of memory**/
-LIBLISP_API char* lltostr(intptr_t d, unsigned base);
+LIBLISP_API char* dtostr(intptr_t d, unsigned base);
+
+/** @brief  convert an integer into a string in a given base, the string
+ *          should be freed when no longer needed.
+ *  @param  u     an unsigned integer!
+ *  @param  base  base to print in assert(base > 1 && base < 37);
+ *  @return char* a string representing the number or NULL on out of memory**/
+LIBLISP_API char* utostr(uintptr_t u, unsigned base);
 
 /* These bit field functions have been adapted from this post on stackoverflow:
  * https://stackoverflow.com/questions/1590893/error-trying-to-define-a-1-024-bit-128-byte-bit-field
@@ -296,6 +305,19 @@ LIBLISP_API void bit_toggle(bitfield *bf, size_t idx);
  *  @param  idx which bit to check
  *  @return int status of bit set**/
 LIBLISP_API int bit_get(bitfield *bf, size_t idx);
+
+/** @brief  compare two bit fields much in the same way as memcmp
+ *  @param  a bit field to compare
+ *  @param  b another bit field to compare
+ *  @return int 0 if bit fields are equal, greater than one if bit 
+ *          field 'a' is bigger, less than one if bit field 'b' is
+ *          bigger **/
+int bit_compare(bitfield *a, bitfield *b);
+
+/** @brief  copy a bit field into a new bit field
+ *  @param  bf the bitfield to copy
+ *  @return bitfield* a copied bit field, or NULL on failure **/
+bitfield *bit_copy(bitfield *bf);
 
 /************************** hash library *************************************/
 

@@ -50,7 +50,7 @@ static int print_escaped_string(lisp *l, io *o, unsigned depth, char *s) {
         return io_putc('"', o);
 }
 
-int lisp_printf(lisp*l, io *o, unsigned depth, char *fmt, ...) {
+int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...) {
         va_list ap;
         intptr_t d;
         unsigned dep;

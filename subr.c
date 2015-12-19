@@ -955,7 +955,7 @@ static cell *subr_format(lisp *l, cell *args) {
          *        as printing out escaped strings. */
         cell *cret;
         io *o = NULL, *t = NULL;
-        char *fmt, c;
+        char *fmt, c, *ts;
         int ret = 0, pchar;
         intptr_t d;
         size_t len;
@@ -969,7 +969,7 @@ static cell *subr_format(lisp *l, cell *args) {
         if(len < 1 || !is_asciiz(car(args)))
                 goto fail;
         if(!(t = io_sout(calloc(2, 1), 2)))
-                HALT(l, "\"%s\"", "out of memory");
+                HALT(l, "%r\"%s\"%t", "out of memory");
         fmt = get_str(car(args));
         args = cdr(args);
         while((c = *fmt++))
@@ -1020,8 +1020,26 @@ static cell *subr_format(lisp *l, cell *args) {
                                            io_putc(pchar, t);
                                    args = cdr(args);
                                    break;
-                     /* case 'u': // unsigned */
-                     /* case 'x': // hex */
+                        case 'x':  if(is_nil(args) || !is_int(car(args)))
+                                           goto fail;
+                                   if(!(ts = dtostr(get_int(car(args)), 16u)))
+                                        HALT(l, "%r\"%s\"%t", "out of memory");
+                                   io_puts(ts[0] == '-' ? "-0x" : "0x", t);
+                                   ret = io_puts(ts[0] == '-' ? ts+1 : ts, t);
+                                   free(ts);
+                                   args = cdr(args);
+                                   break;
+                        /**@todo 'u' should be a type qualifier, so it can
+                         * print out unsigned hexadecimal, octal or decimal
+                         * strings*/
+                        case 'u':  if(is_nil(args) || !is_int(car(args)))
+                                           goto fail;
+                                   if(!(ts = utostr(get_int(car(args)), 10u)))
+                                        HALT(l, "%r\"%s\"%t", "out of memory");
+                                   ret = io_puts(ts, t);
+                                   free(ts);
+                                   args = cdr(args);
+                                   break;
                      /* case 'o': // octal */
                      /* case 'b': // binary */
                      /* case '$': // literal '$'*/
@@ -1120,6 +1138,6 @@ static cell *subr_base(lisp *l, cell *args) {
         intptr_t base = get_int(CADR(args));
         if(base < 2 || base > 36)
                 RECOVER(l, "%r\"base < 2 || base > 36\"%t\n '%S", args);
-        return mk_str(l, lltostr(get_int(car(args)), base));
+        return mk_str(l, dtostr(get_int(car(args)), base));
 }
 

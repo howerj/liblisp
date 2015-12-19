@@ -264,11 +264,11 @@ char *breverse(char *s, size_t len) {
         return s;
 }
 
-char *lltostr(intptr_t d, unsigned base) { assert(base > 1 && base < 37);
+static const char conv[] = "0123456789abcdefghijklmnopqrstuvwxzy";
+char *dtostr(intptr_t d, unsigned base) { assert(base > 1 && base < 37);
         intptr_t i = 0, neg = d;
         uintptr_t x = d;
         char s[64 + 2] = "";
-        static const char conv[] = "0123456789abcdefghijklmnopqrstuvwxzy";
         if(x > INTPTR_MAX)
                 x = -x;
         do {
@@ -279,11 +279,22 @@ char *lltostr(intptr_t d, unsigned base) { assert(base > 1 && base < 37);
         return lstrdup(breverse(s, i-1));
 }
 
+char *utostr(uintptr_t u, unsigned base) { assert(base > 1 && base < 37);
+        uintptr_t i = 0;
+        char s[64 + 1] = "";
+        do {
+                s[i++] = conv[u % base];
+        } while((u /= base));
+        return lstrdup(breverse(s, i-1));
+}
+
 /* bit field functionality */
+
+static inline size_t bsize(size_t bits) { return (bits / CHAR_BIT) + !!(bits % CHAR_BIT); }
 
 bitfield *bit_new(size_t maxbits) { assert(maxbits > 0);
         bitfield *bf;
-        size_t al = (maxbits / CHAR_BIT) + !!(maxbits % CHAR_BIT);
+        size_t al = bsize(maxbits);
         if(!(bf = calloc(sizeof(*bf) + al, 1))) 
                 return NULL;
         bf->max = maxbits;
@@ -308,6 +319,19 @@ void bit_toggle(bitfield *bf, size_t idx) { assert(bf && idx < bf->max);
 
 int bit_get(bitfield *bf, size_t idx) { assert(bf && (idx < bf->max));
         return bf->field[idx / CHAR_BIT] & (1u << (idx % CHAR_BIT)) ? 1 : 0; 
+}
+
+int bit_compare(bitfield *a, bitfield *b) { assert(a && b);
+        int r = memcmp(a->field, b->field, MIN(bsize(a->max), bsize(b->max)));
+        if(r == 0 && a->max != b->max) 
+                r = a->max > b->max ? 1 : -1;
+        return r;
+}
+
+bitfield *bit_copy(bitfield *bf) { assert(bf);
+        bitfield *n = bit_new(bf->max);
+        memcpy(n->field, bf->field, bsize(bf->max));
+        return n;
 }
 
 /*tr functionality*/
