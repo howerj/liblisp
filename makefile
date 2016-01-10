@@ -214,8 +214,9 @@ doc: lib$(TARGET).htm doxygen
 
 # From <http://www.stack.nl/~dimitri/doxygen/>
 doxygen: 
-	doxygen -g 
-	doxygen Doxyfile 2> doxygen.log
+	#doxygen -g  # old method
+	#doxygen Doxyfile 2> doxygen.log
+	doxygen doxygen.conf
 
 ### distribution and installation ############################################
 

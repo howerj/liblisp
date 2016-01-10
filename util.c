@@ -14,7 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct bitfield { /**< a structure representing a bitfield*/
+/**@brief a structure representing a bitfield */
+struct bitfield { 
         size_t max;  /**< maximum number of bits in the bitfield*/
         unsigned char field[]; /**< the bitfield*/
 }; 

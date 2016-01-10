@@ -251,7 +251,7 @@ LIBLISP_API uint64_t xorshift128plus(uint64_t s[2]);
 LIBLISP_API int balance(const char *sexpr);
 
 /** @brief reverse a block of characters *in place* of a given length
- *  @param  char* character string to reverse
+ *  @param  s     character string to reverse
  *  @param  len   length of block to reverse
  *  @return char* reversed block **/
 char *breverse(char *s, size_t len);
@@ -1467,7 +1467,7 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
  *          line information into the macro.
  *  @bug    This macro needs a better name as it is not a generic validation
  *          function.
- *  @todo   This needs a macro #ifdef to disable validation if needed.
+ *  @todo   This needs a macro "ifdef" to disable validation if needed.
  *  LISP    lisp environment
  *  LEN     number of
  *  FMT     format string described in lisp_validate_args comment
@@ -1513,10 +1513,10 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
 #define UNUSED(X)    ((void)(X)) /**< unused variable*/
 
 /* The following macros are helper macros for lisp list access */
-#define CAAR(X)    car(car((X)))
-#define CADR(X)    car(cdr((X)))
-#define CDAR(X)    cdr(car((X)))
-#define CDDR(X)    cdr(cdr((X)))
+#define CAAR(X)    car(car((X))) /**< ((1))      ==> 1*/
+#define CADR(X)    car(cdr((X))) /**< (1 2 )     ==> 2*/
+#define CDAR(X)    cdr(car((X))) /**< ((1 2 3) ) ==> (2 3) */
+#define CDDR(X)    cdr(cdr((X))) /**< (1 2 3 4)  ==> (3 4)*/
 #define CADAR(X)   car(cdr(car((X))))
 #define CADDR(X)   car(cdr(cdr((X))))
 #define CDDDR(X)   cdr(cdr(cdr((X))))

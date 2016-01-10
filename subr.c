@@ -164,6 +164,8 @@ static struct all_subroutines { subr p; const char *name, *validate, *docstring;
         X("*float-radix*",  FLT_RADIX)    X("*float-rounds*", FLT_ROUNDS)
 
 #define X(NAME, VAL) { NAME, VAL }, 
+/**@brief A list of all integer values to be made available to the
+ *        interpreter as lisp objects */
 static struct integer_list { char *name; intptr_t val; } integers[] = {
         INTEGER_XLIST
         {NULL, 0}
@@ -177,6 +179,8 @@ static struct integer_list { char *name; intptr_t val; } integers[] = {
 
 #define X(NAME, VAL) { NAME, VAL },
 static struct float_list { char *name; lfloat val; } floats[] = {
+/**@brief A list of all floating point values to be made available to the
+ *        interpreter as lisp objects */
         FLOAT_XLIST
         {NULL, 0.0 }
 };

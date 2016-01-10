@@ -90,6 +90,10 @@ struct cell {
                              c99 does not quite work here*/
 } /*__attribute__((packed)) <- saves a fair bit of space */;  
 
+/** @brief This describes an entry in a hash table, which is an
+ *         implementation detail of the hash, so should not be
+ *         counted upon. It represents a node in a chained hash
+ *         table */
 typedef struct hashentry {      /**< linked list of entries in a bin*/
         char *key;              /**< ASCII nul delimited string*/
         void *val;              /**< arbitrary value*/
@@ -108,6 +112,8 @@ struct hashtable {                /**< a hash table*/
         void *foreach_cur;    /**< current entry in foreach loop*/
 };
 
+/** @brief A structure that is used to wrap up the I/O operations 
+ *         of the lisp interpreter. */
 struct io {
         union { FILE *file; char *str; } p; /**< the actual file or string*/
         size_t position, /**< current position, used for string*/
@@ -126,6 +132,9 @@ struct io {
         char c; /**< one character of push back*/
 };
 
+/** @brief The internal state used to translate a block of memory 
+ *         using the "tr" routines, which behave similarly to the
+ *         Unix "tr" command. */
 struct tr_state {
         int set_squ[UINT8_MAX+1], /**< squeeze a character sequence?*/
             set_del[UINT8_MAX+1], /**< delete a character?*/
@@ -137,18 +146,23 @@ struct tr_state {
                 previous_char; /**< previous translation char, for squeeze*/
 };
 
+/** @brief Type used to form linked list of all allocations */
 typedef struct gc_list { 
         cell *ref; /**< reference to cell for the garbage collector to act on*/
         struct gc_list *next; /**< next in list*/
-} gc_list; /**< type used to form linked list of all allocations*/
+} gc_list; 
 
-typedef struct userdef_funcs { 
+/** @brief functions the interpreter uses for user defined types */
+typedef struct { 
         ud_free   free;  /**< to free a user defined type*/
         ud_mark   mark;  /**< to mark a user defined type*/
         ud_equal  equal; /**< to compare two user defined types*/
         ud_print  print; /**< to print two user defined types*/
-} userdef_funcs; /**< functions the interpreter uses for user defined types*/
+} userdef_funcs; 
 
+/** @brief The state for a lisp interpreter, multiple such instances
+ *         can run at the same time. It contains everything needed
+ *         to run a complete lisp environment. */
 struct lisp {
         jmp_buf recover; /**< longjmp when there is an error */
 #define X(CNAME, LNAME) * CNAME,

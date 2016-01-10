@@ -42,10 +42,11 @@ static double timer;
 static clock_t start_time, end_time;
 static time_t rawtime;
 
-int color_on = 0, jmpbuf_active = 0;
-jmp_buf current_test;
-unsigned current_line = 0;
-const char *current_expr;
+int color_on = 0,      /**< Has ANSI coloring been turned on?*/
+    jmpbuf_active = 0; /**< is current_test in use?*/
+jmp_buf current_test;      /**< Error handling state needed to handle SIGABRT */
+unsigned current_line = 0; /**< Current line of test*/
+const char *current_expr;  /**< Current expression being tested*/
 
 static const char *reset(void)  { return color_on ? "\x1b[0m"  : ""; }
 static const char *red(void)    { return color_on ? "\x1b[31m" : ""; }

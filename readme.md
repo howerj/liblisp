@@ -1,5 +1,11 @@
 readme.md {#mainpage}
 =========
+
+A small lisp interpreter library and wrapper written in C. The documentation 
+is in [liblisp.md][], this contains information on how to build and run the
+interpreter. The project runs (and has been tested under) Linux and Windows.
+
+
          _ _ _     _ _           
         | (_) |   | (_)          
         | |_| |__ | |_ ___ _ __  
@@ -10,9 +16,6 @@ readme.md {#mainpage}
                           |_|    
 
 
-A small lisp interpreter library and wrapper written in C. The documentation 
-is in [liblisp.md][], this contains information on how to build and run the
-interpreter. The project runs (and has been tested under) Linux and Windows.
 
 * Author:
   - Richard James Howe

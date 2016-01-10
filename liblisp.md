@@ -1,6 +1,9 @@
 liblisp.md 
 ==========
-   
+
+A small and extensible lisp interpreter and library.
+
+  
             _ _ _     _ _           
            | (_) |   | (_)          
            | |_| |__ | |_ ___ _ __  
@@ -11,7 +14,6 @@ liblisp.md
                              |_|    
    
    
-# A small and extensible lisp interpreter and library
 ## Table of contents
 
 1.  [Introduction](#Introduction)
