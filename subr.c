@@ -690,6 +690,7 @@ static cell* subr_coerce(lisp *l, cell *args) {
                     return mk_int(l, d);
         case CONS:  if(is_str(from)) { /*string to list of chars*/
                             size_t fromlen = get_length(from);
+                            /**@bug (explode "") = nil, (implode nil) = error*/
                             head = x = cons(l, gsym_nil(), gsym_nil());
                             for(i = 0; i < fromlen; i++) {
                                 char c[2] = {'\0', '\0'};

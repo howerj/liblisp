@@ -373,6 +373,17 @@ Or in C++:
 The executable can read from files, "stdin" or evaluating strings. There is a
 manual page for this interpreter, unlike for the header.
 
+## What not to do
+
+The following two links provide examples of what *not* to do, in order to
+improve this language implementation, the following should be taken into
+account when reviewing the internals and how the language behaves:
+
+* <http://phpsadness.com/>
+* <http://eev.ee/blog/2012/04/09/php-a-fractal-of-bad-design/>
+
+For example, the consistency of the language could be improved.
+
 <div id='Manual'/>
 # Manual
 

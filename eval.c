@@ -246,6 +246,7 @@ cell *assoc(cell *key, cell *alist) { assert(key && alist);
  *        optimizing called procedures, constant folding and
  *        inlining small procedures. This function could also
  *        use set_car to replace the current list to save memory.
+ *  @bug  This function really, really needs fixing.
  *  @bug  F-Expressions should be prevent compilation of their arguments
  *  @bug  This function is not aware of lambdas or F-expressions and
  *        will replace symbols in argument lists for definitions of those
