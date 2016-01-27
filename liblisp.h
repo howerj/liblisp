@@ -312,12 +312,12 @@ LIBLISP_API int bit_get(bitfield *bf, size_t idx);
  *  @return int 0 if bit fields are equal, greater than one if bit 
  *          field 'a' is bigger, less than one if bit field 'b' is
  *          bigger **/
-int bit_compare(bitfield *a, bitfield *b);
+LIBLISP_API int bit_compare(bitfield *a, bitfield *b);
 
 /** @brief  copy a bit field into a new bit field
  *  @param  bf the bitfield to copy
  *  @return bitfield* a copied bit field, or NULL on failure **/
-bitfield *bit_copy(bitfield *bf);
+LIBLISP_API bitfield *bit_copy(bitfield *bf);
 
 /************************** hash library *************************************/
 

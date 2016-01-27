@@ -69,57 +69,68 @@ static int print_type_string(lisp *l, const char *msg, unsigned len, const char 
         return lisp_printf(l, e, 1, ") %S)\n", args);
 }
 
-size_t validate_arg_count(const char *fmt) {
-        size_t i = 0;
-        if(!fmt) return 0;
-        for(;*fmt; i++) {
-                while(*fmt &&  isspace(*fmt++));
-                while(*fmt && !isspace(*fmt++));
-        }
-        return i;
+size_t validate_arg_count(const char *fmt)
+{
+	size_t i = 0;
+	if (!fmt)
+		return 0;
+	for (; *fmt; i++) {
+		while (*fmt && isspace(*fmt++)) ;
+		while (*fmt && !isspace(*fmt++)) ;
+	}
+	return i;
 }
 
-int lisp_validate_cell(lisp *l, cell *x, cell *args, int recover) {
-        char *fmt, *msg;
-        cell *ds;
-        assert(x && is_func(x));
-        ds = get_func_docstring(x);
-        msg = get_str(ds);
-        msg = msg ? msg : "";
-        fmt = get_func_format(x);
-        if(!fmt)
-                return 1; /*as there is no validation string, its up to the function*/
-        return lisp_validate_args(l, msg, get_length(x), fmt, args, recover);
+int lisp_validate_cell(lisp * l, cell * x, cell * args, int recover)
+{
+	char *fmt, *msg;
+	cell *ds;
+	assert(x && is_func(x));
+	ds = get_func_docstring(x);
+	msg = get_str(ds);
+	msg = msg ? msg : "";
+	fmt = get_func_format(x);
+	if (!fmt)
+		return 1;	/*as there is no validation string, its up to the function */
+	return lisp_validate_args(l, msg, get_length(x), fmt, args, recover);
 }
 
-int lisp_validate_args(lisp *l, const char *msg, unsigned len, const char *fmt, cell *args, int recover) {
-        assert(l && fmt && args && msg);
-        int v = 1;
-        char c;
-        const char *fmt_head;
-        cell *args_head, *x;
-        assert(l && fmt && args);
-        args_head = args;
-        fmt_head = fmt;
-        if(!cklen(args, len)) goto fail;
-        while((c = *fmt++)) {
-                if(is_nil(args) || !v || is_closed(car(args))) goto fail;
-                v = 0;
-                x = car(args);
-                switch(c) {
-                case ' ': v = 1; continue;
+int lisp_validate_args(lisp * l, const char *msg, unsigned len, const char *fmt, cell * args, int recover)
+{
+	assert(l && fmt && args && msg);
+	int v = 1;
+	char c;
+	const char *fmt_head;
+	cell *args_head, *x;
+	assert(l && fmt && args);
+	args_head = args;
+	fmt_head = fmt;
+	if (!cklen(args, len))
+		goto fail;
+	while ((c = *fmt++)) {
+		if (is_nil(args) || !v || is_closed(car(args)))
+			goto fail;
+		v = 0;
+		x = car(args);
+		switch (c) {
+		case ' ':
+			v = 1;
+			continue;
 #define X(CHAR, STRING, ACTION) case (CHAR): v = ACTION; break;
-                VALIDATE_XLIST
+			VALIDATE_XLIST
 #undef X
-                default: RECOVER(l, "\"%s\"", "invalid validation format");
-                }
-                args = cdr(args);
-        }
-        if(!v) goto fail;
-        return 1;
-fail:   print_type_string(l, msg, len, fmt_head, args_head);
-        if(recover)
-                lisp_throw(l, 1);
-        return 0;
-} 
+		default:
+			RECOVER(l, "\"%s\"", "invalid validation format");
+		}
+		args = cdr(args);
+	}
+	if (!v)
+		goto fail;
+	return 1;
+ fail:	
+        print_type_string(l, msg, len, fmt_head, args_head);
+	if (recover)
+		lisp_throw(l, 1);
+	return 0;
+}
 

@@ -25,29 +25,41 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-static int print_escaped_string(lisp *l, io *o, unsigned depth, char *s) {
-        char c;
-        assert(l && o && s);
-        lisp_printf(l, o, depth, "%r\"");
-        while((c = *s++)) {
-               switch(c) {
-               case '\\': lisp_printf(l, o, depth, "%m\\\\%r"); continue;
-               case '\n': lisp_printf(l, o, depth, "%m\\n%r");  continue;
-               case '\t': lisp_printf(l, o, depth, "%m\\t%r");  continue;
-               case '\r': lisp_printf(l, o, depth, "%m\\r%r");  continue;
-               case '"':  lisp_printf(l, o, depth, "%m\\\"%r"); continue;
-               default: break;
-               }
-               if(!isprint(c)) {
-                       char num[5] = "\\";
-                       sprintf(num+1, "%03o", ((unsigned)c) & 0xFF);
-                       assert(!num[4]);
-                       lisp_printf(l, o, depth, "%m%s%r", num);
-                       continue;
-               }
-               io_putc(c, o);
-        }
-        return io_putc('"', o);
+static int print_escaped_string(lisp * l, io * o, unsigned depth, char *s)
+{
+	char c;
+	assert(l && o && s);
+	lisp_printf(l, o, depth, "%r\"");
+	while ((c = *s++)) {
+		switch (c) {
+		case '\\':
+			lisp_printf(l, o, depth, "%m\\\\%r");
+			continue;
+		case '\n':
+			lisp_printf(l, o, depth, "%m\\n%r");
+			continue;
+		case '\t':
+			lisp_printf(l, o, depth, "%m\\t%r");
+			continue;
+		case '\r':
+			lisp_printf(l, o, depth, "%m\\r%r");
+			continue;
+		case '"':
+			lisp_printf(l, o, depth, "%m\\\"%r");
+			continue;
+		default:
+			break;
+		}
+		if (!isprint(c)) {
+			char num[5] = "\\";
+			sprintf(num + 1, "%03o", ((unsigned)c) & 0xFF);
+			assert(!num[4]);
+			lisp_printf(l, o, depth, "%m%s%r", num);
+			continue;
+		}
+		io_putc(c, o);
+	}
+	return io_putc('"', o);
 }
 
 int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...) {

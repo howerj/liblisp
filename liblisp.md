@@ -325,8 +325,6 @@ There are several issues that need resolving with the interpreter.
 
 #### liblisp
 
-* Environment lookup should be split into top level hash and cons
-list for efficiency.
 * The "struct hack" could be applied strings and other types, as
 well as the length field being encoded in the variable length
 section of the object.
