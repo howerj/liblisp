@@ -341,8 +341,23 @@ to be worked out when it comes to printing color and pretty printing.
   changed so that they could, but this would require reworking the
   entire interpreter. Not only that, all string operations are pure,
   there is no way to mutate strings.
-* Modules for matrix arithmetic should be added.
 * Macros are probably better than F-Expressions...
+* The structure of a cell could be improved
+  * Vectors could be added with a flag, the flag being set would indicate that
+    it is an array and should be treated as such
+  * If portability (academic portability that is) is sacrificed then the lower
+    bits of an aligned pointer could be used as flags indicating the type of a
+    cell.
+* The help for each subroutine could be optionally compiled into the binary
+itself and stored alongside the subroutine.
+
+#### Modules
+
+* A Tk interface
+* Better SQLite3 bindings
+* Move most subroutines to modules
+* Matrix arithmetic module
+* The bignum library needs significant improvement
 
 <div id='Test programs'/>
 ## Test programs
@@ -380,7 +395,11 @@ account when reviewing the internals and how the language behaves:
 * <http://phpsadness.com/>
 * <http://eev.ee/blog/2012/04/09/php-a-fractal-of-bad-design/>
 
-For example, the consistency of the language could be improved.
+For example, the consistency of the language could be improved. The API could
+be improved as well, another set of examples of what not to do for API design
+is here:
+
+* <http://chickenwing.software/scratches/programming/annoying-apis>
 
 <div id='Manual'/>
 # Manual
