@@ -62,3 +62,10 @@ tags
 *.tgz
 unit
 vgcore.*
+AppDir/*
+AppDir/bin
+AppDir/bin/*
+AppDir/data
+AppDir/data/*
+AppDir/docs/
+AppDir/docs/*
