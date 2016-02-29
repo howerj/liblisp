@@ -109,150 +109,192 @@
  *      ssize_t      write(int, const void *, size_t); **/
 
 #define SUBROUTINE_XLIST\
-        X("chdir",      subr_chdir,     "Z",       "change the current directory")\
-        X("ls",         subr_directory, "Z",       "list a directory contents")\
-        X("kill",       subr_kill,      "d d",     "send a signal to a process")\
-        X("link",       subr_link,      "Z Z",     "make a hard link")\
-        X("nice",       subr_nice,      "d",       "set the niceness level of a process")\
-        X("pause",      subr_pause,     "",        "pause until a signal arrives")\
-        X("sleep",      subr_sleep,     "d",       "sleep for an amount of time")\
-        X("symlink",    subr_symlink,   "Z Z",     "create a symbolic link")\
-        X("sync",       subr_sync,      "",        "flush the file system buffers")\
-        X("rmdir",      subr_rmdir,     "Z",       "remove a directory")\
-        X("chown",      subr_chown,     "Z d d",   "change the ownership settings of a file")\
-        X("chmod",      subr_chmod,     "Z d",     "change the permissions of a file")\
-        X("mount",      subr_mount,     "Z Z Z",   "mount a file system")\
-        X("umount",     subr_umount,    "Z",       "unmount a file system")\
-        X("mknod",      subr_mknod,     "Z Z d d", "make a device node")\
-        X("ualarm",     subr_ualarm,    "d d",     "send SIGALARM to calling process after a time")
+	X("chdir",      subr_chdir,     "Z",       "change the current directory")\
+	X("ls",         subr_directory, "Z",       "list a directory contents")\
+	X("kill",       subr_kill,      "d d",     "send a signal to a process")\
+	X("link",       subr_link,      "Z Z",     "make a hard link")\
+	X("nice",       subr_nice,      "d",       "set the niceness level of a process")\
+	X("pause",      subr_pause,     "",        "pause until a signal arrives")\
+	X("sleep",      subr_sleep,     "d",       "sleep for an amount of time")\
+	X("symlink",    subr_symlink,   "Z Z",     "create a symbolic link")\
+	X("sync",       subr_sync,      "",        "flush the file system buffers")\
+	X("rmdir",      subr_rmdir,     "Z",       "remove a directory")\
+	X("chown",      subr_chown,     "Z d d",   "change the ownership settings of a file")\
+	X("chmod",      subr_chmod,     "Z d",     "change the permissions of a file")\
+	X("mount",      subr_mount,     "Z Z Z",   "mount a file system")\
+	X("umount",     subr_umount,    "Z",       "unmount a file system")\
+	X("mknod",      subr_mknod,     "Z Z d d", "make a device node")\
+	X("ualarm",     subr_ualarm,    "d d",     "send SIGALARM to calling process after a time")
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
-SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
+SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
-
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
-static struct module_subroutines { char *name, *validate, *docstring; subr p; } primitives[] = {
-        SUBROUTINE_XLIST /*all of the subr functions*/
-        {NULL, NULL, NULL, NULL} /*must be terminated with NULLs*/
+static struct module_subroutines {
+	char *name, *validate, *docstring;
+	subr p;
+} primitives[] = {
+	SUBROUTINE_XLIST	/*all of the subr functions */
+	{ NULL, NULL, NULL, NULL}	/*must be terminated with NULLs */
 };
+
 #undef X
 
-static cell *subr_mknod(lisp *l, cell *args) {
-        dev_t d;
-        mode_t m = S_IFIFO;
-        if(!cklen(CADR(args), 1))
-                goto invalid;
-        switch(get_str(CADR(args))[0]) {
-                case 'c': /*fall through*/
-                case 'u': m = S_IFCHR; break;
-                case 'b': m = S_IFBLK; break;
-                case 'p': m = S_IFIFO; break;
-        invalid: default: RECOVER(l, "\"invalid node type (not 'c 'u 'b or 'p)\" %s", get_str(CADR(args)));
-        }
-        d = MKDEV(get_int(CADDR(args)), get_int(CADDDR(args)));
-        return mk_int(l, mknod(get_str(car(args)), m | S_IRWXU, d));
+static cell *subr_mknod(lisp * l, cell * args)
+{
+	dev_t d;
+	mode_t m = S_IFIFO;
+	if (!cklen(CADR(args), 1))
+		goto invalid;
+	switch (get_str(CADR(args))[0]) {
+	case 'c':		/*fall through */
+	case 'u':
+		m = S_IFCHR;
+		break;
+	case 'b':
+		m = S_IFBLK;
+		break;
+	case 'p':
+		m = S_IFIFO;
+		break;
+	invalid: default:
+		RECOVER(l, "\"invalid node type (not 'c 'u 'b or 'p)\" %s", get_str(CADR(args)));
+	}
+	d = MKDEV(get_int(CADDR(args)), get_int(CADDDR(args)));
+	return mk_int(l, mknod(get_str(car(args)), m | S_IRWXU, d));
 }
 
-static cell *subr_chmod(lisp *l, cell *args) {
-        return mk_int(l, chmod(get_str(car(args)), get_int(CADR(args))));
+static cell *subr_chmod(lisp * l, cell * args)
+{
+	return mk_int(l, chmod(get_str(car(args)), get_int(CADR(args))));
 }
 
-static cell *subr_mount(lisp *l, cell *args) {
-        return mk_int(l, mount(get_str(car(args)), get_str(CADR(args)), get_str(CADDR(args)), MS_MGC_VAL, NULL));
+static cell *subr_mount(lisp * l, cell * args)
+{
+	return mk_int(l, mount(get_str(car(args)), get_str(CADR(args)), get_str(CADDR(args)), MS_MGC_VAL, NULL));
 }
 
-static cell *subr_umount(lisp *l, cell *args) {
-        return mk_int(l, umount(get_str(car(args))));
+static cell *subr_umount(lisp * l, cell * args)
+{
+	return mk_int(l, umount(get_str(car(args))));
 }
 
-static cell *subr_chown(lisp *l, cell *args) {
-        return mk_int(l, chown(get_str(car(args)), get_int(CADR(args)), get_int(CADDR(args))));
+static cell *subr_chown(lisp * l, cell * args)
+{
+	return mk_int(l, chown(get_str(car(args)), get_int(CADR(args)), get_int(CADDR(args))));
 }
 
-static cell* subr_directory(lisp *l, cell *args) {
-        DIR *d;
-        struct dirent *e;
-        cell *ret = gsym_nil();
-        if(!(d = opendir(get_str(car(args)))))
-                return gsym_error();
-        while((e = readdir(d)))
-                ret = cons(l, mk_str(lglobal, lstrdup(e->d_name)), ret);
-        closedir(d);
-        return ret;
+static cell *subr_directory(lisp * l, cell * args)
+{
+	DIR *d;
+	struct dirent *e;
+	cell *ret = gsym_nil();
+	if (!(d = opendir(get_str(car(args)))))
+		return gsym_error();
+	while ((e = readdir(d)))
+		ret = cons(l, mk_str(lglobal, lstrdup(e->d_name)), ret);
+	closedir(d);
+	return ret;
 }
 
-static cell* subr_sleep(lisp *l, cell *args) {
-        return mk_int(l, sleep(get_int(car(args))));
+static cell *subr_sleep(lisp * l, cell * args)
+{
+	return mk_int(l, sleep(get_int(car(args))));
 }
 
-static cell *subr_sync(lisp *l, cell *args) { UNUSED(l); UNUSED(args);
-        sync();
-        return gsym_tee();
+static cell *subr_sync(lisp * l, cell * args)
+{
+	UNUSED(l);
+	UNUSED(args);
+	sync();
+	return gsym_tee();
 }
 
-static cell *subr_kill(lisp *l, cell *args) {
-        return mk_int(l, kill(get_int(car(args)), get_int(CADR(args))));
+static cell *subr_kill(lisp * l, cell * args)
+{
+	return mk_int(l, kill(get_int(car(args)), get_int(CADR(args))));
 }
 
-static cell *subr_nice(lisp *l, cell *args) {
-        return mk_int(l, nice(get_int(car(args))));
+static cell *subr_nice(lisp * l, cell * args)
+{
+	return mk_int(l, nice(get_int(car(args))));
 }
 
-static cell *subr_pause(lisp *l, cell *args) { UNUSED(args);
-        return mk_int(l, pause());
+static cell *subr_pause(lisp * l, cell * args)
+{
+	UNUSED(args);
+	return mk_int(l, pause());
 }
 
-static cell *subr_symlink(lisp *l, cell *args) {
-        return mk_int(l, symlink(get_str(car(args)), get_str(CADR(args))));
+static cell *subr_symlink(lisp * l, cell * args)
+{
+	return mk_int(l, symlink(get_str(car(args)), get_str(CADR(args))));
 }
 
-static cell *subr_link(lisp *l, cell *args) {
-        return mk_int(l, link(get_str(car(args)), get_str(CADR(args))));
+static cell *subr_link(lisp * l, cell * args)
+{
+	return mk_int(l, link(get_str(car(args)), get_str(CADR(args))));
 }
 
-static cell *subr_chdir(lisp *l, cell *args) {
-        return mk_int(l, chdir(get_str(car(args))));
+static cell *subr_chdir(lisp * l, cell * args)
+{
+	return mk_int(l, chdir(get_str(car(args))));
 }
 
-static cell *subr_ualarm(lisp *l, cell *args) {
-        return mk_int(l, ualarm(get_int(car(args)), get_int(CADR(args))));
+static cell *subr_ualarm(lisp * l, cell * args)
+{
+	return mk_int(l, ualarm(get_int(car(args)), get_int(CADR(args))));
 }
 
-static cell *subr_rmdir(lisp *l, cell *args) {
-        return mk_int(l, rmdir(get_str(car(args))));
+static cell *subr_rmdir(lisp * l, cell * args)
+{
+	return mk_int(l, rmdir(get_str(car(args))));
 }
 
-static int initialize(void) {
-        size_t i;
-        assert(lglobal);
-        for(i = 0; primitives[i].p; i++) /*add all primitives from this module*/
-                if(!lisp_add_subr(lglobal, 
-                        primitives[i].name, primitives[i].p, 
-                        primitives[i].validate, primitives[i].docstring))
-                        goto fail;
-        lisp_printf(lglobal, lisp_get_output(lglobal), 0, "module: OS loaded\n");
-        return 0;
-fail:   lisp_printf(lglobal, lisp_get_output(lglobal), 0, "module: OS loading failure\n");
-        return -1;
+static int initialize(void)
+{
+	size_t i;
+	assert(lglobal);
+	for (i = 0; primitives[i].p; i++)	/*add all primitives from this module */
+		if (!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
+			goto fail;
+	if (lisp_verbose_modules)
+		lisp_printf(lglobal, lisp_get_output(lglobal), 0, "module: OS loaded\n");
+	return 0;
+ fail:	lisp_printf(lglobal, lisp_get_output(lglobal), 0, "module: OS loading failure\n");
+	return -1;
 }
 
 #ifdef __unix__
-static void construct(void) __attribute__((constructor));
-static void destruct(void)  __attribute__((destructor));
-static void construct(void) { initialize(); }
-static void destruct(void)  { }
+static void construct(void) __attribute__ ((constructor));
+static void destruct(void) __attribute__ ((destructor));
+static void construct(void)
+{
+	initialize();
+}
+
+static void destruct(void)
+{
+}
 #elif _WIN32
 #include <windows.h>
-BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
-        UNUSED(hinstDLL); UNUSED(lpvReserved);
-        switch (fdwReason) {
-            case DLL_PROCESS_ATTACH: initialize(); break;
-            case DLL_PROCESS_DETACH: break;
-            case DLL_THREAD_ATTACH:  break;
-            case DLL_THREAD_DETACH:  break;
-	    default: break;
-        }
-        return TRUE;
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+{
+	UNUSED(hinstDLL);
+	UNUSED(lpvReserved);
+	switch (fdwReason) {
+	case DLL_PROCESS_ATTACH:
+		initialize();
+		break;
+	case DLL_PROCESS_DETACH:
+		break;
+	case DLL_THREAD_ATTACH:
+		break;
+	case DLL_THREAD_DETACH:
+		break;
+	default:
+		break;
+	}
+	return TRUE;
 }
 #endif
-

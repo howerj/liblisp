@@ -107,7 +107,7 @@ LDCONFIG = ldconfig
 DLL=so
 EXE=
 
-CFLAGS += -D_FORTIFY_SOURCE=2 -fstack-protector 
+CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fstack-protector 
 CFLAGS += -fPIC
 CFLAGS_RELAXED += -fPIC
 endif
@@ -155,6 +155,7 @@ help:
 	@echo "     lib$(TARGET).a   build the library (static)"
 	@echo "     modules     make as many modules as is possible (ignoring failures)"
 	@echo "     run         make the example executable and run it"
+	@echo "     app         make a self contained app with all dependencies"
 	@echo "     help        this help message"
 	@echo "     valgrind    make the example executable and run it with valgrind"
 	@echo "     clean       remove all build artifacts and targets"
@@ -193,16 +194,19 @@ unit$(EXE): unit.c lib$(TARGET).$(DLL)
 test: unit$(EXE)
 	./unit -c
 
+app: all test modules
+	./app -vpa  ./lisp -e -Epc '"$${SCRIPT_PATH}"/data/init.lsp'
+
 ### running ##################################################################
 
 run: all
 	@echo running the executable with default arguments
-	./$(TARGET) $(RUN_FLAGS) init.lsp -
+	./$(TARGET) $(RUN_FLAGS) data/init.lsp -
 
 # From <http://valgrind.org/>
 valgrind: all
 	@echo running the executable through leak detection program, valgrind
-	valgrind ./$(TARGET) $(RUN_FLAGS) init.lsp -
+	valgrind ./$(TARGET) $(RUN_FLAGS) data/init.lsp -
 
 ### documentation ############################################################
 

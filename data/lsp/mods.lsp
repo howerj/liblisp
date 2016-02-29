@@ -1,6 +1,7 @@
 ;;; load shared objects or DLLs ;;;
 ;; depends on init.lsp ;;
 
+; This should take a module path as well as name as an argument
 (define load-module ; load a module {.so or .dll depending on the operating system}
   (compile 
     "load a compiled module (a shared object or DLL)"   
@@ -17,10 +18,10 @@
  (load-module "crc")    ; crc module
  (load-module "line")   ; line editing library and module
  (load-module "math")   ; math module
-;(load-module "sql")    ; sql interface (leaks memory)
-;(load-module "tcc")    ; tiny c compiler (leaks memory)
  (load-module "text")   ; diff, more string handling and tsort module
  (load-module "unix")   ; unix interface module
  (load-module "x11")    ; x11 window module
+;(load-module "sql")    ; sql interface (leaks memory)
+ (load-module "tcc")    ; tiny c compiler (leaks memory, if used)
  t)
 

@@ -8,7 +8,9 @@
  *  All of the non-portable code in the interpreter is isolated here, the
  *  library itself is written in pure C (C99) and dependent only on the
  *  functions within the standard C library. This file adds in support
- *  for various things depending on the operating system (if known).
+ *  for various things depending on the operating system (if known). The
+ *  only use of horrible ifdefs to select code should be in this file (and
+ *  any modules which need to be portable across Unix and Windows).
  **/
 
 #include "liblisp.h"
@@ -30,6 +32,8 @@
 #ifndef VCS_ORIGIN
 #define VCS_ORIGIN unknown /**< Version control repository origin*/
 #endif
+
+int lisp_verbose_modules = 0; /*modules can make more noise if set to true*/
 
 #ifdef __unix__
 #include <dlfcn.h>
@@ -53,6 +57,9 @@ static char *filesep = "\\"; /**< Window file directory separator */
 static char *home = ""; /**< unknown operating system*/
 static char *filesep = "/"; /**< unknown os file directory separator */
 #endif
+#else
+static char *home = ""; /**< unknown operating system*/
+static char *filesep = "/"; /**< unknown os file directory separator */
 #endif
 
 #ifdef USE_ABORT_HANDLER
@@ -212,10 +219,13 @@ int main(int argc, char **argv) {
 #endif
 #endif
 
-#ifdef USE_INITRC
-        char *rcpath = NULL;;
         lisp_add_cell(l, "*file-separator*", mk_str(l, lstrdup(filesep)));
-        if((rcpath = getenv(home))) {
+#ifdef USE_INITRC
+        char *rcpath = NULL, *thome = NULL;
+	/*LISPHOME takes precedence over HOME*/
+	if((thome = getenv("LISPHOME")))
+		rcpath = thome;
+        if(rcpath || (rcpath = getenv(home))) {
                 io *i;
                 FILE *in;
                 if(!(rcpath = VSTRCATSEP(filesep, rcpath, init)))

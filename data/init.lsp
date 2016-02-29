@@ -76,13 +76,14 @@
             t
             (progn (format *error* "(error \"eval-file failed\" %S %S)\n" in file) (exit)))))
          (progn
-          (eval-file (make-path '("lsp" "mods.lsp")) exit-if-not-eof nil)
-          (eval-file (make-path '("lsp" "base.lsp")) exit-if-not-eof nil)
-          (eval-file (make-path '("lsp" "data.lsp")) exit-if-not-eof nil)
-          (eval-file (make-path '("lsp" "sets.lsp")) exit-if-not-eof nil)
-          (eval-file (make-path '("lsp" "symb.lsp")) exit-if-not-eof nil)
-          (eval-file (make-path '("lsp" "test.lsp")) exit-if-not-eof nil)
-        ; (eval-file (make-path '("lsp" "ltcc.lsp")) exit-if-not-eof nil) ; requires liblisp_tcc.so
+          (eval-file (make-path '("data" "lsp" "mods.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("data" "lsp" "base.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("data" "lsp" "data.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("data" "lsp" "sets.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("data" "lsp" "symb.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("data" "lsp" "test.lsp")) exit-if-not-eof nil)
+        ; (eval-file (make-path '("data" "lsp" "sql.lsp"))  exit-if-not-eof nil)
+        ; (eval-file (make-path '("data" "lsp" "tcc.lsp"))  exit-if-not-eof nil)
          'done))
  'ok)
 

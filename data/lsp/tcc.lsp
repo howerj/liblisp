@@ -1,4 +1,4 @@
-;;; c.lsp ;;;
+;;; tcc.lsp ;;;
 ;; This module gives example of a crude method of compiling
 ;; strings into functional "built-in" subroutines using the
 ;; Tiny C Compiler library.

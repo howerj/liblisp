@@ -1078,6 +1078,7 @@ LIBLISP_API int is_fnumber(const char *buf);
   *
   * @todo Move this to "main.c", make header for "main.c" as well?**/
 LIBLISP_API extern lisp *lglobal;
+LIBLISP_API extern int lisp_verbose_modules;
 
 /** @brief A method for throwing an exception in the lisp interpreter,
  *         this will call exit() if internally a jmp_buf has not been

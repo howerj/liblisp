@@ -593,7 +593,8 @@ has done that it will start an interactive session with the user.
 * The REPL
 * Command line options
 * Environment variables used
-  - HOME
+  - HOME (Unix) /HOMEPATH (Windows)
+  - LISPHOME which takes precedence over HOME
 
 ## Interpreter internals
 
