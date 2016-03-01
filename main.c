@@ -33,7 +33,9 @@
 #define VCS_ORIGIN unknown /**< Version control repository origin*/
 #endif
 
-int lisp_verbose_modules = 0; /*modules can make more noise if set to true*/
+/**@todo This needs to be controllable by switches, and the extern definition
+ * moved to a special liblisp module header*/
+int lisp_verbose_modules = 1; /*modules can make more noise if set to true*/
 
 #ifdef __unix__
 #include <dlfcn.h>

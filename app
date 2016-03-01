@@ -11,18 +11,12 @@ shopt -s nullglob
 # although it does nearly everything I want.
 #
 # TODO
-#	* Options should be passed to the script to determine which
-#	directory things should go to, and what application to copy
-#	* There should be a way to indicate what target the application
-#	is built for (eg. x86, x86-64, ARMv7, etc).
 #	* Add options for including source (possibly) to the APPDIR
-#	* Elaborate on help
 #	* Multiple verboseness levels
 #	* It would be nice to test this under Cygwin, and get a Mac OSX
 #	version working
+#	* A way to specify environment variables to set up is needed.
 # 	LIBLISP SPECIFIC
-#		* Copy lisp code to a sensible directory and make it so
-#		that the interpreter finds the scripts
 #		* The lisp interpreter should have an "App mode" where it
 #		stores its history in the APPDIR/data directory
 #		* Plugins should go in their own separate directory
@@ -68,7 +62,9 @@ Options:
 		to the script that calls your application
 
 When passing in variables to be passed to your executable, you might want to
-use the \${SCRIPT_PATH} variable
+use the \${SCRIPT_PATH} variable, which contains the current working directory
+of the script that runs the application, do not forget to escape this variable
+properly when passing it in.
 
 This script expects the application directory to have a specific structure, 
 the user should provide an executable ELF file to be processed, within the
@@ -137,9 +133,6 @@ fi
 
 # To do
 #	* Process multiple apps
-#	* Set app directory name
-#	* Clean up directory
-#	* Default command list for application
 while getopts "ehpva:" opt; do
 	case ${opt} in
 		a)
@@ -213,6 +206,7 @@ if [ "true" = ${PLUGINS_ON} ]; then
 	done
 fi
 
+verbose "generating wrapper script:"
 cat <<EOF > "${APPDIR}"/"${APP}"
 #!/usr/bin/env bash
 set -e
@@ -220,7 +214,10 @@ set -u
 SCRIPT_PATH=\$(dirname \$(readlink -f \${0}))
 "\${SCRIPT_PATH}"/bin/ld-*.so.2 --library-path "\${SCRIPT_PATH}"/bin "\${SCRIPT_PATH}"/bin/"${APP}" ${EXTRA} "\${@}" 
 EOF
-# To do print generated script
+
+if [ -n ${VERBOSE} ] ; then
+	cat "${APPDIR}/${APP}"
+fi
 
 chmod ${VERBOSE} 700 "${APPDIR}"/"${APP}"
 chmod ${VERBOSE} 700 "${APPDIR}"/bin/*

@@ -9,7 +9,6 @@
  *        interpreter fails.
  *  **/
 
-
 #include "liblisp.h"
 #include "private.h"
 #include <stdlib.h>

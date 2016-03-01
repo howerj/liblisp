@@ -62,7 +62,7 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 DEFINES = -DUSE_DL -DUSE_INITRC -DUSE_ABORT_HANDLER
 LINK    = -ldl
 # This is for convenience only, it may cause problems.
-RPATH   = -Wl,-rpath=. -Wl,-rpath=./mod 
+RPATH  ?= -Wl,-rpath=. -Wl,-rpath=./mod 
 
 ifeq ($(OS),Windows_NT)
 FixPath =$(subst /,\,$1)
@@ -70,8 +70,8 @@ FS      =$(subst /,\,/)
 AR       = ar
 AR_FLAGS = rcs
 DESTDIR =C:$(FS)
-PREFIX  =lisp
-MANPREFIX =$(PREFIX)$(FS)share$(FS)man
+prefix  =lisp
+MANPREFIX =$(prefix)$(FS)share$(FS)man
 RM	=del
 RM_FLAGS= /Q
 LDCONFIG=
@@ -87,9 +87,9 @@ else # Unix assumed {only Linux has been tested}
 # Install paths
 FixPath = $1
 FS        =/
-DESTDIR   = 
-PREFIX 	  = $(call FixPath,/usr/local)
-MANPREFIX = $(call FixPath,$(PREFIX)/share/man)
+DESTDIR   ?= 
+prefix 	  ?=
+MANPREFIX = $(call FixPath,$(prefix)/share/man)
 # commands and their flags
 AR       = ar
 AR_FLAGS = rcs
@@ -186,7 +186,7 @@ main.o: main.c lib$(TARGET).h
 	$(CC) $(CFLAGS_RELAXED) $(DEFINES) $(VCS_DEFINES) $< -c -o $@
 
 $(TARGET)$(EXE): main.o lib$(TARGET).$(DLL)
-	$(CC) $(CFLAGS) -Wl,-E $(RPATH) $^ $(LINK) -o $(TARGET)
+	$(CC) $(CFLAGS) -Wl,-E -Wl,-z,relro $(RPATH) $^ $(LINK) -o $(TARGET)
 
 unit$(EXE): unit.c lib$(TARGET).$(DLL)
 	$(CC) $(CFLAGS) $(RPATH) $^ -o unit$(EXE)
@@ -231,34 +231,34 @@ dist: $(TARGET) lib$(TARGET).a lib$(TARGET).$(DLL) lib$(TARGET).htm lib$(TARGET)
 	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) lib$(TARGET).h *.a *.1 *.3 
 
 install: all 
-	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/bin)
-	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/lib)
-	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/include)
+	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/bin)
+	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/lib)
+	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/include)
 	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1)
 	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3)
-	$(CP) $(CP_FLAGS) $(TARGET)$(EXE) $(call FixPath,$(DESTDIR)$(PREFIX)/bin)
-	$(CP) $(CP_FLAGS) *.a $(call FixPath,$(DESTDIR)$(PREFIX)/lib)
-	$(CP) $(CP_FLAGS) *.$(DLL) $(call FixPath,$(DESTDIR)$(PREFIX)/lib)
-	$(CP) $(CP_FLAGS) lib$(TARGET).h $(call FixPath,$(DESTDIR)$(PREFIX)/include)
+	$(CP) $(CP_FLAGS) $(TARGET)$(EXE) $(call FixPath,$(DESTDIR)$(prefix)/bin)
+	$(CP) $(CP_FLAGS) *.a $(call FixPath,$(DESTDIR)$(prefix)/lib)
+	$(CP) $(CP_FLAGS) *.$(DLL) $(call FixPath,$(DESTDIR)$(prefix)/lib)
+	$(CP) $(CP_FLAGS) lib$(TARGET).h $(call FixPath,$(DESTDIR)$(prefix)/include)
 	$(SED) "s/VERSION/$(VERSION)/g" < $(TARGET).1    > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
 	$(SED) "s/VERSION/$(VERSION)/g" < lib$(TARGET).3 > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
-	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(PREFIX)/bin/$(TARGET))
+	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(prefix)/bin/$(TARGET))
 	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
 	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
-	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(PREFIX)/lib/lib$(TARGET).a)
-	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(PREFIX)/lib/lib$(TARGET).$(DLL))
-	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(PREFIX)/include/lib$(TARGET).h)
-	$(LDCONFIG)
+	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(prefix)/lib/lib$(TARGET).a)
+	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(prefix)/lib/lib$(TARGET).$(DLL))
+	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(prefix)/include/lib$(TARGET).h)
+	#$(LDCONFIG)
 	@echo "installation complete"
 
 uninstall:
 	@echo uninstalling $(TARGET)$(EXE)
 	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
 	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
-	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/bin/$(TARGET)$(EXE))
-	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/lib/lib$(TARGET).a)
-	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/lib/*.$(DLL))
-	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(PREFIX)/include/lib$(TARGET).h)
+	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/bin/$(TARGET)$(EXE))
+	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/lib/lib$(TARGET).a)
+	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/lib/*.$(DLL))
+	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/include/lib$(TARGET).h)
 
 # From <http://ctags.sourceforge.net/>
 TAGS:
@@ -291,6 +291,7 @@ clean:
 	-$(RM) $(RM_FLAGS) tags
 	-$(RM) $(RM_FLAGS) html/ 
 	-$(RM) $(RM_FLAGS) latex/ 
+	-$(RM) $(RM_FLAGS) lisp-linux-*/ 
 
 ##############################################################################
 

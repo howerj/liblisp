@@ -1,0 +1,12 @@
+Source: liblisp
+Maintainer: Richard Howe <howe.r.j.89@gmail.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 9)
+
+Package: liblisp
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: lisp interpreter and library
+ liblisp provides a lisp interpreter and library
