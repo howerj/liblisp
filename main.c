@@ -75,7 +75,12 @@ static char *filesep = "/"; /**< unknown os file directory separator */
 /** @warning this hander calls functions that are not safe to call
  *           from a signal handler, however this is only going to
  *           be called in the event of an internal consistency failure,
- *           and only as a courtesy to the programmer*/
+ *           and only as a courtesy to the programmer
+ *  @todo make a windows version using information from:
+ *  https://msdn.microsoft.com/en-us/library/windows/desktop/bb204633%28v=vs.85%29.aspx and
+ *  https://stackoverflow.com/questions/5693192/win32-backtrace-from-c-code
+ *  @todo add a function that prints stack traces in the lisp environment
+ *  */
 static void sig_abrt_handler(int sig) {
         void *trace[TRACE_SIZE];
         char **messages = NULL;
@@ -94,6 +99,15 @@ fail:   signal(sig, SIG_DFL);
 #endif
 #endif
 
+/*  @todo The module interface should made so multiple threads running lisp
+ *  interpreter can load the same module. This can be done by the DL_OPEN
+ *  routine looking for a constructor function that must be included in each
+ *  module, DL_SYM would look for it. It must avoid memory allocation in
+ *  the modules DllMain (on Windows only) due to problems mentioned here:
+ *  https://stackoverflow.com/questions/858592/windows-malloc-replacement-e-g-tcmalloc-and-dynamic-crt-linking?rq=1
+ *  and
+ *  https://msdn.microsoft.com/en-us/library/windows/desktop/dn633971%28v=vs.85%29.aspx#general_best_practices
+ **/
 #ifdef USE_DL
 /* Module loader using dlopen/LoadLibrary, all functions acquired with 
  * dlsym/GetProcAddress must be of the "subr" function type as they will 

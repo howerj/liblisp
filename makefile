@@ -62,7 +62,7 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 DEFINES = -DUSE_DL -DUSE_INITRC -DUSE_ABORT_HANDLER
 LINK    = -ldl
 # This is for convenience only, it may cause problems.
-RPATH  ?= -Wl,-rpath=. -Wl,-rpath=./mod 
+RPATH   ?= -Wl,-rpath=. -Wl,-rpath=./mod 
 
 ifeq ($(OS),Windows_NT)
 FixPath =$(subst /,\,$1)
@@ -83,6 +83,7 @@ MKDIR_FLAGS=
 RUN_FLAGS=-Ep
 DLL	=dll
 EXE	=.exe
+LINKFLAGS=-Wl,-E 
 else # Unix assumed {only Linux has been tested}
 # Install paths
 FixPath = $1
@@ -110,6 +111,7 @@ EXE=
 CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fstack-protector 
 CFLAGS += -fPIC
 CFLAGS_RELAXED += -fPIC
+LINKFLAGS=-Wl,-E -Wl,-z,relro
 endif
 
 CFLAGS += -std=c99
@@ -186,9 +188,9 @@ main.o: main.c lib$(TARGET).h
 	$(CC) $(CFLAGS_RELAXED) $(DEFINES) $(VCS_DEFINES) $< -c -o $@
 
 $(TARGET)$(EXE): main.o lib$(TARGET).$(DLL)
-	$(CC) $(CFLAGS) -Wl,-E -Wl,-z,relro $(RPATH) $^ $(LINK) -o $(TARGET)
+	$(CC) $(CFLAGS) $(LINKFLAGS) $(RPATH) $^ $(LINK) -o $(TARGET)
 
-unit$(EXE): unit.c lib$(TARGET).$(DLL)
+unit$(EXE): unit.c lib$(TARGET).a
 	$(CC) $(CFLAGS) $(RPATH) $^ -o unit$(EXE)
 
 test: unit$(EXE)

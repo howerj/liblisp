@@ -30,7 +30,7 @@ static cell *mk(lisp * l, lisp_type type, size_t count, ...)
 	size_t i;
 
 	if (l->gc_collectp++ > COLLECTION_POINT)	/*set to 1 for testing */
-		gc_mark_and_sweep(l);
+		lisp_gc_mark_and_sweep(l);
 
 	va_start(ap, count);
 	if (!(ret = calloc(1, sizeof(cell) + (count - 1) * sizeof(cell_data))))

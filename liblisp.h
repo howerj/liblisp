@@ -13,6 +13,9 @@
  *
  *  Do not pass NULL to any of these functions unless they specifically mention
  *  that you can. They "assert()" their inputs.
+ *
+ *  @todo Rename lisp related functions to include the prefix "lisp_" or at least "l_"
+ *  @todo Move module related variables to another header
 **/
 #ifndef LIBLISP_H
 #define LIBLISP_H
@@ -638,6 +641,8 @@ LIBLISP_API void set_cdr(cell *con, cell *val);
 LIBLISP_API int  cklen(cell *x, size_t expect);
 
 /**@brief set the length field of a cell
+ * @bug   this should not be needed, and I need to redesign the interpreter
+ *        so it is not.
  * @param x   cell to set the length field of
  * @param len length to set the cell to*/
 LIBLISP_API void set_length(cell *x, size_t len);
@@ -1339,21 +1344,31 @@ LIBLISP_API int lisp_validate_args(lisp *l, const char *msg, unsigned len, const
  *  @param recover if non zero this will longjmp to an error handler instead
  *                 of returning.
  *  @return 0 if invalid (or lonjmp if recover is non zero), 1 if valid***/
-int lisp_validate_cell(lisp *l, cell *x, cell *args, int recover);
+LIBLISP_API int lisp_validate_cell(lisp *l, cell *x, cell *args, int recover);
+
+/** @brief Given a lisp object it will tell the garbage collector to never collect
+ *         that object, ever. 
+ *  @param x      object to mark as being not collectible */
+LIBLISP_API void lisp_gc_used(cell *x);
+
+/** @brief Given a lisp object it will tell the garbage collector it is free to
+ *         collect that object whenever it wants to.
+ *  @param x      object to mark as being collectible */
+LIBLISP_API void lisp_gc_not_used(cell *x);
 
 /**@brief mark a lisp cell (recursively) to prevent it being collected in
  *        the next collection cycle.
  * @param l  lisp environment, used for error handling and carrying around
  *           any functions added for marking user defined types.
  * @param op object to mark*/
-void gc_mark(lisp *l, cell* op);
+LIBLISP_API void lisp_gc_mark(lisp *l, cell* op);
 
 /**@brief Mark all reachable objects then perform a sweep. To prevent
  *        an object from being collected during the next garbage collection
- *        cycle, you can use gc_mark(). This will only prevent the objects
+ *        cycle, you can use lisp_gc_mark(). This will only prevent the objects
  *        collection on this cycle, not the cycle after this one.
  * @param l      the lisp environment to perform the mark and sweep in**/
-void gc_mark_and_sweep(lisp *l);
+LIBLISP_API void lisp_gc_mark_and_sweep(lisp *l);
 
 /**@brief  Get the status of the garbage collector in a lisp environment,
  *         that is whether it is currently enabled. It defaults to being
@@ -1361,19 +1376,19 @@ void gc_mark_and_sweep(lisp *l);
  * @param  l   the lisp environment to check in
  * @return int non-zero if the garbage collector is enabled, zero if it
  *             is disabled. */
-int  gc_status(lisp *l);
+LIBLISP_API int  lisp_gc_status(lisp *l);
 
 /**@brief Turn the garbage collector on, this will allow the interpreter to
- *        call gc_mark_and_sweep() and an indeterminate time in the future,
+ *        call lisp_gc_mark_and_sweep() and an indeterminate time in the future,
  *        when it has become necessary to do so.
  * @param l lisp environment to enable garbage collection in.*/
-void gc_on(lisp *l);
+LIBLISP_API void lisp_gc_on(lisp *l);
 
 /**@brief Turn off the garbage collector, objects can still be collected
  *        at a later time, but that time will be postponed indefinitely until
- *        gc_on() is called.
+ *        lisp_gc_on() is called.
  * @param l lisp environment to disable garbage collection in*/
-void gc_off(lisp *l);
+LIBLISP_API void lisp_gc_off(lisp *l);
 
 /************************ test environment ***********************************/
 

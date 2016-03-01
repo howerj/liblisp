@@ -9,10 +9,22 @@
 #include <assert.h>
 #include <stdlib.h>
 
+void lisp_gc_used(cell *x)
+{
+	assert(x);
+	x->used = 1;
+}
+
+void lisp_gc_not_used(cell *x)
+{
+	assert(x);
+	x->used = 0;
+}
+
 static void gc_free(lisp * l, cell * ob)
 {	
         /*assert(op) *//**< free a lisp cell*/
-	if (!ob || ob->uncollectable)
+	if (!ob || ob->uncollectable || ob->used)
 		return;
 	switch (ob->type) {
 	case INTEGER:
@@ -53,7 +65,7 @@ static void gc_free(lisp * l, cell * ob)
 	}
 }
 
-void gc_mark(lisp * l, cell * op)
+void lisp_gc_mark(lisp * l, cell * op)
 {						  
         /*assert(op); *//**<recursively mark reachable cells*/
 	if (!op || op->uncollectable || op->mark)
@@ -67,18 +79,18 @@ void gc_mark(lisp * l, cell * op)
 	case FLOAT:
 		break;
 	case SUBR:
-		gc_mark(l, get_func_docstring(op));
+		lisp_gc_mark(l, get_func_docstring(op));
 		break;
 	case FPROC:
 	case PROC:
-		gc_mark(l, get_proc_args(op));
-		gc_mark(l, get_proc_code(op));
-		gc_mark(l, get_proc_env(op));
-		gc_mark(l, get_func_docstring(op));
+		lisp_gc_mark(l, get_proc_args(op));
+		lisp_gc_mark(l, get_proc_code(op));
+		lisp_gc_mark(l, get_proc_env(op));
+		lisp_gc_mark(l, get_func_docstring(op));
 		break;
 	case CONS:
-		gc_mark(l, car(op));
-		gc_mark(l, cdr(op));
+		lisp_gc_mark(l, car(op));
+		lisp_gc_mark(l, cdr(op));
 		break;
 	case HASH:{
 			size_t i;
@@ -87,7 +99,7 @@ void gc_mark(lisp * l, cell * op)
 			for (i = 0; i < h->len; i++)
 				if (h->table[i])
 					for (cur = h->table[i]; cur; cur = cur->next)
-						gc_mark(l, cur->val);
+						lisp_gc_mark(l, cur->val);
 		}
 		break;
 	case USERDEF:
@@ -134,30 +146,30 @@ cell *gc_add(lisp * l, cell * op)
 	return op;
 }
 
-int gc_status(lisp * l)
+int lisp_gc_status(lisp * l)
 {
 	return !l->gc_off;
 }
 
-void gc_on(lisp * l)
+void lisp_gc_on(lisp * l)
 {
 	l->gc_off = 0;
 }
 
-void gc_off(lisp * l)
+void lisp_gc_off(lisp * l)
 {
 	l->gc_off = 1;
 }
 
-void gc_mark_and_sweep(lisp * l)
+void lisp_gc_mark_and_sweep(lisp * l)
 {
 	size_t i;
 	if (l->gc_off)
 		return;
-	gc_mark(l, l->all_symbols);
-	gc_mark(l, l->top_env);
+	lisp_gc_mark(l, l->all_symbols);
+	lisp_gc_mark(l, l->top_env);
 	for (i = 0; i < l->gc_stack_used; i++)
-		gc_mark(l, l->gc_stack[i]);
+		lisp_gc_mark(l, l->gc_stack[i]);
 	gc_sweep_only(l);
 	l->gc_collectp = 0;
 }

@@ -1,8 +1,8 @@
 /** @file       private.h
  *  @brief      An *internal* header for the liblisp project, not for external
- *              use. It defines the internals of what are opaque objects to the
- *              programs outside of the library. As well as any functions which
- *              should not be used outside the project.
+ *	      use. It defines the internals of what are opaque objects to the
+ *	      programs outside of the library. As well as any functions which
+ *	      should not be used outside the project.
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com **/
@@ -29,42 +29,42 @@ extern "C" {
  * gsym_X functions defined in there liblisp.h header (such as gsym_nil,
  * gsym_tee or gsym_error). */
 #define CELL_XLIST /**< list of all special cells for initializer*/ \
-        X(nil,     "nil")    X(tee,     "t")      X(quote,   "quote")\
-        X(iif,     "if")     X(lambda,  "lambda") X(flambda, "flambda")\
-        X(define,  "define") X(set,     "set!")   X(progn,   "progn")\
-        X(cond,    "cond")   X(error,   "error")  X(loop,    "loop")\
-        X(let,     "let")    X(ret,     "return") X(compile, "compile")
+	X(nil,     "nil")    X(tee,     "t")      X(quote,   "quote")\
+	X(iif,     "if")     X(lambda,  "lambda") X(flambda, "flambda")\
+	X(define,  "define") X(set,     "set!")   X(progn,   "progn")\
+	X(cond,    "cond")   X(error,   "error")  X(loop,    "loop")\
+	X(let,     "let")    X(ret,     "return") X(compile, "compile")
       /*X(lambda_eval, "lambda-eval"); // @note evaluate an expression and create a  lambda from it */
 
 /**@brief This restores a jmp_buf stored in lisp environment if it
- *        has been copied out to make way for another jmp_buf.
+ *	has been copied out to make way for another jmp_buf.
  * @param USED is RBUF used?
  * @param ENV  lisp environment to restore jmp_buf to
  * @param RBUF jmp_buf to restore**/
 #define RECOVER_RESTORE(USED, ENV, RBUF)\
-        if((USED)) memcpy((ENV)->recover, (RBUF), sizeof(jmp_buf));\
-        else (ENV)->recover_init = 0;
+	if((USED)) memcpy((ENV)->recover, (RBUF), sizeof(jmp_buf));\
+	else (ENV)->recover_init = 0;
 
 typedef enum lisp_type { 
-        INVALID, /**< invalid object (default), halts interpreter*/
-        SYMBOL,  /**< symbol */
-        INTEGER, /**< integer, a normal fixed with number*/
-        CONS,    /**< cons cell*/
-        PROC,    /**< lambda procedure*/
-        SUBR,    /**< subroutine or primitive written in C*/
-        STRING,  /**< a NUL terminated string*/
-        IO,      /**< Input/Output port*/
-        HASH,    /**< Associative hash table*/
-        FPROC,   /**< F-Expression*/
-        FLOAT,   /**< Floating point number; could be float or double*/
-        USERDEF  /**< User defined types*/
+	INVALID, /**< invalid object (default), halts interpreter*/
+	SYMBOL,  /**< symbol */
+	INTEGER, /**< integer, a normal fixed with number*/
+	CONS,    /**< cons cell*/
+	PROC,    /**< lambda procedure*/
+	SUBR,    /**< subroutine or primitive written in C*/
+	STRING,  /**< a NUL terminated string*/
+	IO,      /**< Input/Output port*/
+	HASH,    /**< Associative hash table*/
+	FPROC,   /**< F-Expression*/
+	FLOAT,   /**< Floating point number; could be float or double*/
+	USERDEF  /**< User defined types*/
 } lisp_type;     /**< A lisp object*/
 
 typedef union cell_data { /**< ideally we would use void* for everything*/
-        void *v;     /**< use this for integers and points to cells*/
-        lfloat f;    /**< if lfloat is double it could be bigger than *v */ 
-        subr prim;   /**< function pointers are not guaranteed 
-                                                      to fit into a void**/
+	void *v;     /**< use this for integers and points to cells*/
+	lfloat f;    /**< if lfloat is double it could be bigger than *v */ 
+	subr prim;   /**< function pointers are not guaranteed 
+	                                              to fit into a void**/
 } cell_data; /**< a union of all the different C datatypes used*/
 
 /**@brief A tagged object representing all possible lisp data types.
@@ -81,139 +81,140 @@ typedef union cell_data { /**< ideally we would use void* for everything*/
  * The cell uses the "struct hack", see
  * <http://c-faq.com/struct/structhack.html> **/
 struct cell {
-        unsigned type:    4,        /**< Type of the lisp object*/
-                 mark:    1,        /**< mark for garbage collection*/
-                 uncollectable: 1,  /**< do not free object?*/
-                 close:   1,        /**< object closed/invalid?*/
-                 len:     BITS_IN_LENGTH; /**< length of data p*/
-        cell_data p[1]; /**< uses the "struct hack", 
-                             c99 does not quite work here*/
+	unsigned type:    4,        /**< Type of the lisp object*/
+		mark:    1,        /**< mark for garbage collection*/
+		uncollectable: 1,  /**< do not free object?*/
+		close:   1,        /**< object closed/invalid?*/
+		used:    1, /**< object is in use by something outside lisp interpreter*/
+		len:     BITS_IN_LENGTH; /**< length of data p*/
+	cell_data p[1]; /**< uses the "struct hack", 
+	                     c99 does not quite work here*/
 } /*__attribute__((packed)) <- saves a fair bit of space */;  
 
 /** @brief This describes an entry in a hash table, which is an
- *         implementation detail of the hash, so should not be
- *         counted upon. It represents a node in a chained hash
- *         table */
+ *	 implementation detail of the hash, so should not be
+ *	 counted upon. It represents a node in a chained hash
+ *	 table */
 typedef struct hashentry {      /**< linked list of entries in a bin*/
-        char *key;              /**< ASCII nul delimited string*/
-        void *val;              /**< arbitrary value*/
-        struct hashentry *next; /**< next item in list*/
+	char *key;              /**< ASCII nul delimited string*/
+	void *val;              /**< arbitrary value*/
+	struct hashentry *next; /**< next item in list*/
 } hashentry;
 
-struct hashtable {                /**< a hash table*/
-        struct hashentry **table; /**< table of linked lists*/
-        size_t len,  /**< number of 'bins' in the hash table*/
-               collisions,   /**< number of collisions */
-               replacements, /**< number of entries replaced*/
-               used          /**< number of bins used*/;
-        /*state used for the foreach loop*/
-        int foreach;          /**< if true, we are in a foreach loop*/
-        size_t foreach_index; /**< index into foreach loop*/
-        void *foreach_cur;    /**< current entry in foreach loop*/
+struct hashtable {	        /**< a hash table*/
+	struct hashentry **table; /**< table of linked lists*/
+	size_t len,  /**< number of 'bins' in the hash table*/
+	       collisions,   /**< number of collisions */
+	       replacements, /**< number of entries replaced*/
+	       used          /**< number of bins used*/;
+	/*state used for the foreach loop*/
+	int foreach;          /**< if true, we are in a foreach loop*/
+	size_t foreach_index; /**< index into foreach loop*/
+	void *foreach_cur;    /**< current entry in foreach loop*/
 };
 
 /** @brief A structure that is used to wrap up the I/O operations 
- *         of the lisp interpreter. */
+ *	 of the lisp interpreter. */
 struct io {
-        union { FILE *file; char *str; } p; /**< the actual file or string*/
-        size_t position, /**< current position, used for string*/
-               max;      /**< max position in buffer, used for string*/
-        enum { IO_INVALID,    /**< invalid (default)*/ 
-               FIN,           /**< file input*/
-               FOUT,          /**< file output*/
-               SIN,           /**< string input*/
-               SOUT,          /**< string output, write to char* block*/
-               NULLOUT        /**< null output, discard output*/
-        } type; /**< type of the IO object*/
-        unsigned ungetc :1, /**< push back is in use?*/
-                 color  :1, /**< colorize output? Used in lisp_print*/
-                 pretty :1, /**< pretty print output? Used in lisp_print*/
-                 eof    :1; /**< End-Of-File marker*/
-        char c; /**< one character of push back*/
+	union { FILE *file; char *str; } p; /**< the actual file or string*/
+	size_t position, /**< current position, used for string*/
+	       max;      /**< max position in buffer, used for string*/
+	enum { IO_INVALID,    /**< invalid (default)*/ 
+	       FIN,           /**< file input*/
+	       FOUT,          /**< file output*/
+	       SIN,           /**< string input*/
+	       SOUT,          /**< string output, write to char* block*/
+	       NULLOUT        /**< null output, discard output*/
+	} type; /**< type of the IO object*/
+	unsigned ungetc :1, /**< push back is in use?*/
+		color  :1, /**< colorize output? Used in lisp_print*/
+		pretty :1, /**< pretty print output? Used in lisp_print*/
+		eof    :1; /**< End-Of-File marker*/
+	char c; /**< one character of push back*/
 };
 
 /** @brief The internal state used to translate a block of memory 
- *         using the "tr" routines, which behave similarly to the
- *         Unix "tr" command. */
+ *	 using the "tr" routines, which behave similarly to the
+ *	 Unix "tr" command. */
 struct tr_state {
-        int set_squ[UINT8_MAX+1], /**< squeeze a character sequence?*/
-            set_del[UINT8_MAX+1], /**< delete a character?*/
-            compliment_seq,  /**< compliment sequence*/
-            squeeze_seq,     /**< squeeze sequence*/
-            delete_seq,      /**< delete a sequence of character*/
-            truncate_seq;    /**< truncate s1 to length of s2*/
-        uint8_t set_tr[UINT8_MAX+1], /**< final map of s1 to s2 */
-                previous_char; /**< previous translation char, for squeeze*/
+	int set_squ[UINT8_MAX+1], /**< squeeze a character sequence?*/
+		set_del[UINT8_MAX+1], /**< delete a character?*/
+		compliment_seq,  /**< compliment sequence*/
+		squeeze_seq,     /**< squeeze sequence*/
+		delete_seq,      /**< delete a sequence of character*/
+		truncate_seq;    /**< truncate s1 to length of s2*/
+	uint8_t set_tr[UINT8_MAX+1], /**< final map of s1 to s2 */
+		previous_char; /**< previous translation char, for squeeze*/
 };
 
 /** @brief Type used to form linked list of all allocations */
 typedef struct gc_list { 
-        cell *ref; /**< reference to cell for the garbage collector to act on*/
-        struct gc_list *next; /**< next in list*/
+	cell *ref; /**< reference to cell for the garbage collector to act on*/
+	struct gc_list *next; /**< next in list*/
 } gc_list; 
 
 /** @brief functions the interpreter uses for user defined types */
 typedef struct { 
-        ud_free   free;  /**< to free a user defined type*/
-        ud_mark   mark;  /**< to mark a user defined type*/
-        ud_equal  equal; /**< to compare two user defined types*/
-        ud_print  print; /**< to print two user defined types*/
+	ud_free   free;  /**< to free a user defined type*/
+	ud_mark   mark;  /**< to mark a user defined type*/
+	ud_equal  equal; /**< to compare two user defined types*/
+	ud_print  print; /**< to print two user defined types*/
 } userdef_funcs; 
 
 /** @brief The state for a lisp interpreter, multiple such instances
- *         can run at the same time. It contains everything needed
- *         to run a complete lisp environment. */
+ *	 can run at the same time. It contains everything needed
+ *	 to run a complete lisp environment. */
 struct lisp {
-        jmp_buf recover; /**< longjmp when there is an error */
+	jmp_buf recover; /**< longjmp when there is an error */
 #define X(CNAME, LNAME) * CNAME,
-        cell CELL_XLIST Unused; /**< list of special forms/symbols*/
+	cell CELL_XLIST Unused; /**< list of special forms/symbols*/
 #undef X
-        cell *all_symbols, /**< all intern'ed symbols*/
-             *top_env,     /**< top level lisp environment (association list)*/
-             *top_hash,    /**< top level hash (member of association list)*/
-             *input,       /**< interpreter input stream*/
-             *output,      /**< interpreter output stream*/
-             *logging,     /**< interpreter logging/error stream*/
-             *cur_env,     /**< current interpreter depth*/
-             *empty_docstr,/**< empty doc string */
-            **gc_stack;    /**< garbage collection stack for working items*/
-        gc_list *gc_head;  /**< linked list of all allocated objects*/
-        char *token /**< one token of put back for parser*/, 
-             *buf   /**< input buffer for parser*/;
-        size_t buf_allocated,/**< size of buffer "l->buf"*/
-               buf_used,     /**< amount of buffer used by current string*/
-               gc_stack_allocated, /**< length of buffer of GC stack*/
-               gc_stack_used,      /**< elements used in GC stack*/
-               gc_collectp;  /**< garbage collect after it goes too high*/
-        uint64_t random_state[2] /**< PRNG state*/;
-        editor_func editor; /**< line editor to use, optional*/
-        userdef_funcs ufuncs[MAX_USER_TYPES]; /**< for user defined types*/
-        int user_defined_types_used;   /**< number of user defined types allocated*/
-        int sig;   /**< set by signal handlers or other threads*/
-        unsigned ungettok:     1, /**< do we have a put-back token to read?*/
-                 recover_init: 1, /**< has the recover buffer been initialized?*/
-                 errors_halt:  1, /**< any error halts the interpreter if true*/
-                 color_on:     1, /**< REPL Colorize output*/
-                 prompt_on:    1, /**< REPL '>' Turn prompt on*/
-                 trace_on:     1, /**< turn tracing on or off*/
-                 gc_off:       1, /**< turn the garbage collector off*/
-                 editor_on:    1; /**< REPL Turn the line editor on*/
-        unsigned cur_depth; /**< current recursion depth of the interpreter*/
+	cell *all_symbols, /**< all intern'ed symbols*/
+		*top_env,     /**< top level lisp environment (association list)*/
+		*top_hash,    /**< top level hash (member of association list)*/
+		*input,       /**< interpreter input stream*/
+		*output,      /**< interpreter output stream*/
+		*logging,     /**< interpreter logging/error stream*/
+		*cur_env,     /**< current interpreter depth*/
+		*empty_docstr,/**< empty doc string */
+		**gc_stack;    /**< garbage collection stack for working items*/
+	gc_list *gc_head;  /**< linked list of all allocated objects*/
+	char *token /**< one token of put back for parser*/, 
+		*buf   /**< input buffer for parser*/;
+	size_t buf_allocated,/**< size of buffer "l->buf"*/
+		buf_used,     /**< amount of buffer used by current string*/
+		gc_stack_allocated, /**< length of buffer of GC stack*/
+		gc_stack_used,      /**< elements used in GC stack*/
+		gc_collectp;  /**< garbage collect after it goes too high*/
+	uint64_t random_state[2] /**< PRNG state*/;
+	editor_func editor; /**< line editor to use, optional*/
+	userdef_funcs ufuncs[MAX_USER_TYPES]; /**< for user defined types*/
+	int user_defined_types_used;   /**< number of user defined types allocated*/
+	int sig;   /**< set by signal handlers or other threads*/
+	unsigned ungettok:     1, /**< do we have a put-back token to read?*/
+		recover_init: 1, /**< has the recover buffer been initialized?*/
+		errors_halt:  1, /**< any error halts the interpreter if true*/
+		color_on:     1, /**< REPL Colorize output*/
+		prompt_on:    1, /**< REPL '>' Turn prompt on*/
+		trace_on:     1, /**< turn tracing on or off*/
+		gc_off:       1, /**< turn the garbage collector off*/
+		editor_on:    1; /**< REPL Turn the line editor on*/
+	unsigned cur_depth; /**< current recursion depth of the interpreter*/
 };
 
 /*************************** internal functions *******************************/
 /* Ideally these functions would only have internal file linkage*/
 
 /**@brief  Add a lisp object to the stack of temporary variables, anything
- *         on this stack will not be collected until it becomes unreachable
- *         (by being overwritten or by being popped off the stack).
+ *	 on this stack will not be collected until it becomes unreachable
+ *	 (by being overwritten or by being popped off the stack).
  * @param  l     the lisp environment to add the cell to
  * @param  op    the cell to add
  * @return cell* the added cell, or NULL when an internal allocation failed**/
 cell *gc_add(lisp *l, cell* op);
 
 /**@brief This only performs a sweep, no objects are marked, this effectively
- *        invalidates the lisp environment!
+ *	invalidates the lisp environment!
  * @param l      the lisp environment to sweep and invalidate**/
 void gc_sweep_only(lisp *l);
 
@@ -243,7 +244,7 @@ cell *eval(lisp *l, unsigned depth, cell *exp, cell *env);
  * @param  key    key to search for
  * @param  alist  association list
  * @return if key is found it returns a cons of the key and the associated
- *         value, if not found it returns nil**/
+ *	 value, if not found it returns nil**/
 cell *assoc(cell *key, cell *alist);
 
 /**@brief  Extend the top level lisp environment with a key value pair

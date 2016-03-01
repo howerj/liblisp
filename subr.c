@@ -587,7 +587,7 @@ static cell *subr_trace(lisp * l, cell * args)
 static cell *subr_gc(lisp * l, cell * args)
 {
 	UNUSED(args);
-	gc_mark_and_sweep(l);
+	lisp_gc_mark_and_sweep(l);
 	return gsym_tee();
 }
 
