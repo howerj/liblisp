@@ -3,7 +3,9 @@
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later 
  *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
- *  @email      howe.r.j.89@gmail.com**/
+ *  @email      howe.r.j.89@gmail.com
+ *  @todo       I should find out if this module is thread safe or not
+ **/
 #include <assert.h>
 #include <libtcc.h>
 #include <liblisp.h>
@@ -117,10 +119,10 @@ static cell *subr_set_lib_path(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-static int initialize(void)
+int lisp_module_initialize(lisp *l)
 {
 	size_t i;
-	assert(lglobal);
+	assert(l);
 	/** Tiny C compiler library interface, special care has to be taken 
          *  when compiling and linking all of the C files within the liblisp
          *  project so the symbols in it are available to libtcc.
@@ -132,33 +134,27 @@ static int initialize(void)
          *  * Separate out tcc_get_symbol from tcc_compile_string
          *  * Find out why link does not work
          **/
-	ud_tcc = new_user_defined_type(lglobal, ud_tcc_free, NULL, NULL, ud_tcc_print);
+	ud_tcc = new_user_defined_type(l, ud_tcc_free, NULL, NULL, ud_tcc_print);
 	if (ud_tcc < 0)
 		goto fail;
 	TCCState *st = tcc_new();
 	tcc_set_output_type(st, TCC_OUTPUT_MEMORY);
-	lisp_add_cell(lglobal, "*compile-state*", mk_user(lglobal, st, ud_tcc));
+	lisp_add_cell(l, "*compile-state*", mk_user(l, st, ud_tcc));
 	for (i = 0; primitives[i].p; i++)	/*add all primitives from this module */
-		if (!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
+		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
 			goto fail;
 	if (lisp_verbose_modules)
-		lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: tcc loaded\n");
+		lisp_printf(l, lisp_get_logging(l), 0, "module: tcc loaded\n");
 	return 0;
- fail:	lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: tcc load failure\n");
+ fail:	lisp_printf(l, lisp_get_logging(l), 0, "module: tcc load failure\n");
 	return -1;
 }
 
 #ifdef __unix__
 static void construct(void) __attribute__ ((constructor));
 static void destruct(void) __attribute__ ((destructor));
-static void construct(void)
-{
-	initialize();
-}
-
-static void destruct(void)
-{
-}
+static void construct(void) {}
+static void destruct(void) {}
 #elif _WIN32
 #include <windows.h>
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
@@ -167,7 +163,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	UNUSED(lpvReserved);
 	switch (fdwReason) {
 	case DLL_PROCESS_ATTACH:
-		initialize();
 		break;
 	case DLL_PROCESS_DETACH:
 		break;

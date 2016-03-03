@@ -10,10 +10,11 @@
  *
  *  @todo Finish functionality
  *  @bug  Return statuses of X-Window functions is not checked
+ *  @todo Lock module so only one lisp interpreter can make a window
  *  **/
-
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <pthread.h>
 #include <liblisp.h>
 #include <assert.h>
 #include <stdint.h>
@@ -59,6 +60,7 @@ static struct module_subroutines {
 
 #undef X
 
+static pthread_mutex_t mutex_single_threaded_module = PTHREAD_MUTEX_INITIALIZER;
 static int initialized = 0;
 static Display *xdisplay; /**< the display to be used by this module*/
 static int xscreen;	  /**< the screen to use*/
@@ -84,7 +86,7 @@ static int ud_x11_print(io * o, unsigned depth, cell * f)
 	return lisp_printf(NULL, o, depth, "%B<X-WINDOW:%d:%s>%t", get_user(f), is_closed(f) ? "CLOSED" : "OPEN");
 }
 
-static Window create_window(void)
+static Window create_window(lisp *l)
 {
 	XFontStruct *fontstruct;	/* the font info to be used */
 	Window w = 0;
@@ -112,7 +114,7 @@ static Window create_window(void)
 	XSetForeground(xdisplay, clear_GC, WhitePixel(xdisplay, xscreen));
 
 	if (!(fontstruct = XLoadQueryFont(xdisplay, "8x13"))) {
-		lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "could not open font\n");
+		lisp_printf(l, lisp_get_logging(l), 0, "could not open font\n");
 		return -1;
 	}
 
@@ -137,7 +139,7 @@ static cell *subr_create_window(lisp * l, cell * args)
 {
 	cell *ret;
 	VALIDATE(l, __func__, 0, "", args, 1);
-	if (!(ret = mk_user(l, (void *)create_window(), ud_x11)))
+	if (!(ret = mk_user(l, (void *)create_window(l), ud_x11)))
 		HALT(l, "\"%s\"", "out of memory");
 	return ret;
 }
@@ -342,6 +344,9 @@ static cell *subr_window_info(lisp * l, cell * args)
 		       mk_int(l, x), mk_int(l, y), mk_int(l, width), mk_int(l, height), mk_int(l, border_width), mk_int(l, bit_depth), NULL);
 }
 
+/** @todo make either a frame work, or hack, so this does not block 
+ *  see https://stackoverflow.com/questions/8592292/how-to-quit-the-blocking-of-xlibs-xnextevent
+ **/
 static cell *subr_select_input(lisp * l, cell * args)
 {				/*for event loop */
 	XEvent e;
@@ -390,28 +395,34 @@ static cell *subr_set_foreground(lisp * l, cell * args)
 	return gsym_nil();
 }
 
-static int initialize(void)
+int lisp_module_initialize(lisp *l)
 {
 	size_t i;
-	assert(lglobal);
-	ud_x11 = new_user_defined_type(lglobal, ud_x11_free, NULL, NULL, ud_x11_print);
+	assert(l);
+	if(pthread_mutex_trylock(&mutex_single_threaded_module)) {
+		if(lisp_verbose_modules) {
+			lisp_printf(l, lisp_get_logging(l), 0, "module: line editor load failure (module already in use)\n");
+		}
+		return -1;
+	}
+	ud_x11 = new_user_defined_type(l, ud_x11_free, NULL, NULL, ud_x11_print);
 	if (ud_x11 < 0)
 		goto fail;
 	for (i = 0; primitives[i].p; i++)	/*add all primitives from this module */
-		if (!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p, primitives[i].validation, primitives[i].docstring))
+		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validation, primitives[i].docstring))
 			goto fail;
 	if (!(xdisplay = XOpenDisplay(""))) {
-		lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "cannot open display\n");
+		lisp_printf(l, lisp_get_logging(l), 0, "cannot open display\n");
 		goto fail;
 	}
 	xscreen = DefaultScreen(xdisplay);
 	xrootwin = RootWindow(xdisplay, xscreen);
 	/*w = open_window(); */
 	if (lisp_verbose_modules)
-		lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: x11 loaded\n");
+		lisp_printf(l, lisp_get_logging(l), 0, "module: x11 loaded\n");
 	initialized = 1;
 	return 0;
- fail:	lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: x11 load failure\n");
+ fail:	lisp_printf(l, lisp_get_logging(l), 0, "module: x11 load failure\n");
 	return -1;
 }
 
@@ -426,7 +437,6 @@ static void construct(void) __attribute__ ((constructor));
 static void destruct(void) __attribute__ ((destructor));
 static void construct(void)
 {
-	initialize();
 }
 
 static void destruct(void)
@@ -441,7 +451,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	UNUSED(lpvReserved);
 	switch (fdwReason) {
 	case DLL_PROCESS_ATTACH:
-		initialize();
 		break;
 	case DLL_PROCESS_DETACH:
 		cleanup();

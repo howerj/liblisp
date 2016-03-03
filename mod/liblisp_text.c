@@ -96,31 +96,25 @@ static cell *subr_tsort(lisp * l, cell * args)
 	return gsym_nil();
 }
 
-static int initialize(void)
+int lisp_module_initialize(lisp *l)
 {
 	size_t i;
-	assert(lglobal);
+	assert(l);
 	for (i = 0; primitives[i].p; i++)	/*add all primitives from this module */
-		if (!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
+		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
 			goto fail;
 	if (lisp_verbose_modules)
-		lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: text loaded\n");
+		lisp_printf(l, lisp_get_logging(l), 0, "module: text loaded\n");
 	return 0;
- fail:	lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: text load failure\n");
+ fail:	lisp_printf(l, lisp_get_logging(l), 0, "module: text load failure\n");
 	return -1;
 }
 
 #ifdef __unix__
 static void construct(void) __attribute__ ((constructor));
 static void destruct(void) __attribute__ ((destructor));
-static void construct(void)
-{
-	initialize();
-}
-
-static void destruct(void)
-{
-}
+static void construct(void) { }
+static void destruct(void) { }
 #elif _WIN32
 #include <windows.h>
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
@@ -129,7 +123,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	UNUSED(lpvReserved);
 	switch (fdwReason) {
 	case DLL_PROCESS_ATTACH:
-		initialize();
 		break;
 	case DLL_PROCESS_DETACH:
 		break;

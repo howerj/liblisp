@@ -4,7 +4,7 @@
  *  @license    LGPL v2.1 or Later 
  *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
  *  @email      howe.r.j.89@gmail.com
- *  @todo       Add readline subroutine
+ *  @bug	Needs to be ported to Windows!
  *  **/
 #include <assert.h>
 #include <libline.h>
@@ -12,9 +12,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#ifdef __unix__
+#include <pthread.h>
+#else
+#error "Unsupported platform!"
+#endif
 
 static char *homedir;
 static int running; /**< only handle errors when the lisp interpreter is running*/
+static lisp *locked_lisp; 
+static pthread_mutex_t mutex_single_threaded_module = PTHREAD_MUTEX_INITIALIZER;
 
 /** @brief This function tells a running lisp REPL to halt if it is reading
  *         input or printing output, but if it is evaluating an expression
@@ -26,9 +33,9 @@ static int running; /**< only handle errors when the lisp interpreter is running
  *  @param sig This will only be SIGINT in our case. */
 static void sig_int_handler(int sig)
 {
-	if (!running || !lglobal)
+	if (!running || !locked_lisp)
 		exit(0);	/*exit if lisp environment is not running */
-	lisp_set_signal(lglobal, sig);	/*notify lisp environment of signal */
+	lisp_set_signal(locked_lisp, sig);	/*notify lisp environment of signal */
 	running = 0;
 }
 
@@ -49,12 +56,12 @@ static void *get_hash_key(const char *key, void *val)
 
 static void completion_callback(const char *line, size_t pos, line_completions * lc)
 {
-	assert(line && lglobal);
+	assert(line && locked_lisp);
 	hashtable *h;
 	char *key, *comp, *linecopy;
 	if (!pos)
 		return;
-	h = get_hash(lisp_get_all_symbols(lglobal));
+	h = get_hash(lisp_get_all_symbols(locked_lisp));
 	linecopy = lstrdup(line);
 
 	if (!(comp = VSTRCAT("*", linecopy, "*")))	/*match any symbol with key in it */
@@ -97,7 +104,7 @@ static char *line_editing_function(const char *prompt)
 		PRINT_ERROR("\"could not save history\" \"%s\"", histfile);
 		warned = 1;
 	}
-	assert(lglobal);	/*lglobal needed for signal handler */
+	assert(locked_lisp);	/*l needed for signal handler */
 	if (signal(SIGINT, sig_int_handler) == SIG_ERR)	/*(re)install handler */
 		PRINT_ERROR("\"%s\"", "could not set signal handler");
 	running = 1;		/*SIGINT handling on when evaluating input */
@@ -146,13 +153,20 @@ static struct module_subroutines {
 
 #undef X
 
-static int initialize(void)
+int lisp_module_initialize(lisp *l)
 {
 	size_t i;
 	io *e;
 	char *sep = "/";
-	assert(lglobal);
-	e = lisp_get_logging(lglobal);
+	assert(l);
+	e = lisp_get_logging(l);
+	if(pthread_mutex_trylock(&mutex_single_threaded_module)) {
+		if(lisp_verbose_modules) {
+			lisp_printf(l, e, 0, "module: line editor load failure (module already in use)\n");
+		}
+		return -1;
+	}
+	locked_lisp = l;
 
 	if (signal(SIGINT, sig_int_handler) == SIG_ERR) {
 		PRINT_ERROR("\"%s\"", "could not set signal handler");
@@ -174,33 +188,30 @@ static int initialize(void)
 		histfile = VSTRCATSEP(sep, homedir, histfile);
 	if (!histfile)
 		PRINT_ERROR("\"%s\"", "VSTRCATSEP allocation failed");
-	lisp_set_line_editor(lglobal, line_editing_function);
+	lisp_set_line_editor(l, line_editing_function);
 	line_history_load(histfile);
 	line_set_vi_mode(0);	/*start up in a lame editing mode thats not confusing */
 	line_set_completion_callback(completion_callback);
-	lisp_add_cell(lglobal, "*history-file*", mk_str(lglobal, lstrdup(histfile)));
+	lisp_add_cell(l, "*history-file*", mk_str(l, lstrdup(histfile)));
 
 	for (i = 0; primitives[i].p; i++)	/*add primitives from this module */
-		if (!lisp_add_subr(lglobal, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
+		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
 			goto fail;
 	if (lisp_verbose_modules)
-		lisp_printf(lglobal, e, 0, "module: line editor loaded\n");
+		lisp_printf(l, e, 0, "module: line editor loaded\n");
 	return 0;
- fail:	lisp_printf(lglobal, e, 0, "module: line editor load failure\n");
+ fail:	lisp_printf(l, e, 0, "module: line editor load failure\n");
 	return -1;
 }
 
 #ifdef __unix__
 static void construct(void) __attribute__ ((constructor));
 static void destruct(void) __attribute__ ((destructor));
-static void construct(void)
-{
-	initialize();
-}
+static void construct(void) { }
 
 static void destruct(void)
 {
-	/*lisp_set_line_editor(lglobal, NULL); */
+	/*lisp_set_line_editor(l, NULL); */
 	if (homedir)
 		free(histfile);
 }

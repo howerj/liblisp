@@ -142,6 +142,7 @@ static char *win_dlerror(void) {
 
 static int ud_dl = 0; /**< User defined type value for DLL handles*/
 
+/**@bug This should be locked when is use!*/
 struct dl_list; /**< linked list of all DLL handles*/
 typedef struct dl_list {
         dl_handle_t handle;
@@ -185,6 +186,19 @@ static cell *subr_dlopen(lisp *l, cell *args) {
         return mk_user(l, handle, ud_dl);
 }
 
+/* loads a lisp module and runs the initialization function */
+static cell *subr_load_lisp_module(lisp *l, cell *args) {
+	cell *h = subr_dlopen(l, args);
+	dl_handle_t handle;
+	lisp_module_initializer_t init;
+	if(!is_usertype(h, ud_dl))
+		return gsym_error();
+	handle = get_user(h);
+	if((init = DL_SYM(handle, "lisp_module_initialize")) && (init(l) >= 0))
+		return h;
+	return gsym_error();
+}
+
 static cell *subr_dlsym(lisp *l, cell *args) {
         subr func;
         if(!cklen(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
@@ -206,7 +220,6 @@ int main(int argc, char **argv) {
         lisp *l = lisp_init();
         if(!l) 
                 goto fail;
-        lglobal = l;
 
         lisp_add_cell(l, "*version*",           mk_str(l, lstrdup(XSTRINGIFY(VERSION))));
         lisp_add_cell(l, "*commit*",            mk_str(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
@@ -220,6 +233,7 @@ int main(int argc, char **argv) {
         lisp_add_subr(l, "dynamic-open",   subr_dlopen, "Z", NULL);
         lisp_add_subr(l, "dynamic-symbol", subr_dlsym, NULL, NULL);
         lisp_add_subr(l, "dynamic-error",  subr_dlerror, "", NULL);
+        lisp_add_subr(l, "dynamic-load-lisp-module", subr_load_lisp_module, "Z", NULL);
         lisp_add_cell(l, "*have-dynamic-loader*", gsym_tee());
         atexit(dlclose_atexit);
 #else

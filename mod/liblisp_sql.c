@@ -11,6 +11,11 @@
 #include <sqlite3.h>
 #include <stdlib.h>
 
+typedef struct {
+	lisp *l;
+	cell *ret;
+} sqlite3_cb_t;
+
 static int ud_sql;
 
 static void ud_sql_free(cell * f)
@@ -25,23 +30,27 @@ static int ud_sql_print(io * o, unsigned depth, cell * f)
 	return lisp_printf(NULL, o, depth, "%B<SQL-STATE:%d:%s>%t", get_user(f), is_closed(f) ? "CLOSED" : "OPEN");
 }
 
+/** @todo This callback is probably a little bit too verbose, it puts the field
+ * names in all of the entries, but this *might* not be necessary, instead it
+ * could be done only once, perhaps*/
 static int sql_callback(void *obin, int argc, char **argv, char **azColName)
 {
 	int i;
-	cell *ob;
 	assert(obin);
-	ob = *((cell **) obin);
+	sqlite3_cb_t *cb = (sqlite3_cb_t *)obin;
+	cell *cur = gsym_nil();
+	cell *list = cb->ret;
+	lisp *l = cb->l;
 	for (i = 0; i < argc; i++)
-		ob = cons(lglobal,
-			  cons(lglobal, mk_str(lglobal, lstrdup(azColName[i])), argv[i] ? mk_str(lglobal, lstrdup(argv[i])) : gsym_nil()), ob);
-	*((cell **) obin) = ob;
+		cur = cons(l,
+			  cons(l, mk_str(l, lstrdup(azColName[i])), argv[i] ? mk_str(l, lstrdup(argv[i])) : gsym_nil()), cur);
+	cb->ret = cons(l, cur, list);
 	return 0;
 }
 
 static cell *subr_sqlopen(lisp * l, cell * args)
 {
 	sqlite3 *db;
-	assert(l == lglobal);
 	VALIDATE(l, "subr_sqlopen", 1, "Z", args, 1);
 	if (sqlite3_open(get_str(car(args)), &db)) {
 		lisp_printf(l, lisp_get_logging(l), 0, "(sql-error \"%s\")\n", sqlite3_errmsg(db));
@@ -53,58 +62,53 @@ static cell *subr_sqlopen(lisp * l, cell * args)
 
 static cell *subr_sql(lisp * l, cell * args)
 {
-	char *errmsg;
-	cell *head = gsym_nil();
-	assert(l == lglobal);
+	intptr_t rc = 0;
+	char *errmsg = NULL;
+	sqlite3_cb_t cb;
+	cb.ret = gsym_nil();
+	cb.l   = l;
 	if (!cklen(args, 2) || !is_usertype(car(args), ud_sql) || !is_asciiz(CADR(args)))
 		RECOVER(l, "\"expected (sql-database string)\" '%S", args);
-	if (sqlite3_exec(get_user(car(args)), get_str(CADR(args)), sql_callback, &head, &errmsg) != SQLITE_OK) {
-		lisp_printf(l, lisp_get_logging(l), 0, "(sql-error \"%s\")\n", errmsg);
+	if ((rc = sqlite3_exec(get_user(car(args)), get_str(CADR(args)), sql_callback, &cb, &errmsg)) != SQLITE_OK) {
+		lisp_printf(l, lisp_get_logging(l), 0, "(sql-error \"%s\" %d)\n", errmsg, rc);
 		sqlite3_free(errmsg);
 		return gsym_error();
 	}
-	return head;
+	return cb.ret;
 }
 
 static cell *subr_sqlclose(lisp * l, cell * args)
 {
-	assert(l == lglobal);
 	if (!cklen(args, 1) || !is_usertype(car(args), ud_sql))
 		RECOVER(l, "\"expected (sql-database)\" '%S", args);
 	sqlite3_close(get_user(car(args)));
 	return gsym_tee();
 }
 
-static int initialize(void)
+int lisp_module_initialize(lisp *l)
 {
-	assert(lglobal);
-	ud_sql = new_user_defined_type(lglobal, ud_sql_free, NULL, NULL, ud_sql_print);
+	assert(l);
+	ud_sql = new_user_defined_type(l, ud_sql_free, NULL, NULL, ud_sql_print);
 	if (ud_sql < 0)
 		goto fail;
-	if (!lisp_add_subr(lglobal, "sql", subr_sql, NULL, NULL))
+	if (!lisp_add_subr(l, "sql", subr_sql, NULL, NULL))
 		goto fail;
-	if (!lisp_add_subr(lglobal, "sql-open", subr_sqlopen, NULL, NULL))
+	if (!lisp_add_subr(l, "sql-open", subr_sqlopen, NULL, NULL))
 		goto fail;
-	if (!lisp_add_subr(lglobal, "sql-close", subr_sqlclose, NULL, NULL))
+	if (!lisp_add_subr(l, "sql-close", subr_sqlclose, NULL, NULL))
 		goto fail;
 	if (lisp_verbose_modules)
-		lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: sqlite3 loaded\n");
+		lisp_printf(l, lisp_get_logging(l), 0, "module: sqlite3 loaded\n");
 	return 0;
- fail:	lisp_printf(lglobal, lisp_get_logging(lglobal), 0, "module: sqlite3 load failure\n");
+ fail:	lisp_printf(l, lisp_get_logging(l), 0, "module: sqlite3 load failure\n");
 	return -1;
 }
 
 #ifdef __unix__
 static void construct(void) __attribute__ ((constructor));
 static void destruct(void) __attribute__ ((destructor));
-static void construct(void)
-{
-	initialize();
-}
-
-static void destruct(void)
-{
-}
+static void construct(void) {}
+static void destruct(void) {}
 #elif _WIN32
 #include <windows.h>
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
@@ -113,7 +117,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	UNUSED(lpvReserved);
 	switch (fdwReason) {
 	case DLL_PROCESS_ATTACH:
-		initialize();
 		break;
 	case DLL_PROCESS_DETACH:
 		break;

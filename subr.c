@@ -1126,7 +1126,8 @@ static cell *subr_format(lisp * l, cell * args)
          *        colorization, printing different base numbers, leading
          *        zeros on numbers, printing repeated characters and even
          *        string interpolation ("$x" could look up 'x), as well
-         *        as printing out escaped strings. */
+         *        as printing out escaped strings.
+	 *  @bug  What happens if it cannot write to a file!? */
 	cell *cret;
 	io *o = NULL, *t = NULL;
 	char *fmt, c, *ts;
@@ -1246,6 +1247,11 @@ static cell *subr_format(lisp * l, cell * args)
  argfail:RECOVER(l, "\"expected () (io? str any...)\"\n '%S", args);
  fail:	free(io_get_string(t));
 	io_close(t);
+	/*@todo check if this was a format error, of if this was caused
+	 * by a file write failure, if so, then only return what was
+	 * rewritten and signal a failure happened somewhere, this
+	 * means format should return (error-status "string") not just
+	 * "string" */
 	RECOVER(l, "\"format error\"\n %S", args);
 	return gsym_error();
 }

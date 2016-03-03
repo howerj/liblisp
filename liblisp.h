@@ -1,6 +1,6 @@
 /** @file       liblisp.h
  *  @brief      A minimal lisp interpreter and utility library
- *  @author     Richard Howe (2015)
+ *  @author     Richard Howe (2015, 2016)
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com
  *
@@ -16,6 +16,8 @@
  *
  *  @todo Rename lisp related functions to include the prefix "lisp_" or at least "l_"
  *  @todo Move module related variables to another header
+ *  @todo The typedefs used should have the "lisp" prefix and "_t" (or
+ *  something POSIX compliant).
 **/
 #ifndef LIBLISP_H
 #define LIBLISP_H
@@ -1072,18 +1074,6 @@ LIBLISP_API int is_fnumber(const char *buf);
  * S-expressions. The reader can be used as a generic way to parser
  * S-expressions, which is part of the intention of the library. */
 
-/** @brief This variable is a global lisp environment provided by
-  *        the liblisp library.
-  *
-  *   While multiple instances of a lisp interpreter can be
-  *   created and used the module system (for loading compiled
-  *   code at run time from Dynamically Linked Objects or Shared
-  *   Objects) require and interact with a single, unique
-  *   lisp environment. This cannot be worked around.
-  *
-  * @todo Move this to "main.c", make header for "main.c" as well?**/
-LIBLISP_API extern lisp *lglobal;
-LIBLISP_API extern int lisp_verbose_modules;
 
 /** @brief A method for throwing an exception in the lisp interpreter,
  *         this will call exit() if internally a jmp_buf has not been
@@ -1548,6 +1538,17 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
 
 #define SEP ":"    /**< Separator for docstrings */
 #define MK_DOCSTR(NAME, DOCSTR) (NAME SEP __FILE__ SEP DOCSTR)
+
+/* module stuff to move into separate header */
+
+typedef int (*lisp_module_initializer_t)(lisp *l);
+
+/** @brief If this variable is true then lisp modules are free to be
+ * as noisy as they like, otherwise they will only emit messages on
+ * an error. */
+LIBLISP_API extern int lisp_verbose_modules;
+
+int lisp_module_initialize(lisp *l);
 
 #ifdef __cplusplus
 }

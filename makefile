@@ -62,7 +62,7 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 DEFINES = -DUSE_DL -DUSE_INITRC -DUSE_ABORT_HANDLER
 LINK    = -ldl
 # This is for convenience only, it may cause problems.
-RPATH   ?= -Wl,-rpath=. -Wl,-rpath=./mod 
+RPATH   ?= -Wl,-rpath=.
 
 ifeq ($(OS),Windows_NT)
 FixPath =$(subst /,\,$1)
@@ -122,7 +122,7 @@ CFLAGS += -std=c99
 
 TARGET = lisp
 
-all: shorthelp $(TARGET)$(EXE) lib$(TARGET).$(DLL) lib$(TARGET).a unit$(EXE)
+all: shorthelp $(TARGET)$(EXE) lib$(TARGET).$(DLL) lib$(TARGET).a unit$(EXE) test
 
 include mod/makefile.in
 
