@@ -122,7 +122,7 @@ CFLAGS += -std=c99
 
 TARGET = lisp
 
-all: shorthelp $(TARGET)$(EXE) lib$(TARGET).$(DLL) lib$(TARGET).a unit$(EXE) test
+all: shorthelp $(TARGET)$(EXE) lib$(TARGET).$(DLL) lib$(TARGET).a unit$(EXE) 
 
 include mod/makefile.in
 

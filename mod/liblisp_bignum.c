@@ -130,6 +130,7 @@ int lisp_module_initialize(lisp *l)
 	size_t i;
 	assert(l);
 
+	/**@bug ud_bignum needs to be on a per lisp interpreter basis*/
 	ud_bignum = new_user_defined_type(l, ud_bignum_free, NULL, NULL, ud_bignum_print);
 	if (ud_bignum < 0)
 		goto fail;

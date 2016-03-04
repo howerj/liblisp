@@ -405,6 +405,7 @@ int lisp_module_initialize(lisp *l)
 		}
 		return -1;
 	}
+	/*ud_x11 belongs to only one lisp environment*/
 	ud_x11 = new_user_defined_type(l, ud_x11_free, NULL, NULL, ud_x11_print);
 	if (ud_x11 < 0)
 		goto fail;

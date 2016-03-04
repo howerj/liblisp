@@ -5,7 +5,8 @@
  *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
  *  @email      howe.r.j.89@gmail.com
  *
- *  This is an Unix OS interface module. **/
+ *  This is an Unix OS interface module. 
+ *  @todo This module needs *significant* improvement **/
 #define _GNU_SOURCE
 #include <assert.h>
 #include <liblisp.h>

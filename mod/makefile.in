@@ -1,7 +1,6 @@
 
 # modules to compile, system dependent modules are added later.
-MODULES=liblisp_crc.$(DLL)\
-       	liblisp_bignum.$(DLL) liblisp_math.$(DLL) liblisp_line.$(DLL)\
+MODULES=liblisp_crc.$(DLL) liblisp_bignum.$(DLL) liblisp_math.$(DLL)\
 	liblisp_text.$(DLL) 
 
 MOD_DEPS=liblisp.h liblisp.a liblisp.$(DLL)
@@ -13,7 +12,8 @@ ADDITIONAL=liblisp.$(DLL)
 THREADLIB=
 else # unix is default
 MODULES+=liblisp_tcc.$(DLL) liblisp_sql.$(DLL) liblisp_unix.$(DLL)\
-	 liblisp_x11.$(DLL)
+	 liblisp_x11.$(DLL) liblisp_curl.$(DLL) liblisp_line.$(DLL)\
+	 liblisp_xml.$(DLL)
 # used for locks
 THREADLIB=-lpthread
 endif
@@ -38,6 +38,9 @@ liblisp_crc.$(DLL): liblisp_crc.o crc.o $(MOD_DEPS)
 liblisp_tcc.o: $(CURDIR)liblisp_tcc.c
 	$(CC) $(CFLAGS_RELAXED) -I. $< -c -o $@
 
+liblisp_curl.$(DLL): liblisp_curl.o $(MOD_DEPS)
+	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lcurl -o $@
+
 liblisp_tcc.$(DLL): liblisp_tcc.o $(MOD_DEPS)
 	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -ltcc -o $@
 
@@ -49,6 +52,9 @@ liblisp_line.$(DLL): liblisp_line.o libline.$(DLL) $(MOD_DEPS)
 
 liblisp_x11.$(DLL): liblisp_x11.o $(MOD_DEPS)
 	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) $(THREADLIB) -lX11 -o $@
+
+liblisp_xml.$(DLL): liblisp_xml.o $(MOD_DEPS)
+	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lmxml -o $@
 
 liblisp_text.$(DLL): liblisp_text.o diff.o tsort.o $(MOD_DEPS)
 	$(CC) $(CFLAGS) -shared $< diff.o tsort.o $(ADDITIONAL) -o $@

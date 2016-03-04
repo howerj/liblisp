@@ -88,6 +88,7 @@ static cell *subr_sqlclose(lisp * l, cell * args)
 int lisp_module_initialize(lisp *l)
 {
 	assert(l);
+	/**@bug ud_sql needs to be on a per lisp thread basis*/
 	ud_sql = new_user_defined_type(l, ud_sql_free, NULL, NULL, ud_sql_print);
 	if (ud_sql < 0)
 		goto fail;

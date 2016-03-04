@@ -9,6 +9,9 @@
  *           require turning lisp_validate_args into a variadic function, 
  *           something like %u will pop an integer off the argument stack 
  *           to test against.
+ *  @todo    Grouped format specifiers should be treated as an "or", or they
+ *           should be be treated as an "and", with the length being calculated
+ *           correctly, which it is not.
  *  @warning The number of arguments in the string and the number of arguments
  *           passed into the validation string must be the same, this is the
  *           responsibility of the user of these functions

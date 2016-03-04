@@ -230,6 +230,8 @@ void fix_list_len(cell * x, size_t l)
 	assert(x);
 	for (; !is_nil(x); x = cdr(x))
 		x->len = l--;
+	if(l)
+		fprintf(stderr, "(error \"incorrect length\" %zu)\n", l);
 	assert(!l);
 }
 

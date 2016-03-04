@@ -134,6 +134,7 @@ int lisp_module_initialize(lisp *l)
          *  * Separate out tcc_get_symbol from tcc_compile_string
          *  * Find out why link does not work
          **/
+	/**@bug ud_tcc needs to be on a per lisp thread basis*/
 	ud_tcc = new_user_defined_type(l, ud_tcc_free, NULL, NULL, ud_tcc_print);
 	if (ud_tcc < 0)
 		goto fail;

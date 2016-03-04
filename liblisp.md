@@ -358,6 +358,10 @@ itself and stored alongside the subroutine.
 * Move most subroutines to modules
 * Matrix arithmetic module
 * The bignum library needs significant improvement
+* XML parser:
+	* https://sourceforge.net/projects/mxml/files/
+	* http://www.msweet.org/documentation/project3/Mini-XML.html
+* https://curl.haxx.se/libcurl/c/
 
 <div id='Test programs'/>
 ## Test programs

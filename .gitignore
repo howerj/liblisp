@@ -85,3 +85,4 @@ lisp-*/data/*
 lisp-*/docs/
 lisp-*/docs/*
 debian/liblisp*
+*.xml
