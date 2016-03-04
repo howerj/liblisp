@@ -11,6 +11,8 @@
  *  @todo	Better error status need to be returned, instead of the
  *              generic gsym_error()
  *  @todo       An error callback should be made
+ *  @bug        The lengths need to be calculated correctly for lists that
+ *              have been made.
  **/
 #include <assert.h>
 #include <liblisp.h>

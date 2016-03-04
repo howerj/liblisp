@@ -34,7 +34,11 @@
 #endif
 
 /**@todo This needs to be controllable by switches, and the extern definition
- * moved to a special liblisp module header*/
+ * moved to a special liblisp module header
+ * @todo If the verbosity level is higher, the module should print out more
+ * information, such as what functions it is adding.
+ * @todo All functions added in modules should have the module name
+ * automatically prepended to the function names.*/
 int lisp_verbose_modules = 1; /*modules can make more noise if set to true*/
 
 #ifdef __unix__
