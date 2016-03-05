@@ -318,6 +318,13 @@ cell *mk_str(lisp * l, char *s)
 	return mk_asciiz(l, s, STRING);
 }
 
+cell *mk_immutable_str(lisp * l, const char *s) 
+{
+	cell *r = mk_str(l, (char*)s);
+	r->uncollectable = 1;
+	return r;
+}
+
 cell *mk_hash(lisp * l, hashtable * h)
 {
 	return mk(l, HASH, 1, (cell *) h);
@@ -597,6 +604,18 @@ cell *eval(lisp * l, unsigned depth, cell * exp, cell * env)
 	case CONS:
 		first = car(exp);
 		exp = cdr(exp);
+
+		/**@todo I might want to create a field in certain types so
+		 * that they can be evaluated.
+		 *
+		 * Example:
+		 *
+		 * (SPECIAL-HASH "string") => looks up value in hash
+		 * (SPECIAL-INPUT-PORT) => return line of text as string
+		 *
+		 * This could be done using references, the reference would
+		 * need to prevent collection of what was being pointed to. 
+		 */
 		if (!is_nil(exp) && !is_proper_cons(exp))
 			RECOVER(l, "%y'evaluation\n %r\"cannot eval dotted pair\"%t\n '%S", exp);
 		if (is_cons(first))

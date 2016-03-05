@@ -103,23 +103,23 @@ int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...) {
                         { 
                           size_t i;
                           hashentry *cur;
-                          lisp_printf(l, o, depth, "(%yhash-create%t");
+                          lisp_printf(l, o, depth, "{");
                           for(i = 0; i < ht->len; i++)
                             if(ht->table[i])
                               /**@warning messy hash stuff*/
                               for(cur = ht->table[i]; cur; cur = cur->next) {
                                 io_putc(' ', o);
                                 if(is_cons(cur->val) && is_sym(car(cur->val)))
-                                        lisp_printf(l, o, depth, "'%S", car(cur->val));
+                                        lisp_printf(l, o, depth, "%S", car(cur->val));
                                 else
                                         print_escaped_string(l, o, depth, cur->key);
                                 if(is_cons(cur->val)) { 
-                                        lisp_printf(l, o, depth, "%t '%S", cdr(cur->val));
+                                        lisp_printf(l, o, depth, "%t %S", cdr(cur->val));
                                 } else {
-                                        lisp_printf(l, o, depth, "%t '%S", cur->val);
+                                        lisp_printf(l, o, depth, "%t %S", cur->val);
                                 }
                               }
-                          ret = io_putc(')', o);
+                          ret = io_puts(" }", o);
                         }
                         break;
                         default:   if(o->color) {

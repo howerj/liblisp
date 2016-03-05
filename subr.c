@@ -26,6 +26,7 @@
  *        level could be put next to each subroutine, this would help in
  *        keeping them in sync. Doxygen could be used to extract the
  *        information for the tutorial, or a custom script.
+ *  @todo Functions for hash: hash-keys, hash-values, hash-foreach
  *  **/
 
 #include "liblisp.h"

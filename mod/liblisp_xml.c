@@ -21,8 +21,8 @@
 #define SUBROUTINE_XLIST\
 	X("xml-parse-file",      subr_xml_parse_file,     "Z",       "parse an XML document given a file name")\
 	X("xml-parse-string",    subr_xml_parse_string,   "Z",       "parse an XML document given a string")\
-	X("xml-write-file",      subr_xml_write_file,     "Z A",     "write an S-Expression as an XML document to a file")\
-	X("xml-write-string",    subr_xml_write_string,   "A",       "write an S-Expression to a string")
+	X("xml-write-file",      subr_xml_write_file,     "Z c",     "write an S-Expression list as an XML document to a file")\
+	X("xml-write-string",    subr_xml_write_string,   "c",       "write an S-Expression list to a string")
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
@@ -32,10 +32,9 @@ static struct module_subroutines {
 	char *name, *validate, *docstring;
 	subr p;
 } primitives[] = {
-	SUBROUTINE_XLIST	/*all of the subr functions */
+	SUBROUTINE_XLIST		/*all of the subr functions */
 	{ NULL, NULL, NULL, NULL}	/*must be terminated with NULLs */
 };
-
 #undef X
 
 /*I might want to export this function*/
@@ -49,8 +48,9 @@ static cell *xml2lisp(lisp *l, mxml_node_t *node)
 		mxml_node_t *t = node;
 		cell *e, *ehead, *a, *ahead;
 		int i;
+		size_t j;
 
-		/*attributes*/
+		/*attributes, I should put this in a hash*/
 		ahead = a = cons(l, gsym_nil(), gsym_nil());
 		for(i = 0; i < t->value.element.num_attrs; i++) {
 			cell *name, *value, *av;
@@ -60,18 +60,21 @@ static cell *xml2lisp(lisp *l, mxml_node_t *node)
 			set_cdr(a, cons(l, av, gsym_nil()));
 			a = cdr(a);
 		}
+		fix_list_len(ahead, i+1);
 
 		/*elements*/
 		ehead = e = cons(l, gsym_nil(), gsym_nil());
-		for(;(t = mxmlWalkNext(t, node, MXML_DESCEND));) {
+		for(j = 1;(t = mxmlWalkNext(t, node, MXML_DESCEND));) {
 			if(t->parent == node) {
 				cell *r = xml2lisp(l, t);
 				if(is_nil(r))
 					continue;
 				set_cdr(e, cons(l, r, gsym_nil()));
 				e = cdr(e);
+				j++;
 			}
 		}
+		fix_list_len(ehead, j);
 
 		return mk_list(l, mk_str(l, lstrdup(node->value.element.name)), cdr(ahead), cdr(ehead), NULL);
 	}	
@@ -94,22 +97,64 @@ static cell *xml2lisp(lisp *l, mxml_node_t *node)
 	return gsym_error();
 }
 
-static mxml_node_t *_lisp2xml(lisp *l, cell *x)
+static mxml_node_t *_lisp2xml(lisp *l, mxml_node_t *parent, cell *x);
+static mxml_node_t *xnode(lisp *l, mxml_node_t *parent, cell *x)
 {
-	/**@todo Implement this!*/
-	UNUSED(l);
-	UNUSED(x);
-	return NULL;
+	if(is_cons(x)) {
+		return _lisp2xml(l, parent, car(x));
+	} else if(is_sym(x)) {
+		return mxmlNewText(parent, 1, get_sym(x));
+	} else if(is_str(x)) {
+		return mxmlNewText(parent, 1, get_str(x));
+	} else if(is_int(x)) {
+		return mxmlNewInteger(parent, get_int(x));
+	} else if(is_floating(x)) {
+		return mxmlNewReal(parent, get_float(x));
+	} else {
+		return mxmlNewText(parent, 1, "CANNOT-SERIALIZE");
+	}
 }
 
+/**@todo Error handling!
+ * @todo handle hashes and attributes*/
+static mxml_node_t *_lisp2xml(lisp *l, mxml_node_t *parent, cell *x)
+{
+	/**@todo Implement this!*/
+	mxml_node_t *ret = NULL;
+	if(is_cons(x)) {
+		mxml_node_t *n;
+		cell *y;
+		if(is_sym(car(x))) {
+			ret = mxmlNewElement(parent, get_str(car(x)));
+		} else {
+			ret = mxmlNewElement(parent, ""); /* valid xml? */
+		}
+		for(y = cdr(x); is_cons(y); y = cdr(y)) {
+			if(!xnode(l, ret, y))
+				return NULL;
+		}
+		if(!is_nil(y)) {
+			if(!xnode(l, ret, y))
+				return NULL;
+		}
+		return ret;
+	} else {
+		if(!(ret = xnode(l, parent, x)))
+			return NULL;
+		return ret;
+	}
+	return ret;
+}
+
+/**@todo Error handling!*/
 /*I might want to export this function*/
 static mxml_node_t *lisp2xml(lisp *l, cell *x)
 {
-	mxml_node_t *xml;
+	mxml_node_t *xml, *root;
 	assert(l && x);
-
 	xml = mxmlNewXML("1.0");
-
+	if(!_lisp2xml(l, xml, x))
+		return NULL;
 	return xml;
 }
 
@@ -148,7 +193,7 @@ static cell *subr_xml_write_file(lisp *l, cell *args)
 	FILE *output;
 	if(!(output = fopen(get_str(car(args)), "wb")))
 		return gsym_error();
-	if(!(tree = lisp2xml(l, args)))
+	if(!(tree = lisp2xml(l, car(args))))
 		return gsym_error();
 	if(mxmlSaveFile(tree, output, MXML_TEXT_CALLBACK) < 0)
 		return gsym_error();
@@ -161,7 +206,7 @@ static cell *subr_xml_write_string(lisp *l, cell *args)
 {
 	mxml_node_t *tree;
 	char *s;
-	if(!(tree = lisp2xml(l, args)))
+	if(!(tree = lisp2xml(l, car(args))))
 		return gsym_error();
 	if(!(s = mxmlSaveAllocString(tree, MXML_NO_CALLBACK)))
 		return gsym_error();

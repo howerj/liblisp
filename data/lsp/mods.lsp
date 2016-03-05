@@ -1,5 +1,7 @@
 ;;; load shared objects or DLLs ;;;
 ;; depends on init.lsp ;;
+;; @todo instead of just loading modules here, I should code modules
+;; that load their DLL, perform tests, etc.
 
 ; This should take a module path as well as name as an argument
 (define load-lisp-module ; load a module {.so or .dll depending on the operating system}
@@ -25,7 +27,7 @@
  (load-lisp-module "text")   ; diff, more string handling and tsort module
  (load-lisp-module "unix")   ; unix interface module
  (load-lisp-module "x11")    ; x11 window module
- (load-lisp-module "sql")    ; sql interface (leaks memory)
+ (load-lisp-module "sql")    ; sql interface 
  (load-lisp-module "tcc")    ; tiny c compiler (leaks memory, if used)
  (load-lisp-module "xml")    ; XML parser and writer
  (load-lisp-module "curl")   ; Curl library

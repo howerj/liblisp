@@ -18,6 +18,8 @@
  *  @todo Move module related variables to another header
  *  @todo The typedefs used should have the "lisp" prefix and "_t" (or
  *  something POSIX compliant).
+ *  @todo Functions for iterating through S-expressions trees in an efficient
+ *  way would are needed.
 **/
 #ifndef LIBLISP_H
 #define LIBLISP_H
@@ -856,6 +858,13 @@ LIBLISP_API cell *mk_fproc(lisp *l, cell *args, cell *code, cell *env, cell *doc
  * @return cell* a new lisp cell containing a string */
 LIBLISP_API cell *mk_str(lisp *l, char *s);
 
+/**@brief  make lisp cell (string) from a string
+ * @param  l lisp environment for error handling and garbage collection
+ * @param  s a string, the lisp interpreter *will not* try to free this
+ *           string at all.
+ * @return cell* a new lisp cell containing a string */
+LIBLISP_API cell *mk_immutable_str(lisp *l, const char *s);
+
 /*LIBLISP_API cell *mksym(lisp *l, char *s); // use intern instead to get a unique symbol*/
 
 /**@brief  make lisp cell from hash
@@ -973,64 +982,70 @@ LIBLISP_API intptr_t get_a2i(cell *x);
  * @return lfloat */
 LIBLISP_API lfloat get_a2f(cell *x);
 
-/**@brief  return the nil symbol
- * @return cell* */
+/**@brief  return the "nil" symbol
+ * @return cell* The "nil" cell */
 LIBLISP_API cell *gsym_nil(void);
 
-/**@brief  return the tee symbol
- * @return cell* */
+/**@brief  return the "t" symbol
+ * @return cell* The "t", or true, cell */
 LIBLISP_API cell *gsym_tee(void);
 
-/**@brief  return the quote symbol 
- * @return cell* */
+/**@brief  return the "quote" symbol 
+ * @return cell* The special "quote" symbol, used for quoting expressions */
 LIBLISP_API cell *gsym_quote(void);
 
-/**@brief  return the if symbol
- * @return cell* */
+/**@brief  return the "if" symbol
+ * @return cell* The special "if" symbol, used for if expressions */
 LIBLISP_API cell *gsym_iif(void);
 
-/**@brief  return the lambda symbol
- * @return cell* */
+/**@brief  return the "lambda" symbol
+ * @return cell* The special lambda symbol, used for lambda expressions (functions)*/
 LIBLISP_API cell *gsym_lambda(void);
 
-/**@brief  return the flambda symbol
- * @return cell* */
+/**@brief  return the "flambda" symbol
+ * @return cell* The special "flambda" symbol, used for F-Expressions*/
 LIBLISP_API cell *gsym_flambda(void);
 
-/**@brief  return the define symbol
- * @return cell* */
+/**@brief  return the "define" symbol
+ * @return cell* The special "define" symbol, used for adding symbol-value pairs
+ * to the global environment */
 LIBLISP_API cell *gsym_define(void);
 
-/**@brief  return the set! symbol
- * @return cell* */
+/**@brief  return the "set!" symbol
+ * @return cell* The special "set!" symbol, used for binding a symbol to a new
+ * variable */
 LIBLISP_API cell *gsym_set(void);
 
 /**@brief  return the progn symbol
- * @return cell* */
+ * @return cell* The special "progn" symbol, used for evaluating expressions in
+ * order */
 LIBLISP_API cell *gsym_progn(void);
 
-/**@brief  return the cond symbol
- * @return cell* */
+/**@brief  return the "cond" symbol
+ * @return cell* The special "cond" symbol */
 LIBLISP_API cell *gsym_cond(void);
 
-/**@brief  return the error symbol
- * @return cell* */
+/**@brief  return the "error" symbol
+ * @return cell* The special "error" symbol, used for signifying that an error
+ * has occurred during evaluation */
 LIBLISP_API cell *gsym_error(void);
 
-/**@brief  return the let symbol
- * @return cell* */
+/**@brief  return the "let" symbol
+ * @return cell* The special "let" symbol, used for creating local variables
+ * and evaluating expressions in the modified local environment */
 LIBLISP_API cell *gsym_let(void);
 
-/**@brief  return the return symbol
- * @return cell* */
+/**@brief  return the "return" symbol
+ * @return cell* The special "return" symbol, used to return from a "progn"
+ * early */
 LIBLISP_API cell *gsym_ret(void);
 
-/**@brief  return the loop symbol
- * @return cell* */
+/**@brief  return the "loop" symbol
+ * @return cell* The special "loop" symbol, used for looping in a "progn" */
 LIBLISP_API cell *gsym_loop(void);
 
-/**@brief  return the compile symbol
- * @return cell* */
+/**@brief  return the "compile" symbol
+ * @return cell* The special "compile" symbol, */
 LIBLISP_API cell *gsym_compile(void);
 
 /**@brief fix a lists length after calls to set_cdr
@@ -1278,10 +1293,6 @@ LIBLISP_API io *lisp_get_output(lisp *l);
  *  @param  l lisp environment to retrieve error channel from
  *  @return io* pointer to error channel or NULL on failure**/
 LIBLISP_API io *lisp_get_logging(lisp *l);
-
-/** @brief  close and invalidate a cell
- *  @param  f cell to invalidate **/
-LIBLISP_API void lisp_close_cell(cell *f);
 
 /** @brief validate an arguments list against a format string, this can either
  *         longjmp to an error handler if recover is non zero or return a

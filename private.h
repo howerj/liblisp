@@ -52,12 +52,13 @@ typedef enum lisp_type {
 	CONS,    /**< cons cell*/
 	PROC,    /**< lambda procedure*/
 	SUBR,    /**< subroutine or primitive written in C*/
-	STRING,  /**< a NUL terminated string*/
+	STRING,  /**< a NUL terminated string, @todo strings should operate on UTF-8 */
 	IO,      /**< Input/Output port*/
 	HASH,    /**< Associative hash table*/
 	FPROC,   /**< F-Expression*/
 	FLOAT,   /**< Floating point number; could be float or double*/
 	USERDEF  /**< User defined types*/
+	/**@todo CLOSURE, MACRO (replaces FPROC) */
 } lisp_type;     /**< A lisp object*/
 
 typedef union cell_data { /**< ideally we would use void* for everything*/

@@ -23,6 +23,7 @@
 static const int parse_strings = 1,	/*parse strings? e.g. "Hello" */
     parse_floats = 1,		/*parse floating point numbers? e.g. 1.3e4 */
     parse_ints = 1,		/*parse integers? e.g. 3 */
+    parse_hashes = 1, 		/*parse hashes? e.g. { a b c (1 2 3) } */
     parse_dotted = 1 /*parse dotted pairs? e.g. (a . b) */ ;
 
 static int comment(io * i)
@@ -83,7 +84,7 @@ static char *lexer(lisp * l, io * i)
 		}		/*ugly */
 	} while (isspace(ch) || ch == '#' || ch == ';');
 	add_char(l, ch);
-	if (strchr("()\'\"", ch))
+	if (strchr("(){}\'\"", ch))
 		return new_token(l);
 	for (;;) {
 		if ((ch = io_getc(i)) == EOF)
@@ -92,7 +93,7 @@ static char *lexer(lisp * l, io * i)
 			comment(i);
 			continue;
 		}		/*ugly */
-		if (strchr("()\'\"", ch) || isspace(ch)) {
+		if (strchr("(){}\'\"", ch) || isspace(ch)) {
 			io_ungetc(ch, i);
 			return new_token(l);
 		}
@@ -103,7 +104,7 @@ static char *lexer(lisp * l, io * i)
 }
 
 /**@brief handle parsing a string*/
-static cell *read_string(lisp * l, io * i)
+static char *read_string(lisp * l, io * i)
 {
 	assert(l && i);					   
 	int ch;
@@ -156,13 +157,74 @@ static cell *read_string(lisp * l, io * i)
 			}
 		}
 		if (ch == '"')
-			return mk_str(l, new_token(l));
+			return new_token(l);
 		add_char(l, ch);
 	}
-	return gsym_nil();
+	return NULL;
 }
 
-static cell *readlist(lisp * l, io * i);
+static int keyval(lisp * l, io * i, hashtable *ht, char *key)
+{
+	cell *val;
+	if(!(val = reader(l, i)))
+		return -1;
+	/**@todo sort out hash weirdness when inserting values,
+	 * or create wrapper for hash_insert */
+	if(hash_insert(ht, key, cons(l, mk_str(l, key), val)) < 0)
+		return -1;
+	return 0;
+}
+
+static cell *read_hash(lisp * l, io * i)
+{
+	hashtable *ht;
+	char *token = NULL; 
+	if (!(ht = hash_create(DEFAULT_LEN)))
+		HALT(l, "%s", "out of memory");
+	for(;;) {
+		token = lexer(l, i);
+		if(!token)
+			goto fail;
+		switch(token[0]) {
+		case '}': 
+			free(token);
+			return mk_hash(l, ht);
+		case '(': 
+		case ')': 
+		case '{': 
+		case '\'':
+		case '.': 
+			goto fail;
+		case '"': 
+		{
+			char *key;
+			free(token);
+			if(!(key = read_string(l, i)))
+				return NULL;
+			if(keyval(l, i, ht, key) < 0)
+				return NULL;
+			continue;
+		}
+		default:
+			if(parse_ints && is_number(token)) {
+				goto fail;
+			} else if(parse_floats && is_fnumber(token)) {
+				goto fail;
+			}
+			if(keyval(l, i, ht, token) < 0)
+				return NULL;
+			continue;
+		}
+	}
+fail:
+	if(token)
+		RECOVER(l, "%y'invalid-hash-key%t %r\"%s\"%t", token);
+	hash_destroy(ht);
+	free(token);
+	return NULL;
+}
+
+static cell *read_list(lisp * l, io * i);
 cell *reader(lisp * l, io * i)
 {
 	assert(l && i);
@@ -172,22 +234,36 @@ cell *reader(lisp * l, io * i)
 	if (!token)
 		return NULL;
 	switch (token[0]) {
+	case '(':
+		free(token);
+		return read_list(l, i);
 	case ')':
 		free(token);
 		RECOVER(l, "%r\"unmatched %s\"%t", "')'");
-	case '(':
+	case '{':
+		if(!parse_hashes)
+			goto nohash;
 		free(token);
-		return readlist(l, i);
+		return read_hash(l, i);
+	case '}':
+		if(!parse_hashes)
+			goto nohash;
+		free(token);
+		RECOVER(l, "%r\"unmatched %s\"%t", "'}'");
 	case '"':
+	{
+		char *s;
 		if (!parse_strings)
 			goto nostring;
 		free(token);
-		return read_string(l, i);
+		if(!(s = read_string(l, i)))
+			return NULL;
+		return mk_str(l, s);
+	}
 	case '\'':
 		free(token);
 		return mk_list(l, gsym_quote(), reader(l, i), NULL);
 	default:
- nostring:
 		if (parse_ints && is_number(token)) {
 			ret = mk_int(l, strtol(token, NULL, 0));
 			free(token);
@@ -200,6 +276,8 @@ cell *reader(lisp * l, io * i)
 				return mk_float(l, flt);
 			}
 		}
+ nostring:
+ nohash:
 		ret = intern(l, token);
 		if (get_sym(ret) != token)
 			free(token);
@@ -209,16 +287,20 @@ cell *reader(lisp * l, io * i)
 }
 
 /**@brief read in a list*/
-static cell *readlist(lisp * l, io * i)
+static cell *read_list(lisp * l, io * i)
 {
 	assert(l && i);
 	char *token = lexer(l, i), *stok;
 	cell *tmp;
-	if (!token)
-		return NULL;
+	if (!token) 
+		NULL;
 	switch (token[0]) {
 	case ')':
-		return free(token), gsym_nil();
+		free(token);
+		return gsym_nil();
+	case '}':
+		free(token);
+		return gsym_nil();
 	case '.':
 		if (!parse_dotted)
 			goto nodots;
@@ -236,8 +318,10 @@ static cell *readlist(lisp * l, io * i)
 	default:
 		break;
 	}
- nodots:unget_token(l, token);
+ nodots:
+	unget_token(l, token);
 	if (!(tmp = reader(l, i)))
 		return NULL;	/* force evaluation order */
-	return cons(l, tmp, readlist(l, i));
+	return cons(l, tmp, read_list(l, i));
 }
+
