@@ -15,10 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/**@brief Used for signal handler and modules. This should be moved back to
- *        main.c eventually.**/
-lisp *lglobal;
-
 void lisp_throw(lisp * l, int ret)
 {
 	if (!l->errors_halt && l && l->recover_init)
@@ -27,10 +23,18 @@ void lisp_throw(lisp * l, int ret)
 		exit(ret);
 }
 
+char *lisp_strdup(lisp *l, const char *s)
+{
+	char *r = lstrdup(s);
+	if(!r)
+		LISP_HALT(l, "\"%s\"", "out of memory");
+	return r;
+}
+
 cell *lisp_add_subr(lisp * l, const char *name, subr func, const char *fmt, const char *doc)
 {
 	assert(l && name && func);	/*fmt and doc are optional */
-	return extend_top(l, intern(l, lstrdup(name)), mk_subr(l, func, fmt, doc));
+	return extend_top(l, intern(l, lisp_strdup(l, name)), mk_subr(l, func, fmt, doc));
 }
 
 cell *lisp_get_all_symbols(lisp * l)
@@ -41,7 +45,7 @@ cell *lisp_get_all_symbols(lisp * l)
 cell *lisp_add_cell(lisp * l, const char *sym, cell * val)
 {
 	assert(l && sym && val);
-	return extend_top(l, intern(l, lstrdup(sym)), val);
+	return extend_top(l, intern(l, lisp_strdup(l, sym)), val);
 }
 
 void lisp_destroy(lisp * l)
@@ -75,12 +79,12 @@ cell *lisp_read(lisp * l, io * i)
 		restore_used = 1;
 	}
 	if ((r = setjmp(l->recover))) {
-		RECOVER_RESTORE(restore_used, l, restore);
+		LISP_RECOVER_RESTORE(restore_used, l, restore);
 		return r > 0 ? l->error : NULL;
 	}
 	l->recover_init = 1;
 	ret = reader(l, i);
-	RECOVER_RESTORE(restore_used, l, restore);
+	LISP_RECOVER_RESTORE(restore_used, l, restore);
 	return ret;
 }
 
@@ -103,15 +107,16 @@ cell *lisp_eval(lisp * l, cell * exp)
 		restore_used = 1;
 	}
 	if ((r = setjmp(l->recover))) {
-		RECOVER_RESTORE(restore_used, l, restore);
+		LISP_RECOVER_RESTORE(restore_used, l, restore);
 		return r > 0 ? l->error : NULL;
 	}
 	l->recover_init = 1;
 	ret = eval(l, 0, exp, l->top_env);
-	RECOVER_RESTORE(restore_used, l, restore);
+	LISP_RECOVER_RESTORE(restore_used, l, restore);
 	return ret;
 }
 
+/**@bug the entire string should be evaluated, not just the first expression */
 cell *lisp_eval_string(lisp * l, const char *evalme)
 {
 	assert(l && evalme);
@@ -127,13 +132,58 @@ cell *lisp_eval_string(lisp * l, const char *evalme)
 	}
 	if ((r = setjmp(l->recover))) {
 		io_close(in);
-		RECOVER_RESTORE(restore_used, l, restore);
+		LISP_RECOVER_RESTORE(restore_used, l, restore);
 		return r > 0 ? l->error : NULL;
 	}
 	l->recover_init = 1;
 	ret = eval(l, 0, reader(l, in), l->top_env);
 	io_close(in);
-	RECOVER_RESTORE(restore_used, l, restore);
+	LISP_RECOVER_RESTORE(restore_used, l, restore);
+	return ret;
+}
+
+int lisp_log_error(lisp *l, char *fmt, ...) 
+{
+	int ret = 0;
+	if(lisp_get_log_level(l) >= LISP_LOG_LEVEL_ERROR) {
+		va_list ap;
+		io *e = lisp_get_logging(l);
+		va_start(ap, fmt);
+		lisp_printf(l, e, 0, "(%rerror%t ");
+		ret = lisp_vprintf(l, lisp_get_logging(l), 0, fmt, ap);
+		lisp_printf(l, e, 0, ")%t\n");
+		va_end(ap);
+	}
+	return ret;
+}
+
+int lisp_log_note(lisp *l, char *fmt, ...) 
+{
+	int ret = 0;
+	if(lisp_get_log_level(l) >= LISP_LOG_LEVEL_NOTE) {
+        	va_list ap;
+		io *e = lisp_get_logging(l);
+        	va_start(ap, fmt);
+		lisp_printf(l, e, 0, "(%ynote%t ");
+		ret = lisp_vprintf(l, e, 0, fmt, ap);
+		lisp_printf(l, e, 0, ")%t\n");
+		va_end(ap);
+	}
+	return ret;
+}
+
+int lisp_log_debug(lisp *l, char *fmt, ...) 
+{
+	int ret = 0;
+	if(lisp_get_log_level(l) >= LISP_LOG_LEVEL_DEBUG) {
+		va_list ap;
+		io *e = lisp_get_logging(l);
+		va_start(ap, fmt);
+		lisp_printf(l, e, 0, "(%mdebug%t ");
+		ret = lisp_vprintf(l, e, 0, fmt, ap);
+		lisp_printf(l, e, 0, ")%t\n");
+		va_end(ap);
+	}
 	return ret;
 }
 
@@ -192,5 +242,17 @@ io *lisp_get_logging(lisp * l)
 {
 	assert(l);
 	return get_io(l->logging);
+}
+
+void lisp_set_log_level(lisp *l, lisp_log_level level)
+{
+	assert(l && level < LISP_LOG_LEVEL_LAST_INVALID);
+	l->log_level = level;
+}
+
+lisp_log_level lisp_get_log_level(lisp *l)
+{
+	assert(l);
+	return l->log_level;
 }
 

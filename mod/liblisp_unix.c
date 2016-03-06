@@ -159,7 +159,7 @@ static cell *subr_mknod(lisp * l, cell * args)
 		m = S_IFIFO;
 		break;
 	invalid: default:
-		RECOVER(l, "\"invalid node type (not 'c 'u 'b or 'p)\" %s", get_str(CADR(args)));
+		LISP_RECOVER(l, "\"invalid node type (not 'c 'u 'b or 'p)\" %s", get_str(CADR(args)));
 	}
 	d = MKDEV(get_int(CADDR(args)), get_int(CADDDR(args)));
 	return mk_int(l, mknod(get_str(car(args)), m | S_IRWXU, d));
@@ -193,7 +193,7 @@ static cell *subr_directory(lisp * l, cell * args)
 	if (!(d = opendir(get_str(car(args)))))
 		return gsym_error();
 	while ((e = readdir(d)))
-		ret = cons(l, mk_str(l, lstrdup(e->d_name)), ret);
+		ret = cons(l, mk_str(l, lisp_strdup(l, e->d_name)), ret);
 	closedir(d);
 	return ret;
 }
@@ -259,10 +259,8 @@ int lisp_module_initialize(lisp *l)
 	for (i = 0; primitives[i].p; i++)	/*add all primitives from this module */
 		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
 			goto fail;
-	if (lisp_verbose_modules)
-		lisp_printf(l, lisp_get_output(l), 0, "module: OS loaded\n");
 	return 0;
- fail:	lisp_printf(l, lisp_get_output(l), 0, "module: OS loading failure\n");
+ fail:	
 	return -1;
 }
 

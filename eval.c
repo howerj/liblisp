@@ -34,9 +34,9 @@ static cell *mk(lisp * l, lisp_type type, size_t count, ...)
 
 	va_start(ap, count);
 	if (!(ret = calloc(1, sizeof(cell) + (count - 1) * sizeof(cell_data))))
-		HALT(l, "\"%s\"", "out of memory");
+		LISP_HALT(l, "\"%s\"", "out of memory");
 	if (!(node = calloc(1, sizeof(gc_list))))
-		HALT(l, "\"%s\"", "out of memory");
+		LISP_HALT(l, "\"%s\"", "out of memory");
 	ret->type = type;
 	for (i = 0; i < count; i++)
 		if (FLOAT == type)
@@ -291,7 +291,7 @@ cell *mk_subr(lisp * l, subr p, const char *fmt, const char *doc)
 		t->len = tlen;
 	}
 	t->p[1].v = (void *)fmt;
-	t->p[2].v = (void *)mk_str(l, lstrdup(doc ? doc : ""));
+	t->p[2].v = (void *)mk_str(l, lisp_strdup(l, doc ? doc : ""));
 	return t;
 }
 
@@ -498,7 +498,7 @@ cell *extend_top(lisp * l, cell * sym, cell * val)
 {
 	assert(l && sym && val);
 	if (hash_insert(get_hash(l->top_hash), get_str(sym), cons(l, sym, val)) < 0)
-		HALT(l, "\"%s\"", "out of memory");
+		LISP_HALT(l, "\"%s\"", "out of memory");
 	return val;
 }
 
@@ -529,6 +529,7 @@ cell *assoc(cell * key, cell * alist)
  *        inlining small procedures. This function could also
  *        use set_car to replace the current list to save memory.
  *  @bug  This function really, really needs fixing.
+ *  @todo This function should be called bind
  *  @bug  F-Expressions should be prevent compilation of their arguments
  *  @bug  This function is not aware of lambdas or F-expressions and
  *        will replace symbols in argument lists for definitions of those
@@ -539,7 +540,7 @@ static cell *compiler(lisp * l, unsigned depth, cell * exp, cell * env)
 	size_t i;
 	cell *head, *op, *tmp, *code = gsym_nil();
 	if (depth > MAX_RECURSION_DEPTH)
-		RECOVER(l, "%y'recursion-depth-reached%t %d", depth);
+		LISP_RECOVER(l, "%y'recursion-depth-reached%t %d", depth);
 
 	if (is_sym(car(exp)) && !is_nil(tmp = assoc(car(exp), env)))
 		op = cdr(tmp);
@@ -567,9 +568,10 @@ cell *eval(lisp * l, unsigned depth, cell * exp, cell * env)
 {
 	assert(l);
 	size_t gc_stack_save = l->gc_stack_used;
-	cell *tmp, *first, *proc, *vals = gsym_nil();
+	cell *tmp, *first, *proc, *ret = NULL, *vals = l->nil;
+#define DEBUG_RETURN(EXPR) do { ret = (EXPR); goto debug; } while(0);
 	if (depth > MAX_RECURSION_DEPTH)
-		RECOVER(l, "%y'recursion-depth-reached%t %d", depth);
+		LISP_RECOVER(l, "%y'recursion-depth-reached%t %d", 0);
 	gc_add(l, exp);
 	gc_add(l, env);
  tail:
@@ -577,6 +579,7 @@ cell *eval(lisp * l, unsigned depth, cell * exp, cell * env)
 		return NULL;
 	if (l->trace_on)
 		lisp_printf(l, lisp_get_logging(l), 1, "(%ytrace%t %S)\n", exp);
+	lisp_log_debug(l, "%y'eval%t '%S", exp);
 	if (is_nil(exp))
 		return gsym_nil();
 	if (l->sig) {
@@ -599,8 +602,8 @@ cell *eval(lisp * l, unsigned depth, cell * exp, cell * env)
 		/* checks could be added here so special forms are not looked
 		 * up, but only if this improves the speed of things*/
 		if (is_nil(tmp = assoc(exp, env)))
-			RECOVER(l, "%r\"unbound symbol\"%t\n '%s", get_sym(exp));
-		return cdr(tmp);
+			LISP_RECOVER(l, "%r\"unbound symbol\"%t\n '%s", get_sym(exp));
+		DEBUG_RETURN(cdr(tmp));
 	case CONS:
 		first = car(exp);
 		exp = cdr(exp);
@@ -617,18 +620,18 @@ cell *eval(lisp * l, unsigned depth, cell * exp, cell * env)
 		 * need to prevent collection of what was being pointed to. 
 		 */
 		if (!is_nil(exp) && !is_proper_cons(exp))
-			RECOVER(l, "%y'evaluation\n %r\"cannot eval dotted pair\"%t\n '%S", exp);
+			LISP_RECOVER(l, "%y'evaluation\n %r\"cannot eval dotted pair\"%t\n '%S", exp);
 		if (is_cons(first))
 			first = eval(l, depth + 1, first, env);
 		if (first == l->iif) {
-			VALIDATE(l, "if", 3, "A A A", exp, 1);
+			LISP_VALIDATE_ARGS(l, "if", 3, "A A A", exp, 1);
 			exp = !is_nil(eval(l, depth + 1, car(exp), env)) ? CADR(exp) : CADDR(exp);
 			goto tail;
 		}
 		if (first == l->lambda) {
 			cell *doc;
 			if (get_length(exp) < 2)
-				RECOVER(l, "%y'lambda\n %r\"argc < 2\"%t\n '%S\"", exp);
+				LISP_RECOVER(l, "%y'lambda\n %r\"argc < 2\"%t\n '%S\"", exp);
 			if (!is_nil(car(exp)) && is_str(car(exp))) {	/*have docstring */
 				doc = car(exp);
 				exp = cdr(exp);
@@ -636,77 +639,77 @@ cell *eval(lisp * l, unsigned depth, cell * exp, cell * env)
 				doc = l->empty_docstr;
 			}
 			if (!is_nil(car(exp)) && !is_cons(car(exp)))
-				RECOVER(l, "'lambda\n \"not an argument list (or nil)\"\n '%S", exp);
+				LISP_RECOVER(l, "'lambda\n \"not an argument list (or nil)\"\n '%S", exp);
 			for (tmp = car(exp); !is_nil(tmp); tmp = cdr(tmp))
 				if (!is_sym(car(tmp)) || !is_proper_cons(tmp))
-					RECOVER(l, "%y'lambda\n %r\"expected only symbols (or nil) as arguments\"%t\n '%S", exp);
+					LISP_RECOVER(l, "%y'lambda\n %r\"expected only symbols (or nil) as arguments\"%t\n '%S", exp);
 			l->gc_stack_used = gc_stack_save;
 			tmp = mk_proc(l, car(exp), cdr(exp), env, doc);
-			return gc_add(l, tmp);
+			DEBUG_RETURN(gc_add(l, tmp));
 		}
 		if (first == l->flambda) {
 			if (get_length(exp) < 3 || !is_str(car(exp)) || !is_cons(CADR(exp)))
-				RECOVER(l, "%y'flambda\n %r\"expected (string (arg) code...)\"%t\n '%S", exp);
+				LISP_RECOVER(l, "%y'flambda\n %r\"expected (string (arg) code...)\"%t\n '%S", exp);
 			if (!cklen(CADR(exp), 1) || !is_sym(car(CADR(exp))))
-				RECOVER(l, "%y'flambda\n %r\"only one symbol argument allowed\"%t\n '%S", exp);
+				LISP_RECOVER(l, "%y'flambda\n %r\"only one symbol argument allowed\"%t\n '%S", exp);
 			l->gc_stack_used = gc_stack_save;
-			return gc_add(l, mk_fproc(l, CADR(exp), CDDR(exp), env, car(exp)));
+			DEBUG_RETURN(gc_add(l, mk_fproc(l, CADR(exp), CDDR(exp), env, car(exp))));
 		}
 		if (first == l->cond) {
 			if (cklen(exp, 0))
-				return l->nil;
+				DEBUG_RETURN(l->nil);
 			for (tmp = l->nil; is_nil(tmp) && !is_nil(exp); exp = cdr(exp)) {
 				if (!is_cons(car(exp)))
-					return l->nil;
+					DEBUG_RETURN(l->nil);
 				tmp = eval(l, depth + 1, CAAR(exp), env);
 				if (!is_nil(tmp)) {
 					exp = CADAR(exp);
 					goto tail;
 				}
 			}
-			return l->nil;
+			DEBUG_RETURN(l->nil);
 		}
 		if (first == l->quote)
-			return car(exp);
+			DEBUG_RETURN(car(exp));
 		if (first == l->ret)
-			return cons(l, l->ret, cons(l, eval(l, depth + 1, car(exp), env), l->nil));
+			DEBUG_RETURN(cons(l, l->ret, cons(l, eval(l, depth + 1, car(exp), env), l->nil)));
 		if (first == l->define) {
-			VALIDATE(l, "define", 2, "s A", exp, 1);
+			LISP_VALIDATE_ARGS(l, "define", 2, "s A", exp, 1);
 			l->gc_stack_used = gc_stack_save;
-			return gc_add(l, extend_top(l, car(exp), eval(l, depth + 1, CADR(exp), env)));
+			DEBUG_RETURN(gc_add(l, extend_top(l, car(exp), eval(l, depth + 1, CADR(exp), env))));
 		}
 		if (first == l->set) {
 			cell *pair, *newval;
-			VALIDATE(l, "set!", 2, "s A", exp, 1);
+			LISP_VALIDATE_ARGS(l, "set!", 2, "s A", exp, 1);
 			if (is_nil(pair = assoc(car(exp), env)))
-				RECOVER(l, "%y'set!\n %r\"undefined variable\"%t\n '%S", exp);
+				LISP_RECOVER(l, "%y'set!\n %r\"undefined variable\"%t\n '%S", exp);
 			newval = eval(l, depth + 1, CADR(exp), env);
 			set_cdr(pair, newval);
-			return newval;
+			DEBUG_RETURN(newval);
 		}
 		if (first == l->compile) {
 			cell *doc;
-			VALIDATE(l, "compile", 3, "Z L c", exp, 1);
+			LISP_VALIDATE_ARGS(l, "compile", 3, "Z L c", exp, 1);
 			doc = car(exp);
 			for (tmp = CADR(exp); !is_nil(tmp); tmp = cdr(tmp))
 				if (!is_sym(car(tmp)) || !is_proper_cons(tmp))
-					RECOVER(l, "%y'lambda\n %r\"expected only symbols (or nil) as arguments\"%t\n %S", exp);
+					LISP_RECOVER(l, "%y'lambda\n %r\"expected only symbols (or nil) as arguments\"%t\n %S", exp);
 			tmp = compiler(l, depth + 1, CADDR(exp), env);
-			return mk_proc(l, CADR(exp), cons(l, tmp, gsym_nil()), env, doc);
+			DEBUG_RETURN(mk_proc(l, CADR(exp), cons(l, tmp, gsym_nil()), env, doc));
 		}
 		if (first == l->let) {
 			cell *r = NULL, *s = NULL;
 			if (get_length(exp) < 2)
-				RECOVER(l, "%y'let\n %r\"argc < 2\"%t\n '%S", exp);
+				LISP_RECOVER(l, "%y'let\n %r\"argc < 2\"%t\n '%S", exp);
 			tmp = exp;
 			for (; !is_nil(cdr(exp)); exp = cdr(exp)) {
 				if (!is_cons(car(exp)) || !cklen(car(exp), 2))
-					RECOVER(l, "%y'let\n %r\"expected list of length 2\"%t\n '%S\n '%S", car(exp), tmp);
+					LISP_RECOVER(l, "%y'let\n %r\"expected list of length 2\"%t\n '%S\n '%S", car(exp), tmp);
 				s = env = extend(l, env, CAAR(exp), l->nil);
 				r = env = extend(l, env, CAAR(exp), eval(l, depth + 1, CADAR(exp), env));
 				set_cdr(car(s), CDAR(r));
 			}
-			return eval(l, depth + 1, car(exp), env);
+			DEBUG_RETURN(eval(l, depth + 1, car(exp), env));
 		}
 		/**@bug  loop/return and tail call optimization do not mix
                  * @todo improve looping constructs, also the current lambda
@@ -716,7 +719,7 @@ cell *eval(lisp * l, unsigned depth, cell * exp, cell * env)
 		if (first == l->progn) {
 			cell *head = exp, *tmp;
 			if (is_nil(exp))
-				return l->nil;
+				DEBUG_RETURN(l->nil);
  begin:		for (exp = head;;) {
 				if (is_nil(cdr(exp))) {
 					exp = car(exp);
@@ -727,7 +730,7 @@ cell *eval(lisp * l, unsigned depth, cell * exp, cell * env)
 				if (tmp == l->loop)
 					goto begin;
 				if (is_cons(tmp) && car(tmp) == l->ret)
-					return CADR(tmp);
+					DEBUG_RETURN(CADR(tmp));
 				exp = cdr(exp);
 			}
 		}
@@ -738,7 +741,7 @@ cell *eval(lisp * l, unsigned depth, cell * exp, cell * env)
 		} else if (is_fproc(proc)) {	/*f-expr do not eval their args */
 			vals = cons(l, exp, l->nil);
 		} else {
-			RECOVER(l, "%r\"not a procedure\"%t\n '%S", first);
+			LISP_RECOVER(l, "%r\"not a procedure\"%t\n '%S", first);
 		}
 		l->cur_depth = depth;	/*tucked away for function use */
 		l->cur_env = env;	/*also tucked away */
@@ -747,27 +750,32 @@ cell *eval(lisp * l, unsigned depth, cell * exp, cell * env)
 			gc_add(l, proc);
 			gc_add(l, vals);
 			lisp_validate_cell(l, proc, vals, 1);
-			return (*get_subr(proc)) (l, vals);
+			DEBUG_RETURN((*get_subr(proc)) (l, vals));
 		}
 		if (is_proc(proc) || is_fproc(proc)) {
 			if (get_length(get_proc_args(proc)) != get_length(vals))
-				RECOVER(l, "%y'lambda%t\n '%S\n %y'expected%t\n '%S\n '%S", get_func_docstring(proc), get_proc_args(proc), vals);
+				LISP_RECOVER(l, "%y'lambda%t\n '%S\n %y'expected%t\n '%S\n '%S", 
+						get_func_docstring(proc), get_proc_args(proc), vals);
 			if (get_length(get_proc_args(proc)))
 				env = multiple_extend(l, (dynamic_on ? env : get_proc_env(proc)), get_proc_args(proc), vals);
 			exp = cons(l, l->progn, get_proc_code(proc));
 			goto tail;
 		}
-		RECOVER(l, "%r\"not a procedure\"%t\n '%S", first);
+		LISP_RECOVER(l, "%r\"not a procedure\"%t\n '%S", first);
 	case INVALID:
 	default:
-		HALT(l, "%r\"%s\"%t", "internal inconsistency: unknown type");
+		LISP_HALT(l, "%r\"%s\"%t", "internal inconsistency: unknown type");
 	}
-	HALT(l, "%r\"%s\"%t", "internal inconsistency: reached the unreachable");
-	return exp;
+	LISP_HALT(l, "%r\"%s\"%t", "internal inconsistency: reached the unreachable");
+debug:
+	lisp_log_debug(l, "%y'eval 'returned%t '%S", ret);
+	return ret;
+#undef DEBUG_RETURN
 }
 
+/**< evaluate a list*/
 static cell *evlis(lisp * l, unsigned depth, cell * exps, cell * env)
-{								     /**< evaluate a list*/
+{
 	size_t i;
 	cell *op, *head, *start = exps;
 	assert(l && exps && env);
@@ -785,7 +793,7 @@ static cell *evlis(lisp * l, unsigned depth, cell * exps, cell * env)
 	}
 	fix_list_len(head, i);
 	return head;
- fail:	RECOVER(l, "%r\"evlis cannot eval dotted pairs\"%t\n '%S", start);
+ fail:	LISP_RECOVER(l, "%r\"evlis cannot eval dotted pairs\"%t\n '%S", start);
 	return gsym_error();
 }
 

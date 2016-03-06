@@ -32,7 +32,7 @@ liblisp_sql.$(DLL): liblisp_sql.o $(MOD_DEPS)
 liblisp_unix.$(DLL): liblisp_unix.o $(MOD_DEPS)
 	$(CC) -Wall -Wextra -std=gnu99 -shared $< $(ADDITIONAL) -o $@
 
-liblisp_crc.$(DLL): liblisp_crc.o crc.o $(MOD_DEPS)
+liblisp_crc.$(DLL): liblisp_crc.o crc.o $(CURDIR)crc.h $(MOD_DEPS)
 	$(CC) $(CFLAGS) -shared $< crc.o $(ADDITIONAL) -o $@
 
 liblisp_tcc.o: $(CURDIR)liblisp_tcc.c
@@ -56,10 +56,10 @@ liblisp_x11.$(DLL): liblisp_x11.o $(MOD_DEPS)
 liblisp_xml.$(DLL): liblisp_xml.o $(MOD_DEPS)
 	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lmxml -o $@
 
-liblisp_text.$(DLL): liblisp_text.o diff.o tsort.o $(MOD_DEPS)
+liblisp_text.$(DLL): liblisp_text.o diff.o $(CURDIR)diff.h tsort.o $(CURDIR)tsort.h $(MOD_DEPS)
 	$(CC) $(CFLAGS) -shared $< diff.o tsort.o $(ADDITIONAL) -o $@
 
-liblisp_bignum.$(DLL): liblisp_bignum.o bignum.o $(MOD_DEPS)
+liblisp_bignum.$(DLL): liblisp_bignum.o bignum.o $(CURDIR)bignum.h $(MOD_DEPS)
 	$(CC) $(CFLAGS) -shared $< bignum.o $(ADDITIONAL) -o $@
 
 libline.$(DLL):

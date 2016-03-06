@@ -136,10 +136,10 @@ cell *gc_add(lisp * l, cell * op)
 	if (l->gc_stack_used++ > l->gc_stack_allocated - 1) {
 		l->gc_stack_allocated = l->gc_stack_used * 2;
 		if (l->gc_stack_allocated < l->gc_stack_used)
-			HALT(l, "%s", "overflow in allocator size variable");
+			LISP_HALT(l, "%s", "overflow in allocator size variable");
 		olist = realloc(l->gc_stack, l->gc_stack_allocated * sizeof(*l->gc_stack));
 		if (!olist)
-			HALT(l, "%s", "out of memory");
+			LISP_HALT(l, "%s", "out of memory");
 		l->gc_stack = olist;
 	}
 	l->gc_stack[l->gc_stack_used - 1] = op;	/**<anything reachable in here is not freed*/

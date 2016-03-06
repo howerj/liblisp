@@ -1,7 +1,12 @@
-
+#ifndef BIGNUM_H
+#define BIGNUM_H
 #include <stddef.h>
 #include <stdint.h>
 #define MAX_RADIX       (16)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct bignum bignum;
 typedef struct {
@@ -70,3 +75,8 @@ bignum_div_t *bignum_divide(bignum * a, bignum * b);
  *  @param    dst       Destination
  *  @param    src       Source**/
 void bignum_copy(bignum * dst, bignum * src);
+
+#ifdef __cplusplus
+}
+#endif
+#endif

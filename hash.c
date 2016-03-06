@@ -31,6 +31,11 @@ static hashentry *hash_new_pair(const char *key, void *val)
 
 hashtable *hash_create(size_t len)
 {
+	return hash_create_auto_free(len, 0, 0);
+}
+
+hashtable *hash_create_auto_free(size_t len, unsigned free_key, unsigned free_value)
+{
 	hashtable *nt;
 	if (!len)
 		len++;
@@ -39,6 +44,8 @@ hashtable *hash_create(size_t len)
 	if (!(nt->table = calloc(len, sizeof(*nt->table))))
 		return free(nt), NULL;
 	nt->len = len;
+	nt->free_key = free_key;
+	nt->free_value = free_value;
 	return nt;
 }
 
@@ -51,8 +58,17 @@ void hash_destroy(hashtable * h)
 	for (i = 0; i < h->len; i++)
 		if (h->table[i]) {
 			prev = NULL;
-			for (cur = h->table[i]; cur; prev = cur, cur = cur->next)
+			for (cur = h->table[i]; cur; prev = cur, cur = cur->next) {
+				if(h->free_key)
+					free(cur->key);
+				if(h->free_value)
+					free(cur->val);
 				free(prev);
+			}
+			if(h->free_key)
+				free(cur->key);
+			if(h->free_value)
+				free(cur->val);
 			free(prev);
 		}
 	free(h->table);

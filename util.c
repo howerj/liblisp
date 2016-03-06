@@ -8,6 +8,7 @@
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -23,10 +24,13 @@ struct bitfield {
 static int matchhere(regex_result * r, char *regexp, char *text, size_t depth);
 static int matchstar(regex_result * r, int literal, int c, char *regexp, char *text, size_t depth);
 
-void pfatal(char *msg, char *file, long line)
+void pfatal(const char *msg, const char *file, const char *func, long line)
 {
 	assert(msg && file);
-	fprintf(stderr, "(error \"%s\" \"%s\" %ld)\n", msg, file, line);
+	if(errno)
+		fprintf(stderr, "(error \"%s\" \"%s\" \"%s\" %ld)\n", msg, file, func, line);
+	else
+		fprintf(stderr, "(error \"%s\" \"%s\" \"%s\" \"%s\" %ld)\n", msg, strerror(errno),file, func, line);
 	abort();
 }
 
@@ -38,6 +42,14 @@ char *lstrdup(const char *s)
 		return NULL;
 	strcpy(str, s);
 	return str;
+}
+
+char *lstrdup_or_abort(const char *s)
+{
+	char *r = lstrdup(s);
+	if(!r)
+		FATAL("string duplication failed");
+	return r;
 }
 
 static int matcher(char *pat, char *str, size_t depth, jmp_buf * bf)

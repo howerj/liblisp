@@ -241,12 +241,9 @@ static cell *subr_ ## NAME (lisp *l, cell *args) { UNUSED(l);\
 ISX_LIST /*defines lisp subroutines for checking whether a string only contains a character class*/
 #undef X
 
-/** @warning This function should be used with care, preferably not
- *           at all, as it forces out previous interned symbols
- *           (which should not be allowed).  **/
 static cell *forced_add_symbol(lisp *l, cell *ob) { assert(l && ob); 
         assert(hash_lookup(get_hash(l->all_symbols), get_sym(ob)) == NULL);
-        if(hash_insert(get_hash(l->all_symbols), get_sym(ob) , ob) < 0) return NULL;
+        if(hash_insert(get_hash(l->all_symbols), get_sym(ob), ob) < 0) return NULL;
         return l->tee;
 }
 
@@ -259,6 +256,8 @@ lisp *lisp_init(void) {
         if(!(ofp = io_fout(stdout)))      goto fail;
         if(!(efp = io_fout(stderr)))      goto fail;
 
+	lisp_set_log_level(l, LISP_LOG_LEVEL_ERROR);
+
         l->gc_off = 1;
         if(!(l->buf = calloc(DEFAULT_LEN, 1))) goto fail;
         l->buf_allocated = DEFAULT_LEN;
@@ -270,7 +269,7 @@ lisp *lisp_init(void) {
 CELL_XLIST
 #undef X
 
-        assert(MAX_RECURSION_DEPTH < UINT_MAX);
+        assert(MAX_RECURSION_DEPTH < INT_MAX);
 
         l->random_state[0] = 0xCAFEBABE; /*Are these good seeds?*/
         l->random_state[1] = 0xDEADC0DE;
@@ -294,7 +293,7 @@ CELL_XLIST
         if(!(l->input   = mk_io(l, ifp))) goto fail;
         if(!(l->output  = mk_io(l, ofp))) goto fail;
         if(!(l->logging = mk_io(l, efp))) goto fail;
-        if(!(l->empty_docstr = mk_str(l, lstrdup("")))) goto fail;
+        if(!(l->empty_docstr = mk_str(l, lstrdup_or_abort("")))) goto fail;
 
         l->input->uncollectable = l->output->uncollectable = l->logging->uncollectable = 1;
 
@@ -401,7 +400,7 @@ static cell *subr_mod(lisp * l, cell * args)
 	dividend = get_int(car(args));
 	divisor = get_int(CADR(args));
 	if (!divisor || (dividend == INTPTR_MIN && divisor == -1))
-		RECOVER(l, "\"invalid divisor values\"\n '%S", args);
+		LISP_RECOVER(l, "\"invalid divisor values\"\n '%S", args);
 	return mk_int(l, dividend % divisor);
 }
 
@@ -413,13 +412,13 @@ static cell *subr_div(lisp * l, cell * args)
 		dividend = get_int(car(args));
 		divisor = get_a2i(CADR(args));
 		if (!divisor || (dividend == INTPTR_MIN && divisor == -1))
-			RECOVER(l, "\"invalid divisor values\"\n '%S", args);
+			LISP_RECOVER(l, "\"invalid divisor values\"\n '%S", args);
 		return mk_int(l, dividend / divisor);
 	}
 	dividend = get_float(car(args));
 	divisor = get_a2f(CADR(args));
 	if (divisor == 0.)
-		RECOVER(l, "\"division by zero\"\n '%S", args);
+		LISP_RECOVER(l, "\"division by zero\"\n '%S", args);
 	return mk_float(l, dividend / divisor);
 }
 
@@ -435,7 +434,7 @@ static cell *subr_greater(lisp * l, cell * args)
 		    (is_floating(y) ? get_float(y) : get_int(y)) ? gsym_tee() : gsym_nil();
 	else if (is_asciiz(x) && is_asciiz(y))
 		return (strcmp(get_str(x), get_str(y)) > 0) ? gsym_tee() : gsym_nil();
- fail:	RECOVER(l, "\"expected (number number) or (string string)\"\n '%S", args);
+ fail:	LISP_RECOVER(l, "\"expected (number number) or (string string)\"\n '%S", args);
 	return gsym_error();
 }
 
@@ -451,7 +450,7 @@ static cell *subr_less(lisp * l, cell * args)
 		    (is_floating(y) ? get_float(y) : get_int(y)) ? gsym_tee() : gsym_nil();
 	else if (is_asciiz(x) && is_asciiz(y))
 		return (strcmp(get_str(x), get_str(y)) < 0) ? gsym_tee() : gsym_nil();
- fail:	RECOVER(l, "\"expected (number number) or (string string)\"\n '%S", args);
+ fail:	LISP_RECOVER(l, "\"expected (number number) or (string string)\"\n '%S", args);
 	return gsym_error();
 }
 
@@ -540,14 +539,14 @@ static cell *subr_scar(lisp * l, cell * args)
 {
 	char c[2] = { '\0', '\0' };
 	c[0] = get_str(car(args))[0];
-	return mk_str(l, lstrdup(c));
+	return mk_str(l, lisp_strdup(l, c));
 }
 
 static cell *subr_scdr(lisp * l, cell * args)
 {
 	if (!(get_str(car(args))[0]))
-		mk_str(l, lstrdup(""));
-	return mk_str(l, lstrdup(&get_str(car(args))[1]));;
+		mk_str(l, lisp_strdup(l, ""));
+	return mk_str(l, lisp_strdup(l, &get_str(car(args))[1]));;
 }
 
 static cell *subr_eval(lisp * l, cell * args)
@@ -561,7 +560,7 @@ static cell *subr_eval(lisp * l, cell * args)
 	}
 	l->recover_init = 1;
 	if ((r = setjmp(l->recover))) {
-		RECOVER_RESTORE(restore_used, l, restore);
+		LISP_RECOVER_RESTORE(restore_used, l, restore);
 		return gsym_error();
 	}
 
@@ -569,13 +568,13 @@ static cell *subr_eval(lisp * l, cell * args)
 		x = eval(l, l->cur_depth, car(args), l->top_env);
 	if (cklen(args, 2)) {
 		if (!is_cons(CADR(args)))
-			RECOVER(l, "\"expected a-list\"\n '%S", args);
+			LISP_RECOVER(l, "\"expected a-list\"\n '%S", args);
 		x = eval(l, l->cur_depth, car(args), CADR(args));
 	}
 
-	RECOVER_RESTORE(restore_used, l, restore);
+	LISP_RECOVER_RESTORE(restore_used, l, restore);
 	if (!x)
-		RECOVER(l, "\"expected (expr) or (expr environment)\"\n '%S", args);
+		LISP_RECOVER(l, "\"expected (expr) or (expr environment)\"\n '%S", args);
 	return x;
 }
 
@@ -626,7 +625,7 @@ static cell *subr_open(lisp * l, cell * args)
 		break;
 		/*case SOUT: will not be implemented. */
 	default:
-		RECOVER(l, "\"invalid operation %d\"\n '%S", get_int(car(args)), args);
+		LISP_RECOVER(l, "\"invalid operation %d\"\n '%S", get_int(car(args)), args);
 	}
 	return ret == NULL ? gsym_nil() : mk_io(l, ret);
 }
@@ -655,18 +654,18 @@ static cell *subr_read(lisp * l, cell * args)
 	}
 	l->recover_init = 1;
 	if ((r = setjmp(l->recover))) {	/*handle exception in reader */
-		RECOVER_RESTORE(restore_used, l, restore);
+		LISP_RECOVER_RESTORE(restore_used, l, restore);
 		return gsym_error();
 	}
 	s = NULL;
 	x = NULL;
 	io *i = NULL;
 	if (!(i = is_in(car(args)) ? get_io(car(args)) : io_sin(get_str(car(args)))))
-		HALT(l, "\"%s\"", "out of memory");
+		LISP_HALT(l, "\"%s\"", "out of memory");
 	x = (x = reader(l, i)) ? x : gsym_error();
 	if (s)
 		io_close(i);
-	RECOVER_RESTORE(restore_used, l, restore);
+	LISP_RECOVER_RESTORE(restore_used, l, restore);
 	return x;
 }
 
@@ -694,7 +693,7 @@ static cell *subr_flush(lisp * l, cell * args)
 		return mk_int(l, fflush(NULL));
 	if (cklen(args, 1) && is_io(car(args)))
 		return io_flush(get_io(car(args))) ? gsym_nil() : gsym_tee();
-	RECOVER(l, "\"expected () or (io)\"\n '%S", args);
+	LISP_RECOVER(l, "\"expected () or (io)\"\n '%S", args);
 	return gsym_error();
 }
 
@@ -711,7 +710,7 @@ static cell *subr_seek(lisp * l, cell * args)
 	case SEEK_END:
 		break;
 	default:
-		RECOVER(l, "\"invalid enum option\"\n '%S", args);
+		LISP_RECOVER(l, "\"invalid enum option\"\n '%S", args);
 	}
 	return mk_int(l, io_seek(get_io(car(args)), get_int(CADR(args)), get_int(CADR(cdr(args)))));
 }
@@ -734,7 +733,7 @@ static cell *subr_system(lisp * l, cell * args)
 		return mk_int(l, system(NULL));
 	if (cklen(args, 1) && is_asciiz(car(args)))
 		return mk_int(l, system(get_str(car(args))));
-	RECOVER(l, "\"expected () or (string)\"\n '%S", args);
+	LISP_RECOVER(l, "\"expected () or (string)\"\n '%S", args);
 	return gsym_error();
 }
 
@@ -761,7 +760,7 @@ static cell *subr_hinsert(lisp * l, cell * args)
 {
 	if (hash_insert(get_hash(car(args)),
 			get_sym(CADR(args)), cons(l, CADR(args), CADR(cdr(args)))))
-		HALT(l, "%s", "out of memory");
+		LISP_HALT(l, "%s", "out of memory");
 	return car(args);
 }
 
@@ -770,17 +769,17 @@ static cell *subr_hcreate(lisp * l, cell * args)
 	hashtable *ht = NULL;
 	if (get_length(args) % 2)
 		goto fail;
-	if (!(ht = hash_create(DEFAULT_LEN)))
-		HALT(l, "%s", "out of memory");
+	if (!(ht = hash_create(SMALL_DEFAULT_LEN)))
+		LISP_HALT(l, "%s", "out of memory");
 	for (; !is_nil(args); args = cdr(cdr(args))) {
 		if (!is_asciiz(car(args)))
 			goto fail;
 		if (hash_insert(ht, get_sym(car(args)), cons(l, car(args), CADR(args))) < 0)
-			HALT(l, "%s", "out of memory");
+			LISP_HALT(l, "%s", "out of memory");
 	}
 	return mk_hash(l, ht);
  fail:	hash_destroy(ht);
-	RECOVER(l, "\"expected ({symbol any}*)\"\n '%S", args);
+	LISP_RECOVER(l, "\"expected ({symbol any}*)\"\n '%S", args);
 	return gsym_error();
 }
 
@@ -823,7 +822,7 @@ static cell *subr_coerce(lisp * l, cell * args)
 			for (i = 0; i < fromlen; i++) {
 				char c[2] = { '\0', '\0' };
 				c[0] = get_str(from)[i];
-				y = mk_str(l, lstrdup(c));
+				y = mk_str(l, lisp_strdup(l, c));
 				set_cdr(x, cons(l, y, gsym_nil()));
 				x = cdr(x);
 			}
@@ -851,14 +850,14 @@ static cell *subr_coerce(lisp * l, cell * args)
 		if (is_int(from)) {	/*int to string */
 			char s[64] = "";	/*holds all integer strings */
 			sprintf(s, "%" PRIiPTR, get_int(from));
-			return mk_str(l, lstrdup(s));
+			return mk_str(l, lisp_strdup(l, s));
 		}
 		if (is_sym(from))	/*symbol to string */
-			return mk_str(l, lstrdup(get_str(from)));
+			return mk_str(l, lisp_strdup(l, get_str(from)));
 		if (is_floating(from)) {	/*float to string */
 			char s[512] = "";	/*holds all float strings */
 			sprintf(s, "%.6f", get_float(from));
-			return mk_str(l, lstrdup(s));
+			return mk_str(l, lisp_strdup(l, s));
 		}
 		if (is_cons(from)) {	/*list of chars/ints to string */
 			size_t i;
@@ -871,7 +870,7 @@ static cell *subr_coerce(lisp * l, cell * args)
 			}
 			x = from;
 			if (!(s = calloc(get_length(x) + 1, 1)))
-				HALT(l, "\"%s\"", "out of memory");
+				LISP_HALT(l, "\"%s\"", "out of memory");
 			for (i = 0; !is_nil(x); x = cdr(x), i++)
 				s[i] = get_int(car(x));
 			return mk_str(l, s);
@@ -880,7 +879,7 @@ static cell *subr_coerce(lisp * l, cell * args)
 	case SYMBOL:
 		if (is_str(from))
 			if (!strpbrk(get_str(from), " ;#()\t\n\r'\"\\"))
-				return intern(l, lstrdup(get_str(from)));
+				return intern(l, lisp_strdup(l, get_str(from)));
 		break;
 	case HASH:
 		if (is_cons(from))	/*hash from list */
@@ -902,7 +901,7 @@ static cell *subr_coerce(lisp * l, cell * args)
 	default:
 		break;
 	}
- fail:	RECOVER(l, "\"invalid conversion or argument length not 2\"\n %S", args);
+ fail:	LISP_RECOVER(l, "\"invalid conversion or argument length not 2\"\n %S", args);
 	return gsym_error();
 }
 
@@ -928,7 +927,7 @@ static cell *subr_date(lisp * l, cell * args)
 static cell *subr_getenv(lisp * l, cell * args)
 {
 	char *ret;
-	return (ret = getenv(get_str(car(args)))) ? mk_str(l, lstrdup(ret)) : gsym_nil();
+	return (ret = getenv(get_str(car(args)))) ? mk_str(l, lisp_strdup(l, ret)) : gsym_nil();
 }
 
 static cell *subr_rand(lisp * l, cell * args)
@@ -963,11 +962,11 @@ static cell *subr_setlocale(lisp * l, cell * args)
 		ret = setlocale(get_int(car(args)), get_str(CADR(args)));
 		break;
 	default:
-		RECOVER(l, "\"invalid int value\"\n '%S", args);
+		LISP_RECOVER(l, "\"invalid int value\"\n '%S", args);
 	}
 	if (!ret)
 		return gsym_nil();	/*failed to set local */
-	return mk_str(l, lstrdup(ret));
+	return mk_str(l, lisp_strdup(l, ret));
 }
 
 static cell *subr_typeof(lisp * l, cell * args)
@@ -1006,10 +1005,10 @@ static cell *subr_reverse(lisp * l, cell * args)
 	switch (car(args)->type) {
 	case STRING:
 		{
-			char *s = lstrdup(get_str(car(args)));
+			char *s = lisp_strdup(l, get_str(car(args)));
 			size_t len;
 			if (!s)
-				HALT(l, "\"%s\"", "out of memory");
+				LISP_HALT(l, "\"%s\"", "out of memory");
 			if (!cklen(args, 0))
 				return mk_str(l, s);
 			len = get_length(car(args));
@@ -1026,10 +1025,11 @@ static cell *subr_reverse(lisp * l, cell * args)
 			return y;
 		}
 		break;
+	/**@todo case HASH: reverse a hash, if hash can be reversed */
 	default:
 		break;
 	}
- fail:	RECOVER(l, "\"expected () (string) (list)\"\n '%S", args);
+ fail:	LISP_RECOVER(l, "\"expected () (string) (list)\"\n '%S", args);
 	return gsym_error();
 }
 
@@ -1059,17 +1059,16 @@ static cell *subr_split(lisp * l, cell * args)
 	cell *op = gsym_nil(), *head;
 	regex_result rr;
 	pat = get_str(car(args));
-	if (!(f = s = lstrdup(get_str(CADR(args)))))
-		HALT(l, "\"%s\"", "out of memory");
+	f = s = lisp_strdup(l, get_str(CADR(args)));
 	head = op = cons(l, gsym_nil(), gsym_nil());
 	for (i = 1;; i++) {
 		rr = regex_match(pat, s);
 		if (!rr.result || rr.end == rr.start) {
-			set_cdr(op, cons(l, mk_str(l, lstrdup(s)), gsym_nil()));
+			set_cdr(op, cons(l, mk_str(l, lisp_strdup(l, s)), gsym_nil()));
 			break;
 		}
 		rr.start[0] = '\0';
-		set_cdr(op, cons(l, mk_str(l, lstrdup(s)), gsym_nil()));
+		set_cdr(op, cons(l, mk_str(l, lisp_strdup(l, s)), gsym_nil()));
 		op = cdr(op);
 		s = rr.end;
 	}
@@ -1085,21 +1084,21 @@ static cell *subr_substring(lisp * l, cell * args)
 	assert(((int)get_length(args)) > 0);
 	if (!(get_length(args) == 2 || get_length(args) == 3)
 	    || !is_asciiz(car(args)) || !is_int(CADR(args)))
-		RECOVER(l, "\"expected (string int int?)\"\n '%S", args);
+		LISP_RECOVER(l, "\"expected (string int int?)\"\n '%S", args);
 	if (get_length(args) == 3 && !is_int(CADDR(args)))
-		RECOVER(l, "\"expected (string int int?)\"\n '%S", args);
+		LISP_RECOVER(l, "\"expected (string int int?)\"\n '%S", args);
 	left = get_int(CADR(args));
 	if (get_length(args) == 2) {
 		if (left >= 0) {
 			tmp = get_length(car(args));
 			left = MIN(left, tmp);
 			assert(left < tmp);
-			return mk_str(l, lstrdup(get_str(car(args)) + left));
+			return mk_str(l, lisp_strdup(l, get_str(car(args)) + left));
 		} else if (left < 0) {
 			left = (int)get_length(car(args)) + left;
 			left = MAX(0, left);
 			if (!(subs = calloc(left + 1, 1)))
-				HALT(l, "\"%s\"", "out of memory");
+				LISP_HALT(l, "\"%s\"", "out of memory");
 			assert((get_length(car(args)) - left) > 0);
 			assert((get_str(car(args)) + left) <
 			       (get_str(car(args)) + get_length(car(args))));
@@ -1108,7 +1107,7 @@ static cell *subr_substring(lisp * l, cell * args)
 		}
 	}
 	if (((right = get_int(CADDR(args))) < 0) || left < 0)
-		RECOVER(l, "\"substring lengths must positive\"\n '%S", args);
+		LISP_RECOVER(l, "\"substring lengths must positive\"\n '%S", args);
 	left = MIN(left, (int)get_length(car(args)));
 	if ((left + right) >= (int)get_length(car(args))) {
 		tmp = (right + left) - get_length(car(args));
@@ -1116,7 +1115,7 @@ static cell *subr_substring(lisp * l, cell * args)
 		assert((left + right) <= (int)get_length(car(args)));
 	}
 	if (!(subs = calloc(right + 1, 1)))
-		HALT(l, "\"%s\"", "out of memory");
+		LISP_HALT(l, "\"%s\"", "out of memory");
 	memcpy(subs, get_str(car(args)) + left, right);
 	return mk_str(l, subs);
 }
@@ -1145,7 +1144,7 @@ static cell *subr_format(lisp * l, cell * args)
 	if (len < 1 || !is_asciiz(car(args)))
 		goto fail;
 	if (!(t = io_sout(calloc(2, 1), 2)))
-		HALT(l, "%r\"%s\"%t", "out of memory");
+		LISP_HALT(l, "%r\"%s\"%t", "out of memory");
 	fmt = get_str(car(args));
 	args = cdr(args);
 	while ((c = *fmt++))
@@ -1209,7 +1208,7 @@ static cell *subr_format(lisp * l, cell * args)
 				if (is_nil(args) || !is_int(car(args)))
 					goto fail;
 				if (!(ts = dtostr(get_int(car(args)), 16u)))
-					HALT(l, "%r\"%s\"%t", "out of memory");
+					LISP_HALT(l, "%r\"%s\"%t", "out of memory");
 				io_puts(ts[0] == '-' ? "-0x" : "0x", t);
 				ret = io_puts(ts[0] == '-' ? ts + 1 : ts, t);
 				free(ts);
@@ -1222,7 +1221,7 @@ static cell *subr_format(lisp * l, cell * args)
 				if (is_nil(args) || !is_int(car(args)))
 					goto fail;
 				if (!(ts = utostr(get_int(car(args)), 10u)))
-					HALT(l, "%r\"%s\"%t", "out of memory");
+					LISP_HALT(l, "%r\"%s\"%t", "out of memory");
 				ret = io_puts(ts, t);
 				free(ts);
 				args = cdr(args);
@@ -1245,7 +1244,7 @@ static cell *subr_format(lisp * l, cell * args)
 	cret = mk_str(l, io_get_string(t));	/*t->p.str is not freed by io_close */
 	io_close(t);
 	return cret;
- argfail:RECOVER(l, "\"expected () (io? str any...)\"\n '%S", args);
+ argfail:LISP_RECOVER(l, "\"expected () (io? str any...)\"\n '%S", args);
  fail:	free(io_get_string(t));
 	io_close(t);
 	/*@todo check if this was a format error, of if this was caused
@@ -1253,7 +1252,7 @@ static cell *subr_format(lisp * l, cell * args)
 	 * rewritten and signal a failure happened somewhere, this
 	 * means format should return (error-status "string") not just
 	 * "string" */
-	RECOVER(l, "\"format error\"\n %S", args);
+	LISP_RECOVER(l, "\"format error\"\n %S", args);
 	return gsym_error();
 }
 
@@ -1274,21 +1273,21 @@ static cell *subr_tr(lisp * l, cell * args)
 	case TR_OK:
 		break;
 	case TR_EINVAL:
-		RECOVER(l, "\"invalid mode\"\n \"%s\"", mode);
+		LISP_RECOVER(l, "\"invalid mode\"\n \"%s\"", mode);
 	case TR_DELMODE:
-		RECOVER(l, "\"set 2 not NULL\"\n '%S", args);
+		LISP_RECOVER(l, "\"set 2 not NULL\"\n '%S", args);
 	default:
-		RECOVER(l, "\"unknown tr error\"\n '%S", args);
+		LISP_RECOVER(l, "\"unknown tr error\"\n '%S", args);
 	}
 	if (!(ret = calloc(len + 1, 1)))
-		HALT(l, "\"%s\"", "out of memory");
+		LISP_HALT(l, "\"%s\"", "out of memory");
 	tr_block(&st, (uint8_t *) tr, (uint8_t *) ret, len);
 	return mk_str(l, ret);
 }
 
 static cell *subr_validate(lisp * l, cell * args)
 {
-	return VALIDATE(l, "validate", get_int(car(args)), get_str(CADR(args)), CADDR(args),
+	return LISP_VALIDATE_ARGS(l, "validate", get_int(car(args)), get_str(CADR(args)), CADDR(args),
 			0) ? gsym_tee() : gsym_nil();
 }
 
@@ -1340,7 +1339,7 @@ static cell *subr_environment(lisp * l, cell * args)
 
 static cell *subr_strerror(lisp * l, cell * args)
 {
-	return mk_str(l, lstrdup(strerror(get_int(car(args)))));
+	return mk_str(l, lisp_strdup(l, strerror(get_int(car(args)))));
 }
 
 static cell *subr_all_syms(lisp * l, cell * args)
@@ -1358,14 +1357,14 @@ static cell *subr_doc_string(lisp * l, cell * args)
 static cell *subr_validation_string(lisp * l, cell * args)
 {
 	char *s = get_func_format(car(args));
-	return s ? mk_str(l, lstrdup(s)) : gsym_nil();
+	return s ? mk_str(l, lisp_strdup(l, s)) : gsym_nil();
 }
 
 static cell *subr_is_closed(lisp * l, cell * args)
 {
 	UNUSED(l);
 	if (!cklen(args, 1))
-		RECOVER(l, "%r\"expected (any)\"%t\n '%S", args);
+		LISP_RECOVER(l, "%r\"expected (any)\"%t\n '%S", args);
 	return is_closed(car(args)) ? gsym_tee() : gsym_nil();
 }
 
@@ -1395,7 +1394,7 @@ static cell *subr_base(lisp * l, cell * args)
 {
 	intptr_t base = get_int(CADR(args));
 	if (base < 2 || base > 36)
-		RECOVER(l, "%r\"base < 2 || base > 36\"%t\n '%S", args);
+		LISP_RECOVER(l, "%r\"base < 2 || base > 36\"%t\n '%S", args);
 	return mk_str(l, dtostr(get_int(car(args)), base));
 }
 

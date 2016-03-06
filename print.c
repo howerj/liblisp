@@ -4,17 +4,6 @@
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com 
  *
- * @warning Hashes are actually printed out in a deceiving fashion, they are
- *          printed out as if they are lists when they are not, this makes
- *          serialization easier. "read.c" should be modified to add a new
- *          syntax for reading in such objects, which could be generalized
- *          to new user defined types.
- * @note    Instead of printing out "<subr:%p>", it would make sense to print
- *          out the name of the symbol that represents it, ie:
- *              + => "<subr:%p>" <=> {+}
- *          This would aide in the serialization of objects, potentially,
- *          but would require subroutines carried around unique names with
- *          them.
  * @warning The colorization is not really that portable and relies on the
  *          terminal it is running under being able to cope with ANSI escape
  *          sequences, it can be turned off though. **/
@@ -23,7 +12,6 @@
 #include "private.h"
 #include <assert.h>
 #include <ctype.h>
-#include <stdarg.h>
 
 static int print_escaped_string(lisp * l, io * o, unsigned depth, char *s)
 {
@@ -62,8 +50,18 @@ static int print_escaped_string(lisp * l, io * o, unsigned depth, char *s)
 	return io_putc('"', o);
 }
 
-int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...) {
+int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...) 
+{
+	int ret;
         va_list ap;
+        va_start(ap, fmt);
+	ret = lisp_vprintf(l, o, depth, fmt, ap);
+	va_end(ap);
+	return ret;
+}
+
+int lisp_vprintf(lisp *l, io *o, unsigned depth, char *fmt, va_list ap)
+{
         intptr_t d;
         unsigned dep;
         double flt;
@@ -71,7 +69,6 @@ int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...) {
         int ret = 0;
         hashtable *ht;
         cell *ob;
-        va_start(ap, fmt);
         while(*fmt) {
                 if(ret == EOF) goto finish;
                 if('%' == (f = *fmt++)) {
@@ -146,15 +143,16 @@ int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...) {
                         ret = io_putc(f, o);
                 }
         }
-finish: va_end(ap);
+finish: 
         return ret;
 }
 
-int printer(lisp *l, io *o, cell *op, unsigned depth) { /*write out s-expr*/
+int printer(lisp *l, io *o, cell *op, unsigned depth) 
+{ 
         cell *tmp;
         if(!op) return EOF;
         if(l && depth > MAX_RECURSION_DEPTH) {
-                lisp_printf(l, o, depth, "%r<PRINT-DEPTH-EXCEEDED:%d>%t", (intptr_t) depth);
+                lisp_printf(l, o, 0, "%r<PRINT-DEPTH-EXCEEDED:%d>%t", (intptr_t) depth);
                 return -1;
         }
         switch(op->type) {

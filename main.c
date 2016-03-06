@@ -33,14 +33,6 @@
 #define VCS_ORIGIN unknown /**< Version control repository origin*/
 #endif
 
-/**@todo This needs to be controllable by switches, and the extern definition
- * moved to a special liblisp module header
- * @todo If the verbosity level is higher, the module should print out more
- * information, such as what functions it is adding.
- * @todo All functions added in modules should have the module name
- * automatically prepended to the function names.*/
-int lisp_verbose_modules = 1; /*modules can make more noise if set to true*/
-
 #ifdef __unix__
 #include <dlfcn.h>
 static char *os   = "unix";
@@ -180,10 +172,12 @@ static int ud_dl_print(io *o, unsigned depth, cell *f) {
 static cell *subr_dlopen(lisp *l, cell *args) {
 	dl_handle_t handle;
         dl_list *h;
-        if(!(handle = DL_OPEN(get_str(car(args)))))
+        if(!(handle = DL_OPEN(get_str(car(args))))) {
+		lisp_log_debug(l, "'dynamic-load-failed \"%s\" \"%s\"", get_str(car(args)), DL_ERROR());
                 return gsym_error();
+	}
         if(!(h = calloc(1, sizeof(*h))))
-                HALT(l, "\"%s\"", "out of memory");
+                LISP_HALT(l, "\"%s\"", "out of memory");
         h->handle = handle;
         h->next = head;
         head = h;
@@ -198,25 +192,28 @@ static cell *subr_load_lisp_module(lisp *l, cell *args) {
 	if(!is_usertype(h, ud_dl))
 		return gsym_error();
 	handle = get_user(h);
-	if((init = DL_SYM(handle, "lisp_module_initialize")) && (init(l) >= 0))
+	lisp_log_debug(l, "'module-initialization \"%s\"", get_str(car(args)));
+	if((init = DL_SYM(handle, "lisp_module_initialize")) && (init(l) >= 0)) {
+		lisp_log_note(l, "'module-initialized \"%s\"", get_str(car(args)));
 		return h;
+	}
+	lisp_log_error(l, "'module-initialization \"%s\"", get_str(car(args)));
 	return gsym_error();
 }
 
 static cell *subr_dlsym(lisp *l, cell *args) {
         subr func;
         if(!cklen(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
-                RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
+                LISP_RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
         if(!(func = DL_SYM(get_user(car(args)), get_str(CADR(args)))))
                 return gsym_error();
         return mk_subr(l, func, NULL, NULL);
 }
 
 static cell *subr_dlerror(lisp *l, cell *args) {
-        char *s;
-        if(!cklen(args, 0))
-                RECOVER(l, "\"expected ()\" '%S", args);
-        return mk_str(l, lstrdup((s = DL_ERROR()) ? s : ""));
+        char *s = DL_ERROR();
+	UNUSED(args);
+        return mk_str(l, lisp_strdup(l, (s = DL_ERROR()) ? s : ""));
 }
 #endif
 
@@ -225,10 +222,10 @@ int main(int argc, char **argv) {
         if(!l) 
                 goto fail;
 
-        lisp_add_cell(l, "*version*",           mk_str(l, lstrdup(XSTRINGIFY(VERSION))));
-        lisp_add_cell(l, "*commit*",            mk_str(l, lstrdup(XSTRINGIFY(VCS_COMMIT))));
-        lisp_add_cell(l, "*repository-origin*", mk_str(l, lstrdup(XSTRINGIFY(VCS_ORIGIN))));
-	lisp_add_cell(l, "*os*",                mk_str(l, lstrdup(os)));
+        lisp_add_cell(l, "*version*",           mk_str(l, lstrdup_or_abort(XSTRINGIFY(VERSION))));
+        lisp_add_cell(l, "*commit*",            mk_str(l, lstrdup_or_abort(XSTRINGIFY(VCS_COMMIT))));
+        lisp_add_cell(l, "*repository-origin*", mk_str(l, lstrdup_or_abort(XSTRINGIFY(VCS_ORIGIN))));
+	lisp_add_cell(l, "*os*",                mk_str(l, lstrdup_or_abort(os)));
 
 #ifdef USE_DL
         ud_dl = new_user_defined_type(l, ud_dl_free, NULL, NULL, ud_dl_print);
@@ -253,7 +250,7 @@ int main(int argc, char **argv) {
 #endif
 #endif
 
-        lisp_add_cell(l, "*file-separator*", mk_str(l, lstrdup(filesep)));
+        lisp_add_cell(l, "*file-separator*", mk_str(l, lstrdup_or_abort(filesep)));
 #ifdef USE_INITRC
         char *rcpath = NULL, *thome = NULL;
 	/*LISPHOME takes precedence over HOME*/
@@ -284,7 +281,8 @@ int main(int argc, char **argv) {
         }
 #endif
         return main_lisp_env(l, argc, argv);
-fail:   return PRINT_ERROR("\"%s\"", "initialization failed"), -1;
+fail:   
+	PRINT_ERROR("\"%s\"", "initialization failed");
         return -1;
 }
 

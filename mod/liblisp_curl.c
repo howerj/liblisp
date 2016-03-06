@@ -39,10 +39,9 @@ int lisp_module_initialize(lisp *l)
 	for (i = 0; primitives[i].p; i++)	/*add all primitives from this module */
 		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
 			goto fail;
-	if (lisp_verbose_modules)
-		lisp_printf(l, lisp_get_output(l), 0, "module: curl loaded\n");
+
 	return 0;
- fail:	lisp_printf(l, lisp_get_output(l), 0, "module: curl loading failure\n");
+ fail:	
 	return -1;
 }
 

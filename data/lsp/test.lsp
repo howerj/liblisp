@@ -36,7 +36,7 @@
       (compare expr result)
       t
       (progn
-        (format *output* "Test failed: %S != %S\n" expr result)
+        (format *error* "Test failed: %S != %S\n" expr result)
         (exit)))))
   (progn
     (test = (let (a 3) (b -4) (+ a b)) -1)
@@ -86,7 +86,7 @@
         (clear-screen)
          t)
       nil)
-    (put *output* "Self-Test Passed\n")
+    (put *error* "Self-Test Passed\n")
     t))
 
 ;; so slow

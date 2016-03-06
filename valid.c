@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <assert.h>
 
-#define VALIDATE_XLIST\
+#define LISP_VALIDATE_ARGS_XLIST\
         X('s', "symbol",            is_sym(x))\
         X('d', "integer",           is_int(x))\
         X('c', "cons",              is_cons(x))\
@@ -62,9 +62,9 @@ static int print_type_string(lisp *l, const char *msg, unsigned len, const char 
                 switch(c) {
                 case ' ': continue;
 #define X(CHAR, STRING, ACTION) case (CHAR): s = (STRING); break;
-                VALIDATE_XLIST
+                LISP_VALIDATE_ARGS_XLIST
 #undef X
-                default: RECOVER(l, "\"invalid format string\" \"%s\" %S))", head, args);
+                default: LISP_RECOVER(l, "\"invalid format string\" \"%s\" %S))", head, args);
                 }
                 lisp_printf(l, e, 0, "%y'%s%t", s);
                 if(*fmt) io_putc(' ', e);
@@ -120,10 +120,10 @@ int lisp_validate_args(lisp * l, const char *msg, unsigned len, const char *fmt,
 			v = 1;
 			continue;
 #define X(CHAR, STRING, ACTION) case (CHAR): v = ACTION; break;
-			VALIDATE_XLIST
+			LISP_VALIDATE_ARGS_XLIST
 #undef X
 		default:
-			RECOVER(l, "\"%s\"", "invalid validation format");
+			LISP_RECOVER(l, "\"%s\"", "invalid validation format");
 		}
 		args = cdr(args);
 	}

@@ -46,21 +46,30 @@ static cell *xml2lisp(lisp *l, mxml_node_t *node)
 	case MXML_ELEMENT: 
 	{
 		mxml_node_t *t = node;
-		cell *e, *ehead, *a, *ahead;
+		hashtable *ht;
+		cell *e, *ehead, *ename, *hash = NULL;
 		int i;
 		size_t j;
 
-		/*attributes, I should put this in a hash*/
-		ahead = a = cons(l, gsym_nil(), gsym_nil());
-		for(i = 0; i < t->value.element.num_attrs; i++) {
-			cell *name, *value, *av;
-			name  = mk_str(l, lstrdup((t->value.element.attrs)[i].name));
-			value = mk_str(l, lstrdup((t->value.element.attrs)[i].value));
-			av = mk_list(l, name, value, NULL);
-			set_cdr(a, cons(l, av, gsym_nil()));
-			a = cdr(a);
+		ename = mk_str(l, lisp_strdup(l, node->value.element.name));
+
+		if(t->value.element.num_attrs) {
+			/* process attributes into a hash */
+			if(!(ht = hash_create(16)))
+				LISP_HALT(l, "\"%s\"", "out of memory");
+
+			for(i = 0; i < t->value.element.num_attrs; i++) {
+				char *key, *val;
+				cell *keyc, *valc;
+				key = lisp_strdup(l, (t->value.element.attrs)[i].name);
+				val = lisp_strdup(l, (t->value.element.attrs)[i].value);
+				keyc = mk_str(l, key);
+				valc = mk_str(l, val);
+				if(hash_insert(ht, key, cons(l, keyc, valc)) < 0)
+					LISP_HALT(l, "\"%s\"", "out of memory");
+			}
+			hash = mk_hash(l, ht);
 		}
-		fix_list_len(ahead, i+1);
 
 		/*elements*/
 		ehead = e = cons(l, gsym_nil(), gsym_nil());
@@ -76,7 +85,10 @@ static cell *xml2lisp(lisp *l, mxml_node_t *node)
 		}
 		fix_list_len(ehead, j);
 
-		return mk_list(l, mk_str(l, lstrdup(node->value.element.name)), cdr(ahead), cdr(ehead), NULL);
+		if(hash)
+			return mk_list(l, ename, hash, cdr(ehead), NULL);
+		else
+			return mk_list(l, ename, cdr(ehead), NULL);
 	}	
 	case MXML_INTEGER:
 		return mk_int(l, node->value.integer);
@@ -87,7 +99,7 @@ static cell *xml2lisp(lisp *l, mxml_node_t *node)
 		 * we return nil to signal this, this cannot occur in the text
 		 * ("" gets parsed as "\"\""), for the moment */
 		if(strcmp(node->value.text.string, ""))
-			return mk_str(l, lstrdup(node->value.text.string));
+			return mk_str(l, lisp_strdup(l, node->value.text.string));
 		return gsym_nil();
 	case MXML_OPAQUE:
 	case MXML_CUSTOM:
@@ -99,7 +111,7 @@ static cell *xml2lisp(lisp *l, mxml_node_t *node)
 
 static mxml_node_t *_lisp2xml(lisp *l, mxml_node_t *parent, cell *x);
 static mxml_node_t *xnode(lisp *l, mxml_node_t *parent, cell *x)
-{
+{ /**@todo add hash -> xml*/
 	if(is_cons(x)) {
 		return _lisp2xml(l, parent, car(x));
 	} else if(is_sym(x)) {
@@ -119,10 +131,8 @@ static mxml_node_t *xnode(lisp *l, mxml_node_t *parent, cell *x)
  * @todo handle hashes and attributes*/
 static mxml_node_t *_lisp2xml(lisp *l, mxml_node_t *parent, cell *x)
 {
-	/**@todo Implement this!*/
 	mxml_node_t *ret = NULL;
 	if(is_cons(x)) {
-		mxml_node_t *n;
 		cell *y;
 		if(is_sym(car(x))) {
 			ret = mxmlNewElement(parent, get_str(car(x)));
@@ -150,7 +160,7 @@ static mxml_node_t *_lisp2xml(lisp *l, mxml_node_t *parent, cell *x)
 /*I might want to export this function*/
 static mxml_node_t *lisp2xml(lisp *l, cell *x)
 {
-	mxml_node_t *xml, *root;
+	mxml_node_t *xml;
 	assert(l && x);
 	xml = mxmlNewXML("1.0");
 	if(!_lisp2xml(l, xml, x))
@@ -221,10 +231,8 @@ int lisp_module_initialize(lisp *l)
 	for (i = 0; primitives[i].p; i++)	/*add all primitives from this module */
 		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
 			goto fail;
-	if (lisp_verbose_modules)
-		lisp_printf(l, lisp_get_output(l), 0, "module: XML loaded\n");
 	return 0;
- fail:	lisp_printf(l, lisp_get_output(l), 0, "module: XML loading failure\n");
+ fail:	
 	return -1;
 }
 

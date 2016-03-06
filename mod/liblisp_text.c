@@ -36,11 +36,11 @@ static struct module_subroutines {
 static cell *make_diff_inner(lisp * l, diff * d, char *x[], char *y[], size_t i, size_t j, cell * pp, cell * mm)
 { /*lol*/
 	if (i > 0 && j > 0 && !strcmp(x[i - 1], y[j - 1])) {
-		return cons(l, cons(l, mk_str(l, lstrdup(x[i - 1])), gsym_nil()), make_diff_inner(l, d, x, y, i - 1, j - 1, pp, mm));
+		return cons(l, cons(l, mk_str(l, lisp_strdup(l, x[i - 1])), gsym_nil()), make_diff_inner(l, d, x, y, i - 1, j - 1, pp, mm));
 	} else if (j > 0 && (i == 0 || d->c[(i * (d->n)) + (j - 1)] >= d->c[((i - 1) * (d->n)) + j])) {
-		return cons(l, cons(l, pp, cons(l, mk_str(l, lstrdup(y[j - 1])), gsym_nil())), make_diff_inner(l, d, x, y, i, j - 1, pp, mm));
+		return cons(l, cons(l, pp, cons(l, mk_str(l, lisp_strdup(l, y[j - 1])), gsym_nil())), make_diff_inner(l, d, x, y, i, j - 1, pp, mm));
 	} else if (i > 0 && (j == 0 || d->c[(i * (d->n)) + (j - 1)] < d->c[((i - 1) * (d->n)) + j])) {
-		return cons(l, cons(l, mm, cons(l, mk_str(l, lstrdup(x[i - 1])), gsym_nil())), make_diff_inner(l, d, x, y, i - 1, j, pp, mm));
+		return cons(l, cons(l, mm, cons(l, mk_str(l, lisp_strdup(l, x[i - 1])), gsym_nil())), make_diff_inner(l, d, x, y, i - 1, j, pp, mm));
 	}
 	return gsym_nil();
 }
@@ -61,9 +61,9 @@ static cell *subr_diff(lisp * l, cell * args)
 	a = car(args);
 	b = CADR(args);
 	if (!(aa = calloc(get_length(a) + 2, sizeof(*aa))))  /**@bug +2??*/
-		HALT(l, "\"%s\"", "out of memory");
+		LISP_HALT(l, "\"%s\"", "out of memory");
 	if (!(bb = calloc(get_length(b) + 2, sizeof(*bb))))  /**@bug +2??*/
-		HALT(l, "\"%s\"", "out of memory");
+		LISP_HALT(l, "\"%s\"", "out of memory");
 	for (tmp = a, i = 0; !is_nil(tmp); tmp = cdr(tmp), i++)
 		if (!is_asciiz(car(tmp)))
 			goto cleanup;
@@ -75,7 +75,7 @@ static cell *subr_diff(lisp * l, cell * args)
 		else
 			bb[i] = get_str(car(tmp));
 	if (!(d = lcs(aa, get_length(a), bb, get_length(b))))
-		HALT(l, "\"%s\"", "out of memory");
+		LISP_HALT(l, "\"%s\"", "out of memory");
 	ret = make_diff(l, d, aa, bb);
  cleanup:
 	free(aa);
@@ -85,7 +85,7 @@ static cell *subr_diff(lisp * l, cell * args)
 	free(d);
 	if (ret)
 		return ret;
-	RECOVER(l, "\"expected two lists of strings\" '%S", args);
+	LISP_RECOVER(l, "\"expected two lists of strings\" '%S", args);
 	return gsym_error();
 }
 
@@ -103,10 +103,8 @@ int lisp_module_initialize(lisp *l)
 	for (i = 0; primitives[i].p; i++)	/*add all primitives from this module */
 		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
 			goto fail;
-	if (lisp_verbose_modules)
-		lisp_printf(l, lisp_get_logging(l), 0, "module: text loaded\n");
 	return 0;
- fail:	lisp_printf(l, lisp_get_logging(l), 0, "module: text load failure\n");
+ fail:	
 	return -1;
 }
 

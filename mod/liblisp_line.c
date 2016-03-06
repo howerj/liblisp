@@ -62,7 +62,7 @@ static void completion_callback(const char *line, size_t pos, line_completions *
 	if (!pos)
 		return;
 	h = get_hash(lisp_get_all_symbols(locked_lisp));
-	linecopy = lstrdup(line);
+	linecopy = lstrdup_or_abort(line);
 
 	if (!(comp = VSTRCAT("*", linecopy, "*")))	/*match any symbol with key in it */
 		fprintf(stderr, "(error \"out of memory\")\n"), exit(1);
@@ -121,7 +121,7 @@ static cell *subr_line_editor_mode(lisp * l, cell * args)
 static cell *subr_hist_len(lisp * l, cell * args)
 {
 	if (!line_history_set_maxlen((int)get_int(car(args))))
-		HALT(l, "\"%s\"", "out of memory");
+		LISP_HALT(l, "\"%s\"", "out of memory");
 	return gsym_tee();
 }
 
@@ -136,7 +136,7 @@ static cell *subr_clear_screen(lisp * l, cell * args)
 static cell *subr_readline(lisp * l, cell * args)
 {
 	char *prompt = get_str(car(args)), *line;
-	return mk_str(l, (line = line_editing_function(prompt)) ? line : lstrdup(""));
+	return mk_str(l, (line = line_editing_function(prompt)) ? line : lisp_strdup(l, ""));
 }
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
@@ -156,14 +156,10 @@ static struct module_subroutines {
 int lisp_module_initialize(lisp *l)
 {
 	size_t i;
-	io *e;
 	char *sep = "/";
 	assert(l);
-	e = lisp_get_logging(l);
 	if(pthread_mutex_trylock(&mutex_single_threaded_module)) {
-		if(lisp_verbose_modules) {
-			lisp_printf(l, e, 0, "module: line editor load failure (module already in use)\n");
-		}
+		lisp_log_error(l, "module: line editor load failure (module already in use)\n");
 		return -1;
 	}
 	locked_lisp = l;
@@ -192,15 +188,14 @@ int lisp_module_initialize(lisp *l)
 	line_history_load(histfile);
 	line_set_vi_mode(0);	/*start up in a lame editing mode thats not confusing */
 	line_set_completion_callback(completion_callback);
-	lisp_add_cell(l, "*history-file*", mk_str(l, lstrdup(histfile)));
+	lisp_add_cell(l, "*history-file*", mk_str(l, lisp_strdup(l, histfile)));
 
 	for (i = 0; primitives[i].p; i++)	/*add primitives from this module */
 		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
 			goto fail;
-	if (lisp_verbose_modules)
-		lisp_printf(l, e, 0, "module: line editor loaded\n");
+
 	return 0;
- fail:	lisp_printf(l, e, 0, "module: line editor load failure\n");
+ fail:	
 	return -1;
 }
 

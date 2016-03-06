@@ -18,7 +18,8 @@ extern "C" {
 #include <inttypes.h>
 #include <stdio.h>
 
-#define DEFAULT_LEN       (256)   /**< just an arbitrary smallish number*/
+#define SMALL_DEFAULT_LEN (64)    /**< just an arbitrary small number*/
+#define DEFAULT_LEN       (256)   /**< just an arbitrary number*/
 #define LARGE_DEFAULT_LEN (4096)  /**< just another arbitrary number*/
 #define MAX_USER_TYPES    (256)   /**< max number of user defined types*/
 #define COLLECTION_POINT  (1<<20) /**< run gc after this many allocs*/
@@ -41,9 +42,11 @@ extern "C" {
  * @param USED is RBUF used?
  * @param ENV  lisp environment to restore jmp_buf to
  * @param RBUF jmp_buf to restore**/
-#define RECOVER_RESTORE(USED, ENV, RBUF)\
-	if((USED)) memcpy((ENV)->recover, (RBUF), sizeof(jmp_buf));\
-	else (ENV)->recover_init = 0;
+#define LISP_RECOVER_RESTORE(USED, ENV, RBUF)\
+	do {\
+		if((USED)) memcpy((ENV)->recover, (RBUF), sizeof(jmp_buf));\
+		else (ENV)->recover_init = 0;\
+	} while(0)
 
 typedef enum lisp_type { 
 	INVALID, /**< invalid object (default), halts interpreter*/
@@ -62,7 +65,7 @@ typedef enum lisp_type {
 } lisp_type;     /**< A lisp object*/
 
 typedef union cell_data { /**< ideally we would use void* for everything*/
-	void *v;     /**< use this for integers and points to cells*/
+	void *v;     /**< use this for integers and pointers to cells*/
 	lfloat f;    /**< if lfloat is double it could be bigger than *v */ 
 	subr prim;   /**< function pointers are not guaranteed 
 	                                              to fit into a void**/
@@ -102,6 +105,7 @@ typedef struct hashentry {      /**< linked list of entries in a bin*/
 	struct hashentry *next; /**< next item in list*/
 } hashentry;
 
+/**@todo turn into a **table into a flexible array member*/
 struct hashtable {	        /**< a hash table*/
 	struct hashentry **table; /**< table of linked lists*/
 	size_t len,  /**< number of 'bins' in the hash table*/
@@ -109,7 +113,9 @@ struct hashtable {	        /**< a hash table*/
 	       replacements, /**< number of entries replaced*/
 	       used          /**< number of bins used*/;
 	/*state used for the foreach loop*/
-	int foreach;          /**< if true, we are in a foreach loop*/
+	unsigned foreach :1,  /**< if true, we are in a foreach loop*/
+		 free_key:1,  /**< if true, hash_destroy will free the key using free()*/
+		 free_value:1; /**< if true, hash_destroy will free the value using free()*/
 	size_t foreach_index; /**< index into foreach loop*/
 	void *foreach_cur;    /**< current entry in foreach loop*/
 };
@@ -192,6 +198,7 @@ struct lisp {
 	userdef_funcs ufuncs[MAX_USER_TYPES]; /**< for user defined types*/
 	int user_defined_types_used;   /**< number of user defined types allocated*/
 	int sig;   /**< set by signal handlers or other threads*/
+	int log_level; /** of lisp_log_level type, the log level */
 	unsigned ungettok:     1, /**< do we have a put-back token to read?*/
 		recover_init: 1, /**< has the recover buffer been initialized?*/
 		errors_halt:  1, /**< any error halts the interpreter if true*/

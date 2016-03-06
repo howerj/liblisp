@@ -18,18 +18,17 @@
  *  @todo Move module related variables to another header
  *  @todo The typedefs used should have the "lisp" prefix and "_t" (or
  *  something POSIX compliant).
- *  @todo Functions for iterating through S-expressions trees in an efficient
- *  way would are needed.
 **/
 #ifndef LIBLISP_H
 #define LIBLISP_H
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <stdio.h>
-#include <inttypes.h>
-#include <stdint.h>
 #include <float.h>
+#include <inttypes.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #ifdef __unix__
         #define LIBLISP_API /**< not needed*/
@@ -46,7 +45,7 @@ extern "C" {
         #define LIBLISP_API /**< not needed*/
 #endif
 
-/************************* structs and opaque types **************************/
+/************************* structs, opaque types, enums ***********************/
 
 /** These are all the types needed for the interpreter and associated utility
  *  functions. They should be opaque types if possible to hide the
@@ -90,11 +89,19 @@ typedef struct {
         int result;  /**< the result, -1 on error, 0 on no match, 1 on match*/
 } regex_result;      /**< a structure representing a regex result*/
 
-typedef enum tr_errors {
+typedef enum {
         TR_OK      =  0, /**< no error*/
         TR_EINVAL  = -1, /**< invalid mode sequence*/
         TR_DELMODE = -2  /**< set 2 string should be NULL in delete mode*/
 } tr_errors; /**< possible error values returned by tr_init*/
+
+typedef enum {
+	LISP_LOG_LEVEL_OFF,    /**< log messages not printed out*/
+	LISP_LOG_LEVEL_ERROR,  /**< default: log only error messages */ 
+	LISP_LOG_LEVEL_NOTE,   /**< print out notes*/
+	LISP_LOG_LEVEL_DEBUG,  /**< print out huge amounts of debug information if compiled with debug on*/
+	LISP_LOG_LEVEL_LAST_INVALID /**< using an invalid log levels causes an abort*/
+} lisp_log_level;
 
 /************************** useful functions *********************************/
 
@@ -105,8 +112,9 @@ typedef enum tr_errors {
 /**@brief print out a neatly formatted error message to stderr then exit(-1).
  * @param msg  message to print out
  * @param file file name to print out, use __FILE__
+ * @param func function name to print out, use __func__
  * @param line line number to print out, use __LINE__**/
-LIBLISP_API void pfatal(char *msg, char *file, long line);
+LIBLISP_API void pfatal(const char *msg, const char *file, const char *func, long line);
 
 /** @brief   lstrdup for where it is not available, despite what POSIX thinks
  *           it is not OK to stick random junk into the C-library.
@@ -114,6 +122,11 @@ LIBLISP_API void pfatal(char *msg, char *file, long line);
  *  @return  char* NULL on error, a duplicate string that can be freed
  *                 otherwise **/
 LIBLISP_API char *lstrdup(const char *s);
+
+/** @brief   lstrdup, but it will die if the memory cannot be allocated.
+ *  @param   s  the string to duplicate
+ *  @return  char* a duplicate string that can be freed */
+LIBLISP_API char *lstrdup_or_abort(const char *s);
 
 /** @brief lstrcatend is like "strcat" from "string.h", however it returns the
  *         end of the new string instead instead of the start of it which is
@@ -336,9 +349,19 @@ LIBLISP_API bitfield *bit_copy(bitfield *bf);
  *  @return  hashtable* initialized hash table or NULL**/
 LIBLISP_API hashtable *hash_create(size_t len);
 
+/** @brief   create new instance of a hash table, possibly freeing either the
+ *           key or the value, using free(). It would probably be better
+ *           to pass in function pointers that can do the freeing.
+ *  @param   len number of buckets in the table
+ *  @param   free_key   if non zero, hash_destroy will free the key with free()
+ *  @param   free_value if non zero, hash_destroy will free the value with free()
+ *  @return  hashtable* initialized hash table or NULL**/
+LIBLISP_API hashtable *hash_create_auto_free(size_t len, unsigned free_key, unsigned free_value);
+
 /** @brief   destroy and invalidate a hash table, this will not attempt to
  *           free the values associated with a key, or the keys, this is
- *           the responsibility of the caller of hash_insert.
+ *           the responsibility of the caller of hash_insert, at least not
+ *           by default.
  *  @param   h table to destroy or NULL**/
 LIBLISP_API void hash_destroy(hashtable *h);
 
@@ -1111,6 +1134,15 @@ LIBLISP_API int is_fnumber(const char *buf);
  *             from**/
 LIBLISP_API void lisp_throw(lisp *l, int ret);
 
+/** @brief This is like lstrdup_or_abort, but will call lisp_throw with
+ *         a negative number for "ret", halting the lisp environment on
+ *         error (or aborting if the error handler is not installed).
+ *  @param l      lisp environment
+ *  @param s      string to duplicate
+ *  @return char* duplicated string, or throw an exception using lisp_throw
+ *                on error */
+LIBLISP_API char *lisp_strdup(lisp *l, const char *s);
+
 /** @brief Formatted printing of lisp cells, colorized if color enabled on
  *         output stream, it can print out s-expression trees generated by
  *         by "lisp_repl()" or "lisp_read()". The output of s-expressions
@@ -1149,8 +1181,21 @@ LIBLISP_API void lisp_throw(lisp *l, int ret);
  *  @param  depth  indentation level of any pretty printing
  *  @param  fmt    format string
  *  @param  ...    any arguments
- *  @return int    >= 0 on success, less than 0 on failure**/
+ *  @return int    >= 0 on success, less than 0 on failure */
 LIBLISP_API int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...);
+
+/** @brief This function is behaves the same as lisp_printf, but it takes
+ *         an argument list instead.
+ *  @param  l      an initialized lisp environment, this can be NULL but
+ *                 maximum depth will not be checked, nor will user defined
+ *                 functions be printed out with their user defined printing
+ *                 functions for that environment.
+ *  @param  o      output I/O stream to print to
+ *  @param  depth  indentation level of any pretty printing
+ *  @param  fmt    format string
+ *  @param  ap     an argument list generated by va_start
+ *  @return int    >=0 on success, less than 0 on failure */
+LIBLISP_API int lisp_vprintf(lisp *l, io *o, unsigned depth, char *fmt, va_list ap);
 
 /** @brief  return a hash-symbol containing all the interned symbols
  *          in a lisp environment, these are not defined symbols, but
@@ -1244,6 +1289,31 @@ LIBLISP_API int lisp_repl(lisp *l, char *prompt, int editor_on);
  *  @param l       lisp environment to destroy**/
 LIBLISP_API void lisp_destroy(lisp *l);
 
+/** @brief log an error, using the same format as lisp_printf, requires
+ * log level to be greater or equal to LISP_LOG_LEVEL_ERROR, otherwise
+ * the message will not be logged.
+ *  @param  l   an initialized lisp environment
+ *  @param  fmt format string
+ *  @return int >=0 on success, less than 0 on failure  */
+LIBLISP_API int lisp_log_error(lisp *l, char *fmt, ...);
+
+/** @brief log a note, using the same format as lisp_printf, requires
+ * log level to be greater or equal to LISP_LOG_LEVEL_NOTE, otherwise
+ * the message will not be logged.
+ *  @param  l   an initialized lisp environment
+ *  @param  fmt format string
+ *  @return int >=0 on success, less than 0 on failure  */
+LIBLISP_API int lisp_log_note(lisp *l, char *fmt, ...);
+
+/** @brief log a debug message, using the same format as lisp_printf, requires
+ * log level to be greater or equal to LISP_LOG_LEVEL_DEBUG, otherwise
+ * the message will not be logged. Setting LISP_LOG_LEVEL_DEBUG can produce
+ * very verbose output.
+ *  @param  l   an initialized lisp environment
+ *  @param  fmt format string
+ *  @return int >=0 on success, less than 0 on failure  */
+LIBLISP_API int lisp_log_debug(lisp *l, char *fmt, ...);
+
 /** @brief set the input for a lisp environment
  *  @param  l  an initialized lisp environment
  *  @param  in the input port
@@ -1293,6 +1363,17 @@ LIBLISP_API io *lisp_get_output(lisp *l);
  *  @param  l lisp environment to retrieve error channel from
  *  @return io* pointer to error channel or NULL on failure**/
 LIBLISP_API io *lisp_get_logging(lisp *l);
+
+/** @brief set the current log level of a lisp interpreter environment
+ *  @param l     lisp environment to set the log level of
+ *  @param level the level to set the environment to*/
+LIBLISP_API void lisp_set_log_level(lisp *l, lisp_log_level level);
+
+/** @brief get the current log level of a lisp interpreter environment
+ *  @param l   lisp environment to get the log level of
+ *  @param lisp_log_level the log level of the interpreter */
+LIBLISP_API lisp_log_level lisp_get_log_level(lisp *l);
+
 
 /** @brief validate an arguments list against a format string, this can either
  *         longjmp to an error handler if recover is non zero or return a
@@ -1452,11 +1533,12 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
  * @param RET  Internal lisp exception return code
  * @param FMT  Format string printing error messages
  * @param ...  Arguments for format string**/
-#define FAILPRINTER(LISP, RET, FMT, ...) do{\
-        lisp_printf((LISP), lisp_get_logging((LISP)), 0,\
-                        "(%Berror%t\n %y'%s%t\n " FMT "\n %r\"%s\"\n %m%d%t)\n",\
+#define LISP_FAIL_PRINTER(LISP, RET, FMT, ...)\
+	do{\
+        	lisp_log_error((LISP),\
+                        "\n %y'%s%t\n " FMT "\n %r\"%s\"\n %m%d%t",\
                        __func__, __VA_ARGS__, __FILE__, (intptr_t)__LINE__);\
-        lisp_throw((LISP), RET);\
+        	lisp_throw((LISP), RET);\
         } while(0)
 
 /**@brief Print out an error message and throw a lisp exception that
@@ -1464,34 +1546,33 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
  * @param LISP The lisp environment to throw the exception in
  * @param FMT  Format string printing error messages
  * @param ...  Arguments for format string**/
-#define RECOVER(LISP, FMT, ...) FAILPRINTER(LISP,  1, FMT, __VA_ARGS__)
+#define LISP_RECOVER(LISP, FMT, ...) LISP_FAIL_PRINTER(LISP,  1, FMT, __VA_ARGS__)
 
 /**@brief Print out an error message and throw a lisp exception that
  *        the interpreter cannot recover from, it will return.
  * @param LISP The lisp environment to throw the exception in
  * @param FMT  Format string printing error messages
  * @param ...  Arguments for format string**/
-#define HALT(LISP, FMT, ...) FAILPRINTER(LISP, -1, FMT, __VA_ARGS__)
+#define LISP_HALT(LISP, FMT, ...) LISP_FAIL_PRINTER(LISP, -1, FMT, __VA_ARGS__)
 
 #endif /*end of C99 variable length macros*/
 
 /**@brief A wrapper around pfatal that with file and line filled out
  *        for the error message to print.
  * @param MSG Message to print out**/
-#define FATAL(MSG) pfatal((MSG), __FILE__, __LINE__)
+#define FATAL(MSG) pfatal((MSG), __FILE__, __func__, __LINE__)
 
 /** @brief  validate a lisp expression and automatically put file, function and
  *          line information into the macro.
- *  @bug    This macro needs a better name as it is not a generic validation
- *          function.
- *  @todo   This needs a macro "ifdef" to disable validation if needed.
  *  LISP    lisp environment
  *  LEN     number of
  *  FMT     format string described in lisp_validate_args comment
  *  ARGS    arguments to check
- *  RECOVER halt lisp environment if negative, recover if positive **/
-#define VALIDATE(LISP, MSG, LEN, FMT, ARGS, RECOVER)\
-        lisp_validate_args((LISP), (MSG), (LEN), (FMT), (ARGS), (RECOVER))
+ *  LISP_RECOVER halt lisp environment if negative, recover if positive **/
+#ifndef LISP_DO_NOT_VALIDATE_ARGS
+#define LISP_VALIDATE_ARGS(LISP, MSG, LEN, FMT, ARGS, LISP_RECOVER)\
+        lisp_validate_args((LISP), (MSG), (LEN), (FMT), (ARGS), (LISP_RECOVER))
+#endif
 
 /**@brief Stringify X, turn X into a string.
  * @param X      Thing to turn into a string  **/
@@ -1553,11 +1634,6 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
 /* module stuff to move into separate header */
 
 typedef int (*lisp_module_initializer_t)(lisp *l);
-
-/** @brief If this variable is true then lisp modules are free to be
- * as noisy as they like, otherwise they will only emit messages on
- * an error. */
-LIBLISP_API extern int lisp_verbose_modules;
 
 int lisp_module_initialize(lisp *l);
 

@@ -409,9 +409,9 @@ int main(int argc, char **argv)
 
 		cell *x = NULL, *y = NULL, *z = NULL;
 		char *t = NULL;
-		state(x = intern(l, lstrdup("foo")));
-		state(y = intern(l, t = lstrdup("foo")));	/*this one needs freeing! */
-		state(z = intern(l, lstrdup("bar")));
+		state(x = intern(l, lstrdup_or_abort("foo")));
+		state(y = intern(l, t = lstrdup_or_abort("foo")));	/*this one needs freeing! */
+		state(z = intern(l, lstrdup_or_abort("bar")));
 		test(x == y && x != NULL);
 		test(x != z);
 		free(t);	/*free the non-interned string */

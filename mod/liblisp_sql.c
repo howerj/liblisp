@@ -63,7 +63,7 @@ static cell *subr_sql_open(lisp * l, cell * args)
 static cell *subr_sql_close(lisp * l, cell * args)
 {
 	if (!cklen(args, 1) || !is_usertype(car(args), ud_sql))
-		RECOVER(l, "\"expected (sql-database)\" '%S", args);
+		LISP_RECOVER(l, "\"expected (sql-database)\" '%S", args);
 	sqlite3_close(get_user(car(args)));
 	close_cell(car(args));
 	return gsym_tee();
@@ -82,7 +82,12 @@ static int sql_callback(void *obin, int argc, char **argv, char **azColName)
 	lisp *l = cb->l;
 	for (i = 0; i < argc; i++)
 		cur = cons(l,
-			  cons(l, mk_str(l, lstrdup(azColName[i])), argv[i] ? mk_str(l, lstrdup(argv[i])) : gsym_nil()), cur);
+			  cons(l, 
+				  mk_str(l, lstrdup_or_abort(azColName[i])), 
+				  	argv[i] ? 
+						mk_str(l, lstrdup_or_abort(argv[i])) : 
+						gsym_nil()), 
+			  	cur);
 	cb->ret = cons(l, cur, list);
 	return 0;
 }
@@ -95,10 +100,10 @@ static cell *subr_sql(lisp * l, cell * args)
 	cb.ret = gsym_nil();
 	cb.l   = l;
 	if (!cklen(args, 2) || !is_usertype(car(args), ud_sql) || !is_asciiz(CADR(args)))
-		RECOVER(l, "\"expected (sql-database string)\" '%S", args);
+		LISP_RECOVER(l, "\"expected (sql-database string)\" '%S", args);
 	if ((rc = sqlite3_exec(get_user(car(args)), get_str(CADR(args)), sql_callback, &cb, &errmsg)) != SQLITE_OK) {
 		cell *r;
-		r = mk_list(l, gsym_error(), mk_str(l, lstrdup(errmsg)), mk_int(l, rc), NULL);
+		r = mk_list(l, gsym_error(), mk_str(l, lisp_strdup(l, errmsg)), mk_int(l, rc), NULL);
 		sqlite3_free(errmsg);
 		return r;
 	}
@@ -133,10 +138,9 @@ int lisp_module_initialize(lisp *l)
 	for (size_t i = 0; primitives[i].p; i++)	/*add all primitives from this module */
 		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
 			goto fail;
-	if (lisp_verbose_modules)
-		lisp_printf(l, lisp_get_logging(l), 0, "module: sqlite3 loaded\n");
+
 	return 0;
- fail:	lisp_printf(l, lisp_get_logging(l), 0, "module: sqlite3 load failure\n");
+ fail:	
 	return -1;
 }
 

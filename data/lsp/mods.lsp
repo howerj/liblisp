@@ -13,7 +13,7 @@
         *have-dynamic-loader* 
         (= (dynamic-load-lisp-module (string->symbol (join "" (list "liblisp_" name (if (= *os* "unix") ".so" ".dll"))))) 'error))
          (progn
-	   (format *output* "module: %s %s\n" name (dynamic-error))
+	   (format *error* "module: %s %s\n" name (dynamic-error))
 	   (define-eval (string->symbol (join "" (list "*have-" name "*"))) nil))
          (define-eval (string->symbol (join "" (list "*have-" name "*"))) t))))
 

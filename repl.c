@@ -4,7 +4,7 @@
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com
  *
- *  @note The -H flag causes the interpreter to halt on an error, however
+ *  @bug  The -H flag causes the interpreter to halt on an error, however
  *        this will also cause it to halt if an eval ran from within the
  *        interpreter fails.
  *  **/
@@ -14,8 +14,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char *usage = /**< command line options for example interpreter*/
-    "usage: %s (-[hcpEH])* (-[i\\-] file)* (-e string)* (-o file)* file* -\n";
+static const char *usage = /**< command line options for example interpreter*/
+    "(-[hcpvVEH])* (-[i\\-] file)* (-e string)* (-o file)* file* -";
+
+static const char *help =
+"The liblisp library and interpreter. For more information on usage\n\
+consult the man pages 'lisp' and 'liblisp'. Alternatively, consult:\n\
+\n\
+	https://github.com/howerj/liblisp\n\
+	http://work.anapnea.net/html/html/projects.html\n\
+";
+
+static const char *lisp_version = "$Id$"; /*Id string put here by version control*/
+
+static unsigned lisp_verbosity = LISP_LOG_LEVEL_ERROR;
 
 enum { go_switch,	     /**< current argument was a valid flag*/
 	go_in_file,	     /**< current argument is file input to eval*/
@@ -39,20 +51,34 @@ static int getoptions(lisp * l, char *arg, char *arg_0)
 		case '-':
 			return go_in_file_next_arg;
 		case 'h':
-			printf(usage, arg_0);
+			printf("usage %s %s\n\n", arg_0, usage);
+			puts(help);
 			exit(0);
 			break;
 		case 'c':
+			lisp_log_note(l, "'color-on");
 			l->color_on = 1;
 			break;	/*colorize output */
 		case 'p':
+			lisp_log_note(l, "'prompt-on");
 			l->prompt_on = 1;
 			break;	/*turn standard prompt when reading stdin */
 		case 'E':
+			lisp_log_note(l, "'line-editor-on");
 			l->editor_on = 1;
 			break;	/*turn line editor on when reading stdin */
 		case 'H':
+			lisp_log_note(l, "'halt-on-error");
 			l->errors_halt = 1;
+			break;
+		case 'v':
+			lisp_verbosity++;
+			if(lisp_verbosity < LISP_LOG_LEVEL_LAST_INVALID)
+				lisp_set_log_level(l, lisp_verbosity);
+			break;
+		case 'V':
+			puts(lisp_version);
+			exit(0);
 			break;
 		case 'e':
 			return go_in_string;
@@ -60,7 +86,7 @@ static int getoptions(lisp * l, char *arg, char *arg_0)
 			return go_out_file;
 		default:
 			fprintf(stderr, "unknown option '%c'\n", c);
-			fprintf(stderr, usage, arg_0);
+			fprintf(stderr, "usage %s %s\n", arg_0, usage);
 			return go_error;
 		}
 	return go_switch;	/*this argument was a valid flag, nothing more */
@@ -90,7 +116,7 @@ int lisp_repl(lisp * l, char *prompt, int editor_on)
 			}
 			if (!(prn = lisp_eval_string(l, line))) {
 				free(line);
-				RECOVER(l, "\"%s\"", "invalid or incomplete line");
+				LISP_RECOVER(l, "\"%s\"", "invalid or incomplete line");
 			}
 			lisp_print(l, prn);
 			free(line);
@@ -124,15 +150,16 @@ int main_lisp_env(lisp * l, int argc, char **argv)
 	if (!l)
 		return -1;
 	for (i = argc - 1; i + 1; i--)	/*add command line args to list */
-		if (!(ob = cons(l, mk_str(l, lstrdup(argv[i])), ob)))
+		if (!(ob = cons(l, mk_str(l, lstrdup_or_abort(argv[i])), ob)))
 			return -1;
-	if (!extend_top(l, intern(l, lstrdup("args")), ob))
+	if (!extend_top(l, intern(l, lstrdup_or_abort("args")), ob))
 		return -1;
 	for (i = 1; i < argc; i++)
 		switch (getoptions(l, argv[i], argv[0])) {
 		case go_switch:
 			break;
 		case go_in_stdin:	/*read from standard input */
+			lisp_log_note(l, "'input-file 'stdin");
 			io_close(lisp_get_input(l));
 			if (lisp_set_input(l, io_fin(stdin)) < 0)
 				return perror("stdin"), -1;
@@ -147,6 +174,7 @@ int main_lisp_env(lisp * l, int argc, char **argv)
 				return fprintf(stderr, "-i and -- expects file\n"), -1;
 			/*--- fall through ---*/
 		case go_in_file:	/*read from a file */
+			lisp_log_note(l, "'input-file \"%s\"", argv[i]);
 			io_close(lisp_get_input(l));
 			if (lisp_set_input(l, io_fin(fopen(argv[i], "rb"))) < 0)
 				return perror(argv[i]), -1;
@@ -157,6 +185,7 @@ int main_lisp_env(lisp * l, int argc, char **argv)
 			stdin_off = 1;
 			break;
 		case go_in_string:	/*evaluate a string */
+			lisp_log_note(l, "'input-string \"%s\"", argv[i]);
 			io_close(lisp_get_input(l));
 			if (!(++i < argc))
 				return fprintf(stderr, "-e expects arg\n"), -1;
@@ -169,6 +198,7 @@ int main_lisp_env(lisp * l, int argc, char **argv)
 			stdin_off = 1;
 			break;
 		case go_out_file:	/*change the file to write to */
+			lisp_log_note(l, "'output-file \"%s\"", argv[i]);
 			if (!(++i < argc))
 				return fprintf(stderr, "-o expects arg\n"), -1;
 			io_close(lisp_get_output(l));
@@ -180,9 +210,11 @@ int main_lisp_env(lisp * l, int argc, char **argv)
 		default:
 			exit(-1);
 		}
-	if (!stdin_off)
+	if (!stdin_off) {
+		lisp_log_note(l, "\"%s\"", "reading from stdin");
 		if (lisp_repl(l, l->prompt_on ? "> " : "", l->editor_on) < 0)
 			return -1;
+	}
 	lisp_destroy(l);
 	return 0;
 }

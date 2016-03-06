@@ -64,6 +64,9 @@ LINK    = -ldl
 # This is for convenience only, it may cause problems.
 RPATH   ?= -Wl,-rpath=.
 
+# Valgrind
+VALGRIND_SUPP=valgrind.supp
+
 ifeq ($(OS),Windows_NT)
 FixPath =$(subst /,\,$1)
 FS      =$(subst /,\,/)
@@ -208,7 +211,7 @@ run: all
 # From <http://valgrind.org/>
 valgrind: all
 	@echo running the executable through leak detection program, valgrind
-	valgrind ./$(TARGET) $(RUN_FLAGS) data/init.lsp -
+	valgrind --suppressions=$(VALGRIND_SUPP) ./$(TARGET) $(RUN_FLAGS) data/init.lsp -
 
 ### documentation ############################################################
 

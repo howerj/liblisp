@@ -22,10 +22,8 @@ int lisp_module_initialize(lisp *l)
 	assert(l);
 	if (!(lisp_add_subr(l, "crc", subr_crc, "Z", "CRC-32 of a string")))
 		goto fail;
-	if (lisp_verbose_modules)
-		lisp_printf(l, lisp_get_logging(l), 0, "module: crc loaded\n");
 	return 0;
- fail:	lisp_printf(l, lisp_get_logging(l), 0, "module: crc load failure\n");
+ fail:	
 	return -1;
 }
 

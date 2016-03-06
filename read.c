@@ -1,17 +1,16 @@
 /** @file       read.c
  *  @brief      An S-Expression parser for liblisp
- *  @author     Richard Howe (2015)
+ *  @author     Richard Howe (2015, 2016)
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com 
  *  
  *  An S-Expression parser, it takes it's input from a generic input
  *  port that can be set up to read from a string or a file.
  *
- *  @todo Error messages could be improved. Some kind of limited evaluation 
- *        could go here as well. Giving meaning to different forms of parenthesis 
- *        (such as "{}", "<>", and "[]") could improve readability or be used
- *        for syntax.
- *  @note there is no option to strip colors of parsed input. **/
+ *  The hash table arguments are all not evaluated, but the primitive
+ *  "hash-create" can be used to create a table where the arguments are
+ *  evaluated.
+ **/
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
@@ -41,9 +40,9 @@ static void add_char(lisp * l, char ch)
 	if (l->buf_used > l->buf_allocated - 1) {
 		l->buf_allocated = l->buf_used * 2;
 		if (l->buf_allocated < l->buf_used)
-			HALT(l, "%s", "overflow in allocator size variable");
+			LISP_HALT(l, "%s", "overflow in allocator size variable");
 		if (!(tmp = realloc(l->buf, l->buf_allocated)))
-			HALT(l, "%s", "out of memory");
+			LISP_HALT(l, "%s", "out of memory");
 		l->buf = tmp;
 	}
 	l->buf[l->buf_used++] = ch;
@@ -53,11 +52,8 @@ static void add_char(lisp * l, char ch)
 static char *new_token(lisp * l)
 {
 	assert(l);
-	char *s;
 	l->buf[l->buf_used++] = '\0';
-	if (!(s = lstrdup(l->buf)))
-		HALT(l, "%s", "out of memory");
-	return s;
+	return lisp_strdup(l, l->buf);
 }
 
 /**@brief push back a single token */
@@ -149,11 +145,11 @@ static char *read_string(lisp * l, io * i)
 					goto fail;
 				add_char(l, ch);
 				continue;
- fail:				RECOVER(l, "'invalid-escape-literal \"%s\"", num);
+ fail:				LISP_RECOVER(l, "'invalid-escape-literal \"%s\"", num);
 			case EOF:
 				return NULL;
 			default:
-				RECOVER(l, "'invalid-escape-char \"%c\"", ch);
+				LISP_RECOVER(l, "'invalid-escape-char \"%c\"", ch);
 			}
 		}
 		if (ch == '"')
@@ -168,8 +164,6 @@ static int keyval(lisp * l, io * i, hashtable *ht, char *key)
 	cell *val;
 	if(!(val = reader(l, i)))
 		return -1;
-	/**@todo sort out hash weirdness when inserting values,
-	 * or create wrapper for hash_insert */
 	if(hash_insert(ht, key, cons(l, mk_str(l, key), val)) < 0)
 		return -1;
 	return 0;
@@ -179,8 +173,8 @@ static cell *read_hash(lisp * l, io * i)
 {
 	hashtable *ht;
 	char *token = NULL; 
-	if (!(ht = hash_create(DEFAULT_LEN)))
-		HALT(l, "%s", "out of memory");
+	if (!(ht = hash_create(SMALL_DEFAULT_LEN))) /**@bug leaks memory on error*/
+		LISP_HALT(l, "%s", "out of memory");
 	for(;;) {
 		token = lexer(l, i);
 		if(!token)
@@ -199,10 +193,11 @@ static cell *read_hash(lisp * l, io * i)
 		{
 			char *key;
 			free(token);
+			token = NULL;
 			if(!(key = read_string(l, i)))
-				return NULL;
+				goto fail;
 			if(keyval(l, i, ht, key) < 0)
-				return NULL;
+				goto fail;
 			continue;
 		}
 		default:
@@ -211,14 +206,16 @@ static cell *read_hash(lisp * l, io * i)
 			} else if(parse_floats && is_fnumber(token)) {
 				goto fail;
 			}
-			if(keyval(l, i, ht, token) < 0)
-				return NULL;
+
+			if(keyval(l, i, ht, new_token(l)) < 0)
+				goto fail;
+			free(token);
 			continue;
 		}
 	}
 fail:
 	if(token)
-		RECOVER(l, "%y'invalid-hash-key%t %r\"%s\"%t", token);
+		LISP_RECOVER(l, "%y'invalid-hash-key%t %r\"%s\"%t", token);
 	hash_destroy(ht);
 	free(token);
 	return NULL;
@@ -239,7 +236,7 @@ cell *reader(lisp * l, io * i)
 		return read_list(l, i);
 	case ')':
 		free(token);
-		RECOVER(l, "%r\"unmatched %s\"%t", "')'");
+		LISP_RECOVER(l, "%r\"unmatched %s\"%t", "')'");
 	case '{':
 		if(!parse_hashes)
 			goto nohash;
@@ -249,7 +246,7 @@ cell *reader(lisp * l, io * i)
 		if(!parse_hashes)
 			goto nohash;
 		free(token);
-		RECOVER(l, "%r\"unmatched %s\"%t", "'}'");
+		LISP_RECOVER(l, "%r\"unmatched %s\"%t", "'}'");
 	case '"':
 	{
 		char *s;
@@ -310,7 +307,7 @@ static cell *read_list(lisp * l, io * i)
 			return NULL;
 		if (strcmp(stok, ")")) {
 			free(stok);
-			RECOVER(l, "%y'invalid-cons%t %r\"%s\"%t", "unexpected right parenthesis");
+			LISP_RECOVER(l, "%y'invalid-cons%t %r\"%s\"%t", "unexpected right parenthesis");
 		}
 		free(token);
 		free(stok);
