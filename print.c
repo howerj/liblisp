@@ -13,7 +13,7 @@
 #include <assert.h>
 #include <ctype.h>
 
-static int print_escaped_string(lisp * l, io * o, unsigned depth, char *s)
+static int print_escaped_string(lisp_t * l, io_t * o, unsigned depth, char *s)
 {
 	char c;
 	assert(l && o && s);
@@ -50,7 +50,7 @@ static int print_escaped_string(lisp * l, io * o, unsigned depth, char *s)
 	return io_putc('"', o);
 }
 
-int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...) 
+int lisp_printf(lisp_t *l, io_t *o, unsigned depth, char *fmt, ...) 
 {
 	int ret;
         va_list ap;
@@ -60,15 +60,15 @@ int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...)
 	return ret;
 }
 
-int lisp_vprintf(lisp *l, io *o, unsigned depth, char *fmt, va_list ap)
+int lisp_vprintf(lisp_t *l, io_t *o, unsigned depth, char *fmt, va_list ap)
 {
         intptr_t d;
         unsigned dep;
         double flt;
         char c, f, *s;
         int ret = 0;
-        hashtable *ht;
-        cell *ob;
+        hash_table_t *ht;
+        lisp_cell_t *ob;
         while(*fmt) {
                 if(ret == EOF) goto finish;
                 if('%' == (f = *fmt++)) {
@@ -93,13 +93,13 @@ int lisp_vprintf(lisp *l, io *o, unsigned depth, char *fmt, va_list ap)
                         case 'f':  flt = va_arg(ap, double);
                                    ret = io_printflt(flt, o);
                                    break;
-                        case 'S':  ob = va_arg(ap, cell*);
+                        case 'S':  ob = va_arg(ap, lisp_cell_t *);
                                    ret =  printer(l, o, ob, depth);
                                    break;
-                        case 'H':  ht = va_arg(ap, hashtable*);
+                        case 'H':  ht = va_arg(ap, hash_table_t *);
                         { 
                           size_t i;
-                          hashentry *cur;
+                          hash_entry_t *cur;
                           lisp_printf(l, o, depth, "{");
                           for(i = 0; i < ht->len; i++)
                             if(ht->table[i])
@@ -147,9 +147,9 @@ finish:
         return ret;
 }
 
-int printer(lisp *l, io *o, cell *op, unsigned depth) 
+int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth) 
 { 
-        cell *tmp;
+        lisp_cell_t *tmp;
         if(!op) return EOF;
         if(l && depth > MAX_RECURSION_DEPTH) {
                 lisp_printf(l, o, 0, "%r<PRINT-DEPTH-EXCEEDED:%d>%t", (intptr_t) depth);

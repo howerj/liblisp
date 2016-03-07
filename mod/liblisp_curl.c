@@ -13,7 +13,7 @@
 #define SUBROUTINE_XLIST\
 	X("curl",      subr_curl,     "Z",       "change the current directory")
 
-#define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
@@ -27,12 +27,13 @@ static struct module_subroutines {
 
 #undef X
 
-static cell *subr_curl(lisp * l, cell * args)
+static lisp_cell_t *subr_curl(lisp_t * l, lisp_cell_t * args)
 {
+	UNUSED(args);
 	return mk_int(l, 0);
 }
 
-int lisp_module_initialize(lisp *l)
+int lisp_module_initialize(lisp_t *l)
 {
 	size_t i;
 	assert(l);

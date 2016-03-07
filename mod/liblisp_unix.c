@@ -127,7 +127,7 @@
 	X("mknod",      subr_mknod,     "Z Z d d", "make a device node")\
 	X("ualarm",     subr_ualarm,    "d d",     "send SIGALARM to calling process after a time")
 
-#define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
@@ -141,7 +141,7 @@ static struct module_subroutines {
 
 #undef X
 
-static cell *subr_mknod(lisp * l, cell * args)
+static lisp_cell_t *subr_mknod(lisp_t * l, lisp_cell_t * args)
 {
 	dev_t d;
 	mode_t m = S_IFIFO;
@@ -165,31 +165,31 @@ static cell *subr_mknod(lisp * l, cell * args)
 	return mk_int(l, mknod(get_str(car(args)), m | S_IRWXU, d));
 }
 
-static cell *subr_chmod(lisp * l, cell * args)
+static lisp_cell_t *subr_chmod(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, chmod(get_str(car(args)), get_int(CADR(args))));
 }
 
-static cell *subr_mount(lisp * l, cell * args)
+static lisp_cell_t *subr_mount(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, mount(get_str(car(args)), get_str(CADR(args)), get_str(CADDR(args)), MS_MGC_VAL, NULL));
 }
 
-static cell *subr_umount(lisp * l, cell * args)
+static lisp_cell_t *subr_umount(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, umount(get_str(car(args))));
 }
 
-static cell *subr_chown(lisp * l, cell * args)
+static lisp_cell_t *subr_chown(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, chown(get_str(car(args)), get_int(CADR(args)), get_int(CADDR(args))));
 }
 
-static cell *subr_directory(lisp * l, cell * args)
+static lisp_cell_t *subr_directory(lisp_t * l, lisp_cell_t * args)
 {
 	DIR *d;
 	struct dirent *e;
-	cell *ret = gsym_nil();
+	lisp_cell_t *ret = gsym_nil();
 	if (!(d = opendir(get_str(car(args)))))
 		return gsym_error();
 	while ((e = readdir(d)))
@@ -198,12 +198,12 @@ static cell *subr_directory(lisp * l, cell * args)
 	return ret;
 }
 
-static cell *subr_sleep(lisp * l, cell * args)
+static lisp_cell_t *subr_sleep(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, sleep(get_int(car(args))));
 }
 
-static cell *subr_sync(lisp * l, cell * args)
+static lisp_cell_t *subr_sync(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(l);
 	UNUSED(args);
@@ -211,48 +211,48 @@ static cell *subr_sync(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-static cell *subr_kill(lisp * l, cell * args)
+static lisp_cell_t *subr_kill(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, kill(get_int(car(args)), get_int(CADR(args))));
 }
 
-static cell *subr_nice(lisp * l, cell * args)
+static lisp_cell_t *subr_nice(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, nice(get_int(car(args))));
 }
 
-static cell *subr_pause(lisp * l, cell * args)
+static lisp_cell_t *subr_pause(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(args);
 	return mk_int(l, pause());
 }
 
-static cell *subr_symlink(lisp * l, cell * args)
+static lisp_cell_t *subr_symlink(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, symlink(get_str(car(args)), get_str(CADR(args))));
 }
 
-static cell *subr_link(lisp * l, cell * args)
+static lisp_cell_t *subr_link(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, link(get_str(car(args)), get_str(CADR(args))));
 }
 
-static cell *subr_chdir(lisp * l, cell * args)
+static lisp_cell_t *subr_chdir(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, chdir(get_str(car(args))));
 }
 
-static cell *subr_ualarm(lisp * l, cell * args)
+static lisp_cell_t *subr_ualarm(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, ualarm(get_int(car(args)), get_int(CADR(args))));
 }
 
-static cell *subr_rmdir(lisp * l, cell * args)
+static lisp_cell_t *subr_rmdir(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, rmdir(get_str(car(args))));
 }
 
-int lisp_module_initialize(lisp *l)
+int lisp_module_initialize(lisp_t *l)
 {
 	size_t i;
 	assert(l);

@@ -24,7 +24,7 @@
 	X("bignum-to-string",   subr_bignum_to_string,  NULL, "convert a bignum to a string")\
 	X("bignum-from-string", subr_bignum_from_string, "S", "create a bignum from a string")
 
-#define X(NAME, SUBR, VALIDATION , DOCSTRING) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION , DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
@@ -40,13 +40,13 @@ static struct module_subroutines {
 
 static int ud_bignum = 0;
 
-static void ud_bignum_free(cell * f)
+static void ud_bignum_free(lisp_cell_t * f)
 {
 	bignum_destroy(get_user(f));
 	free(f);
 }
 
-static int ud_bignum_print(io * o, unsigned depth, cell * f)
+static int ud_bignum_print(io_t * o, unsigned depth, lisp_cell_t * f)
 {
 	int ret;
 	char *s;
@@ -56,7 +56,7 @@ static int ud_bignum_print(io * o, unsigned depth, cell * f)
 	return ret;
 }
 
-static cell *subr_bignum_create(lisp * l, cell * args)
+static lisp_cell_t *subr_bignum_create(lisp_t * l, lisp_cell_t * args)
 {
 	bignum *b;
 	if (!(b = bignum_create(get_int(car(args)), 16)))
@@ -64,7 +64,7 @@ static cell *subr_bignum_create(lisp * l, cell * args)
 	return mk_user(l, b, ud_bignum);
 }
 
-static cell *subr_bignum_multiply(lisp * l, cell * args)
+static lisp_cell_t *subr_bignum_multiply(lisp_t * l, lisp_cell_t * args)
 {
 	bignum *b;
 	if (!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
@@ -74,7 +74,7 @@ static cell *subr_bignum_multiply(lisp * l, cell * args)
 	return mk_user(l, b, ud_bignum);
 }
 
-static cell *subr_bignum_add(lisp * l, cell * args)
+static lisp_cell_t *subr_bignum_add(lisp_t * l, lisp_cell_t * args)
 {
 	bignum *b;
 	if (!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
@@ -84,7 +84,7 @@ static cell *subr_bignum_add(lisp * l, cell * args)
 	return mk_user(l, b, ud_bignum);
 }
 
-static cell *subr_bignum_subtract(lisp * l, cell * args)
+static lisp_cell_t *subr_bignum_subtract(lisp_t * l, lisp_cell_t * args)
 {
 	bignum *b;
 	if (!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
@@ -94,10 +94,10 @@ static cell *subr_bignum_subtract(lisp * l, cell * args)
 	return mk_user(l, b, ud_bignum);
 }
 
-static cell *subr_bignum_divide(lisp * l, cell * args)
+static lisp_cell_t *subr_bignum_divide(lisp_t * l, lisp_cell_t * args)
 {
 	bignum_div_t *d;
-	cell *ret;
+	lisp_cell_t *ret;
 	if (!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
 		LISP_RECOVER(l, "\"expected (bignum bignum)\" '%S", args);
 	if (!(d = bignum_divide(get_user(car(args)), get_user(CADR(args))), ud_bignum))
@@ -107,7 +107,7 @@ static cell *subr_bignum_divide(lisp * l, cell * args)
 	return ret;
 }
 
-static cell *subr_bignum_to_string(lisp * l, cell * args)
+static lisp_cell_t *subr_bignum_to_string(lisp_t * l, lisp_cell_t * args)
 {
 	char *s;
 	if (!cklen(args, 1) || !is_usertype(car(args), ud_bignum))
@@ -117,7 +117,7 @@ static cell *subr_bignum_to_string(lisp * l, cell * args)
 	return mk_str(l, s);
 }
 
-static cell *subr_bignum_from_string(lisp * l, cell * args)
+static lisp_cell_t *subr_bignum_from_string(lisp_t * l, lisp_cell_t * args)
 {
 	bignum *b;
 	if (!(b = bignum_strtobig(get_str(car(args)), 10)))
@@ -125,7 +125,7 @@ static cell *subr_bignum_from_string(lisp * l, cell * args)
 	return mk_user(l, b, ud_bignum);
 }
 
-int lisp_module_initialize(lisp *l)
+int lisp_module_initialize(lisp_t *l)
 {
 	size_t i;
 	assert(l);

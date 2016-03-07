@@ -52,36 +52,36 @@ extern "C" {
  *  implementation details. **/
 
 #ifndef USE_SINGLE_PRECISION_FLOATS
-typedef double lfloat; /**< float type used by this lisp*/
-#define LFLT_EPSILON  DBL_EPSILON /**< machine epsilon of lfloat**/
-#define LFLT_MIN      DBL_MIN /**< smallest decimal representable by lfloat**/
-#define LFLT_MAX      DBL_MAX /**< maximum representable lfloat number **/
+typedef double lisp_float_t; /**< float type used by this lisp*/
+#define LFLT_EPSILON  DBL_EPSILON /**< machine epsilon of lisp_float_t**/
+#define LFLT_MIN      DBL_MIN /**< smallest decimal representable by lisp_float_t**/
+#define LFLT_MAX      DBL_MAX /**< maximum representable lisp_float_t number **/
 #else
-typedef float  lfloat; /**< alternate float type used by this lisp, best for 32-bit systems*/
-#define LFLT_EPSILON  FLT_EPSILON /**< machine epsilon of lfloat**/
-#define LFLT_MIN      FLT_MIN /**< smallest decimal representable by lfloat**/
-#define LFLT_MAX      FLT_MAX /**< maximum representable lfloat number **/
+typedef float  lisp_float_t; /**< alternate float type used by this lisp, best for 32-bit systems*/
+#define LFLT_EPSILON  FLT_EPSILON /**< machine epsilon of lisp_float_t**/
+#define LFLT_MIN      FLT_MIN /**< smallest decimal representable by lisp_float_t**/
+#define LFLT_MAX      FLT_MAX /**< maximum representable lisp_float_t number **/
 #endif
 
-typedef struct io io;                 /**< generic I/O to files, strings, ...*/
-typedef struct hashtable hashtable;   /**< standard hash table implementation */
-typedef struct tr_state tr_state;     /**< state for translation functions */
-typedef struct cell cell;             /**< a lisp object, or "cell" */
-typedef struct lisp lisp;             /**< a full lisp environment */
-typedef cell *(*subr)(lisp *, cell*); /**< lisp primitive operations */
+typedef struct io io_t;                 /**< generic I/O to files, strings, ...*/
+typedef struct hash_table hash_table_t; /**< standard hash table implementation */
+typedef struct tr_state tr_state_t;     /**< state for translation functions */
+typedef struct cell lisp_cell_t;               /**< a lisp object, or "cell" */
+typedef struct lisp lisp_t;             /**< a full lisp environment */
+typedef lisp_cell_t *(*subr)(lisp_t *, lisp_cell_t *); /**< lisp primitive operations */
 typedef void *(*hash_func)(const char *key, void *val); /**< for hash foreach */
 
-typedef void (*ud_free)(cell*);       /**< function to free a user type*/
-typedef void (*ud_mark)(cell*);       /**< marking function for user types*/
-typedef int  (*ud_equal)(cell*, cell*);  /**< equality function for user types*/
-typedef int  (*ud_print)(io*, unsigned, cell*); /**< print out user def types*/
-typedef struct bitfield bitfield;     /**< bitfield structure */
+typedef void (*lisp_free_func)(lisp_cell_t *);       /**< function to free a user type*/
+typedef void (*lisp_mark_func)(lisp_cell_t *);       /**< marking function for user types*/
+typedef int  (*lisp_equal_func)(lisp_cell_t *, lisp_cell_t *);  /**< equality function for user types*/
+typedef int  (*lisp_print_func)(io_t *, unsigned, lisp_cell_t *); /**< print out user def types*/
+typedef struct bitfield bitfield_t;     /**< bitfield_t structure */
 
 /**@brief This is a prototype for the (optional) line editing functionality
  *        that the REPL can use. The editor function should accept a prompt
  *        to print out and return a line of text to be evaluated by the
  *        REPL.**/
-typedef char *(*editor_func)(const char *);
+typedef char *(*lisp_editor_func)(const char *);
 
 typedef struct {
         char *start; /**< where the match started*/
@@ -298,33 +298,33 @@ LIBLISP_API char* utostr(uintptr_t u, unsigned base);
 
 /** @brief create a new bit field that can hold at least maxbits
  *  @param  maxbits   maximum bits in bit field; assert(maxbits > 0)
- *  @return bitfield* new bit field or NULL**/
-LIBLISP_API bitfield *bit_new(size_t maxbits);
+ *  @return bitfield_t* new bit field or NULL**/
+LIBLISP_API bitfield_t *bit_new(size_t maxbits);
 
-/** @brief free a bitfield
- *  @param bf the bitfield to free (can be NULL) **/
-LIBLISP_API void bit_delete(bitfield *bf);
+/** @brief free a bitfield_t
+ *  @param bf the bitfield_t to free (can be NULL) **/
+LIBLISP_API void bit_delete(bitfield_t *bf);
 
 /** @brief set a bit in a bit field
  *  @param bf  bit field to set a bit in
  *  @param idx which bit to set**/
-LIBLISP_API void bit_set(bitfield *bf, size_t idx);
+LIBLISP_API void bit_set(bitfield_t *bf, size_t idx);
 
 /** @brief clear a bit in a bit field
  *  @param bf  bit field to clear a bit in
  *  @param idx which bit to clear**/
-LIBLISP_API void bit_unset(bitfield *bf, size_t idx);
+LIBLISP_API void bit_unset(bitfield_t *bf, size_t idx);
 
 /** @brief toggle a bit in a bit field
  *  @param bf  bit field to toggle a bit in
  *  @param idx which bit to toggle**/
-LIBLISP_API void bit_toggle(bitfield *bf, size_t idx);
+LIBLISP_API void bit_toggle(bitfield_t *bf, size_t idx);
 
 /** @brief  check if a bit is set in a bit field
  *  @param  bf  bit field to check bit status in
  *  @param  idx which bit to check
  *  @return int status of bit set**/
-LIBLISP_API int bit_get(bitfield *bf, size_t idx);
+LIBLISP_API int bit_get(bitfield_t *bf, size_t idx);
 
 /** @brief  compare two bit fields much in the same way as memcmp
  *  @param  a bit field to compare
@@ -332,12 +332,12 @@ LIBLISP_API int bit_get(bitfield *bf, size_t idx);
  *  @return int 0 if bit fields are equal, greater than one if bit 
  *          field 'a' is bigger, less than one if bit field 'b' is
  *          bigger **/
-LIBLISP_API int bit_compare(bitfield *a, bitfield *b);
+LIBLISP_API int bit_compare(bitfield_t *a, bitfield_t *b);
 
 /** @brief  copy a bit field into a new bit field
- *  @param  bf the bitfield to copy
- *  @return bitfield* a copied bit field, or NULL on failure **/
-LIBLISP_API bitfield *bit_copy(bitfield *bf);
+ *  @param  bf the bitfield_t to copy
+ *  @return bitfield_t* a copied bit field, or NULL on failure **/
+LIBLISP_API bitfield_t *bit_copy(bitfield_t *bf);
 
 /************************** hash library *************************************/
 
@@ -346,8 +346,8 @@ LIBLISP_API bitfield *bit_copy(bitfield *bf);
 
 /** @brief   create new instance of a hash table
  *  @param   len number of buckets in the table
- *  @return  hashtable* initialized hash table or NULL**/
-LIBLISP_API hashtable *hash_create(size_t len);
+ *  @return  hash_table_t* initialized hash table or NULL**/
+LIBLISP_API hash_table_t *hash_create(size_t len);
 
 /** @brief   create new instance of a hash table, possibly freeing either the
  *           key or the value, using free(). It would probably be better
@@ -355,28 +355,28 @@ LIBLISP_API hashtable *hash_create(size_t len);
  *  @param   len number of buckets in the table
  *  @param   free_key   if non zero, hash_destroy will free the key with free()
  *  @param   free_value if non zero, hash_destroy will free the value with free()
- *  @return  hashtable* initialized hash table or NULL**/
-LIBLISP_API hashtable *hash_create_auto_free(size_t len, unsigned free_key, unsigned free_value);
+ *  @return  hash_table_t* initialized hash table or NULL**/
+LIBLISP_API hash_table_t *hash_create_auto_free(size_t len, unsigned free_key, unsigned free_value);
 
 /** @brief   destroy and invalidate a hash table, this will not attempt to
  *           free the values associated with a key, or the keys, this is
  *           the responsibility of the caller of hash_insert, at least not
  *           by default.
  *  @param   h table to destroy or NULL**/
-LIBLISP_API void hash_destroy(hashtable *h);
+LIBLISP_API void hash_destroy(hash_table_t *h);
 
 /** @brief   insert a value into an initialized hash table
  *  @param   ht    table to insert key-value pair into
  *  @param   key   key to associate with a value
  *  @param   val   value to lookup
  *  @return  int   0 on success, < 0 on failure**/
-LIBLISP_API int hash_insert(hashtable *ht, const char *key, void *val);
+LIBLISP_API int hash_insert(hash_table_t *ht, const char *key, void *val);
 
 /** @brief   look up a key in a table
  *  @param   table table to look for value in
  *  @param   key   a key to look up a value with
  *  @return  void* either the value you were looking for a NULL**/
-LIBLISP_API void *hash_lookup(hashtable *table, const char *key);
+LIBLISP_API void *hash_lookup(hash_table_t *table, const char *key);
 
 /** @brief  Apply "func" on each key-val pair in the hash table until
  *          the function returns non-NULL or it has been applied to all
@@ -388,39 +388,39 @@ LIBLISP_API void *hash_lookup(hashtable *table, const char *key);
  *  @param  h      table to apply func on
  *  @param  func   function to apply
  *  @return void*  the result of the first non-NULL function application**/
-LIBLISP_API void *hash_foreach(hashtable *h, hash_func func);
+LIBLISP_API void *hash_foreach(hash_table_t *h, hash_func func);
 
 /** @brief This resets a hash foreach function to the beginning of the
  *         table, so new calls to hash_foreach begin at the first element
  *         in the table.
  *  @param h hash table to reset foreach loop in**/
-LIBLISP_API void hash_reset_foreach(hashtable *h);
+LIBLISP_API void hash_reset_foreach(hash_table_t *h);
 
 /** @brief   print out the key-value pairs in a table, keys are
  *           printed as strings, values as the pointer value
  *  @param   h table to print out**/
-LIBLISP_API void hash_print(hashtable *h);
+LIBLISP_API void hash_print(hash_table_t *h);
 
 /** @brief  Get the load factor of a hash (or number of entries / number of
  *          buckets). Depending on the internals this might go over one.
  *  @param  h      hash to query
  *  @return double load factor **/
-LIBLISP_API double hash_get_load_factor(hashtable *h);
+LIBLISP_API double hash_get_load_factor(hash_table_t *h);
 
 /** @brief  Get the number of records that have collided.
  *  @param  h      hash to query
  *  @return size_t number of record collisions **/
-LIBLISP_API size_t hash_get_collision_count(hashtable *h);
+LIBLISP_API size_t hash_get_collision_count(hash_table_t *h);
 
 /** @brief  Get the number of replacements
  *  @param  h      hash to query
  *  @return size_t number of replacements **/
-LIBLISP_API size_t hash_get_replacements(hashtable *h);
+LIBLISP_API size_t hash_get_replacements(hash_table_t *h);
 
 /** @brief  Get the current number of bins in a hash
  *  @param  h     hash to query
  *  @return size_t number of bins **/
-LIBLISP_API size_t hash_get_number_of_bins(hashtable *h);
+LIBLISP_API size_t hash_get_number_of_bins(hash_table_t *h);
 
 /******************* I/O for reading/writing to strings or files *************/
 
@@ -432,32 +432,32 @@ LIBLISP_API size_t hash_get_number_of_bins(hashtable *h);
 /** @brief  check whether IO channel is input channel
  *  @param  i   IO channel to check
  *  @return int non zero if channel is input channel**/
-LIBLISP_API int io_is_in(io *i);
+LIBLISP_API int io_is_in(io_t *i);
 
 /** @brief  check whether IO channel is an output channel
  *  @param  o   IO channel to check
  *  @return int non zero if channel is output channel**/
-LIBLISP_API int io_is_out(io *o);
+LIBLISP_API int io_is_out(io_t *o);
 
 /** @brief  check whether IO channel is using a file
  *  @param  f   IO channel to check
- *  @return int non zero if channel is using a file for IO **/
-LIBLISP_API int io_is_file(io *f);
+ *  @return int non zero if channel is using a file for io_t **/
+LIBLISP_API int io_is_file(io_t *f);
 
 /** @brief  check whether IO channel is using a string
  *  @param  s   IO channel to check
- *  @return int non zero if channel is using a string for IO **/
-LIBLISP_API int io_is_string(io *s);
+ *  @return int non zero if channel is using a string for io_t **/
+LIBLISP_API int io_is_string(io_t *s);
 
 /** @brief  check whether IO channel is using a null IO device
  *  @param  n   IO channel to check
- *  @return int non zero if channel is using a null IO device for IO **/
-LIBLISP_API int io_is_null(io *n);
+ *  @return int non zero if channel is using a null IO device for io_t **/
+LIBLISP_API int io_is_null(io_t *n);
 
 /** @brief  get a char from I/O stream
  *  @param  i   I/O stream, must be readable
  *  @return int same as getc, char on success EOF on failure**/
-LIBLISP_API int io_getc(io *i);
+LIBLISP_API int io_getc(io_t *i);
 
 /** @brief Get the string from an I/O port, if a port is of an
  *         output type if might have reallocated its string, so
@@ -466,112 +466,112 @@ LIBLISP_API int io_getc(io *i);
  *         string, output port).
  *  @param  x     I/O port, of string type (asserts x && io_is_string(x))
  *  @return char* internal string**/
-LIBLISP_API char *io_get_string(io *x);
+LIBLISP_API char *io_get_string(io_t *x);
 
 /** @brief  Get the internal file handle used by a file I/O port.
  *  @param  x     I/O port, of a file type (asserts x && io_is_file(x))
  *  @return FILE* internal file handle **/
-LIBLISP_API FILE *io_get_file(io *x);  
+LIBLISP_API FILE *io_get_file(io_t *x);  
 
 /** @brief  single character of put-back into I/O stream
  *  @param  c   character to put back
  *  @param  i   I/O stream, must be set up for reading
  *  @return int same character as you put in, EOF on failure**/
-LIBLISP_API int io_ungetc(char c, io *i);
+LIBLISP_API int io_ungetc(char c, io_t *i);
 
 /** @brief  write a single char to an I/O stream
  *  @param  c    character to write
  *  @param  o    I/O stream, must be set up for writing
  *  @return int  same character as you put in, EOF on failure**/
-LIBLISP_API int io_putc(char c, io *o);
+LIBLISP_API int io_putc(char c, io_t *o);
 
 /** @brief  write a string (NUL delimited) to an I/O stream
  *  @param  s    string to write
  *  @param  o    I/O stream, must be setup for writing
  *  @return int  >= 0 is success, < 0 is failure**/
-LIBLISP_API int io_puts(const char *s, io *o);
+LIBLISP_API int io_puts(const char *s, io_t *o);
 
 /** @brief  get a line from an I/O stream
  *  @param  i   I/O stream, must be set up for reading
  *  @return char* a line of input, minus the newline character**/
-LIBLISP_API char *io_getline(io *i);
+LIBLISP_API char *io_getline(io_t *i);
 
 /** @brief  get a record delimited by 'delim' from an I/O stream
  *  @param  i      I/O stream, must be set up for reading
  *  @param  delim  A character delimiter, can be EOF
  *  @return char*  A character delimited record**/
-LIBLISP_API char *io_getdelim(io *i, int delim);
+LIBLISP_API char *io_getdelim(io_t *i, int delim);
 
 /** @brief  print an integer to an I/O stream (base 10)
  *  @param  d   an integer!
  *  @param  o   I/O stream, must be set up for writing
  *  @return int 0 on success, EOF on failure**/
-LIBLISP_API int io_printd(intptr_t d, io *o);
+LIBLISP_API int io_printd(intptr_t d, io_t *o);
 
 
 /** @brief  print a floating point number to an I/O stream
  *  @param  f   a floating point number
  *  @param  o   I/O stream, must be set up for writing
  *  @return int 0 on success, EOF on failure**/
-LIBLISP_API int io_printflt(double f, io * o);
+LIBLISP_API int io_printflt(double f, io_t * o);
 
 /** @brief   read from a string
  *  @param   sin string to read from, ASCII nul terminated
  *  @return  io* an initialized I/O stream (for reading) or NULL**/
-LIBLISP_API io *io_sin(const char *sin);
+LIBLISP_API io_t *io_sin(const char *sin);
 
 /** @brief  read from a file
  *  @param  fin an already opened file handle, opened with "r" or "rb"
  *  @return io* an initialized I/O stream (for reading) of NULL**/
-LIBLISP_API io *io_fin(FILE *fin);
+LIBLISP_API io_t *io_fin(FILE *fin);
 
 /** @brief  write to a string
  *  @param  out string to write to
  *  @param  len  length of string
  *  @return io*  an initialized I/O stream (for writing) or NULL**/
-LIBLISP_API io *io_sout(char *out, size_t len);
+LIBLISP_API io_t *io_sout(char *out, size_t len);
 
 /** @brief  write to a file
  *  @param  fout an already opened file handle, opened with "w" or "wb"
  *  @return io*  an initialized I/O stream (for writing) or NULL**/
-LIBLISP_API io *io_fout(FILE *fout);
+LIBLISP_API io_t *io_fout(FILE *fout);
 
 /** @brief  return a null output device, output goes no where
  *  @return a null output port**/
-LIBLISP_API io *io_nout(void);
+LIBLISP_API io_t *io_nout(void);
 
 /** @brief  close a file, the stdin, stderr and stdout file streams
  *          will not be closed if associated with this I/O stream
  *  @param  close I/O stream to close
  *  @return int   0 on success, EOF on error**/
-LIBLISP_API int io_close(io *close);
+LIBLISP_API int io_close(io_t *close);
 
 /** @brief  test whether an I/O stream is at the end of the file
  *  @param  f    I/O stream to test
  *  @return int  !0 if EOF marker is set, 0 otherwise**/
-LIBLISP_API int io_eof(io *f);
+LIBLISP_API int io_eof(io_t *f);
 
 /** @brief  flush an I/O stream
  *  @param  f    I/O stream to flush
  *  @return int  EOF on failure, 0 otherwise**/
-LIBLISP_API int io_flush(io *f);
+LIBLISP_API int io_flush(io_t *f);
 
 /** @brief  return the file position indicator of an I/O stream
  *  @param  f    I/O stream to get position from
  *  @return int  less than zero on failure, file position otherwise**/
-LIBLISP_API long io_tell(io *f);
+LIBLISP_API long io_tell(io_t *f);
 
 /** @brief  set the position indicator of an I/O stream
  *  @param  f       I/O stream to set position
  *  @param  offset  offset to add to origin
  *  @param  origin  origin to do set the offset relative to
  *  @return int     -1 on error, 0 otherwise **/
-LIBLISP_API int io_seek(io *f, long offset, int origin);
+LIBLISP_API int io_seek(io_t *f, long offset, int origin);
 
 /** @brief  Test whether an error occurred with an I/O stream
  *  @param  f    I/O error to test
  *  @return int  non zero on error**/
-LIBLISP_API int io_error(io *f);
+LIBLISP_API int io_error(io_t *f);
 
 /** @brief turn on colorization for output channel, non of the
  *         io primitives use this (such as io_putc, io_puts, etc),
@@ -579,7 +579,7 @@ LIBLISP_API int io_error(io *f);
  *         do, such as the lisp interpreter.
  *  @param out      output channel to set colorize on
  *  @param color_on non zero for true (color on), zero for false**/
-LIBLISP_API void io_color(io *out, int color_on);
+LIBLISP_API void io_color(io_t *out, int color_on);
 
 /** @brief turn on colorization for output channel, non of the
  *         io primitives use this (such as io_putc, io_puts, etc),
@@ -588,17 +588,17 @@ LIBLISP_API void io_color(io *out, int color_on);
  *  @param out       output channel to set pretty printing on
  *  @param pretty_on non zero for true (pretty printing on),
  *                   zero for false**/
-LIBLISP_API void io_pretty(io *out, int pretty_on);
+LIBLISP_API void io_pretty(io_t *out, int pretty_on);
 
 /********************* translate or delete characters ************************/
 
 /** @brief  create a new tr state for use in character translation
  *  @return a new tr state or NULL**/
-LIBLISP_API tr_state *tr_new(void);
+LIBLISP_API tr_state_t *tr_new(void);
 
 /** @brief destroy a tr state
  *  @param st tr state to delete**/
-LIBLISP_API void tr_delete(tr_state *st);
+LIBLISP_API void tr_delete(tr_state_t *st);
 
 /** @brief initialize a translation state
  *
@@ -618,14 +618,14 @@ LIBLISP_API void tr_delete(tr_state *st);
  *  @param  s1   character set 1
  *  @param  s2   character set 2
  *  @return int  negative on failure, zero on success **/
-LIBLISP_API int tr_init(tr_state *tr, char *mode, uint8_t *s1, uint8_t *s2);
+LIBLISP_API int tr_init(tr_state_t *tr, char *mode, uint8_t *s1, uint8_t *s2);
 
 /** @brief translate a single character given a translation state
  *  @param  tr  translation state
  *  @param  c   character to translate
  *  @return int negative if the character should be deleted, greater or equal to
  *              zero is the new character **/
-LIBLISP_API int tr_char(tr_state *tr, uint8_t c);
+LIBLISP_API int tr_char(tr_state_t *tr, uint8_t c);
 
 /** @brief translate a block of memory given an initialized tr state
  *  @param  tr     tr state
@@ -633,16 +633,16 @@ LIBLISP_API int tr_char(tr_state *tr, uint8_t c);
  *  @param  out    output buffer
  *  @param  len    length of both the input and output buffer
  *  @return size_t number of characters written to the output buffer**/
-LIBLISP_API size_t tr_block(tr_state *tr, uint8_t *in, uint8_t *out, size_t len);
+LIBLISP_API size_t tr_block(tr_state_t *tr, uint8_t *in, uint8_t *out, size_t len);
 
-/******************* functions for manipulating lisp cell ********************/
+/******************* functions for manipulating lisp lisp_cell_t ********************/
 
 /* This module is used by the internals of the lisp interpreter
  * for manipulating lisp cells; for accessing them, creating new
  * cells and testing their type. */
 
-LIBLISP_API cell *car(cell *con); /**< get car cell from cons*/
-LIBLISP_API cell *cdr(cell *con); /**< get cdr cell from cons*/
+LIBLISP_API lisp_cell_t *car(lisp_cell_t *con); /**< get car cell from cons*/
+LIBLISP_API lisp_cell_t *cdr(lisp_cell_t *con); /**< get cdr cell from cons*/
 
 /**@brief Set the first value in a cons cell. Unlike most functions
  *        this mutates data. The first cell is called the "car" cell
@@ -650,7 +650,7 @@ LIBLISP_API cell *cdr(cell *con); /**< get cdr cell from cons*/
  * @param con Cons Cell modify
  * @param val Value to put into car of cons cell, this should be
  *            another lisp cell.**/
-LIBLISP_API void set_car(cell *con, cell *val);
+LIBLISP_API void set_car(lisp_cell_t *con, lisp_cell_t *val);
 
 /**@brief set cdr cell of a cons cell
  * @param con Cons Cell to modify
@@ -658,26 +658,26 @@ LIBLISP_API void set_car(cell *con, cell *val);
  *            should be another lisp cell.
  * @warning set cdr does not maintain the internal list length in each
  *          cons cell node correctly.*/
-LIBLISP_API void set_cdr(cell *con, cell *val);
+LIBLISP_API void set_cdr(lisp_cell_t *con, lisp_cell_t *val);
 
 /**@brief Given a lisp cell, check that its length field equals an
  *        expected value.
  * @param x      cell to check
  * @param expect expected value
  * @return int !0 if they match, 0 if they do not**/
-LIBLISP_API int  cklen(cell *x, size_t expect);
+LIBLISP_API int  cklen(lisp_cell_t *x, size_t expect);
 
 /**@brief set the length field of a cell
  * @bug   this should not be needed, and I need to redesign the interpreter
  *        so it is not.
  * @param x   cell to set the length field of
  * @param len length to set the cell to*/
-LIBLISP_API void set_length(cell *x, size_t len);
+LIBLISP_API void set_length(lisp_cell_t *x, size_t len);
 
 /**@brief close a cell (io and userdef only)
  * @param x close a cell, invalidating it for further use and freeing any
  *          resources associated with it. */
-LIBLISP_API void close_cell(cell *x);
+LIBLISP_API void close_cell(lisp_cell_t *x);
 
 /**@brief  Create a new cons cell from a pair of values, this primitive
  *         is used to construct the basic data structures (lists and trees)
@@ -686,7 +686,7 @@ LIBLISP_API void close_cell(cell *x);
  * @param  x lisp cell to become the first, or "car", value of a cons cell.
  * @param  y lisp cell to become the second, or "cdr", value of a cons cell.
  * @return cell* new cons cell. */
-LIBLISP_API cell *cons(lisp *l, cell *x, cell *y);
+LIBLISP_API lisp_cell_t *cons(lisp_t *l, lisp_cell_t *x, lisp_cell_t *y);
 
 /**@brief  extend an environment with a symbol-value pair 
  * @param  l   initialized lisp structure, used for error handling.
@@ -694,7 +694,7 @@ LIBLISP_API cell *cons(lisp *l, cell *x, cell *y);
  * @param  sym symbol to associate with a value
  * @param  val value to associate with a symbol
  * @return cell* Non-NULL on success, NULL on failure */
-LIBLISP_API cell *extend(lisp *l, cell *env, cell *sym, cell *val);
+LIBLISP_API lisp_cell_t *lisp_extend(lisp_t *l, lisp_cell_t *env, lisp_cell_t *sym, lisp_cell_t *val);
 
 /**@brief  add a new symbol to the list of all symbols, two interned
  *         symbols containing the same name will compare equal with
@@ -703,92 +703,92 @@ LIBLISP_API cell *extend(lisp *l, cell *env, cell *sym, cell *val);
  *              and keeping track of interned symbols
  * @param  name name of symbol
  * @return cell* a unique symbol cell*/
-LIBLISP_API cell *intern(lisp *l, char *name);
+LIBLISP_API lisp_cell_t *lisp_intern(lisp_t *l, char *name);
 
 /**@brief  true if 'x' is equal to nil
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_nil(cell *x);
+LIBLISP_API int  is_nil(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a integer 
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_int(cell *x);
+LIBLISP_API int  is_int(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a floating point number
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_floating(cell *x);
+LIBLISP_API int  is_floating(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a cons cell
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_cons(cell *x);
+LIBLISP_API int  is_cons(lisp_cell_t *x);
 
 /**@brief  true if 'x' is not a dotted pair cons cell
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_proper_cons(cell *x);
+LIBLISP_API int  is_proper_cons(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a I/O type
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_io(cell *x);
+LIBLISP_API int  is_io(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a lambda procedure
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_proc(cell *x);
+LIBLISP_API int  is_proc(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a flambda procedure
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_fproc(cell *x);
+LIBLISP_API int  is_fproc(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a string
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_str(cell *x);
+LIBLISP_API int  is_str(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a symbol
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_sym(cell *x);
+LIBLISP_API int  is_sym(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a language primitive
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_subr(cell *x);
+LIBLISP_API int  is_subr(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a ASCII nul delimited string
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_asciiz(cell *x);
+LIBLISP_API int  is_asciiz(lisp_cell_t *x);
 
 /**@brief  true if 'x' is integer or float
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_arith(cell *x);
+LIBLISP_API int  is_arith(lisp_cell_t *x);
 
 /**@brief  true if 'x' is an input I/O type
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_in(cell *x);
+LIBLISP_API int  is_in(lisp_cell_t *x);
 
 /**@brief  true if 'x' is an output I/O type
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_out(cell *x);
+LIBLISP_API int  is_out(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a hash table type
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_hash(cell *x);
+LIBLISP_API int  is_hash(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a user defined type
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_userdef(cell *x);
+LIBLISP_API int  is_userdef(lisp_cell_t *x);
 
 /**@brief Is 'x' a specific user defined type? For this to be true
  *        'x' has to be both a user defined type. 
@@ -796,22 +796,22 @@ LIBLISP_API int  is_userdef(cell *x);
  * @param  type this is a number that represents a user defined type,
  *              it should have been assigned by "new_user_defined_type"
  * @return int zero if check fails, non zero if check passes  */
-LIBLISP_API int  is_usertype(cell *x, int type);
+LIBLISP_API int  is_usertype(lisp_cell_t *x, int type);
 
 /**@brief  true if 'x' can be applied (is a function) 
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes  */
-LIBLISP_API int  is_func(cell *x);
+LIBLISP_API int  is_func(lisp_cell_t *x);
 
 /**@brief  true if 'x' is 'closed' or invalidated
  * @param  x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_closed(cell *x);
+LIBLISP_API int  is_closed(lisp_cell_t *x);
 
 /**@brief  true if 'x' is a proper list
  * @return x   value to perform check on
  * @return int zero if check fails, non zero if check passes */
-LIBLISP_API int  is_list(cell *x);
+LIBLISP_API int  is_list(lisp_cell_t *x);
 
 /**@brief Make a proper list (terminate args with NULL) from a series
  *        of list cells.
@@ -820,25 +820,25 @@ LIBLISP_API int  is_list(cell *x);
  * @param  ... a list of arguments, each of them lisp cells, terminated
  *             with a NULL
  * @return cell* a new list of values */
-LIBLISP_API cell *mk_list(lisp *l, cell *x, ...);
+LIBLISP_API lisp_cell_t *mk_list(lisp_t *l, lisp_cell_t *x, ...);
 
 /**@brief  Make a lisp cell from an integer
  * @param  l lisp environment for error handling and garbage collection
  * @param  d value of new integer
- * @return cell* new integer lisp cell */
-LIBLISP_API cell *mk_int(lisp *l, intptr_t d);
+ * @return cell* new integer lisp lisp_cell_t */
+LIBLISP_API lisp_cell_t *mk_int(lisp_t *l, intptr_t d);
 
 /**@brief  Make a lisp cell from a float
  * @param  l lisp environment for error handling and garbage collection
  * @param  f value of new float
- * @return cell* new float lisp cell */
-LIBLISP_API cell *mk_float(lisp *l, lfloat f);
+ * @return cell* new float lisp lisp_cell_t */
+LIBLISP_API lisp_cell_t *mk_float(lisp_t *l, lisp_float_t f);
 
 /**@brief  Make lisp cell from an I/O stream
  * @param  l lisp environment for error handling and garbage collection
  * @param  x I/O stream to add
- * @return cell* new I/O lisp cell */
-LIBLISP_API cell *mk_io(lisp *l, io *x);
+ * @return cell* new I/O lisp lisp_cell_t */
+LIBLISP_API lisp_cell_t *mk_io(lisp_t *l, io_t *x);
 
 /**@brief  Subroutine creation function. This allows the interpreter
  *         to be extended with arbitrary lisp functions
@@ -851,7 +851,7 @@ LIBLISP_API cell *mk_io(lisp *l, io *x);
  * @param  doc  documentation string, a string containing information about
  *              the subroutine, this can be NULL.
  * @return cell* returns a new lisp subroutine object */
-LIBLISP_API cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc);
+LIBLISP_API lisp_cell_t *mk_subr(lisp_t *l, subr p, const char *fmt, const char *doc);
 
 /**@brief  make a lisp lambda procedure cell.
  * @param  l    lisp environment for error handling and garbage collection
@@ -860,8 +860,8 @@ LIBLISP_API cell *mk_subr(lisp *l, subr p, const char *fmt, const char *doc);
  * @param  env  the environment the procedure should execute in, this should
  *              be an association list
  * @param  doc  The documentation string for the lambda
- * @return cell* a new procedure cell */
-LIBLISP_API cell *mk_proc(lisp *l, cell *args, cell *code, cell *env, cell *doc);
+ * @return cell* a new procedure lisp_cell_t */
+LIBLISP_API lisp_cell_t *mk_proc(lisp_t *l, lisp_cell_t *args, lisp_cell_t *code, lisp_cell_t *env, lisp_cell_t *doc);
 
 /**@brief  make a lisp F-expression cell, F-expressions are like lambdas except
  *         they do not evaluate their arguments and bind all their arguments to
@@ -872,29 +872,29 @@ LIBLISP_API cell *mk_proc(lisp *l, cell *args, cell *code, cell *env, cell *doc)
  * @param  env  the environment in which to execute the F-expression in
  * @param  doc  the documentation string for the F-expression
  * @return cell* a new f-expression */
-LIBLISP_API cell *mk_fproc(lisp *l, cell *args, cell *code, cell *env, cell *doc);
+LIBLISP_API lisp_cell_t *mk_fproc(lisp_t *l, lisp_cell_t *args, lisp_cell_t *code, lisp_cell_t *env, lisp_cell_t *doc);
 
 /**@brief  make lisp cell (string) from a string
  * @param  l lisp environment for error handling and garbage collection
  * @param  s a string, the lisp interpreter *will* try to free this
  *           string when it decides to collect this cell. 
  * @return cell* a new lisp cell containing a string */
-LIBLISP_API cell *mk_str(lisp *l, char *s);
+LIBLISP_API lisp_cell_t *mk_str(lisp_t *l, char *s);
 
 /**@brief  make lisp cell (string) from a string
  * @param  l lisp environment for error handling and garbage collection
  * @param  s a string, the lisp interpreter *will not* try to free this
  *           string at all.
  * @return cell* a new lisp cell containing a string */
-LIBLISP_API cell *mk_immutable_str(lisp *l, const char *s);
+LIBLISP_API lisp_cell_t *mk_immutable_str(lisp_t *l, const char *s);
 
-/*LIBLISP_API cell *mksym(lisp *l, char *s); // use intern instead to get a unique symbol*/
+/*LIBLISP_API lisp_cell_t *mksym(lisp_t *l, char *s); // use intern instead to get a unique symbol*/
 
 /**@brief  make lisp cell from hash
  * @param  l lisp environment for error handling and garbage collection
  * @param  h an allocated hash table
  * @return cell* a hash table accessible from a lisp interpreter */
-LIBLISP_API cell *mk_hash(lisp *l, hashtable *h);
+LIBLISP_API lisp_cell_t *mk_hash(lisp_t *l, hash_table_t *h);
 
 /**@brief  make a user defined type
  * @param  l lisp environment for error handling and garbage collection
@@ -902,7 +902,7 @@ LIBLISP_API cell *mk_hash(lisp *l, hashtable *h);
  * @param  type the specific type to check, there is no way for this
  *              function to check whether the data passed in is valid.
  * @return cell* */
-LIBLISP_API cell *mk_user(lisp *l, void *x, intptr_t type);
+LIBLISP_API lisp_cell_t *mk_user(lisp_t *l, void *x, intptr_t type);
 
 /**@brief  Get lisp length, this will get the length field of any object,
  *         even if it does not make sense. The length field is currently
@@ -913,14 +913,14 @@ LIBLISP_API cell *mk_user(lisp *l, void *x, intptr_t type);
  *         list.
  * @param  x        lisp cell to get the length field from
  * @return unsigned the contents of the internal length field */
-LIBLISP_API unsigned get_length(cell *x);
+LIBLISP_API unsigned get_length(lisp_cell_t *x);
 
 /**@brief  Get raw lisp value 
  * @param  x    This can be of any lisp cell type.
  * @return void*  It will always return the first value of the lisp cell, 
  *              regardless of how much other data is in the lisp object. This
  *              could be NULL, or anything that can fit into void*  */
-LIBLISP_API void  *get_raw(cell *x);
+LIBLISP_API void  *get_raw(lisp_cell_t *x);
 
 /**@brief  cast *any* lisp cell to integer
  * @param  x   This can be of any lisp cell type, but finds most use with
@@ -928,165 +928,165 @@ LIBLISP_API void  *get_raw(cell *x);
  * @return intptr_t an intptr_t of whatever was in the first cell of a lisp
  *             object, for a lisp integer object, it will be the integer it
  *             contains, for any other type it could be anything.*/
-LIBLISP_API intptr_t get_int(cell *x);
+LIBLISP_API intptr_t get_int(lisp_cell_t *x);
 
 /**@brief  get lisp cell to I/O stream
  * @param  x   'x' must be a lisp object of an I/O port type
  * @return io* an input or an output port*/
-LIBLISP_API io *get_io(cell *x);
+LIBLISP_API io_t *get_io(lisp_cell_t *x);
 
 /**@brief  get a lisp cell to a primitive func ptr
  * @param  x    'x' must be a lisp object of a subroutine type
  * @return subr an internal lisp subroutine function*/
-LIBLISP_API subr get_subr(cell *x);
+LIBLISP_API subr get_subr(lisp_cell_t *x);
 
 /**@brief  get args to a procedure/f-expr 
  * @param  x     'x' must be a lisp object of a lambda or f-expression type
  * @return cell* the arguments list to a lambda or f-expression procedure*/
-LIBLISP_API cell *get_proc_args(cell *x);
+LIBLISP_API lisp_cell_t *get_proc_args(lisp_cell_t *x);
 
 /**@brief  get code from a procedure/f-expr 
  * @param  x
  * @return cell* */
-LIBLISP_API cell *get_proc_code(cell *x);
+LIBLISP_API lisp_cell_t *get_proc_code(lisp_cell_t *x);
 
 /**@brief  get procedure/f-expr environment
  * @param  x
  * @return cell* */
-LIBLISP_API cell *get_proc_env(cell *x);
+LIBLISP_API lisp_cell_t *get_proc_env(lisp_cell_t *x);
 
 /**@brief  get the documentation string for a lambda/f-expr/subroutine
  * @param  x
  * @return cell* */
-LIBLISP_API cell *get_func_docstring(cell *x);
+LIBLISP_API lisp_cell_t *get_func_docstring(lisp_cell_t *x);
 
 /**@brief  get the type validation string for lambda/f-expr/subroutine
  * @param  x
  * @return char * */
-LIBLISP_API char *get_func_format(cell *x);
+LIBLISP_API char *get_func_format(lisp_cell_t *x);
 
 /**@brief  get the user-defined-value identifier
  * @param  x
  * @return int */
-LIBLISP_API int   get_user_type(cell *x);
+LIBLISP_API int   get_user_type(lisp_cell_t *x);
 
 /**@brief  get string from a lisp cell
  * @param  x
  * @return char* */
-LIBLISP_API char *get_str(cell *x);
+LIBLISP_API char *get_str(lisp_cell_t *x);
 
 /**@brief  get string (symbol) from a lisp cell
  * @param  x
  * @return char* */
-LIBLISP_API char *get_sym(cell *x);
+LIBLISP_API char *get_sym(lisp_cell_t *x);
 
 /**@brief  get data from user defined type
  * @param  x
  * @return void* */
-LIBLISP_API void *get_user(cell *x);
+LIBLISP_API void *get_user(lisp_cell_t *x);
 
 /**@brief  get floating point val from lisp cell
  * @param  x
- * @return lfloat */
-LIBLISP_API lfloat get_float(cell *x);
+ * @return lisp_float_t */
+LIBLISP_API lisp_float_t get_float(lisp_cell_t *x);
 
 /**@brief  get hash table from a lisp cell
  * @param  x
- * @return hashtable* */
-LIBLISP_API hashtable *get_hash(cell *x);
+ * @return hash_table_t* */
+LIBLISP_API hash_table_t *get_hash(lisp_cell_t *x);
 
-/**@brief  float/int to int 
- * @param  x
- * @return intptr_t */
-LIBLISP_API intptr_t get_a2i(cell *x);
+/**@brief  float/int (arithmetic type) to int 
+ * @param  x float or integer
+ * @return intptr_t integer */
+LIBLISP_API intptr_t get_a2i(lisp_cell_t *x);
 
-/**@brief  float/int to float 
- * @param  x
- * @return lfloat */
-LIBLISP_API lfloat get_a2f(cell *x);
+/**@brief  float/int (arithmetic type) to float 
+ * @param  x float or integer
+ * @return lisp_float_t float */
+LIBLISP_API lisp_float_t get_a2f(lisp_cell_t *x);
 
 /**@brief  return the "nil" symbol
- * @return cell* The "nil" cell */
-LIBLISP_API cell *gsym_nil(void);
+ * @return cell* The "nil" lisp_cell_t */
+LIBLISP_API lisp_cell_t *gsym_nil(void);
 
 /**@brief  return the "t" symbol
- * @return cell* The "t", or true, cell */
-LIBLISP_API cell *gsym_tee(void);
+ * @return cell* The "t", or true, lisp_cell_t */
+LIBLISP_API lisp_cell_t *gsym_tee(void);
 
 /**@brief  return the "quote" symbol 
  * @return cell* The special "quote" symbol, used for quoting expressions */
-LIBLISP_API cell *gsym_quote(void);
+LIBLISP_API lisp_cell_t *gsym_quote(void);
 
 /**@brief  return the "if" symbol
  * @return cell* The special "if" symbol, used for if expressions */
-LIBLISP_API cell *gsym_iif(void);
+LIBLISP_API lisp_cell_t *gsym_iif(void);
 
 /**@brief  return the "lambda" symbol
  * @return cell* The special lambda symbol, used for lambda expressions (functions)*/
-LIBLISP_API cell *gsym_lambda(void);
+LIBLISP_API lisp_cell_t *gsym_lambda(void);
 
 /**@brief  return the "flambda" symbol
  * @return cell* The special "flambda" symbol, used for F-Expressions*/
-LIBLISP_API cell *gsym_flambda(void);
+LIBLISP_API lisp_cell_t *gsym_flambda(void);
 
 /**@brief  return the "define" symbol
  * @return cell* The special "define" symbol, used for adding symbol-value pairs
  * to the global environment */
-LIBLISP_API cell *gsym_define(void);
+LIBLISP_API lisp_cell_t *gsym_define(void);
 
 /**@brief  return the "set!" symbol
  * @return cell* The special "set!" symbol, used for binding a symbol to a new
  * variable */
-LIBLISP_API cell *gsym_set(void);
+LIBLISP_API lisp_cell_t *gsym_set(void);
 
 /**@brief  return the progn symbol
  * @return cell* The special "progn" symbol, used for evaluating expressions in
  * order */
-LIBLISP_API cell *gsym_progn(void);
+LIBLISP_API lisp_cell_t *gsym_progn(void);
 
 /**@brief  return the "cond" symbol
  * @return cell* The special "cond" symbol */
-LIBLISP_API cell *gsym_cond(void);
+LIBLISP_API lisp_cell_t *gsym_cond(void);
 
 /**@brief  return the "error" symbol
  * @return cell* The special "error" symbol, used for signifying that an error
  * has occurred during evaluation */
-LIBLISP_API cell *gsym_error(void);
+LIBLISP_API lisp_cell_t *gsym_error(void);
 
 /**@brief  return the "let" symbol
  * @return cell* The special "let" symbol, used for creating local variables
  * and evaluating expressions in the modified local environment */
-LIBLISP_API cell *gsym_let(void);
+LIBLISP_API lisp_cell_t *gsym_let(void);
 
 /**@brief  return the "return" symbol
  * @return cell* The special "return" symbol, used to return from a "progn"
  * early */
-LIBLISP_API cell *gsym_ret(void);
+LIBLISP_API lisp_cell_t *gsym_ret(void);
 
 /**@brief  return the "loop" symbol
  * @return cell* The special "loop" symbol, used for looping in a "progn" */
-LIBLISP_API cell *gsym_loop(void);
+LIBLISP_API lisp_cell_t *gsym_loop(void);
 
 /**@brief  return the "compile" symbol
  * @return cell* The special "compile" symbol, */
-LIBLISP_API cell *gsym_compile(void);
+LIBLISP_API lisp_cell_t *gsym_compile(void);
 
 /**@brief fix a lists length after calls to set_cdr
  * @warning This function, along with set_car and set_cdr
  *        should probably be private.
  * @param x 'x' should be a list
  * @param l l should be the expected length*/
-LIBLISP_API void fix_list_len(cell *x, size_t l); 
+LIBLISP_API void fix_list_len(lisp_cell_t *x, size_t l); 
 
 /**@brief  return a new token representing a new type
  * @param  l lisp environment to put the new type in
- * @param  f function to call when freeing type, optional
+ * @param  f function to call when freeing type, optional (but free() will be used)
  * @param  m function to call when marking type, optional
  * @param  e function to call when comparing two types, optional
  * @param  p function to call when printing type, optional
  * @return int return -1 if there are no more tokens to give or a positive
  *                number representing a user defined token*/
-LIBLISP_API int new_user_defined_type(lisp *l, ud_free f, ud_mark m, ud_equal e, ud_print p);
+LIBLISP_API int new_user_defined_type(lisp_t *l, lisp_free_func f, lisp_mark_func m, lisp_equal_func e, lisp_print_func p);
 
 /**@brief determines whether a string contains a number that
  *        can be converted with strtol.
@@ -1132,7 +1132,7 @@ LIBLISP_API int is_fnumber(const char *buf);
  *  @param ret a negative ret will halt the interpreter, a positive
  *             one signals an error occurred, but it can be recovered
  *             from**/
-LIBLISP_API void lisp_throw(lisp *l, int ret);
+LIBLISP_API void lisp_throw(lisp_t *l, int ret);
 
 /** @brief This is like lstrdup_or_abort, but will call lisp_throw with
  *         a negative number for "ret", halting the lisp environment on
@@ -1141,7 +1141,7 @@ LIBLISP_API void lisp_throw(lisp *l, int ret);
  *  @param s      string to duplicate
  *  @return char* duplicated string, or throw an exception using lisp_throw
  *                on error */
-LIBLISP_API char *lisp_strdup(lisp *l, const char *s);
+LIBLISP_API char *lisp_strdup(lisp_t *l, const char *s);
 
 /** @brief Formatted printing of lisp cells, colorized if color enabled on
  *         output stream, it can print out s-expression trees generated by
@@ -1182,7 +1182,7 @@ LIBLISP_API char *lisp_strdup(lisp *l, const char *s);
  *  @param  fmt    format string
  *  @param  ...    any arguments
  *  @return int    >= 0 on success, less than 0 on failure */
-LIBLISP_API int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...);
+LIBLISP_API int lisp_printf(lisp_t *l, io_t *o, unsigned depth, char *fmt, ...);
 
 /** @brief This function is behaves the same as lisp_printf, but it takes
  *         an argument list instead.
@@ -1195,7 +1195,7 @@ LIBLISP_API int lisp_printf(lisp *l, io *o, unsigned depth, char *fmt, ...);
  *  @param  fmt    format string
  *  @param  ap     an argument list generated by va_start
  *  @return int    >=0 on success, less than 0 on failure */
-LIBLISP_API int lisp_vprintf(lisp *l, io *o, unsigned depth, char *fmt, va_list ap);
+LIBLISP_API int lisp_vprintf(lisp_t *l, io_t *o, unsigned depth, char *fmt, va_list ap);
 
 /** @brief  return a hash-symbol containing all the interned symbols
  *          in a lisp environment, these are not defined symbols, but
@@ -1204,14 +1204,14 @@ LIBLISP_API int lisp_vprintf(lisp *l, io *o, unsigned depth, char *fmt, va_list 
  *          to a lisp symbol cell containing the same string.
  *  @param  l     lisp environment to get symbols from
  *  @return cell* hash-symbol of all interned symbols*/
-LIBLISP_API cell *lisp_get_all_symbols(lisp *l);
+LIBLISP_API lisp_cell_t *lisp_get_all_symbols(lisp_t *l);
 
 /** @brief  add a symbol-val pair and intern a lisp cell
  *  @param  l    lisp environment to add pair to
  *  @param  sym  name of symbol
  *  @param  val  value to add
  *  @return NULL on failure, not NULL on success **/
-LIBLISP_API cell *lisp_add_cell(lisp *l, const char *sym, cell *val);
+LIBLISP_API lisp_cell_t *lisp_add_cell(lisp_t *l, const char *sym, lisp_cell_t *val);
 
 /** @brief  add a function primitive to a lisp environment. It will be
  *          referenced internally by the "name" string. This is the long
@@ -1224,12 +1224,12 @@ LIBLISP_API cell *lisp_add_cell(lisp *l, const char *sym, cell *val);
  *  @param  doc   documentation string (can be NULL)
  *  @return cell* pointer to extended environment if successful, NULL
  *                otherwise. You shouldn't do anything with pointer**/
-LIBLISP_API cell *lisp_add_subr(lisp *l, const char *name, subr func, const char *fmt, const char *doc);
+LIBLISP_API lisp_cell_t *lisp_add_subr(lisp_t *l, const char *name, subr func, const char *fmt, const char *doc);
 
 /** @brief  Initialize a lisp environment. By default it will read
  *          from stdin, print to stdout and log errors to stderr.
  *  @return lisp*    A fully initialized lisp environment or NULL**/
-LIBLISP_API lisp *lisp_init(void);
+LIBLISP_API lisp_t *lisp_init(void);
 
 /** @brief  read in a s-expression, it uses the lisp environment
  *          for error handling, garbage collection and finding
@@ -1237,19 +1237,19 @@ LIBLISP_API lisp *lisp_init(void);
  *  @param  l     an initialized lisp environment
  *  @param  i     I/O stream to read from
  *  @return cell* a parsed s-expression or NULL on failure**/
-LIBLISP_API cell *lisp_read(lisp *l, io *i);
+LIBLISP_API lisp_cell_t *lisp_read(lisp_t *l, io_t *i);
 
 /** @brief  print out an s-expression
  *  @param  l    a lisp environment which contains the IO stream to print to
  *  @param  ob   cell to print
  *  @return int  0 >= on success, less than 0 on failure**/
-LIBLISP_API int lisp_print(lisp *l, cell *ob);
+LIBLISP_API int lisp_print(lisp_t *l, lisp_cell_t *ob);
 
 /** @brief  evaluate a lisp expression
  *  @param  l     a initialized lisp environment to evaluate against
  *  @param  exp   an expression to evaluate
  *  @return cell* a lisp expression to print out, or NULL**/
-LIBLISP_API cell *lisp_eval(lisp *l, cell *exp);
+LIBLISP_API lisp_cell_t *lisp_eval(lisp_t *l, lisp_cell_t *exp);
 
 /** @brief  parse and evaluate a string, returning the result, it will
  *          however discard any input after the first evaluation.
@@ -1274,7 +1274,7 @@ LIBLISP_API cell *lisp_eval(lisp *l, cell *exp);
  *  @param  l       lisp environment to evaluate in
  *  @param  evalme  string to evaluate
  *  @return cell*   result of evaluation or NULL on failure critical failure**/
-LIBLISP_API cell *lisp_eval_string(lisp *l, const char *evalme);
+LIBLISP_API lisp_cell_t *lisp_eval_string(lisp_t *l, const char *evalme);
 
 /** @brief  a simple Read-Evaluate-Print-Loop (REPL)
  *  @param  l      an initialized lisp environment
@@ -1283,11 +1283,11 @@ LIBLISP_API cell *lisp_eval_string(lisp *l, const char *evalme);
  *                    lisp_set_line_editor then this turns it on (on is non
  *                    zero).
  *  @return int    return non zero on error, negative on fatal error**/
-LIBLISP_API int lisp_repl(lisp *l, char *prompt, int editor_on);
+LIBLISP_API int lisp_repl(lisp_t *l, char *prompt, int editor_on);
 
 /** @brief destroy a lisp environment
  *  @param l       lisp environment to destroy**/
-LIBLISP_API void lisp_destroy(lisp *l);
+LIBLISP_API void lisp_destroy(lisp_t *l);
 
 /** @brief log an error, using the same format as lisp_printf, requires
  * log level to be greater or equal to LISP_LOG_LEVEL_ERROR, otherwise
@@ -1295,7 +1295,7 @@ LIBLISP_API void lisp_destroy(lisp *l);
  *  @param  l   an initialized lisp environment
  *  @param  fmt format string
  *  @return int >=0 on success, less than 0 on failure  */
-LIBLISP_API int lisp_log_error(lisp *l, char *fmt, ...);
+LIBLISP_API int lisp_log_error(lisp_t *l, char *fmt, ...);
 
 /** @brief log a note, using the same format as lisp_printf, requires
  * log level to be greater or equal to LISP_LOG_LEVEL_NOTE, otherwise
@@ -1303,7 +1303,7 @@ LIBLISP_API int lisp_log_error(lisp *l, char *fmt, ...);
  *  @param  l   an initialized lisp environment
  *  @param  fmt format string
  *  @return int >=0 on success, less than 0 on failure  */
-LIBLISP_API int lisp_log_note(lisp *l, char *fmt, ...);
+LIBLISP_API int lisp_log_note(lisp_t *l, char *fmt, ...);
 
 /** @brief log a debug message, using the same format as lisp_printf, requires
  * log level to be greater or equal to LISP_LOG_LEVEL_DEBUG, otherwise
@@ -1312,25 +1312,25 @@ LIBLISP_API int lisp_log_note(lisp *l, char *fmt, ...);
  *  @param  l   an initialized lisp environment
  *  @param  fmt format string
  *  @return int >=0 on success, less than 0 on failure  */
-LIBLISP_API int lisp_log_debug(lisp *l, char *fmt, ...);
+LIBLISP_API int lisp_log_debug(lisp_t *l, char *fmt, ...);
 
 /** @brief set the input for a lisp environment
  *  @param  l  an initialized lisp environment
  *  @param  in the input port
  *  @return int zero on success, non zero otherwise**/
-LIBLISP_API int lisp_set_input(lisp *l, io *in);
+LIBLISP_API int lisp_set_input(lisp_t *l, io_t *in);
 
 /** @brief set the output for a lisp environment
  *  @param  l   an initialized lisp environment
  *  @param  out the output port
  *  @return int zero on success, non zero otherwise**/
-LIBLISP_API int lisp_set_output(lisp *l, io *out);
+LIBLISP_API int lisp_set_output(lisp_t *l, io_t *out);
 
 /** @brief set the output for error logging for a lisp environment
  *  @param l       an initialized lisp environment
  *  @param logging the output port for error logging
  *  @return int    zero on success, non zero otherwise**/
-LIBLISP_API int lisp_set_logging(lisp *l, io *logging);
+LIBLISP_API int lisp_set_logging(lisp_t *l, io_t *logging);
 
 /** @brief  set the line editor to be used with lisp_repl, main_lisp
  *          and main_lisp_env both call lisp_repl behind the scenes,
@@ -1340,39 +1340,39 @@ LIBLISP_API int lisp_set_logging(lisp *l, io *logging);
  *          that has been read in.
  *  @param  l      an initialized lisp environment
  *  @param  ed     the line editor function**/
-LIBLISP_API void lisp_set_line_editor(lisp *l, editor_func ed);
+LIBLISP_API void lisp_set_line_editor(lisp_t *l, lisp_editor_func ed);
 
 /** @brief  set the internal signal handling variable of a lisp environment,
  *          this is a way for a function such as a signal handler or another
  *          thread to halt the interpreter.
  *  @param  l   an initialized lisp environment
  *  @param  sig signal value, any non zero value halts the lisp environment**/
-LIBLISP_API void lisp_set_signal(lisp *l, int sig);
+LIBLISP_API void lisp_set_signal(lisp_t *l, int sig);
 
 /** @brief get the input channel in use in a lisp environment
  *  @param  l lisp environment to retrieve input channel from
  *  @return io* pointer to input channel or NULL on failure**/
-LIBLISP_API io *lisp_get_input(lisp *l);
+LIBLISP_API io_t *lisp_get_input(lisp_t *l);
 
 /** @brief get the output channel in use in a lisp environment
  *  @param  l lisp environment to retrieve output channel from
  *  @return io* pointer to output channel or NULL on failure**/
-LIBLISP_API io *lisp_get_output(lisp *l);
+LIBLISP_API io_t *lisp_get_output(lisp_t *l);
 
 /** @brief get the logging/error channel in use in a lisp environment
  *  @param  l lisp environment to retrieve error channel from
  *  @return io* pointer to error channel or NULL on failure**/
-LIBLISP_API io *lisp_get_logging(lisp *l);
+LIBLISP_API io_t *lisp_get_logging(lisp_t *l);
 
 /** @brief set the current log level of a lisp interpreter environment
  *  @param l     lisp environment to set the log level of
  *  @param level the level to set the environment to*/
-LIBLISP_API void lisp_set_log_level(lisp *l, lisp_log_level level);
+LIBLISP_API void lisp_set_log_level(lisp_t *l, lisp_log_level level);
 
 /** @brief get the current log level of a lisp interpreter environment
  *  @param l   lisp environment to get the log level of
  *  @param lisp_log_level the log level of the interpreter */
-LIBLISP_API lisp_log_level lisp_get_log_level(lisp *l);
+LIBLISP_API lisp_log_level lisp_get_log_level(lisp_t *l);
 
 
 /** @brief validate an arguments list against a format string, this can either
@@ -1413,7 +1413,7 @@ LIBLISP_API lisp_log_level lisp_get_log_level(lisp *l);
  *  @param recover if non zero this will longjmp to an error handler instead
  *                 of returning.
  *  @return 0 if invalid (or lonjmp if recover is non zero), 1 if valid**/
-LIBLISP_API int lisp_validate_args(lisp *l, const char *msg, unsigned len, const char *fmt, cell* args, int recover);
+LIBLISP_API int lisp_validate_args(lisp_t *l, const char *msg, unsigned len, const char *fmt, lisp_cell_t *args, int recover);
 
 /** @brief  validate a function (subroutine, procedure or f-expression) against
  *          the information it carries around within itself, if this is not
@@ -1426,31 +1426,31 @@ LIBLISP_API int lisp_validate_args(lisp *l, const char *msg, unsigned len, const
  *  @param recover if non zero this will longjmp to an error handler instead
  *                 of returning.
  *  @return 0 if invalid (or lonjmp if recover is non zero), 1 if valid***/
-LIBLISP_API int lisp_validate_cell(lisp *l, cell *x, cell *args, int recover);
+LIBLISP_API int lisp_validate_cell(lisp_t *l, lisp_cell_t *x, lisp_cell_t *args, int recover);
 
 /** @brief Given a lisp object it will tell the garbage collector to never collect
  *         that object, ever. 
  *  @param x      object to mark as being not collectible */
-LIBLISP_API void lisp_gc_used(cell *x);
+LIBLISP_API void lisp_gc_used(lisp_cell_t *x);
 
 /** @brief Given a lisp object it will tell the garbage collector it is free to
  *         collect that object whenever it wants to.
  *  @param x      object to mark as being collectible */
-LIBLISP_API void lisp_gc_not_used(cell *x);
+LIBLISP_API void lisp_gc_not_used(lisp_cell_t *x);
 
 /**@brief mark a lisp cell (recursively) to prevent it being collected in
  *        the next collection cycle.
  * @param l  lisp environment, used for error handling and carrying around
  *           any functions added for marking user defined types.
  * @param op object to mark*/
-LIBLISP_API void lisp_gc_mark(lisp *l, cell* op);
+LIBLISP_API void lisp_gc_mark(lisp_t *l, lisp_cell_t *op);
 
 /**@brief Mark all reachable objects then perform a sweep. To prevent
  *        an object from being collected during the next garbage collection
  *        cycle, you can use lisp_gc_mark(). This will only prevent the objects
  *        collection on this cycle, not the cycle after this one.
  * @param l      the lisp environment to perform the mark and sweep in**/
-LIBLISP_API void lisp_gc_mark_and_sweep(lisp *l);
+LIBLISP_API void lisp_gc_mark_and_sweep(lisp_t *l);
 
 /**@brief  Get the status of the garbage collector in a lisp environment,
  *         that is whether it is currently enabled. It defaults to being
@@ -1458,19 +1458,19 @@ LIBLISP_API void lisp_gc_mark_and_sweep(lisp *l);
  * @param  l   the lisp environment to check in
  * @return int non-zero if the garbage collector is enabled, zero if it
  *             is disabled. */
-LIBLISP_API int  lisp_gc_status(lisp *l);
+LIBLISP_API int  lisp_gc_status(lisp_t *l);
 
 /**@brief Turn the garbage collector on, this will allow the interpreter to
  *        call lisp_gc_mark_and_sweep() and an indeterminate time in the future,
  *        when it has become necessary to do so.
  * @param l lisp environment to enable garbage collection in.*/
-LIBLISP_API void lisp_gc_on(lisp *l);
+LIBLISP_API void lisp_gc_on(lisp_t *l);
 
 /**@brief Turn off the garbage collector, objects can still be collected
  *        at a later time, but that time will be postponed indefinitely until
  *        lisp_gc_on() is called.
  * @param l lisp environment to disable garbage collection in*/
-LIBLISP_API void lisp_gc_off(lisp *l);
+LIBLISP_API void lisp_gc_off(lisp_t *l);
 
 /************************ test environment ***********************************/
 
@@ -1490,7 +1490,7 @@ LIBLISP_API int main_lisp(int argc, char **argv);
  *  @param  argc  argument count
  *  @param  argv  arguments to pass to interpreter
  *  @return int **/
-LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
+LIBLISP_API int main_lisp_env(lisp_t *l, int argc, char **argv);
 
 /*********************** some handy macros ***********************************/
 
@@ -1572,6 +1572,8 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
 #ifndef LISP_DO_NOT_VALIDATE_ARGS
 #define LISP_VALIDATE_ARGS(LISP, MSG, LEN, FMT, ARGS, LISP_RECOVER)\
         lisp_validate_args((LISP), (MSG), (LEN), (FMT), (ARGS), (LISP_RECOVER))
+#else
+#define LISP_VALIDATE_ARGS(LISP, MSG, LEN, FMT, ARGS, LISP_RECOVER)
 #endif
 
 /**@brief Stringify X, turn X into a string.
@@ -1633,9 +1635,9 @@ LIBLISP_API int main_lisp_env(lisp *l, int argc, char **argv);
 
 /* module stuff to move into separate header */
 
-typedef int (*lisp_module_initializer_t)(lisp *l);
+typedef int (*lisp_module_initializer_t)(lisp_t *l);
 
-int lisp_module_initialize(lisp *l);
+int lisp_module_initialize(lisp_t *l);
 
 #ifdef __cplusplus
 }

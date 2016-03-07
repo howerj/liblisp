@@ -11,37 +11,37 @@
 #include <stdio.h>
 #include <string.h>
 
-int io_is_in(io * i)
+int io_is_in(io_t * i)
 {
 	assert(i);
 	return (i->type == FIN || i->type == SIN);
 }
 
-int io_is_out(io * o)
+int io_is_out(io_t * o)
 {
 	assert(o);
 	return (o->type == FOUT || o->type == SOUT || o->type == NULLOUT);
 }
 
-int io_is_file(io * f)
+int io_is_file(io_t * f)
 {
 	assert(f);
 	return (f->type == FIN || f->type == FOUT);
 }
 
-int io_is_string(io * s)
+int io_is_string(io_t * s)
 {
 	assert(s);
 	return (s->type == SIN || s->type == SOUT);
 }
 
-int io_is_null(io * n)
+int io_is_null(io_t * n)
 {
 	assert(n);
 	return n->type == NULLOUT;
 }
 
-int io_getc(io * i)
+int io_getc(io_t * i)
 {
 	assert(i);
 	int r;
@@ -58,19 +58,19 @@ int io_getc(io * i)
 	return i->eof = 1, EOF;
 }
 
-char *io_get_string(io * x)
+char *io_get_string(io_t * x)
 {
 	assert(x && io_is_string(x));
 	return x->p.str;
 }
 
-FILE *io_get_file(io * x)
+FILE *io_get_file(io_t * x)
 {
 	assert(x && io_is_file(x));
 	return x->p.file;
 }
 
-int io_ungetc(char c, io * i)
+int io_ungetc(char c, io_t * i)
 {
 	assert(i);
 	if (i->ungetc)
@@ -80,7 +80,7 @@ int io_ungetc(char c, io * i)
 	return c;
 }
 
-int io_putc(char c, io * o)
+int io_putc(char c, io_t * o)
 {
 	assert(o);
 	int r;
@@ -111,7 +111,7 @@ int io_putc(char c, io * o)
 	return o->eof = 1, EOF;
 }
 
-int io_puts(const char *s, io * o)
+int io_puts(const char *s, io_t * o)
 {
 	assert(s && o);
 	int r;
@@ -147,7 +147,7 @@ int io_puts(const char *s, io * o)
 	return EOF;
 }
 
-char *io_getdelim(io * i, int delim)
+char *io_getdelim(io_t * i, int delim)
 {
 	assert(i);
 	char *newbuf, *retbuf = NULL;
@@ -175,13 +175,13 @@ char *io_getdelim(io * i, int delim)
 	return retbuf;
 }
 
-char *io_getline(io * i)
+char *io_getline(io_t * i)
 {
 	assert(i);
 	return io_getdelim(i, '\n');
 }
 
-int io_printd(intptr_t d, io * o)
+int io_printd(intptr_t d, io_t * o)
 {
 	assert(o);
 	if (o->type == FOUT)
@@ -194,7 +194,7 @@ int io_printd(intptr_t d, io * o)
 	return EOF;
 }
 
-int io_printflt(double f, io * o)
+int io_printflt(double f, io_t * o)
 {
 	assert(o);
 	if (o->type == FOUT)
@@ -207,9 +207,9 @@ int io_printflt(double f, io * o)
 	return EOF;
 }
 
-io *io_sin(const char *sin)
+io_t *io_sin(const char *sin)
 {
-	io *i;
+	io_t *i;
 	if (!sin || !(i = calloc(1, sizeof(*i))))
 		return NULL;
 	if (!(i->p.str = lstrdup(sin)))
@@ -219,9 +219,9 @@ io *io_sin(const char *sin)
 	return i;
 }
 
-io *io_fin(FILE * fin)
+io_t *io_fin(FILE * fin)
 {
-	io *i;
+	io_t *i;
 	if (!fin || !(i = calloc(1, sizeof(*i))))
 		return NULL;
 	i->p.file = fin;
@@ -229,9 +229,9 @@ io *io_fin(FILE * fin)
 	return i;
 }
 
-io *io_sout(char *sout, size_t len)
+io_t *io_sout(char *sout, size_t len)
 {
-	io *o;
+	io_t *o;
 	if (!sout || !(o = calloc(1, sizeof(*o))))
 		return NULL;
 	o->p.str = sout;
@@ -240,9 +240,9 @@ io *io_sout(char *sout, size_t len)
 	return o;
 }
 
-io *io_fout(FILE * fout)
+io_t *io_fout(FILE * fout)
 {
-	io *o;
+	io_t *o;
 	if (!fout || !(o = calloc(1, sizeof(*o))))
 		return NULL;
 	o->p.file = fout;
@@ -250,16 +250,16 @@ io *io_fout(FILE * fout)
 	return o;
 }
 
-io *io_nout(void)
+io_t *io_nout(void)
 {
-	io *o;
+	io_t *o;
 	if (!(o = calloc(1, sizeof(*o))))
 		return NULL;
 	o->type = NULLOUT;
 	return o;
 }
 
-int io_close(io * c)
+int io_close(io_t * c)
 {
 	int ret = 0;
 	if (!c)
@@ -273,7 +273,7 @@ int io_close(io * c)
 	return ret;
 }
 
-int io_eof(io * f)
+int io_eof(io_t * f)
 {
 	assert(f);
 	if (f->type == FIN || f->type == FOUT)
@@ -281,7 +281,7 @@ int io_eof(io * f)
 	return f->eof;
 }
 
-int io_flush(io * f)
+int io_flush(io_t * f)
 {
 	assert(f);
 	if (f->type == FIN || f->type == FOUT)
@@ -289,7 +289,7 @@ int io_flush(io * f)
 	return 0;
 }
 
-long io_tell(io * f)
+long io_tell(io_t * f)
 {
 	assert(f);
 	if (f->type == FIN || f->type == FOUT)
@@ -299,7 +299,7 @@ long io_tell(io * f)
 	return -1;
 }
 
-int io_seek(io * f, long offset, int origin)
+int io_seek(io_t * f, long offset, int origin)
 {
 	assert(f);
 	if (f->type == FIN || f->type == FOUT)
@@ -325,7 +325,7 @@ int io_seek(io * f, long offset, int origin)
 	return -1;
 }
 
-int io_error(io * f)
+int io_error(io_t * f)
 {
 	assert(f);
 	if (f->type == FIN || f->type == FOUT)
@@ -333,13 +333,13 @@ int io_error(io * f)
 	return 0;
 }
 
-void io_color(io * out, int color_on)
+void io_color(io_t * out, int color_on)
 {
 	assert(out);
 	out->color = color_on;
 }
 
-void io_pretty(io * out, int pretty_on)
+void io_pretty(io_t * out, int pretty_on)
 {
 	assert(out);
 	out->pretty = pretty_on;

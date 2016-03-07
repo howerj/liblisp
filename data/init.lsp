@@ -22,7 +22,10 @@
                   (x y) 
                   (if x 
                     (if y t nil) nil)))
+	(define nil?       
+	  (compile "is x nil?" (x) (if x nil t)))
         ; @bug Incorrect, evaluates all args
+	
         (define or      (compile "return r if either arguments evaluate to true" (x y) (cond (x t) (y t) (t nil))))
         (define type?   (compile "is a object of a certain type" (type-enum x) (eq type-enum (type-of x))))
         (define symbol? (compile "is x a symbol" (x) (type? *symbol* x)))
@@ -82,7 +85,7 @@
           (eval-file (make-path '("data" "lsp" "sets.lsp")) exit-if-not-eof nil)
           (eval-file (make-path '("data" "lsp" "symb.lsp")) exit-if-not-eof nil)
           (eval-file (make-path '("data" "lsp" "test.lsp")) exit-if-not-eof nil)
-        ; (eval-file (make-path '("data" "lsp" "sql.lsp"))  exit-if-not-eof nil)
+          (eval-file (make-path '("data" "lsp" "sql.lsp"))  exit-if-not-eof nil)
         ; (eval-file (make-path '("data" "lsp" "tcc.lsp"))  exit-if-not-eof nil)
          'done))
  'ok)

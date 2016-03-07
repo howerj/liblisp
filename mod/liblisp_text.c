@@ -19,7 +19,7 @@
 	/*strstr, strerr (move from subr.c), strpbrk, strrchr, strspn, thread
 	 * safe strtok, ...*/
 
-#define X(NAME, SUBR, VALIDATION , DOCSTRING) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION , DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
@@ -33,7 +33,7 @@ static struct module_subroutines {
 
 #undef X
 
-static cell *make_diff_inner(lisp * l, diff * d, char *x[], char *y[], size_t i, size_t j, cell * pp, cell * mm)
+static lisp_cell_t *make_diff_inner(lisp_t * l, diff * d, char *x[], char *y[], size_t i, size_t j, lisp_cell_t * pp, lisp_cell_t * mm)
 { /*lol*/
 	if (i > 0 && j > 0 && !strcmp(x[i - 1], y[j - 1])) {
 		return cons(l, cons(l, mk_str(l, lisp_strdup(l, x[i - 1])), gsym_nil()), make_diff_inner(l, d, x, y, i - 1, j - 1, pp, mm));
@@ -45,17 +45,17 @@ static cell *make_diff_inner(lisp * l, diff * d, char *x[], char *y[], size_t i,
 	return gsym_nil();
 }
 
-static cell *make_diff(lisp * l, diff * d, char **x, char **y)
+static lisp_cell_t *make_diff(lisp_t * l, diff * d, char **x, char **y)
 {
 	assert(l && d && x && y);
-	cell *pp = intern(l, "+"), *mm = intern(l, "-");
+	lisp_cell_t *pp = lisp_intern(l, "+"), *mm = lisp_intern(l, "-");
 	return make_diff_inner(l, d, x, y, d->m, d->n, pp, mm);
 }
 
-static cell *subr_diff(lisp * l, cell * args)
+static lisp_cell_t *subr_diff(lisp_t * l, lisp_cell_t * args)
 {
 	size_t i;
-	cell *a, *b, *tmp, *ret = NULL;
+	lisp_cell_t *a, *b, *tmp, *ret = NULL;
 	char **aa, **bb;
 	diff *d = NULL;
 	a = car(args);
@@ -89,14 +89,14 @@ static cell *subr_diff(lisp * l, cell * args)
 	return gsym_error();
 }
 
-static cell *subr_tsort(lisp * l, cell * args)
+static lisp_cell_t *subr_tsort(lisp_t * l, lisp_cell_t * args)
 {					       /**@todo implement me!*/
 	UNUSED(l);
 	UNUSED(args);
 	return gsym_nil();
 }
 
-int lisp_module_initialize(lisp *l)
+int lisp_module_initialize(lisp_t *l)
 {
 	size_t i;
 	assert(l);

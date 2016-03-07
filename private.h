@@ -64,12 +64,12 @@ typedef enum lisp_type {
 	/**@todo CLOSURE, MACRO (replaces FPROC) */
 } lisp_type;     /**< A lisp object*/
 
-typedef union cell_data { /**< ideally we would use void* for everything*/
+typedef union { /**< ideally we would use void* for everything*/
 	void *v;     /**< use this for integers and pointers to cells*/
-	lfloat f;    /**< if lfloat is double it could be bigger than *v */ 
+	lisp_float_t f;    /**< if lisp_float_t is double it could be bigger than *v */ 
 	subr prim;   /**< function pointers are not guaranteed 
 	                                              to fit into a void**/
-} cell_data; /**< a union of all the different C datatypes used*/
+} cell_data_t; /**< a union of all the different C datatypes used*/
 
 /**@brief A tagged object representing all possible lisp data types.
  *
@@ -85,13 +85,13 @@ typedef union cell_data { /**< ideally we would use void* for everything*/
  * The cell uses the "struct hack", see
  * <http://c-faq.com/struct/structhack.html> **/
 struct cell {
-	unsigned type:    4,        /**< Type of the lisp object*/
+	unsigned type:   4,        /**< Type of the lisp object*/
 		mark:    1,        /**< mark for garbage collection*/
 		uncollectable: 1,  /**< do not free object?*/
 		close:   1,        /**< object closed/invalid?*/
 		used:    1, /**< object is in use by something outside lisp interpreter*/
 		len:     BITS_IN_LENGTH; /**< length of data p*/
-	cell_data p[1]; /**< uses the "struct hack", 
+	cell_data_t p[1]; /**< uses the "struct hack", 
 	                     c99 does not quite work here*/
 } /*__attribute__((packed)) <- saves a fair bit of space */;  
 
@@ -99,15 +99,15 @@ struct cell {
  *	 implementation detail of the hash, so should not be
  *	 counted upon. It represents a node in a chained hash
  *	 table */
-typedef struct hashentry {      /**< linked list of entries in a bin*/
+typedef struct hash_entry {      /**< linked list of entries in a bin*/
 	char *key;              /**< ASCII nul delimited string*/
 	void *val;              /**< arbitrary value*/
-	struct hashentry *next; /**< next item in list*/
-} hashentry;
+	struct hash_entry *next; /**< next item in list*/
+} hash_entry_t;
 
 /**@todo turn into a **table into a flexible array member*/
-struct hashtable {	        /**< a hash table*/
-	struct hashentry **table; /**< table of linked lists*/
+struct hash_table {	        /**< a hash table*/
+	hash_entry_t **table; /**< table of linked lists*/
 	size_t len,  /**< number of 'bins' in the hash table*/
 	       collisions,   /**< number of collisions */
 	       replacements, /**< number of entries replaced*/
@@ -156,17 +156,17 @@ struct tr_state {
 
 /** @brief Type used to form linked list of all allocations */
 typedef struct gc_list { 
-	cell *ref; /**< reference to cell for the garbage collector to act on*/
+	lisp_cell_t *ref; /**< reference to cell for the garbage collector to act on*/
 	struct gc_list *next; /**< next in list*/
-} gc_list; 
+} gc_list_t; 
 
 /** @brief functions the interpreter uses for user defined types */
 typedef struct { 
-	ud_free   free;  /**< to free a user defined type*/
-	ud_mark   mark;  /**< to mark a user defined type*/
-	ud_equal  equal; /**< to compare two user defined types*/
-	ud_print  print; /**< to print two user defined types*/
-} userdef_funcs; 
+	lisp_free_func   free;  /**< to free a user defined type*/
+	lisp_mark_func   mark;  /**< to mark a user defined type*/
+	lisp_equal_func  equal; /**< to compare two user defined types*/
+	lisp_print_func  print; /**< to print two user defined types*/
+} lisp_user_defined_funcs_t; 
 
 /** @brief The state for a lisp interpreter, multiple such instances
  *	 can run at the same time. It contains everything needed
@@ -174,9 +174,9 @@ typedef struct {
 struct lisp {
 	jmp_buf recover; /**< longjmp when there is an error */
 #define X(CNAME, LNAME) * CNAME,
-	cell CELL_XLIST Unused; /**< list of special forms/symbols*/
+	lisp_cell_t CELL_XLIST Unused; /**< list of special forms/symbols*/
 #undef X
-	cell *all_symbols, /**< all intern'ed symbols*/
+	lisp_cell_t *all_symbols, /**< all intern'ed symbols*/
 		*top_env,     /**< top level lisp environment (association list)*/
 		*top_hash,    /**< top level hash (member of association list)*/
 		*input,       /**< interpreter input stream*/
@@ -185,7 +185,7 @@ struct lisp {
 		*cur_env,     /**< current interpreter depth*/
 		*empty_docstr,/**< empty doc string */
 		**gc_stack;    /**< garbage collection stack for working items*/
-	gc_list *gc_head;  /**< linked list of all allocated objects*/
+	gc_list_t *gc_head;  /**< linked list of all allocated objects*/
 	char *token /**< one token of put back for parser*/, 
 		*buf   /**< input buffer for parser*/;
 	size_t buf_allocated,/**< size of buffer "l->buf"*/
@@ -194,8 +194,8 @@ struct lisp {
 		gc_stack_used,      /**< elements used in GC stack*/
 		gc_collectp;  /**< garbage collect after it goes too high*/
 	uint64_t random_state[2] /**< PRNG state*/;
-	editor_func editor; /**< line editor to use, optional*/
-	userdef_funcs ufuncs[MAX_USER_TYPES]; /**< for user defined types*/
+	lisp_editor_func editor; /**< line editor to use, optional*/
+	lisp_user_defined_funcs_t ufuncs[MAX_USER_TYPES]; /**< for user defined types*/
 	int user_defined_types_used;   /**< number of user defined types allocated*/
 	int sig;   /**< set by signal handlers or other threads*/
 	int log_level; /** of lisp_log_level type, the log level */
@@ -219,18 +219,18 @@ struct lisp {
  * @param  l     the lisp environment to add the cell to
  * @param  op    the cell to add
  * @return cell* the added cell, or NULL when an internal allocation failed**/
-cell *gc_add(lisp *l, cell* op);
+lisp_cell_t *lisp_gc_add(lisp_t *l, lisp_cell_t *op);
 
 /**@brief This only performs a sweep, no objects are marked, this effectively
  *	invalidates the lisp environment!
  * @param l      the lisp environment to sweep and invalidate**/
-void gc_sweep_only(lisp *l);
+void lisp_gc_sweep_only(lisp_t *l);
 
 /**@brief Read in a lisp expression
  * @param l      a lisp environment 
  * @param i      the input port
  * @return cell* a fully parsed lisp expression**/
-cell *reader(lisp *l, io *i);
+lisp_cell_t *reader(lisp_t *l, io_t *i);
 
 /**@brief  Print out a lisp expression
  * @param  l      a lisp environment
@@ -238,7 +238,7 @@ cell *reader(lisp *l, io *i);
  * @param  op     S-Expression to print out
  * @param  depth  depth to print out S-Expression 
  * @return int    negative on error **/
-int printer(lisp *l, io *o, cell *op, unsigned depth);
+int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth);
 
 /**@brief  Evaluate a lisp expression
  * @param  l      the lisp environment to evaluate in
@@ -246,26 +246,26 @@ int printer(lisp *l, io *o, cell *op, unsigned depth);
  * @param  exp    the expression to evaluate
  * @param  env    the environment to evaluate in
  * @return cell*  the evaluated expression **/
-cell *eval(lisp *l, unsigned depth, cell *exp, cell *env);
+lisp_cell_t *eval(lisp_t *l, unsigned depth, lisp_cell_t *exp, lisp_cell_t *env);
 
 /**@brief  find a key in an association list (a-list)
  * @param  key    key to search for
  * @param  alist  association list
  * @return if key is found it returns a cons of the key and the associated
  *	 value, if not found it returns nil**/
-cell *assoc(cell *key, cell *alist);
+lisp_cell_t *lisp_assoc(lisp_cell_t *key, lisp_cell_t *alist);
 
 /**@brief  Extend the top level lisp environment with a key value pair
  * @param  l   the lisp environment to perform the extension on
  * @param  sym the symbol to associate with a value
  * @param  val value add to the top level environment
  * @return NULL on failure, not NULL on success**/
-cell *extend_top(lisp *l, cell *sym, cell *val);
+lisp_cell_t *lisp_extend_top(lisp_t *l, lisp_cell_t *sym, lisp_cell_t *val);
 
 /**@brief  Count the number of arguments in a validation format string
  *         validation format string, as passed to lisp_validate_args()
  * @return argument count**/
-size_t validate_arg_count(const char *fmt);
+size_t lisp_validate_arg_count(const char *fmt);
 
 #ifdef __cplusplus
 }

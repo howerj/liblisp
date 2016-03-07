@@ -25,7 +25,7 @@ static const int parse_strings = 1,	/*parse strings? e.g. "Hello" */
     parse_hashes = 1, 		/*parse hashes? e.g. { a b c (1 2 3) } */
     parse_dotted = 1 /*parse dotted pairs? e.g. (a . b) */ ;
 
-static int comment(io * i)
+static int comment(io_t * i)
 {			    /**@brief process a comment from I/O stream**/
 	int c;
 	while (((c = io_getc(i)) > 0) && (c != '\n')) ;
@@ -33,7 +33,7 @@ static int comment(io * i)
 }
 
 /**@brief add a char to the token buffer*/
-static void add_char(lisp * l, char ch)
+static void add_char(lisp_t * l, char ch)
 {
 	assert(l);
 	char *tmp;
@@ -49,7 +49,7 @@ static void add_char(lisp * l, char ch)
 }
 
 /**@brief allocate a new token */
-static char *new_token(lisp * l)
+static char *new_token(lisp_t * l)
 {
 	assert(l);
 	l->buf[l->buf_used++] = '\0';
@@ -57,14 +57,14 @@ static char *new_token(lisp * l)
 }
 
 /**@brief push back a single token */
-static void unget_token(lisp * l, char *token)
+static void unget_token(lisp_t * l, char *token)
 {
 	assert(l && token);
 	l->token = token;
 	l->ungettok = 1;
 }
 
-static char *lexer(lisp * l, io * i)
+static char *lexer(lisp_t * l, io_t * i)
 {
 	assert(l && i);
 	int ch, end = 0;
@@ -100,7 +100,7 @@ static char *lexer(lisp * l, io * i)
 }
 
 /**@brief handle parsing a string*/
-static char *read_string(lisp * l, io * i)
+static char *read_string(lisp_t * l, io_t * i)
 {
 	assert(l && i);					   
 	int ch;
@@ -159,9 +159,9 @@ static char *read_string(lisp * l, io * i)
 	return NULL;
 }
 
-static int keyval(lisp * l, io * i, hashtable *ht, char *key)
+static int keyval(lisp_t * l, io_t * i, hash_table_t *ht, char *key)
 {
-	cell *val;
+	lisp_cell_t *val;
 	if(!(val = reader(l, i)))
 		return -1;
 	if(hash_insert(ht, key, cons(l, mk_str(l, key), val)) < 0)
@@ -169,9 +169,9 @@ static int keyval(lisp * l, io * i, hashtable *ht, char *key)
 	return 0;
 }
 
-static cell *read_hash(lisp * l, io * i)
+static lisp_cell_t *read_hash(lisp_t * l, io_t * i)
 {
-	hashtable *ht;
+	hash_table_t *ht;
 	char *token = NULL; 
 	if (!(ht = hash_create(SMALL_DEFAULT_LEN))) /**@bug leaks memory on error*/
 		LISP_HALT(l, "%s", "out of memory");
@@ -221,13 +221,13 @@ fail:
 	return NULL;
 }
 
-static cell *read_list(lisp * l, io * i);
-cell *reader(lisp * l, io * i)
+static lisp_cell_t *read_list(lisp_t * l, io_t * i);
+lisp_cell_t *reader(lisp_t * l, io_t * i)
 {
 	assert(l && i);
 	char *token = lexer(l, i), *fltend = NULL;
 	double flt;
-	cell *ret;
+	lisp_cell_t *ret;
 	if (!token)
 		return NULL;
 	switch (token[0]) {
@@ -275,7 +275,7 @@ cell *reader(lisp * l, io * i)
 		}
  nostring:
  nohash:
-		ret = intern(l, token);
+		ret = lisp_intern(l, token);
 		if (get_sym(ret) != token)
 			free(token);
 		return ret;
@@ -284,11 +284,11 @@ cell *reader(lisp * l, io * i)
 }
 
 /**@brief read in a list*/
-static cell *read_list(lisp * l, io * i)
+static lisp_cell_t *read_list(lisp_t * l, io_t * i)
 {
 	assert(l && i);
 	char *token = lexer(l, i), *stok;
-	cell *tmp;
+	lisp_cell_t *tmp;
 	if (!token) 
 		NULL;
 	switch (token[0]) {

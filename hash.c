@@ -12,14 +12,14 @@
 
 /************************ small hash library **********************************/
 
-static uint32_t hash_alg(hashtable * table, const char *s)
+static uint32_t hash_alg(hash_table_t * table, const char *s)
 {
 	return djb2(s, strlen(s)) % (table->len ? table->len : 1);
 }
 
-static hashentry *hash_new_pair(const char *key, void *val)
+static hash_entry_t *hash_new_pair(const char *key, void *val)
 { /**@brief internal function to create a chained hash node**/
-	hashentry *np;
+	hash_entry_t *np;
 	if (!(np = calloc(1, sizeof(*np))))
 		return NULL;
 	np->key = (char *)key;
@@ -29,14 +29,14 @@ static hashentry *hash_new_pair(const char *key, void *val)
 	return np;
 }
 
-hashtable *hash_create(size_t len)
+hash_table_t *hash_create(size_t len)
 {
 	return hash_create_auto_free(len, 0, 0);
 }
 
-hashtable *hash_create_auto_free(size_t len, unsigned free_key, unsigned free_value)
+hash_table_t *hash_create_auto_free(size_t len, unsigned free_key, unsigned free_value)
 {
-	hashtable *nt;
+	hash_table_t *nt;
 	if (!len)
 		len++;
 	if (!(nt = calloc(1, sizeof(*nt))))
@@ -49,10 +49,10 @@ hashtable *hash_create_auto_free(size_t len, unsigned free_key, unsigned free_va
 	return nt;
 }
 
-void hash_destroy(hashtable * h)
+void hash_destroy(hash_table_t * h)
 {
 	size_t i;
-	hashentry *cur, *prev;
+	hash_entry_t *cur, *prev;
 	if (!h)
 		return;
 	for (i = 0; i < h->len; i++)
@@ -75,11 +75,11 @@ void hash_destroy(hashtable * h)
 	free(h);
 }
 
-static int hash_grow(hashtable * ht)
+static int hash_grow(hash_table_t * ht)
 {
 	size_t i;
-	hashtable *new;
-	hashentry *cur, *prev;
+	hash_table_t *new;
+	hash_entry_t *cur, *prev;
 	memset(&new, 0, sizeof(new));
 	if (!(new = hash_create(ht->len * 2)))
 		goto fail;
@@ -104,11 +104,11 @@ static int hash_grow(hashtable * ht)
 	return -1;
 }
 
-int hash_insert(hashtable * ht, const char *key, void *val)
+int hash_insert(hash_table_t * ht, const char *key, void *val)
 {
 	assert(ht && key && val);
 	uint32_t hash = hash_alg(ht, key);
-	hashentry *cur, *newt, *last = NULL;
+	hash_entry_t *cur, *newt, *last = NULL;
 
 	if (hash_get_load_factor(ht) >= 0.75f)
 		hash_grow(ht);
@@ -140,11 +140,11 @@ int hash_insert(hashtable * ht, const char *key, void *val)
 	return 0;
 }
 
-void *hash_foreach(hashtable * h, hash_func func)
+void *hash_foreach(hash_table_t * h, hash_func func)
 {
 	assert(h && func);
 	size_t i = 0;
-	hashentry *cur = NULL;
+	hash_entry_t *cur = NULL;
 	void *ret;
 	if (h->foreach) {
 		i = h->foreach_index;
@@ -166,7 +166,7 @@ void *hash_foreach(hashtable * h, hash_func func)
 	return NULL;
 }
 
-void hash_reset_foreach(hashtable * h)
+void hash_reset_foreach(hash_table_t * h)
 {
 	h->foreach = 0;
 }
@@ -177,40 +177,40 @@ static void *hprint(const char *key, void *val)
 	return printf("(\"%s\" %p)\n", key, val), NULL;
 }
 
-void hash_print(hashtable * h)
+void hash_print(hash_table_t * h)
 {
 	assert(h);
 	hash_foreach(h, hprint);
 }
 
-double hash_get_load_factor(hashtable * h)
+double hash_get_load_factor(hash_table_t * h)
 {
 	assert(h && h->len);
 	return (double)h->used / h->len;
 }
 
-size_t hash_get_collision_count(hashtable * h)
+size_t hash_get_collision_count(hash_table_t * h)
 {
 	assert(h);
 	return h->collisions;
 }
 
-size_t hash_get_replacements(hashtable * h)
+size_t hash_get_replacements(hash_table_t * h)
 {
 	assert(h);
 	return h->replacements;
 }
 
-size_t hash_get_number_of_bins(hashtable * h)
+size_t hash_get_number_of_bins(hash_table_t * h)
 {
 	assert(h);
 	return h->len;
 }
 
-void *hash_lookup(hashtable * h, const char *key)
+void *hash_lookup(hash_table_t * h, const char *key)
 {
 	uint32_t hash;
-	hashentry *cur;
+	hash_entry_t *cur;
 	assert(h && key);
 
 	hash = hash_alg(h, key);

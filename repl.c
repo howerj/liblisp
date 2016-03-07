@@ -38,7 +38,7 @@ enum { go_switch,	     /**< current argument was a valid flag*/
 	go_error	     /**< invalid flag or argument*/
 }; /**< getoptions enum*/
 
-static int getoptions(lisp * l, char *arg, char *arg_0)
+static int getoptions(lisp_t * l, char *arg, char *arg_0)
 { /**@brief simple parser for command line options**/
 	int c;
 	if ('-' != *arg++)
@@ -92,10 +92,10 @@ static int getoptions(lisp * l, char *arg, char *arg_0)
 	return go_switch;	/*this argument was a valid flag, nothing more */
 }
 
-int lisp_repl(lisp * l, char *prompt, int editor_on)
+int lisp_repl(lisp_t * l, char *prompt, int editor_on)
 {
-	cell *ret;
-	io *ofp, *efp;
+	lisp_cell_t *ret;
+	io_t *ofp, *efp;
 	char *line = NULL;
 	int r = 0;
 	ofp = lisp_get_output(l);
@@ -109,7 +109,7 @@ int lisp_repl(lisp * l, char *prompt, int editor_on)
 	l->recover_init = 1;
 	if (editor_on && l->editor) {	/*handle line editing functionality */
 		while ((line = l->editor(prompt))) {
-			cell *prn;
+			lisp_cell_t *prn;
 			if (!line[strspn(line, " \t\r\n")]) {
 				free(line);
 				continue;
@@ -143,16 +143,16 @@ int lisp_repl(lisp * l, char *prompt, int editor_on)
 	return r;
 }
 
-int main_lisp_env(lisp * l, int argc, char **argv)
+int main_lisp_env(lisp_t * l, int argc, char **argv)
 {
 	int i, stdin_off = 0;
-	cell *ob = l->nil;
+	lisp_cell_t *ob = l->nil;
 	if (!l)
 		return -1;
 	for (i = argc - 1; i + 1; i--)	/*add command line args to list */
 		if (!(ob = cons(l, mk_str(l, lstrdup_or_abort(argv[i])), ob)))
 			return -1;
-	if (!extend_top(l, intern(l, lstrdup_or_abort("args")), ob))
+	if (!lisp_extend_top(l, lisp_intern(l, lstrdup_or_abort("args")), ob))
 		return -1;
 	for (i = 1; i < argc; i++)
 		switch (getoptions(l, argv[i], argv[0])) {
@@ -221,7 +221,7 @@ int main_lisp_env(lisp * l, int argc, char **argv)
 
 int main_lisp(int argc, char **argv)
 {
-	lisp *l;
+	lisp_t *l;
 	if (!(l = lisp_init()))
 		return -1;
 	return main_lisp_env(l, argc, argv);

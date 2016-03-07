@@ -9,54 +9,54 @@
 #include <assert.h>
 #include <stdlib.h>
 
-void lisp_gc_used(cell *x)
+void lisp_gc_used(lisp_cell_t *x)
 {
 	assert(x);
 	x->used = 1;
 }
 
-void lisp_gc_not_used(cell *x)
+void lisp_gc_not_used(lisp_cell_t *x)
 {
 	assert(x);
 	x->used = 0;
 }
 
-static void gc_free(lisp * l, cell * ob)
+static void gc_free(lisp_t * l, lisp_cell_t * x)
 {	
         /*assert(op) *//**< free a lisp cell*/
-	if (!ob || ob->uncollectable || ob->used)
+	if (!x || x->uncollectable || x->used)
 		return;
-	switch (ob->type) {
+	switch (x->type) {
 	case INTEGER:
 	case CONS:
 	case FLOAT:
 	case PROC:
 	case SUBR:
 	case FPROC:
-		free(ob);
+		free(x);
 		break;
 	case STRING:
-		free(get_str(ob));
-		free(ob);
+		free(get_str(x));
+		free(x);
 		break;
 	case SYMBOL:
-		free(get_sym(ob));
-		free(ob);
+		free(get_sym(x));
+		free(x);
 		break;
 	case IO:
-		if (!ob->close)
-			io_close(get_io(ob));
-		free(ob);
+		if (!x->close)
+			io_close(get_io(x));
+		free(x);
 		break;
 	case HASH:
-		hash_destroy(get_hash(ob));
-		free(ob);
+		hash_destroy(get_hash(x));
+		free(x);
 		break;
 	case USERDEF:
-		if (l->ufuncs[get_user_type(ob)].free)
-			(l->ufuncs[get_user_type(ob)].free) (ob);
+		if (l->ufuncs[get_user_type(x)].free)
+			(l->ufuncs[get_user_type(x)].free) (x);
 		else
-			free(ob);
+			free(x);
 		break;
 	case INVALID:
 	default:
@@ -65,10 +65,10 @@ static void gc_free(lisp * l, cell * ob)
 	}
 }
 
-void lisp_gc_mark(lisp * l, cell * op)
+void lisp_gc_mark(lisp_t * l, lisp_cell_t * op)
 {						  
         /*assert(op); *//**<recursively mark reachable cells*/
-	if (!op || op->uncollectable || op->mark)
+	if (!op || op->mark)
 		return;
 	op->mark = 1;
 	switch (op->type) {
@@ -94,8 +94,8 @@ void lisp_gc_mark(lisp * l, cell * op)
 		break;
 	case HASH:{
 			size_t i;
-			hashentry *cur;
-			hashtable *h = get_hash(op);
+			hash_entry_t *cur;
+			hash_table_t *h = get_hash(op);
 			for (i = 0; i < h->len; i++)
 				if (h->table[i])
 					for (cur = h->table[i]; cur; cur = cur->next)
@@ -112,9 +112,9 @@ void lisp_gc_mark(lisp * l, cell * op)
 	}
 }
 
-void gc_sweep_only(lisp * l)
+void lisp_gc_sweep_only(lisp_t * l)
 {				
-	gc_list *v, **p;
+	gc_list_t *v, **p;
 	if (l->gc_off)
 		return;
 	for (p = &l->gc_head; *p != NULL;) {
@@ -130,9 +130,9 @@ void gc_sweep_only(lisp * l)
 	}
 }
 
-cell *gc_add(lisp * l, cell * op)
+lisp_cell_t *lisp_gc_add(lisp_t * l, lisp_cell_t * op)
 {				  
-	cell **olist;
+	lisp_cell_t **olist;
 	if (l->gc_stack_used++ > l->gc_stack_allocated - 1) {
 		l->gc_stack_allocated = l->gc_stack_used * 2;
 		if (l->gc_stack_allocated < l->gc_stack_used)
@@ -146,22 +146,22 @@ cell *gc_add(lisp * l, cell * op)
 	return op;
 }
 
-int lisp_gc_status(lisp * l)
+int lisp_gc_status(lisp_t * l)
 {
 	return !l->gc_off;
 }
 
-void lisp_gc_on(lisp * l)
+void lisp_gc_on(lisp_t * l)
 {
 	l->gc_off = 0;
 }
 
-void lisp_gc_off(lisp * l)
+void lisp_gc_off(lisp_t * l)
 {
 	l->gc_off = 1;
 }
 
-void lisp_gc_mark_and_sweep(lisp * l)
+void lisp_gc_mark_and_sweep(lisp_t * l)
 {
 	size_t i;
 	if (l->gc_off)
@@ -170,7 +170,7 @@ void lisp_gc_mark_and_sweep(lisp * l)
 	lisp_gc_mark(l, l->top_env);
 	for (i = 0; i < l->gc_stack_used; i++)
 		lisp_gc_mark(l, l->gc_stack[i]);
-	gc_sweep_only(l);
+	lisp_gc_sweep_only(l);
 	l->gc_collectp = 0;
 }
 

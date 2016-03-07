@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <liblisp.h>
 
-static cell *subr_crc(lisp * l, cell * args)
+static lisp_cell_t *subr_crc(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(l);
 	uint32_t c;
@@ -17,7 +17,7 @@ static cell *subr_crc(lisp * l, cell * args)
 	return mk_int(l, c);
 }
 
-int lisp_module_initialize(lisp *l)
+int lisp_module_initialize(lisp_t *l)
 {
 	assert(l);
 	if (!(lisp_add_subr(l, "crc", subr_crc, "Z", "CRC-32 of a string")))

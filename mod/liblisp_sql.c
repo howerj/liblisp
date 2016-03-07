@@ -12,8 +12,8 @@
 #include <stdlib.h>
 
 typedef struct {
-	lisp *l;
-	cell *ret;
+	lisp_t *l;
+	lisp_cell_t *ret;
 } sqlite3_cb_t;
 
 static int ud_sql;
@@ -25,7 +25,7 @@ static int ud_sql;
 	X("sql-info",    subr_sql_info,   "",   "Return version information about the SQL library")\
 	X("sql-is-thread-safe?",    subr_sql_is_thread_safe,  "",  "Is the SQlite3 thread safe?")\
 
-#define X(NAME, SUBR, VALIDATION , DOCSTRING) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION , DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
@@ -37,19 +37,19 @@ static struct module_subroutines {
 	{ NULL, NULL, NULL, NULL}	/*must be terminated with NULLs */
 };
 
-static void ud_sql_free(cell * f)
+static void ud_sql_free(lisp_cell_t * f)
 {
 	if (!is_closed(f))
 		sqlite3_close(get_user(f));
 	free(f);
 }
 
-static int ud_sql_print(io * o, unsigned depth, cell * f)
+static int ud_sql_print(io_t * o, unsigned depth, lisp_cell_t * f)
 {
 	return lisp_printf(NULL, o, depth, "%B<SQL-STATE:%d:%s>%t", get_user(f), is_closed(f) ? "CLOSED" : "OPEN");
 }
 
-static cell *subr_sql_open(lisp * l, cell * args)
+static lisp_cell_t *subr_sql_open(lisp_t * l, lisp_cell_t * args)
 {
 	sqlite3 *db;
 	if (sqlite3_open(get_str(car(args)), &db)) {
@@ -60,7 +60,7 @@ static cell *subr_sql_open(lisp * l, cell * args)
 	return mk_user(l, db, ud_sql);
 }
 
-static cell *subr_sql_close(lisp * l, cell * args)
+static lisp_cell_t *subr_sql_close(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 1) || !is_usertype(car(args), ud_sql))
 		LISP_RECOVER(l, "\"expected (sql-database)\" '%S", args);
@@ -77,9 +77,9 @@ static int sql_callback(void *obin, int argc, char **argv, char **azColName)
 	int i;
 	assert(obin);
 	sqlite3_cb_t *cb = (sqlite3_cb_t *)obin;
-	cell *cur = gsym_nil();
-	cell *list = cb->ret;
-	lisp *l = cb->l;
+	lisp_cell_t *cur = gsym_nil();
+	lisp_cell_t *list = cb->ret;
+	lisp_t *l = cb->l;
 	for (i = 0; i < argc; i++)
 		cur = cons(l,
 			  cons(l, 
@@ -92,7 +92,7 @@ static int sql_callback(void *obin, int argc, char **argv, char **azColName)
 	return 0;
 }
 
-static cell *subr_sql(lisp * l, cell * args)
+static lisp_cell_t *subr_sql(lisp_t * l, lisp_cell_t * args)
 {
 	intptr_t rc = 0;
 	char *errmsg = NULL;
@@ -102,7 +102,7 @@ static cell *subr_sql(lisp * l, cell * args)
 	if (!cklen(args, 2) || !is_usertype(car(args), ud_sql) || !is_asciiz(CADR(args)))
 		LISP_RECOVER(l, "\"expected (sql-database string)\" '%S", args);
 	if ((rc = sqlite3_exec(get_user(car(args)), get_str(CADR(args)), sql_callback, &cb, &errmsg)) != SQLITE_OK) {
-		cell *r;
+		lisp_cell_t *r;
 		r = mk_list(l, gsym_error(), mk_str(l, lisp_strdup(l, errmsg)), mk_int(l, rc), NULL);
 		sqlite3_free(errmsg);
 		return r;
@@ -110,7 +110,7 @@ static cell *subr_sql(lisp * l, cell * args)
 	return cb.ret;
 }
 
-static cell *subr_sql_info(lisp *l, cell *args)
+static lisp_cell_t *subr_sql_info(lisp_t *l, lisp_cell_t *args)
 {
 	UNUSED(args);
 	return mk_list(l,
@@ -119,14 +119,14 @@ static cell *subr_sql_info(lisp *l, cell *args)
 		mk_immutable_str(l, sqlite3_sourceid()), NULL);
 }
 
-static cell *subr_sql_is_thread_safe(lisp *l, cell *args)
+static lisp_cell_t *subr_sql_is_thread_safe(lisp_t *l, lisp_cell_t *args)
 {
 	UNUSED(l);
 	UNUSED(args);
 	return sqlite3_threadsafe() ? gsym_tee() : gsym_nil();
 }
 
-int lisp_module_initialize(lisp *l)
+int lisp_module_initialize(lisp_t *l)
 {
 	assert(l);
 	if(sqlite3_os_init() != SQLITE_OK)

@@ -20,7 +20,7 @@
 
 static char *homedir;
 static int running; /**< only handle errors when the lisp interpreter is running*/
-static lisp *locked_lisp; 
+static lisp_t *locked_lisp; 
 static pthread_mutex_t mutex_single_threaded_module = PTHREAD_MUTEX_INITIALIZER;
 
 /** @brief This function tells a running lisp REPL to halt if it is reading
@@ -57,7 +57,7 @@ static void *get_hash_key(const char *key, void *val)
 static void completion_callback(const char *line, size_t pos, line_completions * lc)
 {
 	assert(line && locked_lisp);
-	hashtable *h;
+	hash_table_t *h;
 	char *key, *comp, *linecopy;
 	if (!pos)
 		return;
@@ -111,21 +111,21 @@ static char *line_editing_function(const char *prompt)
 	return line;		/*returned line will be evaluated */
 }
 
-static cell *subr_line_editor_mode(lisp * l, cell * args)
+static lisp_cell_t *subr_line_editor_mode(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(l);
 	line_set_vi_mode(is_nil(car(args)) ? 0 : 1);
 	return gsym_tee();
 }
 
-static cell *subr_hist_len(lisp * l, cell * args)
+static lisp_cell_t *subr_hist_len(lisp_t * l, lisp_cell_t * args)
 {
 	if (!line_history_set_maxlen((int)get_int(car(args))))
 		LISP_HALT(l, "\"%s\"", "out of memory");
 	return gsym_tee();
 }
 
-static cell *subr_clear_screen(lisp * l, cell * args)
+static lisp_cell_t *subr_clear_screen(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(l);
 	UNUSED(args);
@@ -133,13 +133,13 @@ static cell *subr_clear_screen(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-static cell *subr_readline(lisp * l, cell * args)
+static lisp_cell_t *subr_readline(lisp_t * l, lisp_cell_t * args)
 {
 	char *prompt = get_str(car(args)), *line;
 	return mk_str(l, (line = line_editing_function(prompt)) ? line : lisp_strdup(l, ""));
 }
 
-#define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
@@ -153,7 +153,7 @@ static struct module_subroutines {
 
 #undef X
 
-int lisp_module_initialize(lisp *l)
+int lisp_module_initialize(lisp_t *l)
 {
 	size_t i;
 	char *sep = "/";

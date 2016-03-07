@@ -1,7 +1,6 @@
 ;;; base software library ;;;
 
 (define not        (compile "if x nil?" (x) (if x nil t)))
-(define nil?       (compile "is x nil?" (x) (if x nil t)))
 (define list?      (compile "is x a list?" (x) (type? *cons* x)))
 (define atom?      (compile "is x an atom? (not a list)" (x) (if (list? x) nil t)))
 (define float?     (compile "is x a floating point number?" (x) (type? *float* x)))

@@ -48,11 +48,11 @@
         X('C', "symbol-string-or-integer", is_asciiz(x) || is_int(x))\
         X('A', "any-expression",    1)
 
-static int print_type_string(lisp *l, const char *msg, unsigned len, const char *fmt, cell *args)
+static int print_type_string(lisp_t *l, const char *msg, unsigned len, const char *fmt, lisp_cell_t *args)
 {
         const char *s, *head = fmt;
         char c;
-        io *e = lisp_get_logging(l);
+        io_t *e = lisp_get_logging(l);
         msg = msg ? msg : "";
         lisp_printf(l, e, 0, 
                 "\n(%Berror%t\n %y'validation\n %r\"%s\"\n%t '(%yexpected-length %r%d%t)\n '(%yexpected-arguments%t ", 
@@ -72,7 +72,7 @@ static int print_type_string(lisp *l, const char *msg, unsigned len, const char 
         return lisp_printf(l, e, 1, ") %S)\n", args);
 }
 
-size_t validate_arg_count(const char *fmt)
+size_t lisp_validate_arg_count(const char *fmt)
 {
 	size_t i = 0;
 	if (!fmt)
@@ -84,10 +84,10 @@ size_t validate_arg_count(const char *fmt)
 	return i;
 }
 
-int lisp_validate_cell(lisp * l, cell * x, cell * args, int recover)
+int lisp_validate_cell(lisp_t * l, lisp_cell_t * x, lisp_cell_t * args, int recover)
 {
 	char *fmt, *msg;
-	cell *ds;
+	lisp_cell_t *ds;
 	assert(x && is_func(x));
 	ds = get_func_docstring(x);
 	msg = get_str(ds);
@@ -98,13 +98,13 @@ int lisp_validate_cell(lisp * l, cell * x, cell * args, int recover)
 	return lisp_validate_args(l, msg, get_length(x), fmt, args, recover);
 }
 
-int lisp_validate_args(lisp * l, const char *msg, unsigned len, const char *fmt, cell * args, int recover)
+int lisp_validate_args(lisp_t * l, const char *msg, unsigned len, const char *fmt, lisp_cell_t * args, int recover)
 {
 	assert(l && fmt && args && msg);
 	int v = 1;
 	char c;
 	const char *fmt_head;
-	cell *args_head, *x;
+	lisp_cell_t *args_head, *x;
 	assert(l && fmt && args);
 	args_head = args;
 	fmt_head = fmt;

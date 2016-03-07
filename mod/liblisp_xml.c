@@ -24,7 +24,7 @@
 	X("xml-write-file",      subr_xml_write_file,     "Z c",     "write an S-Expression list as an XML document to a file")\
 	X("xml-write-string",    subr_xml_write_string,   "c",       "write an S-Expression list to a string")
 
-#define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
@@ -38,7 +38,7 @@ static struct module_subroutines {
 #undef X
 
 /*I might want to export this function*/
-static cell *xml2lisp(lisp *l, mxml_node_t *node) 
+static lisp_cell_t *xml2lisp(lisp_t *l, mxml_node_t *node) 
 {
 	if(!node)
 		return gsym_nil();
@@ -46,8 +46,8 @@ static cell *xml2lisp(lisp *l, mxml_node_t *node)
 	case MXML_ELEMENT: 
 	{
 		mxml_node_t *t = node;
-		hashtable *ht;
-		cell *e, *ehead, *ename, *hash = NULL;
+		hash_table_t *ht;
+		lisp_cell_t *e, *ehead, *ename, *hash = NULL;
 		int i;
 		size_t j;
 
@@ -60,7 +60,7 @@ static cell *xml2lisp(lisp *l, mxml_node_t *node)
 
 			for(i = 0; i < t->value.element.num_attrs; i++) {
 				char *key, *val;
-				cell *keyc, *valc;
+				lisp_cell_t *keyc, *valc;
 				key = lisp_strdup(l, (t->value.element.attrs)[i].name);
 				val = lisp_strdup(l, (t->value.element.attrs)[i].value);
 				keyc = mk_str(l, key);
@@ -75,7 +75,7 @@ static cell *xml2lisp(lisp *l, mxml_node_t *node)
 		ehead = e = cons(l, gsym_nil(), gsym_nil());
 		for(j = 1;(t = mxmlWalkNext(t, node, MXML_DESCEND));) {
 			if(t->parent == node) {
-				cell *r = xml2lisp(l, t);
+				lisp_cell_t *r = xml2lisp(l, t);
 				if(is_nil(r))
 					continue;
 				set_cdr(e, cons(l, r, gsym_nil()));
@@ -109,8 +109,8 @@ static cell *xml2lisp(lisp *l, mxml_node_t *node)
 	return gsym_error();
 }
 
-static mxml_node_t *_lisp2xml(lisp *l, mxml_node_t *parent, cell *x);
-static mxml_node_t *xnode(lisp *l, mxml_node_t *parent, cell *x)
+static mxml_node_t *_lisp2xml(lisp_t *l, mxml_node_t *parent, lisp_cell_t *x);
+static mxml_node_t *xnode(lisp_t *l, mxml_node_t *parent, lisp_cell_t *x)
 { /**@todo add hash -> xml*/
 	if(is_cons(x)) {
 		return _lisp2xml(l, parent, car(x));
@@ -129,11 +129,11 @@ static mxml_node_t *xnode(lisp *l, mxml_node_t *parent, cell *x)
 
 /**@todo Error handling!
  * @todo handle hashes and attributes*/
-static mxml_node_t *_lisp2xml(lisp *l, mxml_node_t *parent, cell *x)
+static mxml_node_t *_lisp2xml(lisp_t *l, mxml_node_t *parent, lisp_cell_t *x)
 {
 	mxml_node_t *ret = NULL;
 	if(is_cons(x)) {
-		cell *y;
+		lisp_cell_t *y;
 		if(is_sym(car(x))) {
 			ret = mxmlNewElement(parent, get_str(car(x)));
 		} else {
@@ -158,7 +158,7 @@ static mxml_node_t *_lisp2xml(lisp *l, mxml_node_t *parent, cell *x)
 
 /**@todo Error handling!*/
 /*I might want to export this function*/
-static mxml_node_t *lisp2xml(lisp *l, cell *x)
+static mxml_node_t *lisp2xml(lisp_t *l, lisp_cell_t *x)
 {
 	mxml_node_t *xml;
 	assert(l && x);
@@ -168,11 +168,11 @@ static mxml_node_t *lisp2xml(lisp *l, cell *x)
 	return xml;
 }
 
-static cell *subr_xml_parse_file(lisp * l, cell *args)
+static lisp_cell_t *subr_xml_parse_file(lisp_t * l, lisp_cell_t *args)
 {
 	mxml_node_t *tree;
 	FILE *input = fopen(get_str(car(args)), "rb");
-	cell *ret;
+	lisp_cell_t *ret;
 	if(!input)
 		return gsym_error();
 	tree = mxmlLoadFile(NULL, input, MXML_TEXT_CALLBACK);
@@ -184,11 +184,11 @@ static cell *subr_xml_parse_file(lisp * l, cell *args)
 	return ret;
 }
 
-static cell *subr_xml_parse_string(lisp * l, cell *args)
+static lisp_cell_t *subr_xml_parse_string(lisp_t * l, lisp_cell_t *args)
 {
 	mxml_node_t *tree;
 	char *str = get_str(car(args));
-	cell *ret;
+	lisp_cell_t *ret;
 	tree = mxmlLoadString(NULL, str, MXML_TEXT_CALLBACK);
 	if(!tree)
 		return gsym_error();
@@ -197,7 +197,7 @@ static cell *subr_xml_parse_string(lisp * l, cell *args)
 	return ret;
 }
 
-static cell *subr_xml_write_file(lisp *l, cell *args)
+static lisp_cell_t *subr_xml_write_file(lisp_t *l, lisp_cell_t *args)
 {
 	mxml_node_t *tree;
 	FILE *output;
@@ -212,7 +212,7 @@ static cell *subr_xml_write_file(lisp *l, cell *args)
 	return gsym_tee();
 }
 
-static cell *subr_xml_write_string(lisp *l, cell *args)
+static lisp_cell_t *subr_xml_write_string(lisp_t *l, lisp_cell_t *args)
 {
 	mxml_node_t *tree;
 	char *s;
@@ -224,7 +224,7 @@ static cell *subr_xml_write_string(lisp *l, cell *args)
 	return mk_str(l, s);
 }
 
-int lisp_module_initialize(lisp *l)
+int lisp_module_initialize(lisp_t *l)
 {
 	size_t i;
 	assert(l);

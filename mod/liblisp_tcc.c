@@ -21,7 +21,7 @@
         X("cc-add-system-include-path", subr_add_sysinclude_path, NULL, "add a system include path for the C compiler")\
         X("cc-set-library-path",   subr_set_lib_path, NULL, "add a library path for the C compiler to look in")\
 
-#define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(#SUBR, DOCSTRING), SUBR },
@@ -37,18 +37,18 @@ static struct module_subroutines {
 
 static int ud_tcc = 0;
 
-static void ud_tcc_free(cell * f)
+static void ud_tcc_free(lisp_cell_t * f)
 {
 	tcc_delete(get_user(f));
 	free(f);
 }
 
-static int ud_tcc_print(io * o, unsigned depth, cell * f)
+static int ud_tcc_print(io_t * o, unsigned depth, lisp_cell_t * f)
 {
 	return lisp_printf(NULL, o, depth, "%B<COMPILE-STATE:%d>%t", get_user(f));
 }
 
-static cell *subr_compile(lisp * l, cell * args)
+static lisp_cell_t *subr_compile(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 3)
 	    || !is_usertype(car(args), ud_tcc)
@@ -65,7 +65,7 @@ static cell *subr_compile(lisp * l, cell * args)
 	return mk_subr(l, func, NULL, NULL);
 }
 
-static cell *subr_link(lisp * l, cell * args)
+static lisp_cell_t *subr_link(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 2)
 	    || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
@@ -73,7 +73,7 @@ static cell *subr_link(lisp * l, cell * args)
 	return tcc_add_library(get_user(car(args)), get_str(CADR(args))) < 0 ? gsym_error() : gsym_nil();
 }
 
-static cell *subr_compile_file(lisp * l, cell * args)
+static lisp_cell_t *subr_compile_file(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 2)
 	    || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
@@ -85,7 +85,7 @@ static cell *subr_compile_file(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-static cell *subr_get_subr(lisp * l, cell * args)
+static lisp_cell_t *subr_get_subr(lisp_t * l, lisp_cell_t * args)
 {
 	subr func;
 	if (!cklen(args, 2)
@@ -97,21 +97,21 @@ static cell *subr_get_subr(lisp * l, cell * args)
 		return mk_subr(l, func, NULL, NULL);
 }
 
-static cell *subr_add_include_path(lisp * l, cell * args)
+static lisp_cell_t *subr_add_include_path(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
 		LISP_RECOVER(l, "\"expected (compile-state string)\" '%S", args);
 	return tcc_add_include_path(get_user(car(args)), get_str(CADR(args))) < 0 ? gsym_error() : gsym_tee();
 }
 
-static cell *subr_add_sysinclude_path(lisp * l, cell * args)
+static lisp_cell_t *subr_add_sysinclude_path(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
 		LISP_RECOVER(l, "\"expected (compile-state string)\" '%S", args);
 	return tcc_add_sysinclude_path(get_user(car(args)), get_str(CADR(args))) < 0 ? gsym_error() : gsym_tee();
 }
 
-static cell *subr_set_lib_path(lisp * l, cell * args)
+static lisp_cell_t *subr_set_lib_path(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
 		LISP_RECOVER(l, "\"expected (compile-state string)\" '%S", args);
@@ -119,7 +119,7 @@ static cell *subr_set_lib_path(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-int lisp_module_initialize(lisp *l)
+int lisp_module_initialize(lisp_t *l)
 {
 	size_t i;
 	assert(l);

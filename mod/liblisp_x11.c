@@ -46,7 +46,7 @@
 	X("set-foreground",     subr_set_foreground, NULL, "set the foreground drawing color of an X11 window")\
 	X("window-information", subr_window_info,    NULL, "get information about an X11 window")
 
-#define X(NAME, SUBR, VALIDATION, DOCSTRING) static cell* SUBR (lisp *l, cell *args);
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { SUBR, NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING) },
@@ -74,19 +74,19 @@ static Colormap xcolormap;
 static int ud_x11 = 0;
 
 static void close_window(Window w);
-static void ud_x11_free(cell * f)
+static void ud_x11_free(lisp_cell_t * f)
 {
 	if (!is_closed(f))
 		close_window((Window) get_user(f));
 	free(f);
 }
 
-static int ud_x11_print(io * o, unsigned depth, cell * f)
+static int ud_x11_print(io_t * o, unsigned depth, lisp_cell_t * f)
 {
 	return lisp_printf(NULL, o, depth, "%B<X-WINDOW:%d:%s>%t", get_user(f), is_closed(f) ? "CLOSED" : "OPEN");
 }
 
-static Window create_window(lisp *l)
+static Window create_window(lisp_t *l)
 {
 	XFontStruct *fontstruct;	/* the font info to be used */
 	Window w = 0;
@@ -135,16 +135,16 @@ static void close_window(Window w)
 	XFlush(xdisplay);
 }
 
-static cell *subr_create_window(lisp * l, cell * args)
+static lisp_cell_t *subr_create_window(lisp_t * l, lisp_cell_t * args)
 {
-	cell *ret;
+	lisp_cell_t *ret;
 	LISP_VALIDATE_ARGS(l, __func__, 0, "", args, 1);
 	if (!(ret = mk_user(l, (void *)create_window(l), ud_x11)))
 		LISP_HALT(l, "\"%s\"", "out of memory");
 	return ret;
 }
 
-static cell *subr_destroy_window(lisp * l, cell * args)
+static lisp_cell_t *subr_destroy_window(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 1) || !is_usertype(car(args), ud_x11))
 		LISP_RECOVER(l, "\"expected (window)\" '%S", args);
@@ -153,7 +153,7 @@ static cell *subr_destroy_window(lisp * l, cell * args)
 	return car(args);
 }
 
-static cell *subr_draw_line(lisp * l, cell * args)
+static lisp_cell_t *subr_draw_line(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 5) || !is_usertype(car(args), ud_x11) ||
 	    !is_int(CADR(args)) || !is_int(CADDR(args)) || !is_int(CADDDR(args)) || !is_int(CADDDDR(args)))
@@ -164,7 +164,7 @@ static cell *subr_draw_line(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-static cell *subr_erase_line(lisp * l, cell * args)
+static lisp_cell_t *subr_erase_line(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 5) || !is_usertype(car(args), ud_x11) ||
 	    !is_int(CADR(args)) || !is_int(CADDR(args)) || !is_int(CADDDR(args)) || !is_int(CADDDDR(args)))
@@ -175,7 +175,7 @@ static cell *subr_erase_line(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-static cell *subr_draw_text(lisp * l, cell * args)
+static lisp_cell_t *subr_draw_text(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 4) || !is_usertype(car(args), ud_x11) || !is_str(CADR(args)) || !is_int(CADDR(args)) || !is_int(CADDDR(args)))
 		LISP_RECOVER(l, "\"expected (window string int int)\" '%S", args);
@@ -185,7 +185,7 @@ static cell *subr_draw_text(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-static cell *subr_erase_text(lisp * l, cell * args)
+static lisp_cell_t *subr_erase_text(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 4) || !is_usertype(car(args), ud_x11) || !is_str(CADR(args)) || !is_int(CADDR(args)) || !is_int(CADDDR(args)))
 		LISP_RECOVER(l, "\"expected (window string int int)\" '%S", args);
@@ -195,7 +195,7 @@ static cell *subr_erase_text(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-static cell *subr_clear_window(lisp * l, cell * args)
+static lisp_cell_t *subr_clear_window(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 1) || !is_usertype(car(args), ud_x11))
 		LISP_RECOVER(l, "\"expected (window)\" '%S", args);
@@ -204,7 +204,7 @@ static cell *subr_clear_window(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-static cell *subr_resize_window(lisp * l, cell * args)
+static lisp_cell_t *subr_resize_window(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 3) || !is_usertype(car(args), ud_x11)
 	    || !is_int(CADR(args)) || !is_int(CADDR(args)))
@@ -214,7 +214,7 @@ static cell *subr_resize_window(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-static cell *subr_raise_window(lisp * l, cell * args)
+static lisp_cell_t *subr_raise_window(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 1) || !is_usertype(car(args), ud_x11))
 		LISP_RECOVER(l, "\"expected (window)\" '%S", args);
@@ -223,10 +223,10 @@ static cell *subr_raise_window(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-static cell *subr_draw_arc(lisp * l, cell * args)
+static lisp_cell_t *subr_draw_arc(lisp_t * l, lisp_cell_t * args)
 {
 	int x, y, width, height, angle1, angle2;
-	cell *v;
+	lisp_cell_t *v;
 	if (!cklen(args, 7) || !is_usertype(car(args), ud_x11))
 		LISP_RECOVER(l, "\"expected (window x y width height angle-1 angle-2)\" '%S", args);
 	for (v = cdr(args); !is_nil(v); v = cdr(v))
@@ -252,10 +252,10 @@ static cell *subr_draw_arc(lisp * l, cell * args)
 	return gsym_error();
 }
 
-static cell *subr_draw_rectangle(lisp * l, cell * args)
+static lisp_cell_t *subr_draw_rectangle(lisp_t * l, lisp_cell_t * args)
 {
 	int x, y, width, height;
-	cell *v;
+	lisp_cell_t *v;
 	if (!cklen(args, 5) || !is_usertype(car(args), ud_x11))
 		goto fail;
 	for (v = cdr(args); !is_nil(v); v = cdr(v))
@@ -277,10 +277,10 @@ static cell *subr_draw_rectangle(lisp * l, cell * args)
 	return gsym_error();
 }
 
-static cell *subr_fill_arc(lisp * l, cell * args)
+static lisp_cell_t *subr_fill_arc(lisp_t * l, lisp_cell_t * args)
 {
 	int x, y, width, height, angle1, angle2;
-	cell *v;
+	lisp_cell_t *v;
 	if (!cklen(args, 7) || !is_usertype(car(args), ud_x11))
 		goto fail;
 	for (v = cdr(args); !is_nil(v); v = cdr(v))
@@ -307,10 +307,10 @@ static cell *subr_fill_arc(lisp * l, cell * args)
 
 }
 
-static cell *subr_fill_rectangle(lisp * l, cell * args)
+static lisp_cell_t *subr_fill_rectangle(lisp_t * l, lisp_cell_t * args)
 {
 	int x, y, width, height;
-	cell *v;
+	lisp_cell_t *v;
 	if (!cklen(args, 5) || !is_usertype(car(args), ud_x11))
 		goto fail;
 	for (v = cdr(args); !is_nil(v); v = cdr(v))
@@ -332,7 +332,7 @@ static cell *subr_fill_rectangle(lisp * l, cell * args)
 	return gsym_error();
 }
 
-static cell *subr_window_info(lisp * l, cell * args)
+static lisp_cell_t *subr_window_info(lisp_t * l, lisp_cell_t * args)
 {
 	Window rw;		/*root window */
 	int x = 0, y = 0;
@@ -347,12 +347,12 @@ static cell *subr_window_info(lisp * l, cell * args)
 /** @todo make either a framework, or hack, so this does not block 
  *  see https://stackoverflow.com/questions/8592292/how-to-quit-the-blocking-of-xlibs-xnextevent
  **/
-static cell *subr_select_input(lisp * l, cell * args)
+static lisp_cell_t *subr_select_input(lisp_t * l, lisp_cell_t * args)
 {				/*for event loop */
 	XEvent e;
 	KeySym key;
 	char text[256];
-	cell *rd, *ks, *mx, *my;
+	lisp_cell_t *rd, *ks, *mx, *my;
 	if (!cklen(args, 1) || !is_usertype(car(args), ud_x11))
 		LISP_RECOVER(l, "\"expected (window)\" '%S", args);
 	rd = ks = mx = my = gsym_nil();
@@ -367,7 +367,7 @@ static cell *subr_select_input(lisp * l, cell * args)
 	return mk_list(l, rd, ks, mx, my, NULL);
 }
 
-static cell *subr_set_font(lisp * l, cell * args)
+static lisp_cell_t *subr_set_font(lisp_t * l, lisp_cell_t * args)
 {
 	XFontStruct *fontstruct;
 	if (!cklen(args, 1) || !is_str(car(args)))
@@ -380,7 +380,7 @@ static cell *subr_set_font(lisp * l, cell * args)
 	return gsym_tee();
 }
 
-static cell *subr_set_background(lisp * l, cell * args)
+static lisp_cell_t *subr_set_background(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 2) || !is_usertype(car(args), ud_x11) || !is_str(CADR(args)))
 		LISP_RECOVER(l, "\"expected (window string)\" '%S", args);
@@ -388,14 +388,14 @@ static cell *subr_set_background(lisp * l, cell * args)
 	return gsym_nil();
 }
 
-static cell *subr_set_foreground(lisp * l, cell * args)
+static lisp_cell_t *subr_set_foreground(lisp_t * l, lisp_cell_t * args)
 {
 	if (!cklen(args, 1) || !is_str(car(args)))
 		LISP_RECOVER(l, "\"expected (string)\" '%S", args);
 	return gsym_nil();
 }
 
-int lisp_module_initialize(lisp *l)
+int lisp_module_initialize(lisp_t *l)
 {
 	size_t i;
 	assert(l);

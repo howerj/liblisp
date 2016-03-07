@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 		test(balance("(a (b) c (d (e (f) \")\" g)))") == 0);
 		test(balance("((a b) c") == 1);
 
-		bitfield *a = NULL, *b = NULL;
+		bitfield_t *a = NULL, *b = NULL;
 		state(b = bit_new(1024));
 		return_if(!b);
 
@@ -277,7 +277,7 @@ int main(int argc, char **argv)
 		/*test tr, or translate, functionality */
 		size_t trinsz = 0;
 		uint8_t trout[128] = { 0 }, *trin = (uint8_t *) "aaabbbcdaacccdeeefxxxa";
-		tr_state *tr1;
+		tr_state_t *tr1;
 		state(tr1 = tr_new());
 		state(trinsz = strlen((char *)trin));
 		test(tr_init(tr1, "", (uint8_t *) "abc", (uint8_t *) "def") == TR_OK);
@@ -302,7 +302,7 @@ int main(int argc, char **argv)
 	}
 
 	{			/*io.c test; @todo file input and output */
-		io *in, *out;
+		io_t *in, *out;
 		print_note("io.c");
 
 		/*string input */
@@ -353,7 +353,7 @@ int main(int argc, char **argv)
 	}
 
 	{			/* hash.c hash table tests */
-		hashtable *h = NULL;
+		hash_table_t *h = NULL;
 		print_note("hash.c");
 		state(h = hash_create(1));
 		return_if(!h);
@@ -393,7 +393,7 @@ int main(int argc, char **argv)
 	}
 
 	{			/* lisp.c (and the lisp interpreter in general) */
-		lisp *l;
+		lisp_t *l;
 
 		print_note("lisp.c");
 		/*while unit testing eschews state being held across tests it is makes
@@ -407,11 +407,11 @@ int main(int argc, char **argv)
 		test(get_int(lisp_eval_string(l, "(+ 2 2)")) == 4);
 		test(get_int(lisp_eval_string(l, "(* 3 2)")) == 6);
 
-		cell *x = NULL, *y = NULL, *z = NULL;
+		lisp_cell_t *x = NULL, *y = NULL, *z = NULL;
 		char *t = NULL;
-		state(x = intern(l, lstrdup_or_abort("foo")));
-		state(y = intern(l, t = lstrdup_or_abort("foo")));	/*this one needs freeing! */
-		state(z = intern(l, lstrdup_or_abort("bar")));
+		state(x = lisp_intern(l, lstrdup_or_abort("foo")));
+		state(y = lisp_intern(l, t = lstrdup_or_abort("foo")));	/*this one needs freeing! */
+		state(z = lisp_intern(l, lstrdup_or_abort("bar")));
 		test(x == y && x != NULL);
 		test(x != z);
 		free(t);	/*free the non-interned string */

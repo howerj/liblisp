@@ -160,20 +160,20 @@ static void dlclose_atexit(void) {
         }
 }
 
-static void ud_dl_free(cell *f) {
+static void ud_dl_free(lisp_cell_t *f) {
       /*DL_CLOSE(get_user(f)); This is handled atexit instead*/
         free(f);
 }
 
-static int ud_dl_print(io *o, unsigned depth, cell *f) {
+static int ud_dl_print(io_t *o, unsigned depth, lisp_cell_t *f) {
         return lisp_printf(NULL, o, depth, "%B<DYNAMIC-MODULE:%d>%t", get_user(f));
 }
 
-static cell *subr_dlopen(lisp *l, cell *args) {
+static lisp_cell_t *subr_dlopen(lisp_t *l, lisp_cell_t *args) {
 	dl_handle_t handle;
         dl_list *h;
         if(!(handle = DL_OPEN(get_str(car(args))))) {
-		lisp_log_debug(l, "'dynamic-load-failed \"%s\" \"%s\"", get_str(car(args)), DL_ERROR());
+		lisp_log_error(l, "'dynamic-load-failed \"%s\" \"%s\"", get_str(car(args)), DL_ERROR());
                 return gsym_error();
 	}
         if(!(h = calloc(1, sizeof(*h))))
@@ -185,8 +185,8 @@ static cell *subr_dlopen(lisp *l, cell *args) {
 }
 
 /* loads a lisp module and runs the initialization function */
-static cell *subr_load_lisp_module(lisp *l, cell *args) {
-	cell *h = subr_dlopen(l, args);
+static lisp_cell_t *subr_load_lisp_module(lisp_t *l, lisp_cell_t *args) {
+	lisp_cell_t *h = subr_dlopen(l, args);
 	dl_handle_t handle;
 	lisp_module_initializer_t init;
 	if(!is_usertype(h, ud_dl))
@@ -201,7 +201,7 @@ static cell *subr_load_lisp_module(lisp *l, cell *args) {
 	return gsym_error();
 }
 
-static cell *subr_dlsym(lisp *l, cell *args) {
+static lisp_cell_t *subr_dlsym(lisp_t *l, lisp_cell_t *args) {
         subr func;
         if(!cklen(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
                 LISP_RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
@@ -210,7 +210,7 @@ static cell *subr_dlsym(lisp *l, cell *args) {
         return mk_subr(l, func, NULL, NULL);
 }
 
-static cell *subr_dlerror(lisp *l, cell *args) {
+static lisp_cell_t *subr_dlerror(lisp_t *l, lisp_cell_t *args) {
         char *s = DL_ERROR();
 	UNUSED(args);
         return mk_str(l, lisp_strdup(l, (s = DL_ERROR()) ? s : ""));
@@ -218,7 +218,7 @@ static cell *subr_dlerror(lisp *l, cell *args) {
 #endif
 
 int main(int argc, char **argv) {
-        lisp *l = lisp_init();
+        lisp_t *l = lisp_init();
         if(!l) 
                 goto fail;
 
@@ -257,7 +257,7 @@ int main(int argc, char **argv) {
 	if((thome = getenv("LISPHOME")))
 		rcpath = thome;
         if(rcpath || (rcpath = getenv(home))) {
-                io *i;
+                io_t *i;
                 FILE *in;
                 if(!(rcpath = VSTRCATSEP(filesep, rcpath, init)))
                         goto fail;

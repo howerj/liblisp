@@ -15,10 +15,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-/**@brief a structure representing a bitfield */
+/**@brief a structure representing a bitfield_t */
 struct bitfield {
-	size_t max;  /**< maximum number of bits in the bitfield*/
-	unsigned char field[]; /**< the bitfield*/
+	size_t max;  /**< maximum number of bits in the bitfield_t*/
+	unsigned char field[]; /**< the bitfield_t*/
 };
 
 static int matchhere(regex_result * r, char *regexp, char *text, size_t depth);
@@ -185,7 +185,7 @@ uint32_t knuth(uint32_t i)
 char *getadelim(FILE * in, int delim)
 {
 	assert(in);
-	io io_in;
+	io_t io_in;
 	memset(&io_in, 0, sizeof(io_in));
 	io_in.p.file = in;
 	io_in.type = FIN;
@@ -402,10 +402,10 @@ static inline size_t bsize(size_t bits)
 	return (bits / CHAR_BIT) + ! !(bits % CHAR_BIT);
 }
 
-bitfield *bit_new(size_t maxbits)
+bitfield_t *bit_new(size_t maxbits)
 {
 	assert(maxbits > 0);
-	bitfield *bf;
+	bitfield_t *bf;
 	size_t al = bsize(maxbits);
 	if (!(bf = calloc(sizeof(*bf) + al, 1)))
 		return NULL;
@@ -413,36 +413,36 @@ bitfield *bit_new(size_t maxbits)
 	return bf;
 }
 
-void bit_delete(bitfield * bf)
+void bit_delete(bitfield_t * bf)
 {
 	free(bf);
 }
 
-void bit_set(bitfield * bf, size_t idx)
+void bit_set(bitfield_t * bf, size_t idx)
 {
 	assert(bf && idx < bf->max);
 	bf->field[idx / CHAR_BIT] |= 1u << (idx % CHAR_BIT);
 }
 
-void bit_unset(bitfield * bf, size_t idx)
+void bit_unset(bitfield_t * bf, size_t idx)
 {
 	assert(bf && idx < bf->max);
 	bf->field[idx / CHAR_BIT] &= ~(1u << (idx % CHAR_BIT));
 }
 
-void bit_toggle(bitfield * bf, size_t idx)
+void bit_toggle(bitfield_t * bf, size_t idx)
 {
 	assert(bf && idx < bf->max);
 	bf->field[idx / CHAR_BIT] ^= 1u << (idx % CHAR_BIT);
 }
 
-int bit_get(bitfield * bf, size_t idx)
+int bit_get(bitfield_t * bf, size_t idx)
 {
 	assert(bf && (idx < bf->max));
 	return bf->field[idx / CHAR_BIT] & (1u << (idx % CHAR_BIT)) ? 1 : 0;
 }
 
-int bit_compare(bitfield * a, bitfield * b)
+int bit_compare(bitfield_t * a, bitfield_t * b)
 {
 	assert(a && b);
 	int r = memcmp(a->field, b->field, MIN(bsize(a->max), bsize(b->max)));
@@ -451,10 +451,10 @@ int bit_compare(bitfield * a, bitfield * b)
 	return r;
 }
 
-bitfield *bit_copy(bitfield * bf)
+bitfield_t *bit_copy(bitfield_t * bf)
 {
 	assert(bf);
-	bitfield *n = bit_new(bf->max);
+	bitfield_t *n = bit_new(bf->max);
 	memcpy(n->field, bf->field, bsize(bf->max));
 	return n;
 }
@@ -508,7 +508,7 @@ static int tr_getnext(uint8_t ** s)
 	return -1;
 }
 
-int tr_init(tr_state * tr, char *mode, uint8_t * s1, uint8_t * s2)
+int tr_init(tr_state_t * tr, char *mode, uint8_t * s1, uint8_t * s2)
 {
 	unsigned i = 0;
 	int c, d, cp, dp;
@@ -564,7 +564,7 @@ int tr_init(tr_state * tr, char *mode, uint8_t * s1, uint8_t * s2)
 	return TR_OK;
 }
 
-int tr_char(tr_state * tr, uint8_t c)
+int tr_char(tr_state_t * tr, uint8_t c)
 {				/*return character to emit, -1 otherwise */
 	assert(tr);
 	if ((c == tr->previous_char) && tr->squeeze_seq && tr->set_squ[c])
@@ -575,7 +575,7 @@ int tr_char(tr_state * tr, uint8_t c)
 	return tr->set_tr[c];
 }
 
-size_t tr_block(tr_state * tr, uint8_t * in, uint8_t * out, size_t len)
+size_t tr_block(tr_state_t * tr, uint8_t * in, uint8_t * out, size_t len)
 {
 	int c;
 	size_t i = 0, j = 0;
@@ -585,12 +585,12 @@ size_t tr_block(tr_state * tr, uint8_t * in, uint8_t * out, size_t len)
 	return i;
 }
 
-tr_state *tr_new(void)
+tr_state_t *tr_new(void)
 {
-	return calloc(1, sizeof(tr_state));
+	return calloc(1, sizeof(tr_state_t));
 }
 
-void tr_delete(tr_state * st)
+void tr_delete(tr_state_t * st)
 {
 	free(st);
 }

@@ -10,16 +10,20 @@
     (name)
     (if 
       (and 
-        *have-dynamic-loader* 
-        (= (dynamic-load-lisp-module (string->symbol (join "" (list "liblisp_" name (if (= *os* "unix") ".so" ".dll"))))) 'error))
-         (progn
-	   (format *error* "module: %s %s\n" name (dynamic-error))
-	   (define-eval (string->symbol (join "" (list "*have-" name "*"))) nil))
-         (define-eval (string->symbol (join "" (list "*have-" name "*"))) t))))
+	*have-dynamic-loader* 
+	(nil? (= (dynamic-load-lisp-module 
+	     (string->symbol 
+	       (join "" 
+		     (list "liblisp_" name 
+			   (if 
+			     (= *os* "unix") 
+			     ".so" 
+			     ".dll"))))) 
+	   'error)))
+	(define-eval (string->symbol (join "" (list "*have-" name "*"))) t)
+      (define-eval (string->symbol (join "" (list "*have-" name "*"))) nil))))
 
 (progn ; load all known modules
-  ; I should probably rename the modules, or provide alternate names for them,
-  ; like "sql" should really be "sqlite3"
  (load-lisp-module "bignum") ; bignum module
  (load-lisp-module "crc")    ; crc module
  (load-lisp-module "line")   ; line editing library and module

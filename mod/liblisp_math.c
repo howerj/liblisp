@@ -12,7 +12,7 @@
 /**@brief Template for most of the functions in "math.h"
  * @param NAME name of math function such as "log", "sin", etc.*/
 #define SUBR_MATH_UNARY(NAME, VALIDATION, DOCSTRING)\
-static cell *subr_ ## NAME (lisp *l, cell *args) {\
+static lisp_cell_t *subr_ ## NAME (lisp_t *l, lisp_cell_t *args) {\
         return mk_float(l, NAME (get_a2f(car(args))));\
 }
 
@@ -37,12 +37,12 @@ static cell *subr_ ## NAME (lisp *l, cell *args) {\
 #define X(FUNC, VALIDATION, DOCSTRING) SUBR_MATH_UNARY(FUNC, VALIDATION, DOCSTRING)
 MATH_UNARY_LIST
 #undef X
-static cell *subr_pow(lisp * l, cell * args)
+static lisp_cell_t *subr_pow(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_float(l, pow(get_a2f(car(args)), get_a2f(CADR(args))));
 }
 
-static cell *subr_modf(lisp * l, cell * args)
+static lisp_cell_t *subr_modf(lisp_t * l, lisp_cell_t * args)
 {
 	double x, fracpart, intpart = 0;
 	x = get_a2f(car(args));
@@ -63,7 +63,7 @@ static struct module_subroutines {
 
 #undef X
 
-int lisp_module_initialize(lisp *l)
+int lisp_module_initialize(lisp_t *l)
 {
 	size_t i;
 	assert(l);
