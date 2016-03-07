@@ -259,12 +259,6 @@
       (t (cons (car lat)
                   (remove-member a (cdr lat)))))))
 
-(define regex 
-  (compile
-    "match a pattern on a string, return 't if found, 'nil if not."
-    (pattern str)
-    (car (regex-span pattern str))))
-
 (define newline (compile "print a newline" () (put *output* "\n")))
 
 (define list-tail
@@ -493,14 +487,6 @@
     "convert a Windows file path to a Unix file path"
     (p) 
     (tr "" "\\\\" "/" p)))
-
-(define help
-  (compile
-    "print out as much information about a function as is known"
-    (func) 
-    (map1
-      (lambda (x) (format *output* "%s\n" x)) 
-      (split ":" (documentation-string func)))))
 
 (define quote-list
   (flambda "return all arguments unevaluated" (x) x))

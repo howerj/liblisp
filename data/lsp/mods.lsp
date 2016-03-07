@@ -35,5 +35,6 @@
  (load-lisp-module "tcc")    ; tiny c compiler (leaks memory, if used)
  (load-lisp-module "xml")    ; XML parser and writer
  (load-lisp-module "curl")   ; Curl library
+ (load-lisp-module "pcre")   ; Perl-Compatible regular expressions
  t)
 

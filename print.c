@@ -75,6 +75,8 @@ int lisp_vprintf(lisp_t *l, io_t *o, unsigned depth, char *fmt, va_list ap)
                         switch (f = *fmt++) {
                         case '\0': goto finish;
                         case '%':  ret = io_putc('%', o); break;
+			/*@todo case '.':  // handle ".*" for strings */
+		        /*@todo change '*' to something less confusing*/
                         case '*':  f = *fmt++;
                                    if(!f) goto finish;
                                    dep = depth;

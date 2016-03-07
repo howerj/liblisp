@@ -75,10 +75,10 @@
   X("get-char",    subr_getchar,   "i",    "read in a character from a port")\
   X("get-delim",   subr_getdelim,  "i C",  "read in a string delimited by a character from a port")\
   X("getenv",      subr_getenv,    "Z",    "get an environment variable (not thread safe)")\
-  X("hash-create", subr_hcreate,   NULL,   "create a new hash")\
-  X("hash-info",   subr_hinfo,     "h",    "get information about a hash")\
-  X("hash-insert", subr_hinsert,   "h Z A", "insert a variable into a hash")\
-  X("hash-lookup", subr_hlookup,   "h Z",  "loop up a variable in a hash")\
+  X("hash-create", subr_hash_create,   NULL,   "create a new hash")\
+  X("hash-info",   subr_hash_info,     "h",    "get information about a hash")\
+  X("hash-insert", subr_hash_insert,   "h Z A", "insert a variable into a hash")\
+  X("hash-lookup", subr_hash_lookup,   "h Z",  "loop up a variable in a hash")\
   X("ilog2",       subr_ilog2,    "d",    "compute the binary logarithm of an integer")\
   X("input?",      subr_inp,       "A",    "is an object an input port?")\
   X("ipow",        subr_ipow,      "d d",  "compute the integer exponentiation of two numbers")\
@@ -98,7 +98,6 @@
   X("random",      subr_rand,      "",     "return a pseudo random number generator")\
   X("raw",         subr_raw,       "A",     "get the raw value of an object")\
   X("read",        subr_read,      "I",    "read in an s-expression from a port or a string")\
-  X("regex-span",  subr_regexspan, "Z Z",  "get the span of a regex match on a string")\
   X("remove",      subr_remove,    "Z",    "remove a file")\
   X("rename",      subr_rename,    "Z Z",  "rename a file")\
   X("reverse",     subr_reverse,   NULL,   "reverse a string, list or hash")\
@@ -107,7 +106,6 @@
   X("scons",       subr_scons,     "Z Z",  "concatenate two string")\
   X("seed",        subr_seed,      "d d",  "seed the pseudo random number generator")\
   X("seek",        subr_seek,      "P d d", "perform a seek on a port (moving the port position indicator)")\
-  X("split",       subr_split,     "Z Z",  "split a string given a regular expression")\
   X("strerror",    subr_strerror,  "d",     "convert an errno into a string describing that error")\
   X("&",           subr_band,      "d d",  "bit-wise and of two integers")\
   X("~",           subr_binv,      "d",    "bit-wise inversion of an integers")\
@@ -749,14 +747,14 @@ static lisp_cell_t *subr_rename(lisp_t * l, lisp_cell_t * args)
 	return rename(get_str(car(args)), get_str(CADR(args))) ? gsym_nil() : gsym_tee();
 }
 
-static lisp_cell_t *subr_hlookup(lisp_t * l, lisp_cell_t * args)
+static lisp_cell_t *subr_hash_lookup(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(l);
 	lisp_cell_t *x;
 	return (x = hash_lookup(get_hash(car(args)), get_sym(CADR(args)))) ? x : gsym_nil();
 }
 
-static lisp_cell_t *subr_hinsert(lisp_t * l, lisp_cell_t * args)
+static lisp_cell_t *subr_hash_insert(lisp_t * l, lisp_cell_t * args)
 {
 	if (hash_insert(get_hash(car(args)),
 			get_sym(CADR(args)), cons(l, CADR(args), CADR(cdr(args)))))
@@ -764,7 +762,7 @@ static lisp_cell_t *subr_hinsert(lisp_t * l, lisp_cell_t * args)
 	return car(args);
 }
 
-static lisp_cell_t *subr_hcreate(lisp_t * l, lisp_cell_t * args)
+static lisp_cell_t *subr_hash_create(lisp_t * l, lisp_cell_t * args)
 {
 	hash_table_t *ht = NULL;
 	if (get_length(args) % 2)
@@ -783,7 +781,7 @@ static lisp_cell_t *subr_hcreate(lisp_t * l, lisp_cell_t * args)
 	return gsym_error();
 }
 
-static lisp_cell_t *subr_hinfo(lisp_t * l, lisp_cell_t * args)
+static lisp_cell_t *subr_hash_info(lisp_t * l, lisp_cell_t * args)
 {
 	hash_table_t *ht = get_hash(car(args));
 	return mk_list(l,
@@ -883,7 +881,7 @@ static lisp_cell_t *subr_coerce(lisp_t * l, lisp_cell_t * args)
 		break;
 	case HASH:
 		if (is_cons(from))	/*hash from list */
-			return subr_hcreate(l, from);
+			return subr_hash_create(l, from);
 		break;
 	case FLOAT:
 		if (is_int(from))	/*int to float */
@@ -1033,48 +1031,10 @@ static lisp_cell_t *subr_reverse(lisp_t * l, lisp_cell_t * args)
 	return gsym_error();
 }
 
-static lisp_cell_t *subr_regexspan(lisp_t * l, lisp_cell_t * args)
-{
-	regex_result rr;
-	lisp_cell_t *m = gsym_nil();
-	rr = regex_match(get_str(car(args)), get_str(CADR(args)));
-	if (rr.result <= 0)
-		rr.start = rr.end = get_str(CADR(args)) - 1;
-	m = (rr.result < 0 ? gsym_error() : (rr.result == 0 ? gsym_nil() : gsym_tee()));
-	return cons(l, m,
-		    cons(l, mk_int(l, rr.start - get_str(CADR(args))),
-			 cons(l, mk_int(l, rr.end - get_str(CADR(args))), gsym_nil())));
-}
-
 static lisp_cell_t *subr_raise(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(l);
 	return raise(get_int(car(args))) ? gsym_nil() : gsym_tee();
-}
-
-static lisp_cell_t *subr_split(lisp_t * l, lisp_cell_t * args)
-{
-	size_t i;
-	char *pat, *s, *f;
-	lisp_cell_t *op = gsym_nil(), *head;
-	regex_result rr;
-	pat = get_str(car(args));
-	f = s = lisp_strdup(l, get_str(CADR(args)));
-	head = op = cons(l, gsym_nil(), gsym_nil());
-	for (i = 1;; i++) {
-		rr = regex_match(pat, s);
-		if (!rr.result || rr.end == rr.start) {
-			set_cdr(op, cons(l, mk_str(l, lisp_strdup(l, s)), gsym_nil()));
-			break;
-		}
-		rr.start[0] = '\0';
-		set_cdr(op, cons(l, mk_str(l, lisp_strdup(l, s)), gsym_nil()));
-		op = cdr(op);
-		s = rr.end;
-	}
-	fix_list_len(cdr(head), i);
-	free(f);
-	return cdr(head);
 }
 
 static lisp_cell_t *subr_substring(lisp_t * l, lisp_cell_t * args)

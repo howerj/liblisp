@@ -13,7 +13,7 @@ THREADLIB=
 else # unix is default
 MODULES+=liblisp_tcc.$(DLL) liblisp_sql.$(DLL) liblisp_unix.$(DLL)\
 	 liblisp_x11.$(DLL) liblisp_curl.$(DLL) liblisp_line.$(DLL)\
-	 liblisp_xml.$(DLL)
+	 liblisp_xml.$(DLL) liblisp_pcre.$(DLL)
 # used for locks
 THREADLIB=-lpthread
 endif
@@ -22,6 +22,9 @@ modules: $(MODULES)
 
 %.o: $(CURDIR)%.c
 	$(CC) $(CFLAGS) -I. $< -c -o $@
+
+liblisp_pcre.$(DLL): liblisp_pcre.o $(MOD_DEPS)
+	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lpcre -o $@
 
 liblisp_line.o: $(CURDIR)liblisp_line.c $(MOD_DEPS)
 	$(CC) $(CFLAGS) -I. -I$(CURDIR)libline $< -c -o $@

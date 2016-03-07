@@ -21,9 +21,6 @@ struct bitfield {
 	unsigned char field[]; /**< the bitfield_t*/
 };
 
-static int matchhere(regex_result * r, char *regexp, char *text, size_t depth);
-static int matchstar(regex_result * r, int literal, int c, char *regexp, char *text, size_t depth);
-
 void pfatal(const char *msg, const char *file, const char *func, long line)
 {
 	assert(msg && file);
@@ -92,79 +89,6 @@ int match(char *pat, char *str)
 	if (setjmp(bf))
 		return -1;
 	return matcher(pat, str, LARGE_DEFAULT_LEN, &bf);
-}
-
-/**This regex engine is a bit of a mess and needs to be rewritten,
- * it could be replaced with the one from <https://github.com/cesanta/slre>. The
- * start and end functionality is a bit buggy as well. **/
-regex_result regex_match(char *regexp, char *text)
-{
-	assert(regexp && text);
-	regex_result rr = { text, text, 0 };
-	size_t depth = 0;
-	if (regexp[0] == '^')
-		return matchhere(&rr, regexp + 1, text, depth + 1), rr;
-	do {			/* must look even if string is empty */
-		rr.start = text;
-		if (matchhere(&rr, regexp, text, depth + 1))
-			return rr;
-	} while (*text++ != '\0');
-	return rr.result = 0, rr;
-}
-
-static int matchhere(regex_result * r, char *regexp, char *text, size_t depth)
-{
-	if (MAX_RECURSION_DEPTH < depth)
-		return r->result = -1;
- BEGIN:
-	if (regexp[0] == '\0')
-		return r->end = MAX(r->end, text), r->result = 1;
-	if (regexp[0] == '\\' && regexp[1] == *text) {
-		if (regexp[1] == *text) {
-			regexp += 2;
-			text++;
-			goto BEGIN;
-		} else {
-			return r->end = MAX(r->end, text), r->result = -1;
-		}
-	}
-	if (regexp[1] == '?') {
-		text = text + (regexp[0] == *text ? 1 : 0);
-		regexp = regexp + 2;
-		goto BEGIN;
-	}
-	if (regexp[1] == '+') {
-		if (regexp[0] == '.' || regexp[0] == *text)
-			return r->result = matchstar(r, 0, regexp[0], regexp + 2, text, depth + 1);
-		r->end = MAX(r->end, text);
-		return 0;
-	}
-	if (regexp[1] == '*') {
-                r->end = MAX(r->end, text);
-		return r->result = matchstar(r, 0, regexp[0], regexp + 2, text, depth + 1);
-        }
-	if (regexp[0] == '$' && regexp[1] == '\0')
-		return r->end = MAX(r->end, text), r->result = (*text == '\0' ? 1 : 0);
-	if (*text != '\0' && (regexp[0] == '.' || regexp[0] == *text)) {
-		regexp++;
-		text++;
-		goto BEGIN;
-	}
-	return r->end = MAX(r->end, text), r->result = 0;
-}
-
-static int matchstar(regex_result * r, int literal, int c, char *regexp, char *text, size_t depth)
-{
-	if (MAX_RECURSION_DEPTH < depth)
-		return r->result = -1;
-	do {			/* a* matches zero or more instances */
-		if (matchhere(r, regexp, text, depth + 1)) {
-                        r->end = MAX(r->end, text);
-			return r->result = 1;
-                }
-	} while (*text != '\0' && (*text++ == c || (c == '.' && !literal)));
-        r->end = MAX(r->end, text);
-	return r->result = 0;
 }
 
 uint32_t djb2(const char *s, size_t len)

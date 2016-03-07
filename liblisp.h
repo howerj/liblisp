@@ -83,12 +83,6 @@ typedef struct bitfield bitfield_t;     /**< bitfield_t structure */
  *        REPL.**/
 typedef char *(*lisp_editor_func)(const char *);
 
-typedef struct {
-        char *start; /**< where the match started*/
-        char *end;   /**< where the match ended*/
-        int result;  /**< the result, -1 on error, 0 on no match, 1 on match*/
-} regex_result;      /**< a structure representing a regex result*/
-
 typedef enum {
         TR_OK      =  0, /**< no error*/
         TR_EINVAL  = -1, /**< invalid mode sequence*/
@@ -174,29 +168,6 @@ LIBLISP_API char *lstrcatend(char *dest, const char *src);
  *  @param   str  the string to match on
  *  @return  int  1 == match, 0 == no match, -1 == error **/
 LIBLISP_API int match(char *pat, char *str);
-
-/* @brief  A very small and simple regular expression engine adapted from here:
- *         <http://www.cs.princeton.edu/courses/archive/spr09/cos333/beautiful.html>
- *         It is more powerful than the simpler "match" function whilst still
- *         being very small.
- *
- *         Supports:
- *
- *         'c'  Matched any specific character
- *         '.'  Matches any character
- *         '^'  Anchors search at the beginning of the string
- *         '$'  Anchors search to the end of the string
- *         '?'  Zero or one of the previous character
- *         '*'  Zero or more of the previous character
- *         '+'  One or more of the previous character
- *         '\\' Escape the next character
- *
- *         This adaption of the original is probably quite buggy.
- *
- * @param  regexp NUL terminated regular expression pattern to search for
- * @param  text   NUL terminated string to perform search in
- * @return int -1 on error, 0 on no match, 1 on match**/
-LIBLISP_API regex_result regex_match(char *regexp, char *text);
 
 /** @brief   a hash algorithm by Dan Bernstein, see
  *           <http://www.cse.yorku.ca/~oz/hash.html> for more information.
@@ -1371,7 +1342,7 @@ LIBLISP_API void lisp_set_log_level(lisp_t *l, lisp_log_level level);
 
 /** @brief get the current log level of a lisp interpreter environment
  *  @param l   lisp environment to get the log level of
- *  @param lisp_log_level the log level of the interpreter */
+ *  @return lisp_log_level the log level of the interpreter */
 LIBLISP_API lisp_log_level lisp_get_log_level(lisp_t *l);
 
 
