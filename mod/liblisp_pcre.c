@@ -4,6 +4,8 @@
  *  @license    LGPL v2.1 or Later 
  *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
  *  @email      howe.r.j.89@gmail.com
+ *  @warning    "int" has to be used in various places to conform to the
+ *              PCRE API.
  **/
 #include <assert.h>
 #include <liblisp.h>
@@ -12,9 +14,8 @@
 
 #define OVECTOR_SIZE (99)
 
-/**@todo split: split string based on regex */
 #define SUBROUTINE_XLIST\
-        X("regex", subr_regex,      "Z Z b", "Perl Compatible Regular Expression regex function")\
+        X("regex", subr_regex,      "Z Z b b", "Perl Compatible Regular Expression regex function")\
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
@@ -40,6 +41,10 @@ static lisp_cell_t *subr_regex(lisp_t * l, lisp_cell_t * args)
 	unsigned string_offset = 0, string_length = get_length(CADR(args));
 	lisp_cell_t *x, *head;
 	int return_strings = CADDR(args) == gsym_tee() ? 1 : 0;
+	int split = CADDDR(args) == gsym_tee() ? 1 : 0;
+	char *last_string = NULL;
+	int last_string_len = 0;
+	
 
 	if(!(compiled = pcre_compile(regex, 0, &errstr, &error_offset, NULL))) {
 		lisp_log_error(l, "%y'pcre-error 'compile %r\"%s\" %r\"%s\"%t", regex, errstr ? errstr : "(nil)");
@@ -81,25 +86,48 @@ static lisp_cell_t *subr_regex(lisp_t * l, lisp_cell_t * args)
 			int size  = end - start;
 			assert(end > start);
 			if(return_strings) {
-				char *s = malloc(size + 1);
+				int asize = split ? start - string_offset : size;
+				int astart = split ? string_offset : start;
+				char *s = malloc(asize + 1);
 				if(!s)
 					LISP_HALT(l, "\"%s\"", "out of memory");
-				s[size] = '\0';
-				memcpy(s, string + start, size);
+				s[asize] = '\0';
+				memcpy(s, string + astart, asize);
 				set_cdr(x, cons(l, mk_str(l, s), gsym_nil()));
 			} else {
+				int astart = split ? string_offset : start;
+				int aend   = split ? astart + start - string_offset: end;
 				set_cdr(x, 
 					cons(l, 
-						mk_list(l, mk_int(l, start), mk_int(l, end), NULL),
+						mk_list(l, mk_int(l, astart), mk_int(l, aend), NULL),
 					       	gsym_nil()));
 			}
 			x = cdr(x);
-			/*for split printf("%.*s\n", start - string_offset, string + string_offset);*/
 		}
 		string_offset = ovector[1];/*???*/
+
+		last_string_len = string_length - string_offset;
+		last_string = string + string_offset;
 	}
 
 nomatch:
+	/*deal with last entry when splitting strings*/
+	if(split && last_string) {
+		if(return_strings) {
+			char *s = malloc(last_string_len + 1);
+			s[last_string_len] = '\0';
+			memcpy(s, last_string, last_string_len);
+			set_cdr(x, cons(l, mk_str(l, s), gsym_nil()));
+		} else {
+			int start = last_string - string;
+			int end = start + last_string_len;
+			set_cdr(x,
+				cons(l,
+					mk_list(l, mk_int(l, start), mk_int(l, end), NULL),
+					gsym_nil()));
+			x = cdr(x);
+		}
+	}
 	pcre_free(compiled);
 	return cdr(head);
 fail:

@@ -26,7 +26,8 @@
  *        level could be put next to each subroutine, this would help in
  *        keeping them in sync. Doxygen could be used to extract the
  *        information for the tutorial, or a custom script.
- *  @todo Functions for hash: hash-keys, hash-values, hash-foreach
+ *  @todo Functions for hash: hash-keys, hash-values, hash-foreach, index
+ *  arbitrary expressions by serializing them first
  *  **/
 
 #include "liblisp.h"
@@ -748,7 +749,7 @@ static lisp_cell_t *subr_rename(lisp_t * l, lisp_cell_t * args)
 }
 
 static lisp_cell_t *subr_hash_lookup(lisp_t * l, lisp_cell_t * args)
-{
+{ /*arbitrary expressions could be used as keys if they are serialized to strings first*/
 	UNUSED(l);
 	lisp_cell_t *x;
 	return (x = hash_lookup(get_hash(car(args)), get_sym(CADR(args)))) ? x : gsym_nil();
@@ -1023,6 +1024,35 @@ static lisp_cell_t *subr_reverse(lisp_t * l, lisp_cell_t * args)
 			return y;
 		}
 		break;
+	case HASH:
+		{ /*only certain hashes are reversible*/
+			hash_table_t *old = get_hash(car(args));
+			size_t len = hash_get_number_of_bins(old);
+			size_t i;
+			hash_table_t *new = hash_create(len);
+			hash_entry_t *cur;
+			for(i = 0; i < old->len; i++)
+				if(old->table[i])
+					for(cur = old->table[i]; cur; cur = cur->next) {
+						lisp_cell_t *key, *val;
+						/**@warning weird hash stuff*/
+						if(is_cons(cur->val) && is_asciiz(cdr(cur->val))) { 
+							key = cdr(cur->val);
+							val = car(cur->val);
+						} else if(!is_cons(cur->val) && is_asciiz(cur->val)) {
+							key = cur->val;
+							val = mk_str(l, lisp_strdup(l, cur->key));
+						} else {
+							goto hfail;
+						}
+						if(hash_insert(new, get_str(key), cons(l, key, val)) < 0)
+							LISP_HALT(l, "\"%s\"", "out of memory");
+					}
+			return mk_hash(l, new);
+hfail:
+			hash_destroy(new);
+			LISP_RECOVER(l, "\"%s\" '%S", "unreversible hash", car(args));
+		}
 	/**@todo case HASH: reverse a hash, if hash can be reversed */
 	default:
 		break;
@@ -1041,12 +1071,14 @@ static lisp_cell_t *subr_substring(lisp_t * l, lisp_cell_t * args)
 {
 	intptr_t left, right, tmp;
 	char *subs;
-	assert(((int)get_length(args)) > 0);
+	/**@todo sort this function out*/
+	if(!get_length(args))
+		goto fail;
 	if (!(get_length(args) == 2 || get_length(args) == 3)
 	    || !is_asciiz(car(args)) || !is_int(CADR(args)))
-		LISP_RECOVER(l, "\"expected (string int int?)\"\n '%S", args);
+		goto fail;
 	if (get_length(args) == 3 && !is_int(CADDR(args)))
-		LISP_RECOVER(l, "\"expected (string int int?)\"\n '%S", args);
+		goto fail;
 	left = get_int(CADR(args));
 	if (get_length(args) == 2) {
 		if (left >= 0) {
@@ -1078,6 +1110,9 @@ static lisp_cell_t *subr_substring(lisp_t * l, lisp_cell_t * args)
 		LISP_HALT(l, "\"%s\"", "out of memory");
 	memcpy(subs, get_str(car(args)) + left, right);
 	return mk_str(l, subs);
+fail:   
+	LISP_RECOVER(l, "\"expected (string int int?)\"\n '%S", args);
+	return gsym_error();
 }
 
 static lisp_cell_t *subr_format(lisp_t * l, lisp_cell_t * args)
