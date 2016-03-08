@@ -97,6 +97,13 @@ typedef enum {
 	LISP_LOG_LEVEL_LAST_INVALID /**< using an invalid log levels causes an abort*/
 } lisp_log_level;
 
+typedef struct {
+	char *name,        /**< name of function to add*/
+		*validate, /**< validation string see lisp_validate_args(), NULL turns checking off */
+		*docstring;/**< documentation string for function, a short description (<100 chars is advisable)*/
+	subr p; /**< the actual subroutine to add */
+} lisp_module_subroutines_t; /**< structure for the convenience function lisp_add_module_subroutines */
+
 /************************** useful functions *********************************/
 
 /* This module mostly has string manipulation functions to make processing
@@ -1105,6 +1112,16 @@ LIBLISP_API int is_fnumber(const char *buf);
  *             from**/
 LIBLISP_API void lisp_throw(lisp_t *l, int ret);
 
+/**@brief  This is a convince function that takes a pointer to an array of
+ *         structures, the structures contain the information needed 
+ *         for a call to lisp_add_subr().
+ * @param  l   interpreter to add lisp routines to
+ * @param  ms  array of structures containing routines to add to an interpreter
+ * @param  len length of lisp_module_subroutines_t array, if this is zero then
+ *             the list is NULL terminated.
+ * @return int non zero on failure, zero on success */
+LIBLISP_API int lisp_add_module_subroutines(lisp_t *l, lisp_module_subroutines_t *ms, size_t len);
+
 /** @brief This is like lstrdup_or_abort, but will call lisp_throw with
  *         a negative number for "ret", halting the lisp environment on
  *         error (or aborting if the error handler is not installed).
@@ -1544,7 +1561,7 @@ LIBLISP_API int main_lisp_env(lisp_t *l, int argc, char **argv);
 #define LISP_VALIDATE_ARGS(LISP, MSG, LEN, FMT, ARGS, LISP_RECOVER)\
         lisp_validate_args((LISP), (MSG), (LEN), (FMT), (ARGS), (LISP_RECOVER))
 #else
-#define LISP_VALIDATE_ARGS(LISP, MSG, LEN, FMT, ARGS, LISP_RECOVER)
+#define LISP_VALIDATE_ARGS(LISP, MSG, LEN, FMT, ARGS, LISP_RECOVER) 0
 #endif
 
 /**@brief Stringify X, turn X into a string.

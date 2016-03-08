@@ -29,10 +29,7 @@ static int ud_sql;
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
-static struct module_subroutines {
-	char *name, *validate, *docstring;
-	subr p;
-} primitives[] = {
+static lisp_module_subroutines_t primitives[] = {
 	SUBROUTINE_XLIST		/*all of the subr functions */
 	{ NULL, NULL, NULL, NULL}	/*must be terminated with NULLs */
 };
@@ -46,7 +43,7 @@ static void ud_sql_free(lisp_cell_t * f)
 
 static int ud_sql_print(io_t * o, unsigned depth, lisp_cell_t * f)
 {
-	return lisp_printf(NULL, o, depth, "%B<SQL-STATE:%d:%s>%t", get_user(f), is_closed(f) ? "CLOSED" : "OPEN");
+	return lisp_printf(NULL, o, depth, "%B<sql-database-handle:%d:%s>%t", get_user(f), is_closed(f) ? "closed" : "open");
 }
 
 static lisp_cell_t *subr_sql_open(lisp_t * l, lisp_cell_t * args)
@@ -135,10 +132,8 @@ int lisp_module_initialize(lisp_t *l)
 	ud_sql = new_user_defined_type(l, ud_sql_free, NULL, NULL, ud_sql_print);
 	if (ud_sql < 0)
 		goto fail;
-	for (size_t i = 0; primitives[i].p; i++)	/*add all primitives from this module */
-		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
-			goto fail;
-
+	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
+		goto fail;
 	return 0;
  fail:	
 	return -1;

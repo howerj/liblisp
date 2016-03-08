@@ -298,7 +298,7 @@ int main(int argc, char **argv)
 		test(djb2("heliotropes", strlen("heliotropes")) !=
 		     djb2("serafins", strlen("serafins")));
 
-		/* @todo regex_match, xorshift128plus, knuth */
+		/* @todo xorshift128plus, knuth */
 	}
 
 	{			/*io.c test; @todo file input and output */

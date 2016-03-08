@@ -51,10 +51,7 @@ static lisp_cell_t *subr_modf(lisp_t * l, lisp_cell_t * args)
 }
 
 #define X(SUBR, VALIDATION, DOCSTRING) { # SUBR, VALIDATION, MK_DOCSTR( #SUBR, DOCSTRING), subr_ ## SUBR },
-static struct module_subroutines {
-	char *name, *validate, *docstring;
-	subr p;
-} primitives[] = {
+static lisp_module_subroutines_t primitives[] = {
 	MATH_UNARY_LIST		/*all of the subr functions */
 	{ "modf", "a", MK_DOCSTR("modf", "split a float into integer and fractional parts"), subr_modf}, 
 	{ "pow", "a a", MK_DOCSTR("pow:", "raise a base to a power"), subr_pow}, 
@@ -65,13 +62,10 @@ static struct module_subroutines {
 
 int lisp_module_initialize(lisp_t *l)
 {
-	size_t i;
 	assert(l);
 
-	for (i = 0; primitives[i].p; i++)	/*add all primitives from this module */
-		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
-			goto fail;
-
+	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
+		goto fail;
 	return 0;
  fail:	
 	return -1;

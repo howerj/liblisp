@@ -7,12 +7,24 @@
  *  @bug  The -H flag causes the interpreter to halt on an error, however
  *        this will also cause it to halt if an eval ran from within the
  *        interpreter fails.
- *  **/
+ **/
 
 #include "liblisp.h"
 #include "private.h"
 #include <stdlib.h>
 #include <string.h>
+
+/**** The need putting here by the build system / version control system ****/
+#ifndef VERSION
+#define VERSION unknown    /**< Version of the interpreter*/
+#endif
+#ifndef VCS_COMMIT
+#define VCS_COMMIT unknown /**< Version control commit of this interpreter*/
+#endif
+#ifndef VCS_ORIGIN
+#define VCS_ORIGIN unknown /**< Version control repository origin*/
+#endif
+/****************************************************************************/
 
 static const char *usage = /**< command line options for example interpreter*/
     "(-[hcpvVEH])* (-[i\\-] file)* (-e string)* (-o file)* file* -";
@@ -24,8 +36,6 @@ consult the man pages 'lisp' and 'liblisp'. Alternatively, consult:\n\
 	https://github.com/howerj/liblisp\n\
 	http://work.anapnea.net/html/html/projects.html\n\
 ";
-
-static const char *lisp_version = "$Id$"; /*Id string put here by version control*/
 
 static unsigned lisp_verbosity = LISP_LOG_LEVEL_ERROR;
 
@@ -75,9 +85,14 @@ static int getoptions(lisp_t * l, char *arg, char *arg_0)
 			lisp_verbosity++;
 			if(lisp_verbosity < LISP_LOG_LEVEL_LAST_INVALID)
 				lisp_set_log_level(l, lisp_verbosity);
+			else
+				lisp_log_note(l, "'verbosity \"already set to maximum\"");
 			break;
 		case 'V':
-			puts(lisp_version);
+			puts("program: liblisp");
+			puts("version: " XSTRINGIFY(VERSION));
+			puts("commit:  " XSTRINGIFY(VCS_COMMIT));
+			puts("origin:  " XSTRINGIFY(VCS_ORIGIN));
 			exit(0);
 			break;
 		case 'e':
@@ -154,6 +169,11 @@ int main_lisp_env(lisp_t * l, int argc, char **argv)
 			return -1;
 	if (!lisp_extend_top(l, lisp_intern(l, lstrdup_or_abort("args")), ob))
 		return -1;
+
+        lisp_add_cell(l, "*version*",           mk_str(l, lstrdup_or_abort(XSTRINGIFY(VERSION))));
+        lisp_add_cell(l, "*commit*",            mk_str(l, lstrdup_or_abort(XSTRINGIFY(VCS_COMMIT))));
+        lisp_add_cell(l, "*repository-origin*", mk_str(l, lstrdup_or_abort(XSTRINGIFY(VCS_ORIGIN))));
+
 	for (i = 1; i < argc; i++)
 		switch (getoptions(l, argv[i], argv[0])) {
 		case go_switch:

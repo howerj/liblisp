@@ -187,8 +187,11 @@ lib$(TARGET).$(DLL): $(OBJFILES) lib$(TARGET).h private.h
 
 VCS_DEFINES=-DVCS_ORIGIN="$(VCS_ORIGIN)" -DVCS_COMMIT="$(VCS_COMMIT)" -DVERSION="$(VERSION)" 
 
+repl.o: repl.c lib$(TARGET).h
+	$(CC) $(CFLAGS) $(DEFINES) $(VCS_DEFINES) $< -c -o $@
+
 main.o: main.c lib$(TARGET).h 
-	$(CC) $(CFLAGS_RELAXED) $(DEFINES) $(VCS_DEFINES) $< -c -o $@
+	$(CC) $(CFLAGS_RELAXED) $(DEFINES) $< -c -o $@
 
 $(TARGET)$(EXE): main.o lib$(TARGET).$(DLL)
 	$(CC) $(CFLAGS) $(LINKFLAGS) $(RPATH) $^ $(LINK) -o $(TARGET)

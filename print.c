@@ -154,7 +154,7 @@ int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth)
         lisp_cell_t *tmp;
         if(!op) return EOF;
         if(l && depth > MAX_RECURSION_DEPTH) {
-                lisp_printf(l, o, 0, "%r<PRINT-DEPTH-EXCEEDED:%d>%t", (intptr_t) depth);
+		lisp_log_error(l, "%r'print-depth-exceeded %d%t", (intptr_t) depth);
                 return -1;
         }
         switch(op->type) {
@@ -180,7 +180,7 @@ int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth)
                       else           lisp_printf(l, o, depth, "%y%s", get_sym(op));
                       break;
         case STRING:  print_escaped_string(l, o, depth, get_str(op));       break;
-        case SUBR:    lisp_printf(l, o, depth, "%B<SUBR:%d>", get_int(op)); break;
+        case SUBR:    lisp_printf(l, o, depth, "%B<subroutine:%d>", get_int(op)); break;
         case PROC: case FPROC: 
                       lisp_printf(l, o, depth+1, 
                                 is_proc(op) ? "(%ylambda%t %S %S " :
@@ -194,12 +194,12 @@ int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth)
                       io_putc(')', o);
                       break;
         case HASH:    lisp_printf(l, o, depth, "%H",             get_hash(op)); break;
-        case IO:      lisp_printf(l, o, depth, "%B<IO:%s:%d>",  
-                                      op->close? "CLOSED" : 
-                                      (is_in(op)? "IN": "OUT"), get_int(op)); break;
+        case IO:      lisp_printf(l, o, depth, "%B<io:%s:%d>",  
+                                      op->close? "closed" : 
+                                      (is_in(op)? "in" : "out"), get_int(op)); break;
         case USERDEF: if(l && l->ufuncs[get_user_type(op)].print)
                               (l->ufuncs[get_user_type(op)].print)(o, depth, op);
-                      else lisp_printf(l, o, depth, "<USER:%d:%d>",
+                      else lisp_printf(l, o, depth, "<user:%d:%d>",
                                 get_user_type(op), get_int(op)); break;
         case INVALID: 
         default:      FATAL("internal inconsistency");

@@ -49,11 +49,8 @@
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
-#define X(NAME, SUBR, VALIDATION, DOCSTRING) { SUBR, NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING) },
-static struct module_subroutines {
-	subr p;
-	char *name, *validation, *docstring;
-} primitives[] = {
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
+static lisp_module_subroutines_t primitives[] = {
 	SUBROUTINE_XLIST	/*all of the subr functions */
 	{ NULL, NULL, NULL, NULL}	/*must be terminated with NULLs */
 };
@@ -83,7 +80,7 @@ static void ud_x11_free(lisp_cell_t * f)
 
 static int ud_x11_print(io_t * o, unsigned depth, lisp_cell_t * f)
 {
-	return lisp_printf(NULL, o, depth, "%B<X-WINDOW:%d:%s>%t", get_user(f), is_closed(f) ? "CLOSED" : "OPEN");
+	return lisp_printf(NULL, o, depth, "%B<x-window:%d:%s>%t", get_user(f), is_closed(f) ? "closed" : "open");
 }
 
 static Window create_window(lisp_t *l)
@@ -397,7 +394,6 @@ static lisp_cell_t *subr_set_foreground(lisp_t * l, lisp_cell_t * args)
 
 int lisp_module_initialize(lisp_t *l)
 {
-	size_t i;
 	assert(l);
 	if(pthread_mutex_trylock(&mutex_single_threaded_module)) {
 		lisp_log_error(l, "module: line editor load failure (module already in use)\n");
@@ -407,15 +403,14 @@ int lisp_module_initialize(lisp_t *l)
 	ud_x11 = new_user_defined_type(l, ud_x11_free, NULL, NULL, ud_x11_print);
 	if (ud_x11 < 0)
 		goto fail;
-	for (i = 0; primitives[i].p; i++)	/*add all primitives from this module */
-		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validation, primitives[i].docstring))
-			goto fail;
 	if (!(xdisplay = XOpenDisplay(""))) {
 		lisp_printf(l, lisp_get_logging(l), 0, "cannot open display\n");
 		goto fail;
 	}
 	xscreen = DefaultScreen(xdisplay);
 	xrootwin = RootWindow(xdisplay, xscreen);
+	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
+		goto fail;
 	/*w = open_window(); */
 	initialized = 1;
 	return 0;

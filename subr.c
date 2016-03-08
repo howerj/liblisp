@@ -128,7 +128,7 @@
   X("timed-eval",  subr_timed_eval, NULL,  "time an evaluation")\
   X("time",        subr_time,      "",     "create a list representing the time")\
   X("top-environment", subr_top_env, "",   "return the top level environment")\
-  X("trace!",      subr_trace,     "b",    "turn tracing on or off")\
+  X("trace!",      subr_trace,     "d",    "set the log level, from no errors printed, to copious debugging information")\
   X("tr",          subr_tr,        "Z Z Z Z", "translate a string given a format and mode")\
   X("type-of",     subr_typeof,    "A",    "return an integer representing the type of an object")\
   X("validate",    subr_validate,  "d Z c", "validate an argument list against a format string")\
@@ -155,8 +155,8 @@ static struct all_subroutines { subr p; const char *name, *validate, *docstring;
         X("*hash*",         HASH)         X("*io*",          IO)\
         X("*float*",        FLOAT)        X("*procedure*",   PROC)\
         X("*primitive*",    SUBR)         X("*f-procedure*", FPROC)\
-        X("*file-in*",      FIN)          X("*file-out*",    FOUT)\
-        X("*string-in*",    SIN)          X("*string-out*",  SOUT)\
+        X("*file-in*",      IO_FIN)       X("*file-out*",    IO_FOUT)\
+        X("*string-in*",    IO_SIN)       X("*string-out*",  IO_SOUT)\
         X("*lc-all*",       LC_ALL)       X("*lc-collate*",  LC_COLLATE)\
         X("*lc-ctype*",     LC_CTYPE)     X("*lc-monetary*", LC_MONETARY)\
         X("*lc-numeric*",   LC_NUMERIC)   X("*lc-time*",     LC_TIME)\
@@ -165,7 +165,11 @@ static struct all_subroutines { subr p; const char *name, *validate, *docstring;
         X("*sig-ill*",      SIGILL)       X("*sig-int*",     SIGINT)\
         X("*sig-segv*",     SIGSEGV)      X("*sig-term*",    SIGTERM)\
         X("*integer-bits*", (CHAR_BIT * sizeof(intptr_t)))\
-        X("*float-radix*",  FLT_RADIX)    X("*float-rounds*", FLT_ROUNDS)
+        X("*float-radix*",  FLT_RADIX)    X("*float-rounds*", FLT_ROUNDS)\
+	X("*trace-off*",    LISP_LOG_LEVEL_OFF)\
+	X("*trace-errors*", LISP_LOG_LEVEL_ERROR)\
+	X("*trace-notes*",  LISP_LOG_LEVEL_NOTE)\
+	X("*trace-debug*",  LISP_LOG_LEVEL_DEBUG)
 
 #define X(NAME, VAL) { NAME, VAL }, 
 /**@brief A list of all integer values to be made available to the
@@ -579,8 +583,18 @@ static lisp_cell_t *subr_eval(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_trace(lisp_t * l, lisp_cell_t * args)
 {
-	l->trace_on = is_nil(car(args)) ? 0 : 1;
-	return l->trace_on ? gsym_tee() : gsym_nil();
+	lisp_log_level level = get_int(car(args));
+	switch(level) {
+	case LISP_LOG_LEVEL_OFF:
+	case LISP_LOG_LEVEL_ERROR:
+	case LISP_LOG_LEVEL_NOTE:
+	case LISP_LOG_LEVEL_DEBUG:
+		lisp_set_log_level(l, level);
+		break;
+	default:
+		LISP_RECOVER(l, "%r\"invalid log level\"\n %m%d%t", (intptr_t)level);
+	}
+	return gsym_tee();
 }
 
 static lisp_cell_t *subr_gc(lisp_t * l, lisp_cell_t * args)
@@ -613,16 +627,16 @@ static lisp_cell_t *subr_open(lisp_t * l, lisp_cell_t * args)
 	char *file;
 	file = get_str(CADR(args));
 	switch (get_int(car(args))) {
-	case FIN:
+	case IO_FIN:
 		ret = io_fin(fopen(file, "rb"));
 		break;
-	case FOUT:
+	case IO_FOUT:
 		ret = io_fout(fopen(file, "wb"));
 		break;
-	case SIN:
+	case IO_SIN:
 		ret = io_sin(file);
 		break;
-		/*case SOUT: will not be implemented. */
+		/*case IO_SOUT: will not be implemented. */
 	default:
 		LISP_RECOVER(l, "\"invalid operation %d\"\n '%S", get_int(car(args)), args);
 	}
@@ -677,7 +691,6 @@ static lisp_cell_t *subr_puts(lisp_t * l, lisp_cell_t * args)
 static lisp_cell_t *subr_putchar(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(l);
-	/**@todo should put strings as well*/
 	return io_putc(get_int(CADR(args)), get_io(car(args))) < 0 ? gsym_nil() : CADR(args);
 }
 
@@ -1282,8 +1295,8 @@ static lisp_cell_t *subr_tr(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_validate(lisp_t * l, lisp_cell_t * args)
 {
-	return LISP_VALIDATE_ARGS(l, "validate", get_int(car(args)), get_str(CADR(args)), CADDR(args),
-			0) ? gsym_tee() : gsym_nil();
+	return LISP_VALIDATE_ARGS(l, "validate", get_int(car(args)), get_str(CADR(args)), CADDR(args), 0) ? 
+			gsym_tee() : gsym_nil();
 }
 
 static lisp_cell_t *subr_define_eval(lisp_t * l, lisp_cell_t * args)
@@ -1378,10 +1391,12 @@ static lisp_cell_t *subr_foldl(lisp_t * l, lisp_cell_t * args)
 	tmp = CADR(args);
 	start = car(tmp);
 	tmp = cdr(tmp);
-	for (ret = start; !is_nil(tmp); tmp = cdr(tmp)) {
+	for (ret = start; is_cons(tmp); tmp = cdr(tmp)) {
 		ret = mk_list(l, gsym_quote(), ret, NULL);
 		ret = eval(l, l->cur_depth, mk_list(l, f, car(tmp), ret, NULL), l->cur_env);
 	}
+	if(!is_nil(tmp))
+		LISP_RECOVER(l, "%r\"cannot foldl a dotted pair\" '%S", args);
 	return ret;
 }
 

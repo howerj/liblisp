@@ -290,7 +290,7 @@ static lisp_cell_t *read_list(lisp_t * l, io_t * i)
 	char *token = lexer(l, i), *stok;
 	lisp_cell_t *tmp;
 	if (!token) 
-		NULL;
+		return NULL;
 	switch (token[0]) {
 	case ')':
 		free(token);

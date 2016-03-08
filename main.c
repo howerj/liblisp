@@ -21,18 +21,6 @@
 #include <signal.h>
 #include <time.h>
 
-#ifndef VERSION
-#define VERSION unknown    /**< Version of the interpreter*/
-#endif
-
-#ifndef VCS_COMMIT
-#define VCS_COMMIT unknown /**< Version control commit of this interpreter*/
-#endif
-
-#ifndef VCS_ORIGIN
-#define VCS_ORIGIN unknown /**< Version control repository origin*/
-#endif
-
 #ifdef __unix__
 #include <dlfcn.h>
 static char *os   = "unix";
@@ -109,7 +97,7 @@ fail:   signal(sig, SIG_DFL);
  * dlsym/GetProcAddress must be of the "subr" function type as they will 
  * be used as internal lisp subroutines by the interpreter. */
 
-#ifdef __unix__ /*Only tested on Linux*/
+#ifdef __unix__ /*Only tested on Linux, not other Unixen */
 typedef void* dl_handle_t;
 
 #define DL_OPEN(NAME)        dlopen((NAME), RTLD_NOW)
@@ -222,9 +210,6 @@ int main(int argc, char **argv) {
         if(!l) 
                 goto fail;
 
-        lisp_add_cell(l, "*version*",           mk_str(l, lstrdup_or_abort(XSTRINGIFY(VERSION))));
-        lisp_add_cell(l, "*commit*",            mk_str(l, lstrdup_or_abort(XSTRINGIFY(VCS_COMMIT))));
-        lisp_add_cell(l, "*repository-origin*", mk_str(l, lstrdup_or_abort(XSTRINGIFY(VCS_ORIGIN))));
 	lisp_add_cell(l, "*os*",                mk_str(l, lstrdup_or_abort(os)));
 
 #ifdef USE_DL

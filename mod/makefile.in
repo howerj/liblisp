@@ -42,7 +42,7 @@ liblisp_tcc.o: $(CURDIR)liblisp_tcc.c
 	$(CC) $(CFLAGS_RELAXED) -I. $< -c -o $@
 
 liblisp_curl.$(DLL): liblisp_curl.o $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lcurl -o $@
+	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lcurl $(THREADLIB) -o $@
 
 liblisp_tcc.$(DLL): liblisp_tcc.o $(MOD_DEPS)
 	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -ltcc -o $@

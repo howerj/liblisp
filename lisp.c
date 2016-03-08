@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 void lisp_throw(lisp_t * l, int ret)
 {
@@ -22,6 +23,14 @@ void lisp_throw(lisp_t * l, int ret)
 		longjmp(l->recover, ret);
 	else
 		exit(ret);
+}
+
+int lisp_add_module_subroutines(lisp_t *l, lisp_module_subroutines_t *ms, size_t len)
+{
+	for(size_t i = 0; ms[i].name && (!len || i < len); i++)
+		if(!lisp_add_subr(l, ms[i].name, ms[i].p, ms[i].validate, ms[i].docstring))
+			return -1;
+	return 0;
 }
 
 char *lisp_strdup(lisp_t *l, const char *s)

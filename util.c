@@ -112,7 +112,7 @@ char *getadelim(FILE * in, int delim)
 	io_t io_in;
 	memset(&io_in, 0, sizeof(io_in));
 	io_in.p.file = in;
-	io_in.type = FIN;
+	io_in.type = IO_FIN;
 	return io_getdelim(&io_in, delim);
 }
 

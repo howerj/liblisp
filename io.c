@@ -14,31 +14,31 @@
 int io_is_in(io_t * i)
 {
 	assert(i);
-	return (i->type == FIN || i->type == SIN);
+	return (i->type == IO_FIN || i->type == IO_SIN);
 }
 
 int io_is_out(io_t * o)
 {
 	assert(o);
-	return (o->type == FOUT || o->type == SOUT || o->type == NULLOUT);
+	return (o->type == IO_FOUT || o->type == IO_SOUT || o->type == IO_NULLOUT);
 }
 
 int io_is_file(io_t * f)
 {
 	assert(f);
-	return (f->type == FIN || f->type == FOUT);
+	return (f->type == IO_FIN || f->type == IO_FOUT);
 }
 
 int io_is_string(io_t * s)
 {
 	assert(s);
-	return (s->type == SIN || s->type == SOUT);
+	return (s->type == IO_SIN || s->type == IO_SOUT);
 }
 
 int io_is_null(io_t * n)
 {
 	assert(n);
-	return n->type == NULLOUT;
+	return n->type == IO_NULLOUT;
 }
 
 int io_getc(io_t * i)
@@ -47,12 +47,12 @@ int io_getc(io_t * i)
 	int r;
 	if (i->ungetc)
 		return i->ungetc = 0, i->c;
-	if (i->type == FIN) {
+	if (i->type == IO_FIN) {
 		if ((r = fgetc(i->p.file)) == EOF)
 			i->eof = 1;
 		return r;
 	}
-	if (i->type == SIN)
+	if (i->type == IO_SIN)
 		return i->p.str[i->position] ? i->p.str[i->position++] : EOF;
 	FATAL("unknown or invalid IO type");
 	return i->eof = 1, EOF;
@@ -86,12 +86,12 @@ int io_putc(char c, io_t * o)
 	int r;
 	char *p;
 	size_t maxt;
-	if (o->type == FOUT) {
+	if (o->type == IO_FOUT) {
 		if ((r = fputc(c, o->p.file)) == EOF)
 			o->eof = 1;
 		return r;
 	}
-	if (o->type == SOUT) {
+	if (o->type == IO_SOUT) {
 		if (o->position >= (o->max - 1)) {	/*grow the "file" */
 			maxt = (o->max + 1) * 2;
 			if (maxt < o->position)	/*overflow */
@@ -105,7 +105,7 @@ int io_putc(char c, io_t * o)
 		o->p.str[o->position++] = c;
 		return c;
 	}
-	if (o->type == NULLOUT)
+	if (o->type == IO_NULLOUT)
 		return c;
 	FATAL("unknown or invalid IO type");
 	return o->eof = 1, EOF;
@@ -117,12 +117,12 @@ int io_puts(const char *s, io_t * o)
 	int r;
 	char *p;
 	size_t maxt;
-	if (o->type == FOUT) {
+	if (o->type == IO_FOUT) {
 		if ((r = fputs(s, o->p.file)) == EOF)
 			o->eof = 1;
 		return r;
 	}
-	if (o->type == SOUT) {
+	if (o->type == IO_SOUT) {
 		size_t len = strlen(s), newpos;
 		if (o->position + len >= (o->max - 1)) {	/*grow the "file" */
 			maxt = (o->position + len) * 2;
@@ -141,7 +141,7 @@ int io_puts(const char *s, io_t * o)
 		o->position = newpos;
 		return len;
 	}
-	if (o->type == NULLOUT)
+	if (o->type == IO_NULLOUT)
 		return (int)strlen(s);
 	FATAL("unknown or invalid IO type");
 	return EOF;
@@ -184,9 +184,9 @@ char *io_getline(io_t * i)
 int io_printd(intptr_t d, io_t * o)
 {
 	assert(o);
-	if (o->type == FOUT)
+	if (o->type == IO_FOUT)
 		return fprintf(o->p.file, "%" PRIiPTR, d);
-	if (o->type == SOUT) {
+	if (o->type == IO_SOUT) {
 		char dstr[64] = "";
 		sprintf(dstr, "%" SCNiPTR, d);
 		return io_puts(dstr, o);
@@ -197,9 +197,9 @@ int io_printd(intptr_t d, io_t * o)
 int io_printflt(double f, io_t * o)
 {
 	assert(o);
-	if (o->type == FOUT)
+	if (o->type == IO_FOUT)
 		return fprintf(o->p.file, "%f", f);
-	if (o->type == SOUT) {
+	if (o->type == IO_SOUT) {
 		char dstr[512] = "";	/*floats can be very big! */
 		sprintf(dstr, "%f", f);
 		return io_puts(dstr, o);
@@ -214,7 +214,7 @@ io_t *io_sin(const char *sin)
 		return NULL;
 	if (!(i->p.str = lstrdup(sin)))
 		return NULL;
-	i->type = SIN;
+	i->type = IO_SIN;
 	i->max = strlen(sin);
 	return i;
 }
@@ -225,7 +225,7 @@ io_t *io_fin(FILE * fin)
 	if (!fin || !(i = calloc(1, sizeof(*i))))
 		return NULL;
 	i->p.file = fin;
-	i->type = FIN;
+	i->type = IO_FIN;
 	return i;
 }
 
@@ -235,7 +235,7 @@ io_t *io_sout(char *sout, size_t len)
 	if (!sout || !(o = calloc(1, sizeof(*o))))
 		return NULL;
 	o->p.str = sout;
-	o->type = SOUT;
+	o->type = IO_SOUT;
 	o->max = len;
 	return o;
 }
@@ -246,7 +246,7 @@ io_t *io_fout(FILE * fout)
 	if (!fout || !(o = calloc(1, sizeof(*o))))
 		return NULL;
 	o->p.file = fout;
-	o->type = FOUT;
+	o->type = IO_FOUT;
 	return o;
 }
 
@@ -255,7 +255,7 @@ io_t *io_nout(void)
 	io_t *o;
 	if (!(o = calloc(1, sizeof(*o))))
 		return NULL;
-	o->type = NULLOUT;
+	o->type = IO_NULLOUT;
 	return o;
 }
 
@@ -264,10 +264,10 @@ int io_close(io_t * c)
 	int ret = 0;
 	if (!c)
 		return -1;
-	if (c->type == FIN || c->type == FOUT)
+	if (c->type == IO_FIN || c->type == IO_FOUT)
 		if (c->p.file != stdin && c->p.file != stdout && c->p.file != stderr)
 			ret = fclose(c->p.file);
-	if (c->type == SIN)
+	if (c->type == IO_SIN)
 		free(c->p.str);
 	free(c);
 	return ret;
@@ -276,7 +276,7 @@ int io_close(io_t * c)
 int io_eof(io_t * f)
 {
 	assert(f);
-	if (f->type == FIN || f->type == FOUT)
+	if (f->type == IO_FIN || f->type == IO_FOUT)
 		f->eof = feof(f->p.file) ? 1 : 0;
 	return f->eof;
 }
@@ -284,7 +284,7 @@ int io_eof(io_t * f)
 int io_flush(io_t * f)
 {
 	assert(f);
-	if (f->type == FIN || f->type == FOUT)
+	if (f->type == IO_FIN || f->type == IO_FOUT)
 		return fflush(f->p.file);
 	return 0;
 }
@@ -292,9 +292,9 @@ int io_flush(io_t * f)
 long io_tell(io_t * f)
 {
 	assert(f);
-	if (f->type == FIN || f->type == FOUT)
+	if (f->type == IO_FIN || f->type == IO_FOUT)
 		return ftell(f->p.file);
-	if (f->type == SIN || f->type == SOUT)
+	if (f->type == IO_SIN || f->type == IO_SOUT)
 		return f->position;
 	return -1;
 }
@@ -302,9 +302,9 @@ long io_tell(io_t * f)
 int io_seek(io_t * f, long offset, int origin)
 {
 	assert(f);
-	if (f->type == FIN || f->type == FOUT)
+	if (f->type == IO_FIN || f->type == IO_FOUT)
 		return fseek(f->p.file, offset, origin);
-	if (f->type == SIN || f->type == SOUT) {
+	if (f->type == IO_SIN || f->type == IO_SOUT) {
 		if (!f->max)
 			return -1;
 		switch (origin) {
@@ -328,7 +328,7 @@ int io_seek(io_t * f, long offset, int origin)
 int io_error(io_t * f)
 {
 	assert(f);
-	if (f->type == FIN || f->type == FOUT)
+	if (f->type == IO_FIN || f->type == IO_FOUT)
 		return ferror(f->p.file);
 	return 0;
 }

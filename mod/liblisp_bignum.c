@@ -28,10 +28,7 @@
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
-static struct module_subroutines {
-	char *name, *validate, *docstring;
-	subr p;
-} primitives[] = {
+static lisp_module_subroutines_t primitives[] = {
 	SUBROUTINE_XLIST	/*all of the subr functions */
 	{ NULL, NULL, NULL, NULL}	/*must be terminated with NULLs */
 };
@@ -51,7 +48,7 @@ static int ud_bignum_print(io_t * o, unsigned depth, lisp_cell_t * f)
 	int ret;
 	char *s;
 	s = bignum_bigtostr(get_user(f), 10);
-	ret = lisp_printf(NULL, o, depth, "%m{bignum:%s}%t", s);
+	ret = lisp_printf(NULL, o, depth, "%m<bignum:%s>%t", s);
 	free(s);
 	return ret;
 }
@@ -127,16 +124,14 @@ static lisp_cell_t *subr_bignum_from_string(lisp_t * l, lisp_cell_t * args)
 
 int lisp_module_initialize(lisp_t *l)
 {
-	size_t i;
 	assert(l);
 
 	/**@bug ud_bignum needs to be on a per lisp interpreter basis*/
 	ud_bignum = new_user_defined_type(l, ud_bignum_free, NULL, NULL, ud_bignum_print);
 	if (ud_bignum < 0)
 		goto fail;
-	for (i = 0; primitives[i].p; i++)	/*add all primitives from this module */
-		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
-			goto fail;
+	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
+		goto fail;
 	return 0;
  fail:	
 	return -1;

@@ -127,13 +127,13 @@ struct io {
 	size_t position, /**< current position, used for string*/
 	       max;      /**< max position in buffer, used for string*/
 	enum { IO_INVALID,    /**< invalid (default)*/ 
-	       FIN,           /**< file input*/
-	       FOUT,          /**< file output*/
-	       SIN,           /**< string input*/
-	       SOUT,          /**< string output, write to char* block*/
-	       NULLOUT        /**< null output, discard output*/
+	       IO_FIN,        /**< file input*/
+	       IO_FOUT,       /**< file output*/
+	       IO_SIN,        /**< string input*/
+	       IO_SOUT,       /**< string output, write to char* block*/
+	       IO_NULLOUT     /**< null output, discard output*/
 	} type; /**< type of the IO object*/
-	unsigned ungetc :1, /**< push back is in use?*/
+	unsigned ungetc:1, /**< push back is in use?*/
 		color  :1, /**< colorize output? Used in lisp_print*/
 		pretty :1, /**< pretty print output? Used in lisp_print*/
 		eof    :1; /**< End-Of-File marker*/
@@ -204,7 +204,6 @@ struct lisp {
 		errors_halt:  1, /**< any error halts the interpreter if true*/
 		color_on:     1, /**< REPL Colorize output*/
 		prompt_on:    1, /**< REPL '>' Turn prompt on*/
-		trace_on:     1, /**< turn tracing on or off*/
 		gc_off:       1, /**< turn the garbage collector off*/
 		editor_on:    1; /**< REPL Turn the line editor on*/
 	unsigned cur_depth; /**< current recursion depth of the interpreter*/

@@ -64,8 +64,9 @@ static void completion_callback(const char *line, size_t pos, line_completions *
 	h = get_hash(lisp_get_all_symbols(locked_lisp));
 	linecopy = lstrdup_or_abort(line);
 
-	if (!(comp = VSTRCAT("*", linecopy, "*")))	/*match any symbol with key in it */
-		fprintf(stderr, "(error \"out of memory\")\n"), exit(1);
+	if (!(comp = VSTRCAT("*", linecopy, "*"))) /*match any symbol with key in it */
+		FATAL("out of memory");
+
 	while ((key = (char *)hash_foreach(h, get_hash_key))) {
 		if (match(comp, key) > 0)
 			line_add_completion(lc, key);
@@ -143,19 +144,14 @@ static lisp_cell_t *subr_readline(lisp_t * l, lisp_cell_t * args)
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
-static struct module_subroutines {
-	char *name, *validate, *docstring;
-	subr p;
-} primitives[] = {
+static lisp_module_subroutines_t primitives[] = {
 	SUBROUTINE_XLIST	/*all of the subr functions */
 	{NULL, NULL, NULL, NULL}	/*must be terminated with NULLs */
 };
-
 #undef X
 
 int lisp_module_initialize(lisp_t *l)
 {
-	size_t i;
 	char *sep = "/";
 	assert(l);
 	if(pthread_mutex_trylock(&mutex_single_threaded_module)) {
@@ -190,10 +186,8 @@ int lisp_module_initialize(lisp_t *l)
 	line_set_completion_callback(completion_callback);
 	lisp_add_cell(l, "*history-file*", mk_str(l, lisp_strdup(l, histfile)));
 
-	for (i = 0; primitives[i].p; i++)	/*add primitives from this module */
-		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
-			goto fail;
-
+	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
+		goto fail;
 	return 0;
  fail:	
 	return -1;
@@ -209,6 +203,7 @@ static void destruct(void)
 	/*lisp_set_line_editor(l, NULL); */
 	if (homedir)
 		free(histfile);
+	/*unlock mutex*/
 }
 #elif _WIN32
 #include <windows.h>
@@ -219,7 +214,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	switch (fdwReason) {
 	case DLL_PROCESS_ATTACH:
 		initialize();
-		printf("warning: the line editor module is very buggy under Windows\n");
+		fprintf(stderr, "warning: the line editor module is very buggy under Windows\n");
 		break;
 	case DLL_PROCESS_DETACH:
 		break;

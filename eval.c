@@ -522,12 +522,9 @@ lisp_cell_t *lisp_assoc(lisp_cell_t * key, lisp_cell_t * alist)
  *        optimizing called procedures, constant folding and
  *        inlining small procedures. This function could also
  *        use set_car to replace the current list to save memory.
- *  @bug  This function really, really needs fixing.
  *  @todo This function should be called bind
+ *  @bug  This function really, really needs fixing.
  *  @bug  F-Expressions should be prevent compilation of their arguments
- *  @bug  This function is not aware of lambdas or F-expressions and
- *        will replace symbols in argument lists for definitions of those
- *        functions.
  **/
 static lisp_cell_t *compiler(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * env)
 {
@@ -545,7 +542,7 @@ static lisp_cell_t *compiler(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp
 
 	head = op = cons(l, op, gsym_nil());
 	exp = cdr(exp);
-	for (i = 1; !is_nil(exp); exp = cdr(exp), op = cdr(op), i++) {
+	for (i = 1; is_cons(exp); exp = cdr(exp), op = cdr(op), i++) {
 		code = car(exp);
 		if (is_sym(car(exp)) && !is_nil(tmp = lisp_assoc(car(exp), env)))
 			code = cdr(tmp);
@@ -553,6 +550,8 @@ static lisp_cell_t *compiler(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp
 			code = compiler(l, depth + 1, car(exp), env);
 		set_cdr(op, cons(l, code, gsym_nil()));
 	}
+	if(!is_nil(exp))
+		LISP_RECOVER(l, "%r\"compile cannot eval dotted pairs\"%t\n '%S", head);
 	fix_list_len(head, i);
 	return head;
 }
@@ -569,14 +568,13 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 	lisp_gc_add(l, exp);
 	lisp_gc_add(l, env);
  tail:
-	if (!exp || !env)
+	if (!exp || !env) /*happens when s-expression parser has an error*/
 		return NULL;
-	if (l->trace_on)
-		lisp_printf(l, lisp_get_logging(l), 1, "(%ytrace%t %S)\n", exp);
 	lisp_log_debug(l, "%y'eval%t '%S", exp);
 	if (is_nil(exp))
 		return gsym_nil();
 	if (l->sig) {
+		lisp_log_debug(l, "%y'eval%t 'signal-caught %d", (intptr_t)l->sig);
 		l->sig = 0;
 		lisp_throw(l, 1);
 	}
@@ -778,16 +776,11 @@ static lisp_cell_t *evlis(lisp_t * l, unsigned depth, lisp_cell_t * exps, lisp_c
 	op = car(exps);
 	exps = cdr(exps);
 	head = op = cons(l, eval(l, depth + 1, op, env), gsym_nil());
-	if (!is_nil(exps) && !is_cons(exps))
-		goto fail;
-	for (i = 1; !is_nil(exps); exps = cdr(exps), op = cdr(op), i++) {
-		if (!is_nil(cdr(exps)) && !is_cons(cdr(exps)))
-			goto fail;
+	for (i = 1; is_cons(exps); exps = cdr(exps), op = cdr(op), i++)
 		set_cdr(op, cons(l, eval(l, depth + 1, car(exps), env), gsym_nil()));
-	}
+	if(!is_nil(exps))
+		LISP_RECOVER(l, "%r\"evlis cannot eval dotted pairs\"%t\n '%S", start);
 	fix_list_len(head, i);
 	return head;
- fail:	LISP_RECOVER(l, "%r\"evlis cannot eval dotted pairs\"%t\n '%S", start);
-	return gsym_error();
 }
 

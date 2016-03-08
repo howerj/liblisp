@@ -25,10 +25,7 @@
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(#SUBR, DOCSTRING), SUBR },
-static struct module_subroutines {
-	char *name, *validate, *docstring;
-	subr p;
-} primitives[] = {
+static lisp_module_subroutines_t primitives[] = {
 	SUBROUTINE_XLIST	/*all of the subr functions */
 	{NULL, NULL, NULL, NULL}	/*must be terminated with NULLs */
 };
@@ -45,7 +42,7 @@ static void ud_tcc_free(lisp_cell_t * f)
 
 static int ud_tcc_print(io_t * o, unsigned depth, lisp_cell_t * f)
 {
-	return lisp_printf(NULL, o, depth, "%B<COMPILE-STATE:%d>%t", get_user(f));
+	return lisp_printf(NULL, o, depth, "%B<compiler-state:%d>%t", get_user(f));
 }
 
 static lisp_cell_t *subr_compile(lisp_t * l, lisp_cell_t * args)
@@ -121,7 +118,6 @@ static lisp_cell_t *subr_set_lib_path(lisp_t * l, lisp_cell_t * args)
 
 int lisp_module_initialize(lisp_t *l)
 {
-	size_t i;
 	assert(l);
 	/** Tiny C compiler library interface, special care has to be taken 
          *  when compiling and linking all of the C files within the liblisp
@@ -141,9 +137,9 @@ int lisp_module_initialize(lisp_t *l)
 	TCCState *st = tcc_new();
 	tcc_set_output_type(st, TCC_OUTPUT_MEMORY);
 	lisp_add_cell(l, "*compile-state*", mk_user(l, st, ud_tcc));
-	for (i = 0; primitives[i].p; i++)	/*add all primitives from this module */
-		if (!lisp_add_subr(l, primitives[i].name, primitives[i].p, primitives[i].validate, primitives[i].docstring))
-			goto fail;
+
+	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
+		goto fail;
 	return 0;
  fail:	
 	return -1;
