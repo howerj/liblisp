@@ -25,6 +25,11 @@ void lisp_throw(lisp_t * l, int ret)
 		exit(ret);
 }
 
+lisp_cell_t *lisp_environment(lisp_t *l)
+{
+	return l->top_env;
+}
+
 int lisp_add_module_subroutines(lisp_t *l, lisp_module_subroutines_t *ms, size_t len)
 {
 	for(size_t i = 0; ms[i].name && (!len || i < len); i++)
@@ -42,7 +47,7 @@ char *lisp_strdup(lisp_t *l, const char *s)
 	return r;
 }
 
-lisp_cell_t *lisp_add_subr(lisp_t * l, const char *name, subr func, const char *fmt, const char *doc)
+lisp_cell_t *lisp_add_subr(lisp_t * l, const char *name, lisp_subr_func func, const char *fmt, const char *doc)
 {
 	assert(l && name && func);	/*fmt and doc are optional */
 	return lisp_extend_top(l, lisp_intern(l, lisp_strdup(l, name)), mk_subr(l, func, fmt, doc));

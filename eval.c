@@ -36,7 +36,7 @@ static lisp_cell_t *mk(lisp_t * l, lisp_type type, size_t count, ...)
 		if (FLOAT == type)
 			ret->p[i].f = va_arg(ap, double);
 		else if (SUBR == type)
-			ret->p[i].prim = va_arg(ap, subr);
+			ret->p[i].prim = va_arg(ap, lisp_subr_func);
 		else
 			ret->p[i].v = va_arg(ap, void *);
 	va_end(ap);
@@ -274,7 +274,7 @@ lisp_cell_t *mk_io(lisp_t * l, io_t * x)
 	return mk(l, IO, 1, (lisp_cell_t *) x);
 }
 
-lisp_cell_t *mk_subr(lisp_t * l, subr p, const char *fmt, const char *doc)
+lisp_cell_t *mk_subr(lisp_t * l, lisp_subr_func p, const char *fmt, const char *doc)
 {
 	assert(l && p);
 	lisp_cell_t *t;
@@ -349,7 +349,7 @@ intptr_t get_int(lisp_cell_t * x)
 	return !x ? 0 : (intptr_t) (x->p[0].v);
 }
 
-subr get_subr(lisp_cell_t * x)
+lisp_subr_func get_subr(lisp_cell_t * x)
 {
 	assert(x && is_subr(x));
 	return x->p[0].prim;

@@ -67,7 +67,7 @@ typedef enum lisp_type {
 typedef union { /**< ideally we would use void* for everything*/
 	void *v;     /**< use this for integers and pointers to cells*/
 	lisp_float_t f;    /**< if lisp_float_t is double it could be bigger than *v */ 
-	subr prim;   /**< function pointers are not guaranteed 
+	lisp_subr_func prim;   /**< function pointers are not guaranteed 
 	                                              to fit into a void**/
 } cell_data_t; /**< a union of all the different C datatypes used*/
 
@@ -105,7 +105,6 @@ typedef struct hash_entry {      /**< linked list of entries in a bin*/
 	struct hash_entry *next; /**< next item in list*/
 } hash_entry_t;
 
-/**@todo turn into a **table into a flexible array member*/
 struct hash_table {	        /**< a hash table*/
 	hash_entry_t **table; /**< table of linked lists*/
 	size_t len,  /**< number of 'bins' in the hash table*/
@@ -184,9 +183,9 @@ struct lisp {
 		*logging,     /**< interpreter logging/error stream*/
 		*cur_env,     /**< current interpreter depth*/
 		*empty_docstr,/**< empty doc string */
-		**gc_stack;    /**< garbage collection stack for working items*/
-	gc_list_t *gc_head;  /**< linked list of all allocated objects*/
-	char *token /**< one token of put back for parser*/, 
+		**gc_stack;   /**< garbage collection stack for working items*/
+	gc_list_t *gc_head;   /**< linked list of all allocated objects*/
+	char *token    /**< one token of put back for parser*/, 
 		*buf   /**< input buffer for parser*/;
 	size_t buf_allocated,/**< size of buffer "l->buf"*/
 		buf_used,     /**< amount of buffer used by current string*/
@@ -198,7 +197,7 @@ struct lisp {
 	int user_defined_types_used;   /**< number of user defined types allocated*/
 	int sig;   /**< set by signal handlers or other threads*/
 	int log_level; /** of lisp_log_level type, the log level */
-	unsigned ungettok:     1, /**< do we have a put-back token to read?*/
+	unsigned ungettok:    1, /**< do we have a put-back token to read?*/
 		recover_init: 1, /**< has the recover buffer been initialized?*/
 		errors_halt:  1, /**< any error halts the interpreter if true*/
 		color_on:     1, /**< REPL Colorize output*/

@@ -52,13 +52,13 @@ static lisp_cell_t *subr_compile(lisp_t * l, lisp_cell_t * args)
 	    || !is_asciiz(CADR(args)) || !is_str(CADDR(args)))
 		LISP_RECOVER(l, "\"expected (compile-state string string\" '%S", args);
 	char *fname = get_str(CADR(args)), *prog = get_str(CADDR(args));
-	subr func;
+	lisp_subr_func func;
 	TCCState *st = get_user(car(args));
 	if (tcc_compile_string(st, prog) < 0)
 		return gsym_error();
 	if (tcc_relocate(st, TCC_RELOCATE_AUTO) < 0)
 		return gsym_error();
-	func = (subr) tcc_get_symbol(st, fname);
+	func = (lisp_subr_func) tcc_get_symbol(st, fname);
 	return mk_subr(l, func, NULL, NULL);
 }
 
@@ -84,7 +84,7 @@ static lisp_cell_t *subr_compile_file(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_get_subr(lisp_t * l, lisp_cell_t * args)
 {
-	subr func;
+	lisp_subr_func func;
 	if (!lisp_check_length(args, 2)
 	    || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
 		LISP_RECOVER(l, "\"expected (compile-state string)\" '%S", args);

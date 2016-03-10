@@ -173,7 +173,7 @@ static lisp_cell_t *subr_load_lisp_module(lisp_t *l, lisp_cell_t *args) {
 }
 
 static lisp_cell_t *subr_dlsym(lisp_t *l, lisp_cell_t *args) {
-        subr func;
+        lisp_subr_func func;
         if(!lisp_check_length(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
                 LISP_RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
         if(!(func = DL_SYM(get_user(car(args)), get_str(CADR(args)))))

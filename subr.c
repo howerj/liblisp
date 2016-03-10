@@ -110,7 +110,7 @@ SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
 #undef X
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { SUBR, NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING) },
-static struct all_subroutines { subr p; const char *name, *validate, *docstring; } primitives[] = {
+static struct all_subroutines { lisp_subr_func p; const char *name, *validate, *docstring; } primitives[] = {
         SUBROUTINE_XLIST /*all of the subr functions*/
         {NULL, NULL, NULL, NULL} /*must be terminated with NULLs*/
 };
@@ -947,7 +947,6 @@ hfail:
 			hash_destroy(new);
 			LISP_RECOVER(l, "\"%s\" '%S", "unreversible hash", car(args));
 		}
-	/**@todo case HASH: reverse a hash, if hash can be reversed */
 	default:
 		break;
 	}
