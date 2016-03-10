@@ -75,7 +75,6 @@ typedef void (*lisp_free_func)(lisp_cell_t *);       /**< function to free a use
 typedef void (*lisp_mark_func)(lisp_cell_t *);       /**< marking function for user types*/
 typedef int  (*lisp_equal_func)(lisp_cell_t *, lisp_cell_t *);  /**< equality function for user types*/
 typedef int  (*lisp_print_func)(io_t *, unsigned, lisp_cell_t *); /**< print out user def types*/
-typedef struct bitfield bitfield_t;     /**< bitfield_t structure */
 
 /**@brief This is a prototype for the (optional) line editing functionality
  *        that the REPL can use. The editor function should accept a prompt
@@ -183,12 +182,6 @@ LIBLISP_API int match(char *pat, char *str);
  *  @return  uint32_t      the resulting hash **/
 LIBLISP_API uint32_t djb2(const char *s, size_t len);
 
-/** @brief  Knuths multiplicative hash, works best on numbers with
- *          a non-uniform distribution (eg. pointers).
- *  @param  i        number to hash
- *  @return uint32_t hashed value**/
-LIBLISP_API uint32_t knuth(uint32_t i);
-
 /** @brief   get a line text from a file
  *  @param   in    an input file
  *  @return  char* a line of input, without the newline**/
@@ -207,31 +200,6 @@ LIBLISP_API char *getadelim(FILE *in, int delim);
  *  @param ...          a list of strings, with a NULL sentinel at the end
  *  @return char *      a NUL terminated string that can be freed**/
 LIBLISP_API char *vstrcatsep(const char *separator, const char *first, ...);
-
-/** @brief  Calculate the binary logarithm, for more efficient examples see
- *          http://graphics.stanford.edu/~seander/bithacks.html or
- *          "Bit Twiddling Hacks by Sean Eron Anderson"
- *          This version returns INT32_MIN on an error (which cannot
- *          occur normally).
- *  @param  v         Value to calculate the binary logarithm of
- *  @return uint8_t   Binary log**/
-LIBLISP_API int32_t ilog2(uint64_t v);
-
-/** @brief  Calculate an integer exponentiation.
- *  From:
- *  https://stackoverflow.com/questions/101439/the-most-efficient-way-to-implement-an-integer-based-power-function-powint-int
- *  @param  base  number to raise
- *  @param  exp   number to raise base to
- *  @return uint64_t exponentiation result**/
-LIBLISP_API uint64_t ipow(uint64_t base, uint64_t exp);
-
-/** @brief "xorshift" pseudo random number generator
- *  https://en.wikipedia.org/wiki/Xorshift#Xorshift.2B
- *  http://xorshift.di.unimi.it/xorshift128plus.c
- *  http://xorshift.di.unimi.it/xorshift-1.1.1.tgz
- *  @param  s PRNG internal state
- *  @return A pseudo random number **/
-LIBLISP_API uint64_t xorshift128plus(uint64_t s[2]);
 
 /** @brief return the "balance" of a string of parens, this function
  *         takes into account strings.
@@ -252,7 +220,7 @@ LIBLISP_API int balance(const char *sexpr);
  *  @param  s     character string to reverse
  *  @param  len   length of block to reverse
  *  @return char* reversed block **/
-char *breverse(char *s, size_t len);
+LIBLISP_API char *breverse(char *s, size_t len);
 
 /** @brief  convert an integer into a string in a given base, the string
  *          should be freed when no longer needed.
@@ -269,53 +237,6 @@ LIBLISP_API char* dtostr(intptr_t d, unsigned base);
  *  @param  base  base to print in assert(base > 1 && base < 37);
  *  @return char* a string representing the number or NULL on out of memory**/
 LIBLISP_API char* utostr(uintptr_t u, unsigned base);
-
-/* These bit field functions have been adapted from this post on stackoverflow:
- * https://stackoverflow.com/questions/1590893/error-trying-to-define-a-1-024-bit-128-byte-bit-field
- * They could be inlined in this header.*/
-
-/** @brief create a new bit field that can hold at least maxbits
- *  @param  maxbits   maximum bits in bit field; assert(maxbits > 0)
- *  @return bitfield_t* new bit field or NULL**/
-LIBLISP_API bitfield_t *bit_new(size_t maxbits);
-
-/** @brief free a bitfield_t
- *  @param bf the bitfield_t to free (can be NULL) **/
-LIBLISP_API void bit_delete(bitfield_t *bf);
-
-/** @brief set a bit in a bit field
- *  @param bf  bit field to set a bit in
- *  @param idx which bit to set**/
-LIBLISP_API void bit_set(bitfield_t *bf, size_t idx);
-
-/** @brief clear a bit in a bit field
- *  @param bf  bit field to clear a bit in
- *  @param idx which bit to clear**/
-LIBLISP_API void bit_unset(bitfield_t *bf, size_t idx);
-
-/** @brief toggle a bit in a bit field
- *  @param bf  bit field to toggle a bit in
- *  @param idx which bit to toggle**/
-LIBLISP_API void bit_toggle(bitfield_t *bf, size_t idx);
-
-/** @brief  check if a bit is set in a bit field
- *  @param  bf  bit field to check bit status in
- *  @param  idx which bit to check
- *  @return int status of bit set**/
-LIBLISP_API int bit_get(bitfield_t *bf, size_t idx);
-
-/** @brief  compare two bit fields much in the same way as memcmp
- *  @param  a bit field to compare
- *  @param  b another bit field to compare
- *  @return int 0 if bit fields are equal, greater than one if bit 
- *          field 'a' is bigger, less than one if bit field 'b' is
- *          bigger **/
-LIBLISP_API int bit_compare(bitfield_t *a, bitfield_t *b);
-
-/** @brief  copy a bit field into a new bit field
- *  @param  bf the bitfield_t to copy
- *  @return bitfield_t* a copied bit field, or NULL on failure **/
-LIBLISP_API bitfield_t *bit_copy(bitfield_t *bf);
 
 /************************** hash library *************************************/
 
@@ -504,10 +425,9 @@ LIBLISP_API io_t *io_sin(const char *sin);
 LIBLISP_API io_t *io_fin(FILE *fin);
 
 /** @brief  write to a string
- *  @param  out string to write to
  *  @param  len  length of string
  *  @return io*  an initialized I/O stream (for writing) or NULL**/
-LIBLISP_API io_t *io_sout(char *out, size_t len);
+LIBLISP_API io_t *io_sout(size_t len);
 
 /** @brief  write to a file
  *  @param  fout an already opened file handle, opened with "w" or "wb"
@@ -643,7 +563,7 @@ LIBLISP_API void set_cdr(lisp_cell_t *con, lisp_cell_t *val);
  * @param x      cell to check
  * @param expect expected value
  * @return int !0 if they match, 0 if they do not**/
-LIBLISP_API int  cklen(lisp_cell_t *x, size_t expect);
+LIBLISP_API int  lisp_check_length(lisp_cell_t *x, size_t expect);
 
 /**@brief set the length field of a cell
  * @bug   this should not be needed, and I need to redesign the interpreter

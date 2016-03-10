@@ -59,7 +59,7 @@ static lisp_cell_t *subr_sql_open(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_sql_close(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 1) || !is_usertype(car(args), ud_sql))
+	if (!lisp_check_length(args, 1) || !is_usertype(car(args), ud_sql))
 		LISP_RECOVER(l, "\"expected (sql-database)\" '%S", args);
 	sqlite3_close(get_user(car(args)));
 	close_cell(car(args));
@@ -96,7 +96,7 @@ static lisp_cell_t *subr_sql(lisp_t * l, lisp_cell_t * args)
 	sqlite3_cb_t cb;
 	cb.ret = gsym_nil();
 	cb.l   = l;
-	if (!cklen(args, 2) || !is_usertype(car(args), ud_sql) || !is_asciiz(CADR(args)))
+	if (!lisp_check_length(args, 2) || !is_usertype(car(args), ud_sql) || !is_asciiz(CADR(args)))
 		LISP_RECOVER(l, "\"expected (sql-database string)\" '%S", args);
 	if ((rc = sqlite3_exec(get_user(car(args)), get_str(CADR(args)), sql_callback, &cb, &errmsg)) != SQLITE_OK) {
 		lisp_cell_t *r;

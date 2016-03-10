@@ -13,7 +13,9 @@ A small and extensible lisp interpreter and library.
                              | |    
                              |_|    
    
-   
+ 
+This documentation is horribly out of date!
+  
 ## Table of contents
 
 1.  [Introduction](#Introduction)

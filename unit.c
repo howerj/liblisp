@@ -191,21 +191,6 @@ int main(int argc, char **argv)
 	{
 		print_note("util.c");
 
-		test(ilog2(0) == INT32_MIN);
-		test(ilog2(1) == 0);
-		test(ilog2(2) == 1);
-		test(ilog2(5) == 2);
-		test(ilog2(255) == 7);
-		test(ilog2(256) == 8);
-		test(ilog2(UINT64_MAX) == 63);
-
-		test(ipow(0, 0) == 1);
-		test(ipow(0, 1) == 0);
-		test(ipow(3, 3) == 27);
-		test(ipow(3, 4) == 81);
-		test(ipow(2, 25) == (1 << 25));
-		test(ipow(24, 2) == 576);
-
 		test(is_number("0xfAb"));
 		test(is_number("-01234567"));
 		test(is_number("+1000000000000000000000000000003"));
@@ -220,27 +205,6 @@ int main(int argc, char **argv)
 		test(balance("( \"))))(()()()(()\\\"())\")") == 0);
 		test(balance("(a (b) c (d (e (f) \")\" g)))") == 0);
 		test(balance("((a b) c") == 1);
-
-		bitfield_t *a = NULL, *b = NULL;
-		state(b = bit_new(1024));
-		return_if(!b);
-
-		state(bit_set(b, 1023));
-		state(bit_set(b, 37));
-		state(bit_toggle(b, 37));
-		state(bit_set(b, 0));
-		state(bit_unset(b, 0));
-
-		test(bit_get(b, 1023));
-		test(!bit_get(b, 37));
-		test(!bit_get(b, 0));
-
-		state(a = bit_copy(b));
-
-		test(!bit_compare(a, b));
-
-		bit_delete(a);
-		bit_delete(b);
 
 		test(!is_fnumber(""));
 		test(!is_fnumber("1e"));
@@ -297,8 +261,6 @@ int main(int argc, char **argv)
 		/*should not collide */
 		test(djb2("heliotropes", strlen("heliotropes")) !=
 		     djb2("serafins", strlen("serafins")));
-
-		/* @todo xorshift128plus, knuth */
 	}
 
 	{			/*io.c test; @todo file input and output */
@@ -339,7 +301,7 @@ int main(int argc, char **argv)
 		s = (free(s), NULL);
 		state(io_close(in));
 
-		state(out = io_sout(calloc(1, 1), 1));
+		state(out = io_sout(1));
 		test(io_puts("Hello, World", out) != EOF);
 		test(!strcmp("Hello, World", io_get_string(out)));
 		test(io_putc('\n', out) != EOF);

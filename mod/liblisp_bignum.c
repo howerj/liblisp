@@ -64,7 +64,7 @@ static lisp_cell_t *subr_bignum_create(lisp_t * l, lisp_cell_t * args)
 static lisp_cell_t *subr_bignum_multiply(lisp_t * l, lisp_cell_t * args)
 {
 	bignum *b;
-	if (!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
+	if (!lisp_check_length(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
 		LISP_RECOVER(l, "\"expected (bignum bignum)\" '%S", args);
 	if (!(b = bignum_multiply(get_user(car(args)), get_user(CADR(args)))))
 		LISP_HALT(l, "\"%s\"", "out of memory");
@@ -74,7 +74,7 @@ static lisp_cell_t *subr_bignum_multiply(lisp_t * l, lisp_cell_t * args)
 static lisp_cell_t *subr_bignum_add(lisp_t * l, lisp_cell_t * args)
 {
 	bignum *b;
-	if (!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
+	if (!lisp_check_length(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
 		LISP_RECOVER(l, "\"expected (bignum bignum)\" '%S", args);
 	if (!(b = bignum_add(get_user(car(args)), get_user(CADR(args)))))
 		LISP_HALT(l, "\"%s\"", "out of memory");
@@ -84,7 +84,7 @@ static lisp_cell_t *subr_bignum_add(lisp_t * l, lisp_cell_t * args)
 static lisp_cell_t *subr_bignum_subtract(lisp_t * l, lisp_cell_t * args)
 {
 	bignum *b;
-	if (!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
+	if (!lisp_check_length(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
 		LISP_RECOVER(l, "\"expected (bignum bignum)\" '%S", args);
 	if (!(b = bignum_subtract(get_user(car(args)), get_user(CADR(args)))))
 		LISP_HALT(l, "\"%s\"", "out of memory");
@@ -95,7 +95,7 @@ static lisp_cell_t *subr_bignum_divide(lisp_t * l, lisp_cell_t * args)
 {
 	bignum_div_t *d;
 	lisp_cell_t *ret;
-	if (!cklen(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
+	if (!lisp_check_length(args, 2) || !is_usertype(car(args), ud_bignum) || !is_usertype(CADR(args), ud_bignum))
 		LISP_RECOVER(l, "\"expected (bignum bignum)\" '%S", args);
 	if (!(d = bignum_divide(get_user(car(args)), get_user(CADR(args))), ud_bignum))
 		LISP_HALT(l, "\"%s\"", "out of memory");
@@ -107,7 +107,7 @@ static lisp_cell_t *subr_bignum_divide(lisp_t * l, lisp_cell_t * args)
 static lisp_cell_t *subr_bignum_to_string(lisp_t * l, lisp_cell_t * args)
 {
 	char *s;
-	if (!cklen(args, 1) || !is_usertype(car(args), ud_bignum))
+	if (!lisp_check_length(args, 1) || !is_usertype(car(args), ud_bignum))
 		LISP_RECOVER(l, "\"expected (bignum)\" '%S", args);
 	if (!(s = bignum_bigtostr(get_user(car(args)), 10)))
 		LISP_HALT(l, "\"%s\"", "out of memory");

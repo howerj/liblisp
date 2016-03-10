@@ -55,17 +55,15 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 #   NDEBUG       Disable asserts
 #   USE_DL	 Add support for dlopen/LoadLibrary, requires "-ldl" 
 #                on Unix systems
-#   USE_INITRC   Add support for a per user login file located in
-#                ~/.lisprc which is run before the interpreter is.
 #   USE_ABORT_HANDLER This adds in a handler that catches SIGABRT
 #                and prints out a stack trace if it can.
-DEFINES = -DUSE_DL -DUSE_INITRC -DUSE_ABORT_HANDLER
+DEFINES = -DUSE_DL -DUSE_ABORT_HANDLER
 LINK    = -ldl
 # This is for convenience only, it may cause problems.
 RPATH   ?= -Wl,-rpath=.
 
 # Valgrind
-VALGRIND_SUPP=valgrind.supp
+VALGRIND_SUPP=data/doc/valgrind.supp
 
 ifeq ($(OS),Windows_NT)
 FixPath =$(subst /,\,$1)
@@ -228,7 +226,7 @@ doc: lib$(TARGET).htm doxygen
 doxygen: 
 	#doxygen -g  # old method
 	#doxygen Doxyfile 2> doxygen.log
-	doxygen doxygen.conf
+	doxygen data/doc/doxygen.conf
 
 ### distribution and installation ############################################
 

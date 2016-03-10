@@ -193,7 +193,6 @@ struct lisp {
 		gc_stack_allocated, /**< length of buffer of GC stack*/
 		gc_stack_used,      /**< elements used in GC stack*/
 		gc_collectp;  /**< garbage collect after it goes too high*/
-	uint64_t random_state[2] /**< PRNG state*/;
 	lisp_editor_func editor; /**< line editor to use, optional*/
 	lisp_user_defined_funcs_t ufuncs[MAX_USER_TYPES]; /**< for user defined types*/
 	int user_defined_types_used;   /**< number of user defined types allocated*/

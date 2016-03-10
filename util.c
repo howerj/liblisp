@@ -15,12 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/**@brief a structure representing a bitfield_t */
-struct bitfield {
-	size_t max;  /**< maximum number of bits in the bitfield_t*/
-	unsigned char field[]; /**< the bitfield_t*/
-};
-
 void pfatal(const char *msg, const char *file, const char *func, long line)
 {
 	assert(msg && file);
@@ -101,11 +95,6 @@ uint32_t djb2(const char *s, size_t len)
 	return h;
 }
 
-uint32_t knuth(uint32_t i)
-{
-	return i * 2654435761ul;
-}
-
 char *getadelim(FILE * in, int delim)
 {
 	assert(in);
@@ -157,40 +146,6 @@ char *vstrcatsep(const char *separator, const char *first, ...)
 		 p = lstrcatend(p, separator), p = lstrcatend(p, va);
 	va_end(argp2);
 	return retbuf;
-}
-
-int32_t ilog2(uint64_t v)
-{
-	if (!v)
-		return INT32_MIN;
-	int32_t r = 0;
-	while (v >>= 1)
-		r++;
-	return r;
-}
-
-uint64_t ipow(uint64_t base, uint64_t exp)
-{
-	uint64_t result = 1;
-	while (exp) {
-		if (exp & 1)
-			result *= base;
-		exp >>= 1;
-		base *= base;
-	}
-	return result;
-}
-
-uint64_t xorshift128plus(uint64_t s[2])
-{
-	/*PRNG*/ uint64_t x = s[0];
-	uint64_t const y = s[1];
-	s[0] = y;
-	x ^= x << 23;		/*a */
-	x ^= x >> 17;		/*b */
-	x ^= y ^ (y >> 26);	/*c */
-	s[1] = x;
-	return x + y;
 }
 
 /** @note Either another function could be made, or this function
@@ -319,70 +274,6 @@ char *utostr(uintptr_t u, unsigned base)
 	return lstrdup(breverse(s, i - 1));
 }
 
-/* bit field functionality */
-
-static inline size_t bsize(size_t bits)
-{
-	return (bits / CHAR_BIT) + ! !(bits % CHAR_BIT);
-}
-
-bitfield_t *bit_new(size_t maxbits)
-{
-	assert(maxbits > 0);
-	bitfield_t *bf;
-	size_t al = bsize(maxbits);
-	if (!(bf = calloc(sizeof(*bf) + al, 1)))
-		return NULL;
-	bf->max = maxbits;
-	return bf;
-}
-
-void bit_delete(bitfield_t * bf)
-{
-	free(bf);
-}
-
-void bit_set(bitfield_t * bf, size_t idx)
-{
-	assert(bf && idx < bf->max);
-	bf->field[idx / CHAR_BIT] |= 1u << (idx % CHAR_BIT);
-}
-
-void bit_unset(bitfield_t * bf, size_t idx)
-{
-	assert(bf && idx < bf->max);
-	bf->field[idx / CHAR_BIT] &= ~(1u << (idx % CHAR_BIT));
-}
-
-void bit_toggle(bitfield_t * bf, size_t idx)
-{
-	assert(bf && idx < bf->max);
-	bf->field[idx / CHAR_BIT] ^= 1u << (idx % CHAR_BIT);
-}
-
-int bit_get(bitfield_t * bf, size_t idx)
-{
-	assert(bf && (idx < bf->max));
-	return bf->field[idx / CHAR_BIT] & (1u << (idx % CHAR_BIT)) ? 1 : 0;
-}
-
-int bit_compare(bitfield_t * a, bitfield_t * b)
-{
-	assert(a && b);
-	int r = memcmp(a->field, b->field, MIN(bsize(a->max), bsize(b->max)));
-	if (r == 0 && a->max != b->max)
-		r = a->max > b->max ? 1 : -1;
-	return r;
-}
-
-bitfield_t *bit_copy(bitfield_t * bf)
-{
-	assert(bf);
-	bitfield_t *n = bit_new(bf->max);
-	memcpy(n->field, bf->field, bsize(bf->max));
-	return n;
-}
-
 /*tr functionality*/
 
 static int tr_getnext(uint8_t ** s)
@@ -420,6 +311,8 @@ static int tr_getnext(uint8_t ** s)
 			return '\\';
 		case '\0':
 			return -1;
+		default:
+			break;
 		}
 		if (strspn((char *)(*s) + 1, "01234567") > 2) {
 			int r = strtol((char *)memcpy(seq + 1, (*s) + 1, sizeof(seq) - 1) - 1, NULL, 8) & 0377;

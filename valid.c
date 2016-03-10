@@ -108,7 +108,7 @@ int lisp_validate_args(lisp_t * l, const char *msg, unsigned len, const char *fm
 	assert(l && fmt && args);
 	args_head = args;
 	fmt_head = fmt;
-	if (!cklen(args, len))
+	if (!lisp_check_length(args, len))
 		goto fail;
 	while ((c = *fmt++)) {
 		if (is_nil(args) || !v || is_closed(car(args)))

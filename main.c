@@ -31,23 +31,6 @@ static char *os   = "windows";
 static char *os   = "unknown";
 #endif
 
-#ifdef USE_INITRC
-static char *init = ".lisprc"; /**< lisp initialization file */
-#ifdef __unix__
-static char *home = "HOME"; /**< Unix home path*/
-static char *filesep = "/"; /**< Unix file directory separator */
-#elif _WIN32
-static char *home = "HOMEPATH"; /**< Windows home path*/
-static char *filesep = "\\"; /**< Window file directory separator */
-#else
-static char *home = ""; /**< unknown operating system*/
-static char *filesep = "/"; /**< unknown os file directory separator */
-#endif
-#else
-static char *home = ""; /**< unknown operating system*/
-static char *filesep = "/"; /**< unknown os file directory separator */
-#endif
-
 #ifdef USE_ABORT_HANDLER
 #ifdef __unix__
 /* it should be possible to move this into a module that can be loaded,
@@ -191,7 +174,7 @@ static lisp_cell_t *subr_load_lisp_module(lisp_t *l, lisp_cell_t *args) {
 
 static lisp_cell_t *subr_dlsym(lisp_t *l, lisp_cell_t *args) {
         subr func;
-        if(!cklen(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
+        if(!lisp_check_length(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
                 LISP_RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
         if(!(func = DL_SYM(get_user(car(args)), get_str(CADR(args)))))
                 return gsym_error();
@@ -233,37 +216,6 @@ int main(int argc, char **argv) {
                 goto fail;
         }
 #endif
-#endif
-
-        lisp_add_cell(l, "*file-separator*", mk_str(l, lstrdup_or_abort(filesep)));
-#ifdef USE_INITRC
-        char *rcpath = NULL, *thome = NULL;
-	/*LISPHOME takes precedence over HOME*/
-	if((thome = getenv("LISPHOME")))
-		rcpath = thome;
-        if(rcpath || (rcpath = getenv(home))) {
-                io_t *i;
-                FILE *in;
-                if(!(rcpath = VSTRCATSEP(filesep, rcpath, init)))
-                        goto fail;
-                if((in = fopen(rcpath, "rb"))) {
-                        i = lisp_get_input(l);
-                        io_close(i);
-
-                        if(!(i = io_fin(in)))
-                                goto fail;
-                        lisp_set_input(l, i);
-                        if(lisp_repl(l, "", 0) < 0) {
-                                PRINT_ERROR("\"error in initialization file\" \"%s\"", rcpath);
-                                goto fail;
-                        }
-                        io_close(i);
-                        if(!(i = io_fin(stdin)))
-                                goto fail;
-                        lisp_set_input(l, i);
-                }
-                lisp_add_cell(l, "*initialization-file*", mk_str(l, rcpath));
-        }
 #endif
         return main_lisp_env(l, argc, argv);
 fail:   

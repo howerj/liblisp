@@ -47,7 +47,7 @@ static int ud_tcc_print(io_t * o, unsigned depth, lisp_cell_t * f)
 
 static lisp_cell_t *subr_compile(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 3)
+	if (!lisp_check_length(args, 3)
 	    || !is_usertype(car(args), ud_tcc)
 	    || !is_asciiz(CADR(args)) || !is_str(CADDR(args)))
 		LISP_RECOVER(l, "\"expected (compile-state string string\" '%S", args);
@@ -64,7 +64,7 @@ static lisp_cell_t *subr_compile(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_link(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 2)
+	if (!lisp_check_length(args, 2)
 	    || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
 		LISP_RECOVER(l, "\"expected (compile-state string)\" '%S", args);
 	return tcc_add_library(get_user(car(args)), get_str(CADR(args))) < 0 ? gsym_error() : gsym_nil();
@@ -72,7 +72,7 @@ static lisp_cell_t *subr_link(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_compile_file(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 2)
+	if (!lisp_check_length(args, 2)
 	    || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
 		LISP_RECOVER(l, "\"expected (compile-state string)\" '%S", args);
 	if (tcc_add_file(get_user(car(args)), get_str(CADR(args))) < 0)
@@ -85,7 +85,7 @@ static lisp_cell_t *subr_compile_file(lisp_t * l, lisp_cell_t * args)
 static lisp_cell_t *subr_get_subr(lisp_t * l, lisp_cell_t * args)
 {
 	subr func;
-	if (!cklen(args, 2)
+	if (!lisp_check_length(args, 2)
 	    || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
 		LISP_RECOVER(l, "\"expected (compile-state string)\" '%S", args);
 	if (!(func = tcc_get_symbol(get_user(car(args)), get_str(CADR(args)))))
@@ -96,21 +96,21 @@ static lisp_cell_t *subr_get_subr(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_add_include_path(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
+	if (!lisp_check_length(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
 		LISP_RECOVER(l, "\"expected (compile-state string)\" '%S", args);
 	return tcc_add_include_path(get_user(car(args)), get_str(CADR(args))) < 0 ? gsym_error() : gsym_tee();
 }
 
 static lisp_cell_t *subr_add_sysinclude_path(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
+	if (!lisp_check_length(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
 		LISP_RECOVER(l, "\"expected (compile-state string)\" '%S", args);
 	return tcc_add_sysinclude_path(get_user(car(args)), get_str(CADR(args))) < 0 ? gsym_error() : gsym_tee();
 }
 
 static lisp_cell_t *subr_set_lib_path(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
+	if (!lisp_check_length(args, 2) || !is_usertype(car(args), ud_tcc) || !is_asciiz(CADR(args)))
 		LISP_RECOVER(l, "\"expected (compile-state string)\" '%S", args);
 	tcc_set_lib_path(get_user(car(args)), get_str(CADR(args)));
 	return gsym_tee();

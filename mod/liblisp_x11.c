@@ -143,7 +143,7 @@ static lisp_cell_t *subr_create_window(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_destroy_window(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 1) || !is_usertype(car(args), ud_x11))
+	if (!lisp_check_length(args, 1) || !is_usertype(car(args), ud_x11))
 		LISP_RECOVER(l, "\"expected (window)\" '%S", args);
 	close_window((Window) get_user(car(args)));
 	close_cell(car(args));
@@ -152,7 +152,7 @@ static lisp_cell_t *subr_destroy_window(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_draw_line(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 5) || !is_usertype(car(args), ud_x11) ||
+	if (!lisp_check_length(args, 5) || !is_usertype(car(args), ud_x11) ||
 	    !is_int(CADR(args)) || !is_int(CADDR(args)) || !is_int(CADDDR(args)) || !is_int(CADDDDR(args)))
 		LISP_RECOVER(l, "\"expected (window int-x1 int-y1 int-x2 int-y2)\" '%S", args);
 	XDrawLine(xdisplay, (Window) get_user(car(args)), solid_GC,
@@ -163,7 +163,7 @@ static lisp_cell_t *subr_draw_line(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_erase_line(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 5) || !is_usertype(car(args), ud_x11) ||
+	if (!lisp_check_length(args, 5) || !is_usertype(car(args), ud_x11) ||
 	    !is_int(CADR(args)) || !is_int(CADDR(args)) || !is_int(CADDDR(args)) || !is_int(CADDDDR(args)))
 		LISP_RECOVER(l, "\"expected (window int-x1 int-y1 int-x2 int-y2)\" '%S", args);
 	XDrawLine(xdisplay, (Window) get_user(car(args)), clear_GC,
@@ -174,7 +174,7 @@ static lisp_cell_t *subr_erase_line(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_draw_text(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 4) || !is_usertype(car(args), ud_x11) || !is_str(CADR(args)) || !is_int(CADDR(args)) || !is_int(CADDDR(args)))
+	if (!lisp_check_length(args, 4) || !is_usertype(car(args), ud_x11) || !is_str(CADR(args)) || !is_int(CADDR(args)) || !is_int(CADDDR(args)))
 		LISP_RECOVER(l, "\"expected (window string int int)\" '%S", args);
 	XDrawString(xdisplay, (Window) get_user(car(args)), solid_GC,
 		    get_int(CADDR(args)), get_int(CADDDR(args)), get_str(CADR(args)), get_length(CADR(args)));
@@ -184,7 +184,7 @@ static lisp_cell_t *subr_draw_text(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_erase_text(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 4) || !is_usertype(car(args), ud_x11) || !is_str(CADR(args)) || !is_int(CADDR(args)) || !is_int(CADDDR(args)))
+	if (!lisp_check_length(args, 4) || !is_usertype(car(args), ud_x11) || !is_str(CADR(args)) || !is_int(CADDR(args)) || !is_int(CADDDR(args)))
 		LISP_RECOVER(l, "\"expected (window string int int)\" '%S", args);
 	XDrawString(xdisplay, (Window) get_user(car(args)), clear_GC,
 		    get_int(CADDR(args)), get_int(CADDDR(args)), get_str(CADR(args)), get_length(CADR(args)));
@@ -194,7 +194,7 @@ static lisp_cell_t *subr_erase_text(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_clear_window(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 1) || !is_usertype(car(args), ud_x11))
+	if (!lisp_check_length(args, 1) || !is_usertype(car(args), ud_x11))
 		LISP_RECOVER(l, "\"expected (window)\" '%S", args);
 	XClearWindow(xdisplay, (Window) get_user(car(args)));
 	XFlush(xdisplay);
@@ -203,7 +203,7 @@ static lisp_cell_t *subr_clear_window(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_resize_window(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 3) || !is_usertype(car(args), ud_x11)
+	if (!lisp_check_length(args, 3) || !is_usertype(car(args), ud_x11)
 	    || !is_int(CADR(args)) || !is_int(CADDR(args)))
 		LISP_RECOVER(l, "\"expected (window int int)\" '%S", args);
 	XResizeWindow(xdisplay, (Window) get_user(car(args)), get_int(CADR(args)), get_int(CADDR(args)));
@@ -213,7 +213,7 @@ static lisp_cell_t *subr_resize_window(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_raise_window(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 1) || !is_usertype(car(args), ud_x11))
+	if (!lisp_check_length(args, 1) || !is_usertype(car(args), ud_x11))
 		LISP_RECOVER(l, "\"expected (window)\" '%S", args);
 	XRaiseWindow(xdisplay, (Window) get_user(car(args)));
 	XFlush(xdisplay);
@@ -224,7 +224,7 @@ static lisp_cell_t *subr_draw_arc(lisp_t * l, lisp_cell_t * args)
 {
 	int x, y, width, height, angle1, angle2;
 	lisp_cell_t *v;
-	if (!cklen(args, 7) || !is_usertype(car(args), ud_x11))
+	if (!lisp_check_length(args, 7) || !is_usertype(car(args), ud_x11))
 		LISP_RECOVER(l, "\"expected (window x y width height angle-1 angle-2)\" '%S", args);
 	for (v = cdr(args); !is_nil(v); v = cdr(v))
 		if (!is_int(car(v)))
@@ -253,7 +253,7 @@ static lisp_cell_t *subr_draw_rectangle(lisp_t * l, lisp_cell_t * args)
 {
 	int x, y, width, height;
 	lisp_cell_t *v;
-	if (!cklen(args, 5) || !is_usertype(car(args), ud_x11))
+	if (!lisp_check_length(args, 5) || !is_usertype(car(args), ud_x11))
 		goto fail;
 	for (v = cdr(args); !is_nil(v); v = cdr(v))
 		if (!is_int(car(v)))
@@ -278,7 +278,7 @@ static lisp_cell_t *subr_fill_arc(lisp_t * l, lisp_cell_t * args)
 {
 	int x, y, width, height, angle1, angle2;
 	lisp_cell_t *v;
-	if (!cklen(args, 7) || !is_usertype(car(args), ud_x11))
+	if (!lisp_check_length(args, 7) || !is_usertype(car(args), ud_x11))
 		goto fail;
 	for (v = cdr(args); !is_nil(v); v = cdr(v))
 		if (!is_int(car(v)))
@@ -308,7 +308,7 @@ static lisp_cell_t *subr_fill_rectangle(lisp_t * l, lisp_cell_t * args)
 {
 	int x, y, width, height;
 	lisp_cell_t *v;
-	if (!cklen(args, 5) || !is_usertype(car(args), ud_x11))
+	if (!lisp_check_length(args, 5) || !is_usertype(car(args), ud_x11))
 		goto fail;
 	for (v = cdr(args); !is_nil(v); v = cdr(v))
 		if (!is_int(car(v)))
@@ -334,7 +334,7 @@ static lisp_cell_t *subr_window_info(lisp_t * l, lisp_cell_t * args)
 	Window rw;		/*root window */
 	int x = 0, y = 0;
 	unsigned width = 0, height = 0, border_width = 0, bit_depth = 0;
-	if (!cklen(args, 1) || !is_usertype(car(args), ud_x11))
+	if (!lisp_check_length(args, 1) || !is_usertype(car(args), ud_x11))
 		LISP_RECOVER(l, "\"expected (window)\" '%S", args);
 	XGetGeometry(xdisplay, (Window) get_user(car(args)), &rw, &x, &y, &width, &height, &border_width, &bit_depth);
 	return mk_list(l, mk_user(l, (void *)rw, ud_x11),
@@ -350,7 +350,7 @@ static lisp_cell_t *subr_select_input(lisp_t * l, lisp_cell_t * args)
 	KeySym key;
 	char text[256];
 	lisp_cell_t *rd, *ks, *mx, *my;
-	if (!cklen(args, 1) || !is_usertype(car(args), ud_x11))
+	if (!lisp_check_length(args, 1) || !is_usertype(car(args), ud_x11))
 		LISP_RECOVER(l, "\"expected (window)\" '%S", args);
 	rd = ks = mx = my = gsym_nil();
 	XSelectInput(xdisplay, (Window) get_user(car(args)), ExposureMask | ButtonPressMask | KeyPressMask);
@@ -367,7 +367,7 @@ static lisp_cell_t *subr_select_input(lisp_t * l, lisp_cell_t * args)
 static lisp_cell_t *subr_set_font(lisp_t * l, lisp_cell_t * args)
 {
 	XFontStruct *fontstruct;
-	if (!cklen(args, 1) || !is_str(car(args)))
+	if (!lisp_check_length(args, 1) || !is_str(car(args)))
 		LISP_RECOVER(l, "\"expected (string)\" '%S", args);
 	if ((fontstruct = XLoadQueryFont(xdisplay, get_str(car(args)))) == NULL)
 		return gsym_nil();
@@ -379,7 +379,7 @@ static lisp_cell_t *subr_set_font(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_set_background(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 2) || !is_usertype(car(args), ud_x11) || !is_str(CADR(args)))
+	if (!lisp_check_length(args, 2) || !is_usertype(car(args), ud_x11) || !is_str(CADR(args)))
 		LISP_RECOVER(l, "\"expected (window string)\" '%S", args);
 	/**@todo implement this*/
 	return gsym_nil();
@@ -387,7 +387,7 @@ static lisp_cell_t *subr_set_background(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_set_foreground(lisp_t * l, lisp_cell_t * args)
 {
-	if (!cklen(args, 1) || !is_str(car(args)))
+	if (!lisp_check_length(args, 1) || !is_str(car(args)))
 		LISP_RECOVER(l, "\"expected (string)\" '%S", args);
 	return gsym_nil();
 }

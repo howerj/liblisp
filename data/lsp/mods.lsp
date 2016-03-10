@@ -24,6 +24,7 @@
       (define-eval (string->symbol (join "" (list "*have-" name "*"))) nil))))
 
 (progn ; load all known modules
+ (load-lisp-module "base")   ; basic liblisp system library
  (load-lisp-module "bignum") ; bignum module
  (load-lisp-module "crc")    ; crc module
  (load-lisp-module "line")   ; line editing library and module

@@ -142,7 +142,7 @@ static lisp_cell_t *subr_mknod(lisp_t * l, lisp_cell_t * args)
 {
 	dev_t d;
 	mode_t m = S_IFIFO;
-	if (!cklen(CADR(args), 1))
+	if (!lisp_check_length(CADR(args), 1))
 		goto invalid;
 	switch (get_str(CADR(args))[0]) {
 	case 'c':		/*fall through */

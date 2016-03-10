@@ -1,6 +1,0 @@
-#!/usr/bin/make -f
-%:
-	RPATH="" dh $@
-
-override_dh_auto_install:
-	$(MAKE) DESTDIR=$$(pwd)/debian/liblisp prefix=/usr install

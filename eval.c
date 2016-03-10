@@ -90,7 +90,7 @@ void close_cell(lisp_cell_t * x)
 	x->close = 1;
 }
 
-int cklen(lisp_cell_t * x, size_t expect)
+int lisp_check_length(lisp_cell_t * x, size_t expect)
 {
 	assert(x);
 	return x->len == expect;
@@ -642,13 +642,13 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 		if (first == l->flambda) {
 			if (get_length(exp) < 3 || !is_str(car(exp)) || !is_cons(CADR(exp)))
 				LISP_RECOVER(l, "%y'flambda\n %r\"expected (string (arg) code...)\"%t\n '%S", exp);
-			if (!cklen(CADR(exp), 1) || !is_sym(car(CADR(exp))))
+			if (!lisp_check_length(CADR(exp), 1) || !is_sym(car(CADR(exp))))
 				LISP_RECOVER(l, "%y'flambda\n %r\"only one symbol argument allowed\"%t\n '%S", exp);
 			l->gc_stack_used = gc_stack_save;
 			DEBUG_RETURN(lisp_gc_add(l, mk_fproc(l, CADR(exp), CDDR(exp), env, car(exp))));
 		}
 		if (first == l->cond) {
-			if (cklen(exp, 0))
+			if (lisp_check_length(exp, 0))
 				DEBUG_RETURN(l->nil);
 			for (tmp = l->nil; is_nil(tmp) && !is_nil(exp); exp = cdr(exp)) {
 				if (!is_cons(car(exp)))
@@ -695,7 +695,7 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 				LISP_RECOVER(l, "%y'let\n %r\"argc < 2\"%t\n '%S", exp);
 			tmp = exp;
 			for (; !is_nil(cdr(exp)); exp = cdr(exp)) {
-				if (!is_cons(car(exp)) || !cklen(car(exp), 2))
+				if (!is_cons(car(exp)) || !lisp_check_length(car(exp), 2))
 					LISP_RECOVER(l, "%y'let\n %r\"expected list of length 2\"%t\n '%S\n '%S", car(exp), tmp);
 				s = env = lisp_extend(l, env, CAAR(exp), l->nil);
 				r = env = lisp_extend(l, env, CAAR(exp), eval(l, depth + 1, CADAR(exp), env));

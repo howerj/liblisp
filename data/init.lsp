@@ -4,10 +4,6 @@
 ; The job of the initialization code is to define enough functionality to
 ; sensibly load modules and other lisp files.
 ;
-; @todo The doc-strings could be made a lot longer, giving examples on
-;       their use.
-; @note I could use tabs for formatting
-;
 
 (progn
         (define join
@@ -78,6 +74,10 @@
            (if (eof? in)
             t
             (progn (format *error* "(error \"eval-file failed\" %S %S)\n" in file) (exit)))))
+	 (error-ignore
+	   (lambda (in file)
+	     t
+	     nil))
          (progn
           (eval-file (make-path '("data" "lsp" "mods.lsp")) exit-if-not-eof nil)
           (eval-file (make-path '("data" "lsp" "base.lsp")) exit-if-not-eof nil)
@@ -87,6 +87,19 @@
           (eval-file (make-path '("data" "lsp" "test.lsp")) exit-if-not-eof nil)
           (eval-file (make-path '("data" "lsp" "sql.lsp"))  exit-if-not-eof nil)
         ; (eval-file (make-path '("data" "lsp" "tcc.lsp"))  exit-if-not-eof nil)
+	
+	  (define *lisprc* ".lisprc") ; start up file
+	  (define *home* nil)
+
+	  (cond
+	    ((set! *home* (getenv "LISPHOME")) *home*) ; highest priority
+	    ((set! *home* (getenv "HOME"))     *home*) ; unix
+	    ((set! *home* (getenv "HOMEPATH")) *home*) ; windows
+	    ((set! *home* nil) *home*))
+	
+	  (if *home*
+	    (eval-file (make-path (list *home* *lisprc*)) error-ignore nil)
+	    nil)
          'done))
  'ok)
 

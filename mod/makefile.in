@@ -1,7 +1,7 @@
 
 # modules to compile, system dependent modules are added later.
 MODULES=liblisp_crc.$(DLL) liblisp_bignum.$(DLL) liblisp_math.$(DLL)\
-	liblisp_text.$(DLL) 
+	liblisp_text.$(DLL) liblisp_base.$(DLL)
 
 MOD_DEPS=liblisp.h liblisp.a liblisp.$(DLL)
 
@@ -25,6 +25,9 @@ modules: $(MODULES)
 
 liblisp_pcre.$(DLL): liblisp_pcre.o $(MOD_DEPS)
 	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lpcre -o $@
+
+liblisp_base.$(DLL): liblisp_base.o $(MOD_DEPS)
+	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -o $@
 
 liblisp_line.o: $(CURDIR)liblisp_line.c $(MOD_DEPS)
 	$(CC) $(CFLAGS) -I. -I$(CURDIR)libline $< -c -o $@

@@ -171,6 +171,7 @@ static lisp_cell_t *subr_split_span(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_split(lisp_t * l, lisp_cell_t * args)
 {
+	/*split should default to splitting on whitespace, which is does not do*/
 	return regex_engine_wrapper(l, args, 1, 1);
 }
 

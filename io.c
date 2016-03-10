@@ -2,7 +2,8 @@
  *  @brief      An input/output port wrapper
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com**/
+ *  @email      howe.r.j.89@gmail.com
+ *  @todo       fwrite/fread counterparts **/
 
 #include "liblisp.h"
 #include "private.h"
@@ -229,10 +230,12 @@ io_t *io_fin(FILE * fin)
 	return i;
 }
 
-io_t *io_sout(char *sout, size_t len)
+io_t *io_sout(size_t len)
 {
 	io_t *o;
-	if (!sout || !(o = calloc(1, sizeof(*o))))
+	char *sout;
+	len = len == 0 ? 1 : len;
+	if (!(sout = calloc(len, 1)) || !(o = calloc(1, sizeof(*o))))
 		return NULL;
 	o->p.str = sout;
 	o->type = IO_SOUT;
