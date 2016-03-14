@@ -11,7 +11,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include <liblisp.h>
+#include <lispmod.h>
 
 #define SUBROUTINE_XLIST\
         X("diff",  subr_diff,  "c c", "print the diff of two lists of strings")\
@@ -50,7 +50,8 @@ static lisp_cell_t *make_diff(lisp_t * l, diff * d, char **x, char **y)
 }
 
 static lisp_cell_t *subr_diff(lisp_t * l, lisp_cell_t * args)
-{
+{ 	/**@bug makes results in reverse order*/
+	/**@todo This should operate on two strings as well as lists of strings*/
 	size_t i;
 	lisp_cell_t *a, *b, *tmp, *ret = NULL;
 	char **aa, **bb;
@@ -87,7 +88,7 @@ static lisp_cell_t *subr_diff(lisp_t * l, lisp_cell_t * args)
 }
 
 static lisp_cell_t *subr_tsort(lisp_t * l, lisp_cell_t * args)
-{					       /**@todo implement me!*/
+{/**@todo implement me!*/
 	UNUSED(l);
 	UNUSED(args);
 	return gsym_nil();

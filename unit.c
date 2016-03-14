@@ -5,14 +5,6 @@
  *            <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
  *  @email    howe.r.j.89@gmail.com
  *
- *  @todo     It is possible to test if a function throws an
- *            assertion when passed invalid data. If it does not throw
- *            an assertion it might irrevocably corrupt the program
- *            state.
- *  @todo     This unit test framework should aim for 100% coverage in
- *            each file, however difficult it might be, Gcov can be
- *            used to get the current coverage percentage:
- *            (see <https://gcc.gnu.org/onlinedocs/gcc/Gcov.html>).
  *  @note     This could be moved to "util.c" so it can be reused, the
  *            unit test functionality has been encapsulated in a series
  *            of functions here that should be quite module, if limited
@@ -91,12 +83,12 @@ static void print_note(char *name)
 	printf("%s%s%s\n", yellow(), name, reset());
 }
 
-#define MAX_SIGNALS (256)
+#define MAX_SIGNALS (255)
 static char *(sig_lookup[]) = {	/*List of C89 signals and their names */
-[SIGABRT] = "SIGABRT",
-	    [SIGFPE] = "SIGFPE",
-	    [SIGILL] = "SIGILL",
-	    [SIGINT] = "SIGINT",[SIGSEGV] = "SIGSEGV",[SIGTERM] = "SIGTERM",[MAX_SIGNALS] = NULL};
+[SIGABRT] = "SIGABRT", [SIGFPE] = "SIGFPE",
+[SIGILL] = "SIGILL",   [SIGINT] = "SIGINT",
+[SIGSEGV] = "SIGSEGV", [SIGTERM] = "SIGTERM",
+[MAX_SIGNALS] = NULL};
 
 static int caught_signal;
 static void print_caught_signal_name(void)
@@ -198,13 +190,13 @@ int main(int argc, char **argv)
 		test(!is_number("+"));
 		test(!is_number("-"));
 
-		test(balance("(((") == 3);
-		test(balance("))") == -2);
-		test(balance("") == 0);
-		test(balance("\"(") == 0);
-		test(balance("( \"))))(()()()(()\\\"())\")") == 0);
-		test(balance("(a (b) c (d (e (f) \")\" g)))") == 0);
-		test(balance("((a b) c") == 1);
+		test(balance("(((", '(', ')') == 3);
+		test(balance("))",  '(', ')') == -2);
+		test(balance("",    '(', ')') == 0);
+		test(balance("\"(", '(', ')') == 0);
+		test(balance("( \"))))(()()()(()\\\"())\")",  '(', ')') == 0);
+		test(balance("(a (b) c (d (e (f) \")\" g)))", '(', ')') == 0);
+		test(balance("((a b) c", '(', ')') == 1);
 
 		test(!is_fnumber(""));
 		test(!is_fnumber("1e"));
@@ -268,7 +260,9 @@ int main(int argc, char **argv)
 		print_note("io.c");
 
 		/*string input */
-		state(in = io_sin("Hello\n"));
+		static const char hello[] = "Hello\n";
+		/**@note io_sin currently duplicates "hello" internally*/
+		state(in = io_sin(hello, strlen(hello)));
 		test(io_is_in(in));
 		test(io_getc(in) == 'H');
 		test(io_getc(in) == 'e');
@@ -290,7 +284,9 @@ int main(int argc, char **argv)
 
 		/*string output */
 		char *s = NULL;
-		state(in = io_sin("Hello,\n\tWorld!\n"));
+		static const char hello_world[] = "Hello,\n\tWorld!\n";
+		/**@note io_sin currently duplicates hello_world internally*/
+		state(in = io_sin(hello_world, strlen(hello_world))); 
 		test(!strcmp(s = io_getline(in), "Hello,"));
 		s = (free(s), NULL);
 		test(!strcmp(s = io_getline(in), "\tWorld!"));
@@ -311,7 +307,6 @@ int main(int argc, char **argv)
 		test(!strcmp("Hello, Mars\n\n", io_get_string(out)));
 		free(io_get_string(out));
 		state(io_close(out));
-
 	}
 
 	{			/* hash.c hash table tests */

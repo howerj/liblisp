@@ -30,7 +30,7 @@ lisp_cell_t *lisp_environment(lisp_t *l)
 	return l->top_env;
 }
 
-int lisp_add_module_subroutines(lisp_t *l, lisp_module_subroutines_t *ms, size_t len)
+int lisp_add_module_subroutines(lisp_t *l, const lisp_module_subroutines_t *ms, size_t len)
 {
 	for(size_t i = 0; ms[i].name && (!len || i < len); i++)
 		if(!lisp_add_subr(l, ms[i].name, ms[i].p, ms[i].validate, ms[i].docstring))
@@ -141,7 +141,7 @@ lisp_cell_t *lisp_eval_string(lisp_t * l, const char *evalme)
 	lisp_cell_t *ret;
 	volatile int restore_used = 0, r;
 	jmp_buf restore;
-	if (!(in = io_sin(evalme)))
+	if (!(in = io_sin(evalme, strlen(evalme))))
 		return NULL;
 	if (l->recover_init) {
 		memcpy(restore, l->recover, sizeof(jmp_buf));

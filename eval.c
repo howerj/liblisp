@@ -308,7 +308,7 @@ lisp_cell_t *mk_float(lisp_t * l, lisp_float_t f)
 }
 
 lisp_cell_t *mk_str(lisp_t * l, char *s)
-{
+{ /**@todo fix for binary data, also make version that automatically does the string dup*/
 	return mk_asciiz(l, s, STRING);
 }
 

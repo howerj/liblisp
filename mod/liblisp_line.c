@@ -8,20 +8,16 @@
  *  **/
 #include <assert.h>
 #include <libline.h>
-#include <liblisp.h>
+#include <lispmod.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#ifdef __unix__
-#include <pthread.h>
-#else
-#error "Unsupported platform!"
-#endif
 
+static char *histfile = ".lisphist";
 static char *homedir;
 static int running; /**< only handle errors when the lisp interpreter is running*/
 static lisp_t *locked_lisp; 
-static pthread_mutex_t mutex_single_threaded_module = PTHREAD_MUTEX_INITIALIZER;
+static lisp_mutex_t mutex_single_threaded_module = LISP_MUTEX_INITIALIZER;
 
 /** @brief This function tells a running lisp REPL to halt if it is reading
  *         input or printing output, but if it is evaluating an expression
@@ -45,7 +41,6 @@ static void sig_int_handler(int sig)
 	X("history-length",   subr_hist_len,         "d", "set the length of the history file")\
 	X("readline",         subr_readline,         "Z", "read a line of input with the libline library")
 
-static char *histfile = ".lisphist";
 
 static void *get_hash_key(const char *key, void *val)
 {
@@ -58,20 +53,37 @@ static void completion_callback(const char *line, size_t pos, line_completions *
 {
 	assert(line && locked_lisp);
 	hash_table_t *h;
-	char *key, *comp, *linecopy;
+	char *key, *comp, *linecopy, *prepend = NULL;
+	size_t i, lastsep;
 	if (!pos)
 		return;
 	h = get_hash(lisp_get_all_symbols(locked_lisp));
-	linecopy = lstrdup_or_abort(line);
+
+	for(lastsep = 0, i = 0; i < pos; i++)
+		if(strchr(" \t{}()'\".", line[i]))
+			lastsep = i;
+
+	if(!(linecopy = calloc(pos - lastsep + 1, 1)))
+		FATAL("out of memory");
+	if(!(prepend  = calloc(lastsep + 2, 1)))
+		FATAL("out of memory");
+	memcpy(linecopy, line + lastsep + 1, pos - lastsep);
+	memcpy(prepend,  line, lastsep + 1);
 
 	if (!(comp = VSTRCAT("*", linecopy, "*"))) /*match any symbol with key in it */
 		FATAL("out of memory");
 
 	while ((key = (char *)hash_foreach(h, get_hash_key))) {
-		if (match(comp, key) > 0)
-			line_add_completion(lc, key);
+		if (match(comp, key) > 0) {
+			char *add;
+		       	if(!(add = VSTRCAT(prepend, key)))
+				FATAL("out of memory");
+			line_add_completion(lc, add);
+			free(add);
+		}
 	}
 	free(comp);
+	free(prepend);
 	free(linecopy);
 }
 
@@ -85,8 +97,9 @@ static char *line_editing_function(const char *prompt)
 	/*do not add blank lines */
 	if (!line || !line[strspn(line, " \t\r\n")])
 		return line;
-	while (balance(line) > 0) {
-		if (!(new = line_editor("==> "))) {
+	while (balance(line, '(', ')') > 0 || balance(line, '{', '}') > 0) {
+		/**@todo increase length of prompt depending on indent level*/
+		if (!(new = line_editor("=> "))) { 
 			free(line);
 			return NULL;
 		}
@@ -154,7 +167,7 @@ int lisp_module_initialize(lisp_t *l)
 {
 	char *sep = "/";
 	assert(l);
-	if(pthread_mutex_trylock(&mutex_single_threaded_module)) {
+	if(lisp_mutex_trylock(&mutex_single_threaded_module)) {
 		lisp_log_error(l, "module: line editor load failure (module already in use)\n");
 		return -1;
 	}

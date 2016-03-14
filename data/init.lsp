@@ -96,7 +96,6 @@
 	    ((set! *home* (getenv "HOME"))     *home*) ; unix
 	    ((set! *home* (getenv "HOMEPATH")) *home*) ; windows
 	    ((set! *home* nil) *home*))
-	
 	  (if *home*
 	    (eval-file (make-path (list *home* *lisprc*)) error-ignore nil)
 	    nil)

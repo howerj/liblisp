@@ -3,10 +3,9 @@
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com 
- *
- * @warning The colorization is not really that portable and relies on the
- *          terminal it is running under being able to cope with ANSI escape
- *          sequences, it can be turned off though. **/
+ *  @warning    Colorization supported with ANSI escape codes only
+ *  @todo       Print binary data
+ **/
 
 #include "liblisp.h"
 #include "private.h"

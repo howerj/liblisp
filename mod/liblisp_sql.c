@@ -7,7 +7,7 @@
  *  
  *  @todo Improve interface, add prepared statements, ...**/
 #include <assert.h>
-#include <liblisp.h>
+#include <lispmod.h>
 #include <sqlite3.h> /*see https://www.sqlite.org*/
 #include <stdlib.h>
 

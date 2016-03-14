@@ -9,8 +9,8 @@
  *              invalid bignums or strings to the bignum.c are not handled
  *              correctly.
  *  **/
+#include <lispmod.h>
 #include <assert.h>
-#include <liblisp.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include "bignum.h"

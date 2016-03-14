@@ -1,9 +1,9 @@
 
 # modules to compile, system dependent modules are added later.
-MODULES=liblisp_crc.$(DLL) liblisp_bignum.$(DLL) liblisp_math.$(DLL)\
+MODULES=liblisp_bignum.$(DLL) liblisp_math.$(DLL)\
 	liblisp_text.$(DLL) liblisp_base.$(DLL)
 
-MOD_DEPS=liblisp.h liblisp.a liblisp.$(DLL)
+MOD_DEPS=liblisp.h liblisp.a liblisp.$(DLL) lispmod.h
 
 CURDIR:=mod$(FS)
 
@@ -37,9 +37,6 @@ liblisp_sql.$(DLL): liblisp_sql.o $(MOD_DEPS)
 
 liblisp_unix.$(DLL): liblisp_unix.o $(MOD_DEPS)
 	$(CC) -Wall -Wextra -std=gnu99 -shared $< $(ADDITIONAL) -o $@
-
-liblisp_crc.$(DLL): liblisp_crc.o crc.o $(CURDIR)crc.h $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< crc.o $(ADDITIONAL) -o $@
 
 liblisp_tcc.o: $(CURDIR)liblisp_tcc.c
 	$(CC) $(CFLAGS_RELAXED) -I. $< -c -o $@

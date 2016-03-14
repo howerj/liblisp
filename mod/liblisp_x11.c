@@ -14,8 +14,7 @@
  *  **/
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <pthread.h>
-#include <liblisp.h>
+#include <lispmod.h>
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -57,7 +56,7 @@ static lisp_module_subroutines_t primitives[] = {
 
 #undef X
 
-static pthread_mutex_t mutex_single_threaded_module = PTHREAD_MUTEX_INITIALIZER;
+static lisp_mutex_t mutex_single_threaded_module = LISP_MUTEX_INITIALIZER;
 static int initialized = 0;
 static Display *xdisplay; /**< the display to be used by this module*/
 static int xscreen;	  /**< the screen to use*/
@@ -395,7 +394,7 @@ static lisp_cell_t *subr_set_foreground(lisp_t * l, lisp_cell_t * args)
 int lisp_module_initialize(lisp_t *l)
 {
 	assert(l);
-	if(pthread_mutex_trylock(&mutex_single_threaded_module)) {
+	if(lisp_mutex_trylock(&mutex_single_threaded_module)) {
 		lisp_log_error(l, "module: line editor load failure (module already in use)\n");
 		return -1;
 	}

@@ -9,13 +9,13 @@
  *        keeping them in sync.  
  *  @todo Functions for hash: hash-keys, hash-values, hash-foreach, index
  *  arbitrary expressions by serializing them first
+ *  @todo Functions for mutation of data structures, such as strings
  **/
 
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
 #include <limits.h>
-#include <locale.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,16 +40,14 @@
 	X("cons",        subr_cons,      "A A",  "allocate a new cons cell with two arguments")\
 	X("define-eval", subr_define_eval, "s A", "extend the top level environment with a computed symbol")\
 	X("depth",       subr_depth,     "",      "get the current evaluation depth")\
-	X("docstring",   subr_doc_string, "x", "return the documentation string from a procedure")\
 	X("environment", subr_environment, "",    "get the current environment")\
 	X("eof?",        subr_eofp,      "P",    "is the EOF flag set on a port?")\
 	X("eq",          subr_eq,        "A A",  "equality operation")\
 	X("eval",        subr_eval,      NULL,   "evaluate an expression")\
 	X("ferror",      subr_ferror,    "P",    "is the error flag set on a port")\
 	X("flush",       subr_flush,     NULL,   "flush a port")\
-	X("foldl",       subr_foldl,      "x c",  "left fold; reduce a list given a function")\
+	X("foldl",       subr_foldl,    "x c",  "left fold; reduce a list given a function")\
 	X("format",      subr_format,    NULL,   "print a string given a format and arguments")\
-	X("gc",          subr_gc,        "",     "force the collection of garbage")\
 	X("get-char",    subr_getchar,   "i",    "read in a character from a port")\
 	X("get-delim",   subr_getdelim,  "i C",  "read in a string delimited by a character from a port")\
 	X("getenv",      subr_getenv,    "Z",    "get an environment variable (not thread safe)")\
@@ -60,15 +58,11 @@
 	X("input?",      subr_inp,       "A",    "is an object an input port?")\
 	X("length",      subr_length,    "A",    "return the length of a list or string")\
 	X("list",        subr_list,      NULL,   "create a list from the arguments")\
-	X("locale!",     subr_setlocale, "d Z",  "set the locale, this affects global state!")\
 	X("match",       subr_match,     "Z Z",  "perform a primitive match on a string")\
 	X("open",        subr_open,      "d Z",  "open a port (either a file or a string) for reading *or* writing")\
 	X("get-io-str",  subr_get_io_str,"P",    "get a copy of a string from an IO string port")\
 	X("output?",     subr_outp,      "A",    "is an object an output port?")\
 	X("print",       subr_print,     "o A",  "print out an s-expression")\
-	X("proc-args",   subr_proc_args, "l",    "return the arguments for a lambda or F-expression")\
-	X("proc-code",   subr_proc_code, "l",    "return the code from a lambda or F-expression")\
-	X("proc-env",    subr_proc_env,  "l",    "return the environment captured for a lambda or F-expression")\
 	X("put-char",    subr_putchar,   "o d",  "write a character to a output port")\
 	X("put",         subr_puts,      "o Z",  "write a string to a output port")\
 	X("raise-signal",subr_raise,     "d",    "raise a signal")\
@@ -96,7 +90,6 @@
 	X("set-car!",    subr_setcar,    "c A",  "destructively set the first cell of a cons cell")\
 	X("set-cdr!",    subr_setcdr,    "c A",  "destructively set the second cell of a cons cell")\
 	X("substring",   subr_substring, NULL,   "create a substring from a string")\
-	X("system",      subr_system,    NULL,   "execute a command with the system command interpreter")\
 	X("tell",        subr_tell,      "P",    "return the position indicator of a port")\
 	X("top-environment", subr_top_env, "",   "return the top level environment")\
 	X("trace!",      subr_trace,     "d",    "set the log level, from no errors printed, to copious debugging information")\
@@ -109,8 +102,8 @@
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
 #undef X
 
-#define X(NAME, SUBR, VALIDATION, DOCSTRING) { SUBR, NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING) },
-static struct all_subroutines { lisp_subr_func p; const char *name, *validate, *docstring; } primitives[] = {
+#define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
+static const lisp_module_subroutines_t primitives[] = {
         SUBROUTINE_XLIST /*all of the subr functions*/
         {NULL, NULL, NULL, NULL} /*must be terminated with NULLs*/
 };
@@ -119,49 +112,25 @@ static struct all_subroutines { lisp_subr_func p; const char *name, *validate, *
 /**< X-Macros of all built in integers*/
 #define INTEGER_XLIST\
 	X("*seek-cur*",     SEEK_CUR)     X("*seek-set*",    SEEK_SET)\
-	X("*seek-end*",     SEEK_END)     X("*random-max*",  INTPTR_MAX)\
-	X("*integer-max*",  INTPTR_MAX)   X("*integer-min*", INTPTR_MIN)\
-	X("*integer*",      INTEGER)      X("*symbol*",      SYMBOL)\
-	X("*cons*",         CONS)         X("*string*",      STRING)\
-	X("*hash*",         HASH)         X("*io*",          IO)\
-	X("*float*",        FLOAT)        X("*procedure*",   PROC)\
-	X("*primitive*",    SUBR)         X("*f-procedure*", FPROC)\
-	X("*file-in*",      IO_FIN)       X("*file-out*",    IO_FOUT)\
-	X("*string-in*",    IO_SIN)       X("*string-out*",  IO_SOUT)\
-	X("*lc-all*",       LC_ALL)       X("*lc-collate*",  LC_COLLATE)\
-	X("*lc-ctype*",     LC_CTYPE)     X("*lc-monetary*", LC_MONETARY)\
-	X("*lc-numeric*",   LC_NUMERIC)   X("*lc-time*",     LC_TIME)\
-	X("*user-defined*", USERDEF)      X("*eof*",         EOF)\
-	X("*sig-abrt*",     SIGABRT)      X("*sig-fpe*",     SIGFPE)\
-	X("*sig-ill*",      SIGILL)       X("*sig-int*",     SIGINT)\
-	X("*sig-segv*",     SIGSEGV)      X("*sig-term*",    SIGTERM)\
-	X("*integer-bits*", (CHAR_BIT * sizeof(intptr_t)))\
-	X("*float-radix*",  FLT_RADIX)    X("*float-rounds*", FLT_ROUNDS)\
-	X("*trace-off*",    LISP_LOG_LEVEL_OFF)\
-	X("*trace-errors*", LISP_LOG_LEVEL_ERROR)\
-	X("*trace-notes*",  LISP_LOG_LEVEL_NOTE)\
-	X("*trace-debug*",  LISP_LOG_LEVEL_DEBUG)
+	X("*seek-end*",     SEEK_END)	  X("*integer*",      INTEGER)\
+	X("*symbol*",       SYMBOL)       X("*cons*",         CONS)\
+	X("*string*",       STRING)       X("*hash*",         HASH)\
+	X("*io*",           IO)           X("*float*",        FLOAT)\
+       	X("*procedure*",    PROC)         X("*primitive*",    SUBR)\
+	X("*f-procedure*",  FPROC)        X("*file-in*",      IO_FIN)\
+	X("*file-out*",     IO_FOUT)      X("*string-in*",    IO_SIN)\
+ 	X("*string-out*",   IO_SOUT)      X("*user-defined*", USERDEF)\
+	X("*eof*",          EOF)          X("*sig-abrt*",     SIGABRT)\
+	X("*sig-fpe*",      SIGFPE)       X("*sig-ill*",      SIGILL)\
+	X("*sig-int*",      SIGINT)       X("*sig-segv*",     SIGSEGV)\
+	X("*sig-term*",     SIGTERM)
 
 #define X(NAME, VAL) { NAME, VAL }, 
 /**@brief A list of all integer values to be made available to the
  *        interpreter as lisp objects */
-static struct integer_list { char *name; intptr_t val; } integers[] = {
+static const struct integer_list { char *name; intptr_t val; } integers[] = {
         INTEGER_XLIST
         {NULL, 0}
-};
-#undef X
-
-#define FLOAT_XLIST\
-	X("pi", 3.14159265358979323846) X("e", 2.71828182845904523536)\
-	X("*epsilon*",   LFLT_EPSILON)  X("*float-smallest*", LFLT_MIN)\
-	X("*float-biggest*", LFLT_MAX)
-
-#define X(NAME, VAL) { NAME, VAL },
-static struct float_list { char *name; lisp_float_t val; } floats[] = {
-/**@brief A list of all floating point values to be made available to the
- *        interpreter as lisp objects */
-        FLOAT_XLIST
-        {NULL, 0.0 }
 };
 #undef X
 
@@ -175,7 +144,7 @@ CELL_XLIST /*pointers to structs for special cells*/
 
 #define X(CNAME, NOT_USED) { & _ ## CNAME },
 /**@brief a list of all the special symbols**/
-static struct special_cell_list { lisp_cell_t *internal; } special_cells[] = {
+static const struct special_cell_list { lisp_cell_t *internal; } special_cells[] = {
         CELL_XLIST 
         { NULL }
 };
@@ -212,7 +181,6 @@ lisp_t *lisp_init(void) {
 #define X(CNAME, LNAME) l-> CNAME = CNAME;
 CELL_XLIST
 #undef X
-
         assert(MAX_RECURSION_DEPTH < INT_MAX);
 
         /* The lisp init function is now ready to add built in subroutines
@@ -258,16 +226,7 @@ CELL_XLIST
                 if(!lisp_add_cell(l, integers[i].name, 
                                         mk_int(l, integers[i].val)))
                         goto fail;
-        for(i = 0; floats[i].name; i++) /**/
-                if(!lisp_add_cell(l, floats[i].name,
-                                        mk_float(l, floats[i].val)))
-                        goto fail;
-        for(i = 0; primitives[i].p; i++) /*add all primitives*/
-                if(!lisp_add_subr(l, 
-                     primitives[i].name,     primitives[i].p, 
-                     primitives[i].validate, primitives[i].docstring))
-                        goto fail;
-
+	lisp_add_module_subroutines(l, primitives, 0);
         l->gc_off = 0;
         return l;
 fail:   l->gc_off = 0;
@@ -354,11 +313,15 @@ static lisp_cell_t *subr_greater(lisp_t * l, lisp_cell_t * args)
 		goto fail;
 	x = car(args);
 	y = CADR(args);
-	if (is_arith(x) && is_arith(y))
+	if (is_arith(x) && is_arith(y)) {
 		return (is_floating(x) ? get_float(x) : get_int(x)) >
 		    (is_floating(y) ? get_float(y) : get_int(y)) ? gsym_tee() : gsym_nil();
-	else if (is_asciiz(x) && is_asciiz(y))
-		return (strcmp(get_str(x), get_str(y)) > 0) ? gsym_tee() : gsym_nil();
+	} else if (is_asciiz(x) && is_asciiz(y)) {
+		size_t lx = get_length(x), ly = get_length(y);
+		if(lx == ly)
+			return memcmp(get_str(x), get_str(y), lx) > 0 ? gsym_tee() : gsym_nil();
+		return lx > ly ? gsym_tee() : gsym_nil();
+	}
  fail:	LISP_RECOVER(l, "\"expected (number number) or (string string)\"\n '%S", args);
 	return gsym_error();
 }
@@ -370,11 +333,15 @@ static lisp_cell_t *subr_less(lisp_t * l, lisp_cell_t * args)
 		goto fail;
 	x = car(args);
 	y = CADR(args);
-	if (is_arith(x) && is_arith(y))
+	if (is_arith(x) && is_arith(y)) {
 		return (is_floating(x) ? get_float(x) : get_int(x)) <
 		    (is_floating(y) ? get_float(y) : get_int(y)) ? gsym_tee() : gsym_nil();
-	else if (is_asciiz(x) && is_asciiz(y))
-		return (strcmp(get_str(x), get_str(y)) < 0) ? gsym_tee() : gsym_nil();
+	} else if (is_asciiz(x) && is_asciiz(y)) {
+		size_t lx = get_length(x), ly = get_length(y);
+		if(lx == ly)
+			return memcmp(get_str(x), get_str(y), lx) < 0 ? gsym_tee() : gsym_nil();
+		return lx < ly ? gsym_tee() : gsym_nil();
+	}
  fail:	LISP_RECOVER(l, "\"expected (number number) or (string string)\"\n '%S", args);
 	return gsym_error();
 }
@@ -388,11 +355,12 @@ static lisp_cell_t *subr_eq(lisp_t * l, lisp_cell_t * args)
 		return (l->ufuncs[get_user_type(x)].equal) (x, y) ? gsym_tee() : gsym_nil();
 	if (get_int(x) == get_int(y))
 		return gsym_tee();
+	if (is_floating(x) && is_floating(y))
+		return get_float(x) == get_float(y) ? gsym_tee() : gsym_nil();
 	if (is_str(x) && is_str(y)) {
-		if (!strcmp(get_str(x), get_str(y)))
-			return gsym_tee();
-		else
-			return gsym_nil();
+		size_t lx = get_length(x), ly = get_length(y);
+		if(lx == ly)
+			return !memcmp(get_str(x), get_str(y), lx) ? gsym_tee() : gsym_nil();
 	}
 	return gsym_nil();
 }
@@ -477,8 +445,9 @@ static lisp_cell_t *subr_scdr(lisp_t * l, lisp_cell_t * args)
 static lisp_cell_t *subr_eval(lisp_t * l, lisp_cell_t * args)
 {
 	lisp_cell_t *x = NULL;
-	int restore_used, r;
+	int restore_used, r, errors_halt = l->errors_halt;
 	jmp_buf restore;
+	l->errors_halt = 0;
 	if (l->recover_init) {
 		memcpy(restore, l->recover, sizeof(jmp_buf));
 		restore_used = 1;
@@ -486,6 +455,7 @@ static lisp_cell_t *subr_eval(lisp_t * l, lisp_cell_t * args)
 	l->recover_init = 1;
 	if ((r = setjmp(l->recover))) {
 		LISP_RECOVER_RESTORE(restore_used, l, restore);
+		l->errors_halt = errors_halt;
 		return gsym_error();
 	}
 
@@ -500,6 +470,7 @@ static lisp_cell_t *subr_eval(lisp_t * l, lisp_cell_t * args)
 	LISP_RECOVER_RESTORE(restore_used, l, restore);
 	if (!x)
 		LISP_RECOVER(l, "\"expected (expr) or (expr environment)\"\n '%S", args);
+	l->errors_halt = errors_halt;
 	return x;
 }
 
@@ -516,13 +487,6 @@ static lisp_cell_t *subr_trace(lisp_t * l, lisp_cell_t * args)
 	default:
 		LISP_RECOVER(l, "%r\"invalid log level\"\n %m%d%t", (intptr_t)level);
 	}
-	return gsym_tee();
-}
-
-static lisp_cell_t *subr_gc(lisp_t * l, lisp_cell_t * args)
-{
-	UNUSED(args);
-	lisp_gc_mark_and_sweep(l);
 	return gsym_tee();
 }
 
@@ -544,10 +508,11 @@ static lisp_cell_t *subr_outp(lisp_t * l, lisp_cell_t * args)
 }
 
 static lisp_cell_t *subr_open(lisp_t * l, lisp_cell_t * args)
-{ /**@todo fix validation for IO_SOUT*/
+{ /**@todo fix validation string for IO_SOUT*/
 	io_t *ret = NULL;
-	char *file;
-	file = get_str(CADR(args));
+	char *file  = get_str(CADR(args));
+	size_t flen = get_length(CADR(args));
+
 	switch (get_int(car(args))) {
 	case IO_FIN:
 		ret = io_fin(fopen(file, "rb"));
@@ -556,7 +521,7 @@ static lisp_cell_t *subr_open(lisp_t * l, lisp_cell_t * args)
 		ret = io_fout(fopen(file, "wb"));
 		break;
 	case IO_SIN:
-		ret = io_sin(file);
+		ret = io_sin(file, flen);
 		break;
 	case IO_SOUT:
 		ret = io_sout(2);
@@ -568,7 +533,7 @@ static lisp_cell_t *subr_open(lisp_t * l, lisp_cell_t * args)
 }
 
 static lisp_cell_t *subr_get_io_str(lisp_t *l, lisp_cell_t *args)
-{
+{ /**@todo fix for binary data */
 	if(!io_is_string(get_io(car(args))))
 		LISP_RECOVER(l, "\"get string only works on string output IO ports\"", args);
 	return mk_str(l, lisp_strdup(l, io_get_string(get_io(car(args)))));
@@ -589,9 +554,10 @@ static lisp_cell_t *subr_getdelim(lisp_t * l, lisp_cell_t * args)
 static lisp_cell_t *subr_read(lisp_t * l, lisp_cell_t * args)
 {
 	lisp_cell_t *x;
-	int restore_used, r;
+	int restore_used, r, errors_halt = l->errors_halt;
 	jmp_buf restore;
 	char *s;
+	l->errors_halt = 0;
 	if (l->recover_init) {	/*store exception state */
 		memcpy(restore, l->recover, sizeof(jmp_buf));
 		restore_used = 1;
@@ -599,17 +565,19 @@ static lisp_cell_t *subr_read(lisp_t * l, lisp_cell_t * args)
 	l->recover_init = 1;
 	if ((r = setjmp(l->recover))) {	/*handle exception in reader */
 		LISP_RECOVER_RESTORE(restore_used, l, restore);
+		l->errors_halt = errors_halt;
 		return gsym_error();
 	}
 	s = NULL;
 	x = NULL;
 	io_t *i = NULL;
-	if (!(i = is_in(car(args)) ? get_io(car(args)) : io_sin(get_str(car(args)))))
+	if (!(i = is_in(car(args)) ? get_io(car(args)) : io_sin(get_str(car(args)), get_length(car(args)))))
 		LISP_HALT(l, "\"%s\"", "out of memory");
 	x = (x = reader(l, i)) ? x : gsym_error();
 	if (s)
 		io_close(i);
 	LISP_RECOVER_RESTORE(restore_used, l, restore);
+	l->errors_halt = errors_halt;
 	return x;
 }
 
@@ -668,16 +636,6 @@ static lisp_cell_t *subr_ferror(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(l);
 	return io_error(get_io(car(args))) ? gsym_tee() : gsym_nil();
-}
-
-static lisp_cell_t *subr_system(lisp_t * l, lisp_cell_t * args)
-{
-	if (lisp_check_length(args, 0))
-		return mk_int(l, system(NULL));
-	if (lisp_check_length(args, 1) && is_asciiz(car(args)))
-		return mk_int(l, system(get_str(car(args))));
-	LISP_RECOVER(l, "\"expected () or (string)\"\n '%S", args);
-	return gsym_error();
 }
 
 static lisp_cell_t *subr_remove(lisp_t * l, lisp_cell_t * args)
@@ -760,9 +718,10 @@ static lisp_cell_t *subr_coerce(lisp_t * l, lisp_cell_t * args)
 	case CONS:
 		if (is_str(from)) {	/*string to list of chars */
 			size_t fromlen = get_length(from);
-			    /**@bug (explode "") = nil, (implode nil) = error*/
+			/**@bug (explode "") = nil, (implode nil) = error*/
 			head = x = cons(l, gsym_nil(), gsym_nil());
 			for (i = 0; i < fromlen; i++) {
+				/**@todo fix for binary data */
 				char c[2] = { '\0', '\0' };
 				c[0] = get_str(from)[i];
 				y = mk_str(l, lisp_strdup(l, c));
@@ -854,26 +813,6 @@ static lisp_cell_t *subr_assoc(lisp_t * l, lisp_cell_t * args)
 	return lisp_assoc(car(args), CADR(args));
 }
 
-static lisp_cell_t *subr_setlocale(lisp_t * l, lisp_cell_t * args)
-{
-	char *ret = NULL;
-	switch (get_int(car(args))) {
-	case LC_ALL:
-	case LC_COLLATE:
-	case LC_CTYPE:
-	case LC_MONETARY:
-	case LC_NUMERIC:
-	case LC_TIME:
-		ret = setlocale(get_int(car(args)), get_str(CADR(args)));
-		break;
-	default:
-		LISP_RECOVER(l, "\"invalid int value\"\n '%S", args);
-	}
-	if (!ret)
-		return gsym_nil();	/*failed to set local */
-	return mk_str(l, lisp_strdup(l, ret));
-}
-
 static lisp_cell_t *subr_typeof(lisp_t * l, lisp_cell_t * args)
 {
 	return mk_int(l, car(args)->type);
@@ -902,7 +841,7 @@ static lisp_cell_t *subr_reverse(lisp_t * l, lisp_cell_t * args)
 			size_t len;
 			if (!s)
 				LISP_HALT(l, "\"%s\"", "out of memory");
-			if (!lisp_check_length(args, 0))
+			if (lisp_check_length(car(args), 0))
 				return mk_str(l, s);
 			len = get_length(car(args));
 			return mk_str(l, breverse(s, len - 1));
@@ -913,8 +852,10 @@ static lisp_cell_t *subr_reverse(lisp_t * l, lisp_cell_t * args)
 			lisp_cell_t *x = car(args), *y = gsym_nil();
 			if (!is_cons(cdr(x)) && !is_nil(cdr(x)))
 				return cons(l, cdr(x), car(x));
-			for (; !is_nil(x); x = cdr(x))
+			for (; is_cons(x); x = cdr(x))
 				y = cons(l, car(x), y);
+			if(!is_nil(x))
+				LISP_RECOVER(l, "\"cannot reverse list ending in dotted pair\" '%S", args);
 			return y;
 		}
 		break;
@@ -1184,24 +1125,6 @@ static lisp_cell_t *subr_define_eval(lisp_t * l, lisp_cell_t * args)
 	return lisp_extend_top(l, car(args), CADR(args));
 }
 
-static lisp_cell_t *subr_proc_code(lisp_t * l, lisp_cell_t * args)
-{
-	UNUSED(l);
-	return car(get_proc_code(car(args)));
-}
-
-static lisp_cell_t *subr_proc_args(lisp_t * l, lisp_cell_t * args)
-{
-	UNUSED(l);
-	return get_proc_args(car(args));
-}
-
-static lisp_cell_t *subr_proc_env(lisp_t * l, lisp_cell_t * args)
-{
-	UNUSED(l);
-	return get_proc_env(car(args));
-}
-
 static lisp_cell_t *subr_top_env(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(args);
@@ -1229,12 +1152,6 @@ static lisp_cell_t *subr_all_syms(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(args);
 	return l->all_symbols;
-}
-
-static lisp_cell_t *subr_doc_string(lisp_t * l, lisp_cell_t * args)
-{
-	UNUSED(l);
-	return get_func_docstring(car(args));
 }
 
 static lisp_cell_t *subr_getenv(lisp_t * l, lisp_cell_t * args)

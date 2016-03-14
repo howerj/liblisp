@@ -23,8 +23,6 @@ MAKEFLAGS += --no-builtin-rules
 ## Configuration and operating system options ################################
 ##############################################################################
 # liblisp configuration and build system options
-# @todo Replace this with a ./configure script (possibly). This will most
-#       likely be written in perl.
 
 # make run options
 RUN_FLAGS=-Epc
@@ -32,8 +30,6 @@ RUN_FLAGS=-Epc
 # Version control variables and information
 ## These commands will depend on what version control is being run, or
 ## if any is being used at all. Currently git is being used.
-## @todo These should all be set to unknown if the repository ".git/"
-##       is unavailable
 VERSION    =$(shell git describe) 
 VCS_COMMIT =$(shell git rev-parse --verify HEAD)
 VCS_ORIGIN =$(shell git config --get remote.origin.url)
@@ -55,15 +51,19 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 #   NDEBUG       Disable asserts
 #   USE_DL	 Add support for dlopen/LoadLibrary, requires "-ldl" 
 #                on Unix systems
+#   USE_MUTEX    Add support for Mutexes/Critical Sections, requires
+#                "-lpthread" on Unix systems
 #   USE_ABORT_HANDLER This adds in a handler that catches SIGABRT
 #                and prints out a stack trace if it can.
-DEFINES = -DUSE_DL -DUSE_ABORT_HANDLER
-LINK    = -ldl
+DEFINES = -DUSE_DL -DUSE_ABORT_HANDLER -DUSE_MUTEX
+LINK    = -ldl -lpthread
+INCLUDE = -I.
 # This is for convenience only, it may cause problems.
 RPATH   ?= -Wl,-rpath=.
 
 # Valgrind
 VALGRIND_SUPP=data/doc/valgrind.supp
+VALOPTS=--leak-resolution=high --num-callers=40 --leak-check=full --log-file=valgrind.log
 
 ifeq ($(OS),Windows_NT)
 FixPath =$(subst /,\,$1)
@@ -181,21 +181,21 @@ lib$(TARGET).$(DLL): $(OBJFILES) lib$(TARGET).h private.h
 
 # -DCOMPILING_LIBLISP is only needed on Windows
 %.o: %.c lib$(TARGET).h private.h
-	$(CC) $(CFLAGS) -DCOMPILING_LIBLISP $< -c -o $@
+	$(CC) $(CFLAGS) $(INCLUDE) -DCOMPILING_LIBLISP $< -c -o $@
 
 VCS_DEFINES=-DVCS_ORIGIN="$(VCS_ORIGIN)" -DVCS_COMMIT="$(VCS_COMMIT)" -DVERSION="$(VERSION)" 
 
 repl.o: repl.c lib$(TARGET).h
-	$(CC) $(CFLAGS) $(DEFINES) $(VCS_DEFINES) $< -c -o $@
+	$(CC) $(CFLAGS) $(INCLUDE) $(DEFINES) $(VCS_DEFINES) $< -c -o $@
 
-main.o: main.c lib$(TARGET).h 
-	$(CC) $(CFLAGS_RELAXED) $(DEFINES) $< -c -o $@
+main.o: main.c lib$(TARGET).h lispmod.h
+	$(CC) $(CFLAGS_RELAXED) $(INCLUDE)  $(DEFINES) $< -c -o $@
 
 $(TARGET)$(EXE): main.o lib$(TARGET).$(DLL)
 	$(CC) $(CFLAGS) $(LINKFLAGS) $(RPATH) $^ $(LINK) -o $(TARGET)
 
 unit$(EXE): unit.c lib$(TARGET).a
-	$(CC) $(CFLAGS) $(RPATH) $^ -o unit$(EXE)
+	$(CC) $(CFLAGS) $(INCLUDE) $(RPATH) $^ -o unit$(EXE)
 
 test: unit$(EXE)
 	./unit -c
@@ -212,7 +212,7 @@ run: all
 # From <http://valgrind.org/>
 valgrind: all
 	@echo running the executable through leak detection program, valgrind
-	valgrind --suppressions=$(VALGRIND_SUPP) ./$(TARGET) $(RUN_FLAGS) data/init.lsp -
+	valgrind $(VALOPTS) --suppressions=$(VALGRIND_SUPP) ./$(TARGET) $(RUN_FLAGS) data/init.lsp -
 
 ### documentation ############################################################
 
@@ -232,7 +232,6 @@ doxygen:
 
 TARBALL=$(strip $(TARGET)-$(VERSION)).tgz
 # make distribution tarball
-# @bug this currently creates a "tarbomb"
 dist: $(TARGET) lib$(TARGET).a lib$(TARGET).$(DLL) lib$(TARGET).htm lib$(TARGET).h modules
 	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) lib$(TARGET).h *.a *.1 *.3 
 
@@ -298,6 +297,7 @@ clean:
 	-$(RM) $(RM_FLAGS) html/ 
 	-$(RM) $(RM_FLAGS) latex/ 
 	-$(RM) $(RM_FLAGS) lisp-linux-*/ 
+	-$(RM) $(RM_FLAGS) core
 
 ##############################################################################
 

@@ -12,7 +12,12 @@
  *  license.
  *
  *  Do not pass NULL to any of these functions unless they specifically mention
- *  that you can. They "assert()" their inputs. **/
+ *  that you can. They "assert()" their inputs.
+ *
+ *  @todo Come up with better API functions for immutable data; such as
+ *        copy-and-free/free/no-free, a tree walker function (that can walk
+ *        a lisp list in Depth First Pre, In or Post or Breadth first orders).
+ *  @todo Rename some functions so they have "lisp_" prefix **/
 #ifndef LIBLISP_H
 #define LIBLISP_H
 #ifdef __cplusplus
@@ -200,15 +205,17 @@ LIBLISP_API char *vstrcatsep(const char *separator, const char *first, ...);
  *
  *  For example:
  *
- *         balance("(((") == 3;
- *         balance(")))") == -3;
- *         balance("()") == 0;
- *         balance("") == 0;
- *         balance("\"( Hello World\\" ( \" ))") == 2;
+ *         balance("(((", '(', ')') == 3;
+ *         balance(")))", '(', ')') == -3;
+ *         balance("()", '(', ')') == 0;
+ *         balance("", '(', ')') == 0;
+ *         balance("\"( Hello World\\" ( \" ))", '(', ')') == 2;
  *
  *  @param sexpr string to count balance in
+ *  @param  lpar left  parenthesis 
+ *  @param  rpar right parenthesis
  *  @return int  positive more '(', negative more ')', zero == balanced**/
-LIBLISP_API int balance(const char *sexpr);
+LIBLISP_API int balance(const char *sexpr, char lpar, char rpar);
 
 /** @brief reverse a block of characters *in place* of a given length
  *  @param  s     character string to reverse
@@ -384,6 +391,24 @@ LIBLISP_API int io_putc(char c, io_t *o);
  *  @return int  >= 0 is success, < 0 is failure**/
 LIBLISP_API int io_puts(const char *s, io_t *o);
 
+/** @brief read a block of data from an I/O stream 
+ *  @param  ptr     a point to a block of memory size * nmemb bytes long at
+ *                  minimum
+ *  @param  size    size of each member
+ *  @param  nmemb   number of members to read
+ *  @param  i       stream to read from
+ *  @return size_t number of member read in */
+LIBLISP_API size_t io_read(void *ptr, size_t size, size_t nmemb, io_t *i);
+
+/** @brief write a block of data to an I/O stream 
+ *  @param  ptr     a point to a block of memory size * nmemb bytes long at
+ *                  minimum
+ *  @param  size    size of each member
+ *  @param  nmemb   number of members to write
+ *  @param  o       stream to write to
+ *  @return size_t number of members written */
+LIBLISP_API size_t io_write(void *ptr, size_t size, size_t nmemb, io_t *o);
+
 /** @brief  get a line from an I/O stream
  *  @param  i   I/O stream, must be set up for reading
  *  @return char* a line of input, minus the newline character**/
@@ -408,10 +433,11 @@ LIBLISP_API int io_printd(intptr_t d, io_t *o);
  *  @return int 0 on success, EOF on failure**/
 LIBLISP_API int io_printflt(double f, io_t * o);
 
-/** @brief   read from a string
- *  @param   sin string to read from, ASCII nul terminated
+/** @brief   read from a block of data, the block will be duplicated
+ *  @param   sin block to read from
+ *  @param   len length of block
  *  @return  io* an initialized I/O stream (for reading) or NULL**/
-LIBLISP_API io_t *io_sin(const char *sin);
+LIBLISP_API io_t *io_sin(const char *sin, size_t len);
 
 /** @brief  read from a file
  *  @param  fin an already opened file handle, opened with "r" or "rb"
@@ -590,7 +616,8 @@ LIBLISP_API lisp_cell_t *lisp_extend(lisp_t *l, lisp_cell_t *env, lisp_cell_t *s
 
 /**@brief  add a new symbol to the list of all symbols, two interned
  *         symbols containing the same name will compare equal with
- *         a pointer comparison, they will be the same object.
+ *         a pointer comparison, they will be the same object. The
+ *         lisp environment will try to free this name!
  * @param  l    an initialized lisp structure, used for error handling
  *              and keeping track of interned symbols
  * @param  name name of symbol
@@ -1039,7 +1066,7 @@ LIBLISP_API lisp_cell_t *lisp_environment(lisp_t *l);
  * @param  len length of lisp_module_subroutines_t array, if this is zero then
  *             the list is NULL terminated.
  * @return int non zero on failure, zero on success */
-LIBLISP_API int lisp_add_module_subroutines(lisp_t *l, lisp_module_subroutines_t *ms, size_t len);
+LIBLISP_API int lisp_add_module_subroutines(lisp_t *l, const lisp_module_subroutines_t *ms, size_t len);
 
 /** @brief This is like lstrdup_or_abort, but will call lisp_throw with
  *         a negative number for "ret", halting the lisp environment on
@@ -1490,11 +1517,8 @@ LIBLISP_API int main_lisp_env(lisp_t *l, int argc, char **argv);
  * @param X      Thing to turn into a string with macro expansion  **/
 #define XSTRINGIFY(X) STRINGIFY(X)
 
-/**@brief Like assert() but will not be disabled by NDEBUG. It would be
- *        nice if this would print a stack trace but there is no portable
- *        way of doing this without make the C code look ugly with macro
- *        magic.
- * @param X      Test to perform**/
+/**@brief Like assert() but will not be disabled by NDEBUG.  
+ * @param X Test to perform**/
 #define ASSERT(X) do { if(!(X)) FATAL("assertion failed: " # X ); } while(0)
 
 /**@brief Swap two values, with a specified type. For example to swap
@@ -1539,6 +1563,7 @@ LIBLISP_API int main_lisp_env(lisp_t *l, int argc, char **argv);
 #define SEP ":"    /**< Separator for docstrings */
 #define MK_DOCSTR(NAME, DOCSTR) (NAME SEP __FILE__ SEP DOCSTR)
 
+/*****************************************************************************/
 /* module stuff to move into separate header */
 
 typedef int (*lisp_module_initializer_t)(lisp_t *l);
@@ -1549,6 +1574,7 @@ typedef int (*lisp_module_initializer_t)(lisp_t *l);
  * @return int 0 or greater for success, less than zero for failure **/
 int lisp_module_initialize(lisp_t *l);
 
+/*****************************************************************************/
 #ifdef __cplusplus
 }
 #endif

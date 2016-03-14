@@ -9,7 +9,7 @@
  *  @todo This module needs *significant* improvement **/
 #define _GNU_SOURCE
 #include <assert.h>
-#include <liblisp.h>
+#include <lispmod.h>
 #include <stdlib.h>
 
 #ifdef __linux__
@@ -37,7 +37,6 @@
  *      int          chroot(const char *); (LEGACY)
  *      size_t       confstr(int, char *, size_t);
  *      char        *crypt(const char *, const char *);
- *      char        *ctermid(char *);
  *      char        *cuserid(char *s); (LEGACY)
  *      void         encrypt(char[64], int);
  *      int          execl(const char *, const char *, ...);
@@ -52,7 +51,6 @@
  *      char        *getcwd(char *, size_t);
  *      int          getdtablesize(void); (LEGACY)
  *      int          getgroups(int, gid_t []);
- *      long         gethostid(void);
  *      int          getlogin_r(char *, size_t);
  *      int          getopt(int, char * const [], const char *);
  *      int          getpagesize(void); (LEGACY)
@@ -76,7 +74,6 @@
  *      pid_t        setsid(void);
  *      int          setuid(uid_t);
  * >    void         swab(const void *, void *, ssize_t);
- *      long         sysconf(int);
  *      pid_t        tcgetpgrp(int);
  *      int          tcsetpgrp(int, pid_t);
  *      int          truncate(const char *, off_t);
@@ -130,8 +127,10 @@
 	X("_getgid",     subr_getgid,    "",        "get group id")\
 	X("_fork",       subr_fork,      "",        "fork the process")\
 	X("_vfork",      subr_vfork,     "",        "fork the process with shared virtual memory")\
-	X("_getlogin",   subr_getlogin,  "",        "get login name")
-
+	X("_getlogin",   subr_getlogin,  "",        "get login name")\
+	X("_gethostid",  subr_gethostid, "",        "get id for current host")\
+	X("_sysconf",    subr_sysconf,   "d",       "get system variable configurations")\
+	X("_ctermid",    subr_ctermid,   "",        "get path for controlling terminal")
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
@@ -427,7 +426,26 @@ static lisp_cell_t *subr_getlogin(lisp_t * l, lisp_cell_t * args)
 {
 	char *s;
 	UNUSED(args);
-	return mk_immutable_str(l, (s = getlogin()) ? s : "");
+	return (s = getlogin()) ? mk_immutable_str(l, s) : gsym_error();
+}
+
+
+static lisp_cell_t *subr_gethostid(lisp_t *l, lisp_cell_t * args)
+{
+	UNUSED(args);
+	return mk_int(l, gethostid());
+}
+
+static lisp_cell_t *subr_sysconf(lisp_t *l, lisp_cell_t * args)
+{
+	return mk_int(l, sysconf(get_int(car(args))));
+}
+
+static lisp_cell_t *subr_ctermid(lisp_t *l, lisp_cell_t * args)
+{
+	UNUSED(args);
+	char *s;
+	return (s = ctermid(NULL)) ? mk_immutable_str(l, s) : gsym_error();
 }
 
 int lisp_module_initialize(lisp_t *l)

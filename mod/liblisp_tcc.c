@@ -8,7 +8,7 @@
  **/
 #include <assert.h>
 #include <libtcc.h>
-#include <liblisp.h>
+#include <lispmod.h>
 #include <stdlib.h>
 #include <stdint.h>
 

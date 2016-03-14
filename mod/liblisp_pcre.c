@@ -11,7 +11,7 @@
  *              does not.
  **/
 #include <assert.h>
-#include <liblisp.h>
+#include <lispmod.h>
 #include <string.h>
 #include <pcre.h>
 #include <assert.h>

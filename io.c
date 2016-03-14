@@ -3,7 +3,8 @@
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com
- *  @todo       fwrite/fread counterparts **/
+ *  @todo       set error flags for strings, also refactor code
+ **/
 
 #include "liblisp.h"
 #include "private.h"
@@ -54,7 +55,7 @@ int io_getc(io_t * i)
 		return r;
 	}
 	if (i->type == IO_SIN)
-		return i->p.str[i->position] ? i->p.str[i->position++] : EOF;
+		return i->position < i->max ? i->p.str[i->position++] : EOF;
 	FATAL("unknown or invalid IO type");
 	return i->eof = 1, EOF;
 }
@@ -116,16 +117,16 @@ int io_puts(const char *s, io_t * o)
 {
 	assert(s && o);
 	int r;
-	char *p;
-	size_t maxt;
 	if (o->type == IO_FOUT) {
 		if ((r = fputs(s, o->p.file)) == EOF)
 			o->eof = 1;
 		return r;
 	}
 	if (o->type == IO_SOUT) {
-		size_t len = strlen(s), newpos;
-		if (o->position + len >= (o->max - 1)) {	/*grow the "file" */
+		/*this "grow" functionality should be moved into a function*/
+		char *p;
+		size_t len = strlen(s), newpos, maxt;
+		if (o->position + len >= (o->max - 1)) {/*grow the "file" */
 			maxt = (o->position + len) * 2;
 			if (maxt < o->position)	/*overflow */
 				return o->eof = 1, EOF;
@@ -146,6 +147,54 @@ int io_puts(const char *s, io_t * o)
 		return (int)strlen(s);
 	FATAL("unknown or invalid IO type");
 	return EOF;
+}
+
+size_t io_read(void *ptr, size_t size, size_t nmemb, io_t *i)
+{ /**@todo test me, this function is untested*/
+	if(i->type == IO_FIN)
+		return fread(ptr, size, nmemb, io_get_file(i));
+	if(i->type == IO_SIN) {
+		size_t len = size * nmemb; 
+		size_t copy = MIN(i->position + len, i->max);
+		assert(size && len / size == nmemb); /*overflow check*/
+		memcpy(ptr, i->p.str + i->position, copy);
+		i->position += copy;
+		return copy;
+	}
+	FATAL("unknown or invalid IO type");
+	return 0;
+}
+
+size_t io_write(void *ptr, size_t size, size_t nmemb, io_t *o)
+{ /**@todo test me, this function is untested*/
+	if(o->type == IO_SOUT) {
+		char *p;
+		size_t len = size * nmemb, newpos, maxt; 
+		assert(size && len / size == nmemb); /*overflow check*/
+		if (o->position + len >= (o->max - 1)) {/*grow the "file" */
+			maxt = (o->position + len) * 2;
+			if (maxt < o->position)	/*overflow */
+				return o->eof = 1, EOF;
+			o->max = maxt;
+			if (!(p = realloc(o->p.str, maxt)))
+				return o->eof = 1, EOF;
+			memset(p + o->position, 0, maxt - o->position);
+			o->p.str = p;
+		}
+		newpos = o->position + len;
+		if (newpos >= o->max)
+			len = newpos - o->max;
+		memmove(o->p.str + o->position, ptr, len);
+		o->position = newpos;
+		return len;
+	}
+	if(o->type == IO_FOUT) {
+		return fwrite(ptr, size, nmemb, io_get_file(o));
+	}
+	if(o->type == IO_NULLOUT)
+		return nmemb;
+	FATAL("unknown or invalid IO type");
+	return 0;
 }
 
 char *io_getdelim(io_t * i, int delim)
@@ -199,24 +248,26 @@ int io_printflt(double f, io_t * o)
 {
 	assert(o);
 	if (o->type == IO_FOUT)
-		return fprintf(o->p.file, "%f", f);
+		return fprintf(o->p.file, "%e", f);
 	if (o->type == IO_SOUT) {
-		char dstr[512] = "";	/*floats can be very big! */
-		sprintf(dstr, "%f", f);
+		/**@note if using %f the numbers can printed can be very large (~512 characters long) */
+		char dstr[32] = "";
+		sprintf(dstr, "%e", f);
 		return io_puts(dstr, o);
 	}
 	return EOF;
 }
 
-io_t *io_sin(const char *sin)
+io_t *io_sin(const char *sin, size_t len)
 {
 	io_t *i;
 	if (!sin || !(i = calloc(1, sizeof(*i))))
 		return NULL;
-	if (!(i->p.str = lstrdup(sin)))
+	if (!(i->p.str = calloc(len, 1)))
 		return NULL;
+	memcpy(i->p.str, sin, len);
 	i->type = IO_SIN;
-	i->max = strlen(sin);
+	i->max = len;
 	return i;
 }
 

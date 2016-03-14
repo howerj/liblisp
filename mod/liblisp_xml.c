@@ -15,7 +15,7 @@
  *              have been made.
  **/
 #include <assert.h>
-#include <liblisp.h>
+#include <lispmod.h>
 #include <mxml.h>
 
 #define SUBROUTINE_XLIST\

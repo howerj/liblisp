@@ -35,7 +35,6 @@ extern "C" {
 	X(define,  "define") X(set,     "set!")   X(progn,   "progn")\
 	X(cond,    "cond")   X(error,   "error")  X(loop,    "loop")\
 	X(let,     "let")    X(ret,     "return") X(compile, "compile")
-      /*X(lambda_eval, "lambda-eval"); // @note evaluate an expression and create a  lambda from it */
 
 /**@brief This restores a jmp_buf stored in lisp environment if it
  *	has been copied out to make way for another jmp_buf.
@@ -61,7 +60,8 @@ typedef enum lisp_type {
 	FPROC,   /**< F-Expression*/
 	FLOAT,   /**< Floating point number; could be float or double*/
 	USERDEF  /**< User defined types*/
-	/**@todo CLOSURE, MACRO (replaces FPROC) */
+	/**@todo CLOSURE, MACRO (replaces FPROC), VECTORs (array of same type, strings really
+	 * should be a vector of chars). */
 } lisp_type;     /**< A lisp object*/
 
 typedef union { /**< ideally we would use void* for everything*/

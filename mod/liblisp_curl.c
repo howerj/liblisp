@@ -31,20 +31,12 @@
  * in this Software without prior written authorization of the copyright holder.
  * 
  **/
+#include <lispmod.h>
 #include <assert.h>
-#include <liblisp.h>
 #include <curl/curl.h>
 #include <time.h>
-#ifdef __unix__
-#include <pthread.h>
-#else
-#error "Unsupported platform!"
-#endif
 
-/**@note in "main.c" it would be nice to have functions for various different
- * types of modules that would allow exclusive access to that modules, or allow
- * for locked initialization as is happening here*/
-static pthread_mutex_t curl_global_initialize_lock = PTHREAD_MUTEX_INITIALIZER;
+static lisp_mutex_t curl_global_initialize_lock = LISP_MUTEX_INITIALIZER;
 static int locked_initialize_done = 0;
 static int locked_initialize_failed = 0;
 
@@ -243,7 +235,7 @@ int lisp_module_initialize(lisp_t * l)
 {
 	assert(l);
 
-	pthread_mutex_lock(&curl_global_initialize_lock);
+	lisp_mutex_lock(&curl_global_initialize_lock);
 
 	if (locked_initialize_failed)
 		goto unlock_fail;
@@ -255,13 +247,13 @@ int lisp_module_initialize(lisp_t * l)
 		}
 		locked_initialize_done = 1;
 	}
-	pthread_mutex_unlock(&curl_global_initialize_lock);
+	lisp_mutex_unlock(&curl_global_initialize_lock);
 
 	if (lisp_add_module_subroutines(l, primitives, 0))
 		goto fail;
 	return 0;
  unlock_fail:
-	pthread_mutex_unlock(&curl_global_initialize_lock);
+	lisp_mutex_unlock(&curl_global_initialize_lock);
  fail:
 	return -1;
 }

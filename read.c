@@ -10,6 +10,10 @@
  *  The hash table arguments are all not evaluated, but the primitive
  *  "hash-create" can be used to create a table where the arguments are
  *  evaluated.
+ *
+ *  @todo Parsing macros and vector "[ list ]"
+ *  @todo Parse binary data (including NULs in strings)
+ *  @return Unique pointer when the parser requires more input
  **/
 #include "liblisp.h"
 #include "private.h"

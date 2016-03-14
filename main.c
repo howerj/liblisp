@@ -12,20 +12,17 @@
  *  only use of horrible ifdefs to select code should be in this file (and
  *  any modules which need to be portable across Unix and Windows).
  **/
-
-#include "liblisp.h"
+#include <lispmod.h>
 #include <assert.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <time.h>
+#include <locale.h>
 
 #ifdef __unix__
-#include <dlfcn.h>
 static char *os   = "unix";
 #elif _WIN32
-#include <windows.h>
 static char *os   = "windows";
 #else
 static char *os   = "unknown";
@@ -48,7 +45,8 @@ static char *os   = "unknown";
  *  https://stackoverflow.com/questions/5693192/win32-backtrace-from-c-code
  *  @todo add a function that prints stack traces in the lisp environment
  *  */
-static void sig_abrt_handler(int sig) {
+static void sig_abrt_handler(int sig) 
+{
         void *trace[TRACE_SIZE];
         char **messages = NULL;
         int i, trace_size;
@@ -66,6 +64,66 @@ fail:   signal(sig, SIG_DFL);
 #endif
 #endif
 
+#ifdef USE_MUTEX
+#ifdef __unix__
+/*Supported*/
+#elif  _WIN32
+/*Supported*/
+#else
+#error "USE_MUTEX not supported on Unknown platform"
+#endif
+/**@todo improve this code and test it on Windows, also add it to a liblisp
+ * module header.
+ *
+ * See: https://stackoverflow.com/questions/3555859/is-it-possible-to-do-static-initialization-of-mutexes-in-windows*/
+
+lisp_mutex_t* lisp_mutex_create(void)
+{
+        lisp_mutex_t* p;
+#ifdef __unix__
+        if(!(p = calloc(1, sizeof(pthread_mutex_t))))
+                return NULL;
+        pthread_mutex_init(p, NULL);
+        return p;
+#elif _WIN32 
+        if(!(p = calloc(1, sizeof(CRITICAL_SECTION))))
+                return NULL;
+        InitializeCriticalSection(p);
+        return p; 
+#endif
+}
+
+int lisp_mutex_lock(lisp_mutex_t *m) 
+{
+#ifdef __unix__
+        return pthread_mutex_lock(m); 
+#elif  _WIN32
+        EnterCriticalSection((LPCRITICAL_SECTION)m);
+        return 0; 
+#endif
+}
+
+int lisp_mutex_trylock(lisp_mutex_t *m) 
+{
+#ifdef __unix__
+        return pthread_mutex_trylock(m); 
+#elif  _WIN32
+	return TryEnterCriticalSection(m);
+#endif
+}
+
+int lisp_mutex_unlock(lisp_mutex_t *m) 
+{ 
+#ifdef __unix__
+        return pthread_mutex_unlock(m); 
+#elif  _WIN32
+        LeaveCriticalSection((LPCRITICAL_SECTION)m);
+        return 0;
+#endif
+}
+
+#endif
+
 /*  @todo The module interface should made so multiple threads running lisp
  *  interpreter can load the same module. This can be done by the DL_OPEN
  *  routine looking for a constructor function that must be included in each
@@ -81,28 +139,23 @@ fail:   signal(sig, SIG_DFL);
  * be used as internal lisp subroutines by the interpreter. */
 
 #ifdef __unix__ /*Only tested on Linux, not other Unixen */
-typedef void* dl_handle_t;
+/*Supported*/
 
-#define DL_OPEN(NAME)        dlopen((NAME), RTLD_NOW)
-#define DL_CLOSE(HANDLE)     dlclose((HANDLE))
-#define DL_SYM(HANDLE, NAME) dlsym((HANDLE), (NAME))
-#define DL_ERROR()	     dlerror()
+const char *lisp_mod_dlerror(void) 
+{
+	return dlerror();
+}
 
 #elif _WIN32 /*Windows*/
-typedef HMODULE dl_handle_t;
+/*Supported*/
 
-#define DL_OPEN(NAME)        LoadLibrary((NAME))
-#define DL_CLOSE(HANDLE)     FreeLibrary((HANDLE))
-#define DL_SYM(HANDLE, NAME) (subr)GetProcAddress((HMODULE)(HANDLE), (NAME))
-#define DL_ERROR()           win_dlerror()
-
-static char *win_dlerror(void) {
+const char *lisp_mod_dlerror(void) 
+{
         static char buf[256] = "";
         FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), 
               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 256, NULL);
         return buf;
 }
-
 #else
 #error "Unrecognized platform"
 #endif
@@ -120,7 +173,8 @@ dl_list *head; /**< *GLOBAL* list of all DLL handles for dlclose_atexit*/
 
 /** @brief close all of the open DLLs when the program exits, subr_dlopen
  *         adds the handles to this list **/
-static void dlclose_atexit(void) {
+static void dlclose_atexit(void) 
+{
         dl_list *t; 
         while(head) {
                 assert(head->handle);
@@ -131,16 +185,19 @@ static void dlclose_atexit(void) {
         }
 }
 
-static void ud_dl_free(lisp_cell_t *f) {
+static void ud_dl_free(lisp_cell_t *f) 
+{
       /*DL_CLOSE(get_user(f)); This is handled atexit instead*/
         free(f);
 }
 
-static int ud_dl_print(io_t *o, unsigned depth, lisp_cell_t *f) {
+static int ud_dl_print(io_t *o, unsigned depth, lisp_cell_t *f) 
+{
         return lisp_printf(NULL, o, depth, "%B<DYNAMIC-MODULE:%d>%t", get_user(f));
 }
 
-static lisp_cell_t *subr_dlopen(lisp_t *l, lisp_cell_t *args) {
+static lisp_cell_t *subr_dlopen(lisp_t *l, lisp_cell_t *args) 
+{
 	dl_handle_t handle;
         dl_list *h;
         if(!(handle = DL_OPEN(get_str(car(args))))) {
@@ -156,7 +213,8 @@ static lisp_cell_t *subr_dlopen(lisp_t *l, lisp_cell_t *args) {
 }
 
 /* loads a lisp module and runs the initialization function */
-static lisp_cell_t *subr_load_lisp_module(lisp_t *l, lisp_cell_t *args) {
+static lisp_cell_t *subr_load_lisp_module(lisp_t *l, lisp_cell_t *args) 
+{
 	lisp_cell_t *h = subr_dlopen(l, args);
 	dl_handle_t handle;
 	lisp_module_initializer_t init;
@@ -172,7 +230,8 @@ static lisp_cell_t *subr_load_lisp_module(lisp_t *l, lisp_cell_t *args) {
 	return gsym_error();
 }
 
-static lisp_cell_t *subr_dlsym(lisp_t *l, lisp_cell_t *args) {
+static lisp_cell_t *subr_dlsym(lisp_t *l, lisp_cell_t *args) 
+{
         lisp_subr_func func;
         if(!lisp_check_length(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
                 LISP_RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
@@ -181,24 +240,24 @@ static lisp_cell_t *subr_dlsym(lisp_t *l, lisp_cell_t *args) {
         return mk_subr(l, func, NULL, NULL);
 }
 
-static lisp_cell_t *subr_dlerror(lisp_t *l, lisp_cell_t *args) {
-        char *s = DL_ERROR();
+static lisp_cell_t *subr_dlerror(lisp_t *l, lisp_cell_t *args) 
+{
+        const char *s = DL_ERROR();
 	UNUSED(args);
         return mk_str(l, lisp_strdup(l, (s = DL_ERROR()) ? s : ""));
 }
 #endif
 
-int main(int argc, char **argv) {
-        lisp_t *l = lisp_init();
-        if(!l) 
-                goto fail;
+int main(int argc, char **argv) 
+{
+        lisp_t *l;
 
-	lisp_add_cell(l, "*os*",                mk_str(l, lstrdup_or_abort(os)));
+	ASSERT(l = lisp_init());
 
+	lisp_add_cell(l, "*os*", mk_str(l, lstrdup_or_abort(os)));
 #ifdef USE_DL
-        ud_dl = new_user_defined_type(l, ud_dl_free, NULL, NULL, ud_dl_print);
-        if(ud_dl < 0)
-                goto fail;
+        ASSERT((ud_dl = new_user_defined_type(l, ud_dl_free, NULL, NULL, ud_dl_print)) >= 0);
+
         lisp_add_subr(l, "dynamic-open",   subr_dlopen, "Z", NULL);
         lisp_add_subr(l, "dynamic-symbol", subr_dlsym, NULL, NULL);
         lisp_add_subr(l, "dynamic-error",  subr_dlerror, "", NULL);
@@ -211,15 +270,9 @@ int main(int argc, char **argv) {
 
 #ifdef USE_ABORT_HANDLER
 #ifdef __unix__
-        if(signal(SIGABRT, sig_abrt_handler) == SIG_ERR) {
-                PRINT_ERROR("\"%s\"", "could not install SIGABRT handler");
-                goto fail;
-        }
+	ASSERT(signal(SIGABRT, sig_abrt_handler) != SIG_ERR);
 #endif
 #endif
         return main_lisp_env(l, argc, argv);
-fail:   
-	PRINT_ERROR("\"%s\"", "initialization failed");
-        return -1;
 }
 

@@ -4,7 +4,7 @@
  *  @license    LGPL v2.1 or Later 
  *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
  *  @email      howe.r.j.89@gmail.com**/
-#include <liblisp.h>
+#include <lispmod.h>
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
