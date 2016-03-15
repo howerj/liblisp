@@ -21,49 +21,64 @@ endif
 modules: $(MODULES)
 
 %.o: $(CURDIR)%.c
-	$(CC) $(CFLAGS) -I. $< -c -o $@
+	@echo CC $<
+	@$(CC) $(CFLAGS) -I. $< -c -o $@
 
 liblisp_pcre.$(DLL): liblisp_pcre.o $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lpcre -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lpcre -o $@
 
 liblisp_base.$(DLL): liblisp_base.o $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -o $@
 
 liblisp_line.o: $(CURDIR)liblisp_line.c $(MOD_DEPS)
-	$(CC) $(CFLAGS) -I. -I$(CURDIR)libline $< -c -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -I. -I$(CURDIR)libline $< -c -o $@
 
 liblisp_sql.$(DLL): liblisp_sql.o $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lsqlite3 -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lsqlite3 -o $@
 
 liblisp_unix.$(DLL): liblisp_unix.o $(MOD_DEPS)
-	$(CC) -Wall -Wextra -std=gnu99 -shared $< $(ADDITIONAL) -o $@
+	@echo CC -o $@
+	@$(CC) -Wall -Wextra -std=gnu99 -shared $< $(ADDITIONAL) -o $@
 
 liblisp_tcc.o: $(CURDIR)liblisp_tcc.c
-	$(CC) $(CFLAGS_RELAXED) -I. $< -c -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS_RELAXED) -I. $< -c -o $@
 
 liblisp_curl.$(DLL): liblisp_curl.o $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lcurl $(THREADLIB) -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lcurl $(THREADLIB) -o $@
 
 liblisp_tcc.$(DLL): liblisp_tcc.o $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -ltcc -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -ltcc -o $@
 
 liblisp_math.$(DLL): liblisp_math.o $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lm -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lm -o $@
 
 liblisp_line.$(DLL): liblisp_line.o libline.$(DLL) $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -L. $(THREADLIB) -lline -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -L. $(THREADLIB) -lline -o $@
 
 liblisp_x11.$(DLL): liblisp_x11.o $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) $(THREADLIB) -lX11 -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) $(THREADLIB) -lX11 -o $@
 
 liblisp_xml.$(DLL): liblisp_xml.o $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lmxml -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lmxml -o $@
 
 liblisp_text.$(DLL): liblisp_text.o diff.o $(CURDIR)diff.h tsort.o $(CURDIR)tsort.h $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< diff.o tsort.o $(ADDITIONAL) -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -shared $< diff.o tsort.o $(ADDITIONAL) -o $@
 
 liblisp_bignum.$(DLL): liblisp_bignum.o bignum.o $(CURDIR)bignum.h $(MOD_DEPS)
-	$(CC) $(CFLAGS) -shared $< bignum.o $(ADDITIONAL) -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -shared $< bignum.o $(ADDITIONAL) -o $@
 
 libline.$(DLL):
 	make -C $(CURDIR)libline

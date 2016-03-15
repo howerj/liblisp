@@ -174,28 +174,35 @@ help:
 OBJFILES=hash.o io.o util.o gc.o read.o print.o subr.o repl.o eval.o lisp.o valid.o 
 
 lib$(TARGET).a: $(OBJFILES)
-	$(AR) $(AR_FLAGS) $@ $^
+	@echo AR $@
+	@$(AR) $(AR_FLAGS) $@ $^
 
 lib$(TARGET).$(DLL): $(OBJFILES) lib$(TARGET).h private.h
-	$(CC) $(CFLAGS) -shared $(OBJFILES) -o $@
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) -shared $(OBJFILES) -o $@
 
 # -DCOMPILING_LIBLISP is only needed on Windows
 %.o: %.c lib$(TARGET).h private.h
-	$(CC) $(CFLAGS) $(INCLUDE) -DCOMPILING_LIBLISP $< -c -o $@
+	@echo CC $<
+	@$(CC) $(CFLAGS) $(INCLUDE) -DCOMPILING_LIBLISP $< -c -o $@
 
 VCS_DEFINES=-DVCS_ORIGIN="$(VCS_ORIGIN)" -DVCS_COMMIT="$(VCS_COMMIT)" -DVERSION="$(VERSION)" 
 
 repl.o: repl.c lib$(TARGET).h
-	$(CC) $(CFLAGS) $(INCLUDE) $(DEFINES) $(VCS_DEFINES) $< -c -o $@
+	@echo CC $<
+	@$(CC) $(CFLAGS) $(INCLUDE) $(DEFINES) $(VCS_DEFINES) $< -c -o $@
 
 main.o: main.c lib$(TARGET).h lispmod.h
-	$(CC) $(CFLAGS_RELAXED) $(INCLUDE)  $(DEFINES) $< -c -o $@
+	@echo CC $<
+	@$(CC) $(CFLAGS_RELAXED) $(INCLUDE)  $(DEFINES) $< -c -o $@
 
 $(TARGET)$(EXE): main.o lib$(TARGET).$(DLL)
-	$(CC) $(CFLAGS) $(LINKFLAGS) $(RPATH) $^ $(LINK) -o $(TARGET)
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) $(LINKFLAGS) $(RPATH) $^ $(LINK) -o $(TARGET)
 
 unit$(EXE): unit.c lib$(TARGET).a
-	$(CC) $(CFLAGS) $(INCLUDE) $(RPATH) $^ -o unit$(EXE)
+	@echo CC -o $@
+	@$(CC) $(CFLAGS) $(INCLUDE) $(RPATH) $^ -o unit$(EXE)
 
 test: unit$(EXE)
 	./unit -c

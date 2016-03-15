@@ -5,10 +5,6 @@
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com 
  *  
- *  @todo    Add checks for *specific* user defined values, this will
- *           require turning lisp_validate_args into a variadic function, 
- *           something like %u will pop an integer off the argument stack 
- *           to test against.
  *  @todo    Grouped format specifiers should be treated as an "or", or they
  *           should be be treated as an "and", with the length being calculated
  *           correctly, which it is not.

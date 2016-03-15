@@ -148,13 +148,7 @@ char *vstrcatsep(const char *separator, const char *first, ...)
 	return retbuf;
 }
 
-/** @note Either another function could be made, or this function
- *        extended, to cope with strings that are not complete as well. 
- *  @todo This function should be called "unbalanced", returning true, false or
- *        error, and take two sets left-parenthesis and right-parenthesis,
- *        which will need to be off the same length and less than 128 chars
- *        in length, each parenthesis set would need its own counter*/
-int balance(const char *sexpr, char lpar, char rpar)
+int unbalanced(const char *sexpr, char lpar, char rpar)
 {
 	assert(sexpr);
 	int bal = 0, c;

@@ -124,15 +124,6 @@ int lisp_mutex_unlock(lisp_mutex_t *m)
 
 #endif
 
-/*  @todo The module interface should made so multiple threads running lisp
- *  interpreter can load the same module. This can be done by the DL_OPEN
- *  routine looking for a constructor function that must be included in each
- *  module, DL_SYM would look for it. It must avoid memory allocation in
- *  the modules DllMain (on Windows only) due to problems mentioned here:
- *  https://stackoverflow.com/questions/858592/windows-malloc-replacement-e-g-tcmalloc-and-dynamic-crt-linking?rq=1
- *  and
- *  https://msdn.microsoft.com/en-us/library/windows/desktop/dn633971%28v=vs.85%29.aspx#general_best_practices
- **/
 #ifdef USE_DL
 /* Module loader using dlopen/LoadLibrary, all functions acquired with 
  * dlsym/GetProcAddress must be of the "subr" function type as they will 

@@ -190,13 +190,13 @@ int main(int argc, char **argv)
 		test(!is_number("+"));
 		test(!is_number("-"));
 
-		test(balance("(((", '(', ')') == 3);
-		test(balance("))",  '(', ')') == -2);
-		test(balance("",    '(', ')') == 0);
-		test(balance("\"(", '(', ')') == 0);
-		test(balance("( \"))))(()()()(()\\\"())\")",  '(', ')') == 0);
-		test(balance("(a (b) c (d (e (f) \")\" g)))", '(', ')') == 0);
-		test(balance("((a b) c", '(', ')') == 1);
+		test(unbalanced("(((", '(', ')') > 0);
+		test(unbalanced("))",  '(', ')') < 0);
+		test(unbalanced("",    '(', ')') == 0);
+		test(unbalanced("\"(", '(', ')') == 0);
+		test(unbalanced("( \"))))(()()()(()\\\"())\")",  '(', ')') == 0);
+		test(unbalanced("(a (b) c (d (e (f) \")\" g)))", '(', ')') == 0);
+		test(unbalanced("((a b) c", '(', ')')  > 0);
 
 		test(!is_fnumber(""));
 		test(!is_fnumber("1e"));
@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 		     djb2("serafins", strlen("serafins")));
 	}
 
-	{			/*io.c test; @todo file input and output */
+	{ /*io.c test */
 		io_t *in, *out;
 		print_note("io.c");
 
@@ -307,9 +307,18 @@ int main(int argc, char **argv)
 		test(!strcmp("Hello, Mars\n\n", io_get_string(out)));
 		free(io_get_string(out));
 		state(io_close(out));
+
+		static const char block_in[16] = {1, 3, 4, 6};
+		static char block_out[16] = {0};
+		state((in = io_sin(block_in, 16)));
+		test(io_getc(in) == 1);
+		test(io_read(block_out, 1, 15, in) == 15);
+		test(!memcmp(block_out, block_in+1, 15));
+
+		state(io_close(in));
 	}
 
-	{			/* hash.c hash table tests */
+	{ /* hash.c hash table tests */
 		hash_table_t *h = NULL;
 		print_note("hash.c");
 		state(h = hash_create(1));

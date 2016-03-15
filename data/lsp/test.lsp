@@ -53,10 +53,10 @@
     (test = (match 'abc* 'abcd)     t)
     (test = (match 'abc  'abcd)     nil)
     (test = (match 'abcd 'abc)      nil)
-    (test < (ilog2 0)               255)
-    (test = (ilog2 1)               0)
-    (test = (ilog2 5)               2)
-    (test = (ilog2 8)               3)
+    ; (test < (ilog2 0)               255)
+    ; (test = (ilog2 1)               0)
+    ; (test = (ilog2 5)               2)
+    ; (test = (ilog2 8)               3)
     (test = (substring "hello, world" 2 12) "llo, world")
     (test = (median '(1 7 3 13))    5)
     (if *have-math* (test float-equal (standard-deviation '(206 76 -224 36 -94)) 147.322775) t)
@@ -82,33 +82,4 @@
       nil)
     (put *error* "Self-Test Passed\n")
     t))
-
-;; so slow
-;  (define all 
-;    (make-set 
-;      (map1 
-;        (lambda (x) 
-;          (coerce *string* x)) 
-;        (map1 
-;          (lambda (x) 
-;            (if (atom? x) x (car x))) 
-;          (coerce *cons* (cadr (top-environment)))))))
-; ; 
-; (define save 
-;   (flambda (x) 
-;            (format *output* 'log.txt "%S\n" x)))
-; 
-; (define find 
-;   (lambda (x) 
-;     (map1 
-;       (lambda (y) 
-;         (if 
-;           (match 
-;             (join "" "*" x "*") y) y nil)) all)))
-; 
-; (define print-me 
-;   (flambda (x) 
-;     (map1 
-;       (lambda (y) 
-;         (format *output* "%S\n" y)) x)))
 

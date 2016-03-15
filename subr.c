@@ -9,8 +9,7 @@
  *        keeping them in sync.  
  *  @todo Functions for hash: hash-keys, hash-values, hash-foreach, index
  *  arbitrary expressions by serializing them first
- *  @todo Functions for mutation of data structures, such as strings
- **/
+ *  @todo Functions for mutation of data structures, such as strings **/
 
 #include "liblisp.h"
 #include "private.h"
@@ -29,8 +28,8 @@
  *       documentation string (if NULL then there is no doc-string)
  *       subroutine name (as it appears with in the interpreter) */
 #define SUBROUTINE_XLIST\
-	X("assoc",       subr_assoc,     "A c",  "lookup a variable in an 'a-list'")\
 	X("all-symbols", subr_all_syms,  "",     "get a hash of all the symbols encountered so far")\
+	X("assoc",       subr_assoc,     "A c",  "lookup a variable in an 'a-list'")\
 	X("base",        subr_base,      "d d",  "convert a integer into a string in a base")\
 	X("car",         subr_car,       "c",    "return the first object in a list")\
 	X("cdr",         subr_cdr,       "c",    "return every object apart from the first in a list")\
@@ -51,6 +50,7 @@
 	X("get-char",    subr_getchar,   "i",    "read in a character from a port")\
 	X("get-delim",   subr_getdelim,  "i C",  "read in a string delimited by a character from a port")\
 	X("getenv",      subr_getenv,    "Z",    "get an environment variable (not thread safe)")\
+	X("get-io-str",  subr_get_io_str,"P",    "get a copy of a string from an IO string port")\
 	X("hash-create", subr_hash_create,   NULL,   "create a new hash")\
 	X("hash-info",   subr_hash_info,     "h",    "get information about a hash")\
 	X("hash-insert", subr_hash_insert,   "h Z A", "insert a variable into a hash")\
@@ -60,12 +60,10 @@
 	X("list",        subr_list,      NULL,   "create a list from the arguments")\
 	X("match",       subr_match,     "Z Z",  "perform a primitive match on a string")\
 	X("open",        subr_open,      "d Z",  "open a port (either a file or a string) for reading *or* writing")\
-	X("get-io-str",  subr_get_io_str,"P",    "get a copy of a string from an IO string port")\
 	X("output?",     subr_outp,      "A",    "is an object an output port?")\
 	X("print",       subr_print,     "o A",  "print out an s-expression")\
 	X("put-char",    subr_putchar,   "o d",  "write a character to a output port")\
 	X("put",         subr_puts,      "o Z",  "write a string to a output port")\
-	X("raise-signal",subr_raise,     "d",    "raise a signal")\
 	X("raw",         subr_raw,       "A",    "get the raw value of an object")\
 	X("read",        subr_read,      "I",    "read in an s-expression from a port or a string")\
 	X("remove",      subr_remove,    "Z",    "remove a file")\
@@ -75,6 +73,9 @@
 	X("scdr",        subr_scdr,      "Z",    "return a string excluding the first character")\
 	X("scons",       subr_scons,     "Z Z",  "concatenate two string")\
 	X("seek",        subr_seek,      "P d d", "perform a seek on a port (moving the port position indicator)")\
+	X("set-car!",    subr_setcar,    "c A",  "destructively set the first cell of a cons cell")\
+	X("set-cdr!",    subr_setcdr,    "c A",  "destructively set the second cell of a cons cell")\
+	X("signal",      subr_signal,     "d",    "raise a signal")\
 	X("&",           subr_band,      "d d",  "bit-wise and of two integers")\
 	X("~",           subr_binv,      "d",    "bit-wise inversion of an integers")\
 	X("|",           subr_bor,       "d d",  "bit-wise or of two integers")\
@@ -87,16 +88,12 @@
 	X("*",           subr_prod,      "a a",  "multiply two numbers")\
 	X("-",           subr_sub,       "a a",  "subtract two numbers")\
 	X("+",           subr_sum,       "a a",  "add two numbers")\
-	X("set-car!",    subr_setcar,    "c A",  "destructively set the first cell of a cons cell")\
-	X("set-cdr!",    subr_setcdr,    "c A",  "destructively set the second cell of a cons cell")\
 	X("substring",   subr_substring, NULL,   "create a substring from a string")\
 	X("tell",        subr_tell,      "P",    "return the position indicator of a port")\
 	X("top-environment", subr_top_env, "",   "return the top level environment")\
 	X("trace!",      subr_trace,     "d",    "set the log level, from no errors printed, to copious debugging information")\
 	X("tr",          subr_tr,        "Z Z Z Z", "translate a string given a format and mode")\
 	X("type-of",     subr_typeof,    "A",    "return an integer representing the type of an object")\
-	X("validate",    subr_validate,  "d Z c", "validate an argument list against a format string")\
-	X("validation-string", subr_validation_string, "x", "return the format string from a procedure")
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
@@ -895,7 +892,7 @@ hfail:
 	return gsym_error();
 }
 
-static lisp_cell_t *subr_raise(lisp_t * l, lisp_cell_t * args)
+static lisp_cell_t *subr_signal(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(l);
 	return raise(get_int(car(args))) ? gsym_nil() : gsym_tee();
@@ -1023,7 +1020,7 @@ static lisp_cell_t *subr_format(lisp_t * l, lisp_cell_t * args)
 				ret = io_printflt(get_a2f(car(args)), t);
 				args = cdr(args);
 				break;
-			case '*':
+			case '@':
 				if (is_nil(args) || !is_int(car(args)))
 					goto fail;
 				d = get_int(car(args));
@@ -1114,12 +1111,6 @@ static lisp_cell_t *subr_tr(lisp_t * l, lisp_cell_t * args)
 	return mk_str(l, ret);
 }
 
-static lisp_cell_t *subr_validate(lisp_t * l, lisp_cell_t * args)
-{
-	return LISP_VALIDATE_ARGS(l, "validate", get_int(car(args)), get_str(CADR(args)), CADDR(args), 0) ? 
-			gsym_tee() : gsym_nil();
-}
-
 static lisp_cell_t *subr_define_eval(lisp_t * l, lisp_cell_t * args)
 {
 	return lisp_extend_top(l, car(args), CADR(args));
@@ -1158,12 +1149,6 @@ static lisp_cell_t *subr_getenv(lisp_t * l, lisp_cell_t * args)
 {
 	char *ret;
 	return (ret = getenv(get_str(car(args)))) ? mk_str(l, lisp_strdup(l, ret)) : gsym_nil();
-}
-
-static lisp_cell_t *subr_validation_string(lisp_t * l, lisp_cell_t * args)
-{
-	char *s = get_func_format(car(args));
-	return s ? mk_str(l, lisp_strdup(l, s)) : gsym_nil();
 }
 
 static lisp_cell_t *subr_is_closed(lisp_t * l, lisp_cell_t * args)

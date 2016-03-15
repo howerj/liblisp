@@ -295,7 +295,8 @@
 
 ; Walk two isomorphic trees and apply a function to each pair
 ; of elements in each tree. It would be nice to make this function
-; more generic than it already is.
+; more generic than it already is, with pre, in, post or breadth
+; first search.
 (define tree-walk
   (compile "walk a tree and apply a function returning a bool" (f x y)
         (cond 

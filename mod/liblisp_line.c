@@ -68,7 +68,7 @@ static void completion_callback(const char *line, size_t pos, line_completions *
 	if(!(prepend  = calloc(lastsep + 2, 1)))
 		FATAL("out of memory");
 	memcpy(linecopy, line + lastsep + 1, pos - lastsep);
-	memcpy(prepend,  line, lastsep + 1);
+	memcpy(prepend,  line, lastsep + !!strchr(" \t{}()\".", line[lastsep]));
 
 	if (!(comp = VSTRCAT("*", linecopy, "*"))) /*match any symbol with key in it */
 		FATAL("out of memory");
@@ -87,22 +87,32 @@ static void completion_callback(const char *line, size_t pos, line_completions *
 	free(linecopy);
 }
 
+static int i_want_more_lines(const char *line)
+{
+	return unbalanced(line, '(', ')') > 0 || unbalanced(line, '{', '}') > 0;
+}
+
 static char *line_editing_function(const char *prompt)
 {
 	static int warned = 0; /**< have we warned the user we cannot write to
                                     the history file?*/
 	char *line, *new = NULL, *conc = NULL;
-	running = 0;		/*SIGINT handling off when reading input */
+	char varprompt[128];
+	int max_len = 0;
+	running = 0; /*SIGINT handling off when reading input */
 	line = line_editor(prompt);
 	/*do not add blank lines */
 	if (!line || !line[strspn(line, " \t\r\n")])
 		return line;
-	while (balance(line, '(', ')') > 0 || balance(line, '{', '}') > 0) {
-		/**@todo increase length of prompt depending on indent level*/
-		if (!(new = line_editor("=> "))) { 
+	max_len = strlen(line);
+	while (i_want_more_lines(line)) {
+		sprintf(varprompt, "%*.*s", max_len+2, 120, "=>");
+		if (!(new = line_editor(varprompt))) { 
 			free(line);
 			return NULL;
 		}
+		max_len += strspn(new, " "); 
+
 		if (!(conc = VSTRCATSEP(" ", line, new))) {
 			free(new);
 			free(line);

@@ -150,12 +150,12 @@ int io_puts(const char *s, io_t * o)
 }
 
 size_t io_read(void *ptr, size_t size, size_t nmemb, io_t *i)
-{ /**@todo test me, this function is untested*/
+{
 	if(i->type == IO_FIN)
 		return fread(ptr, size, nmemb, io_get_file(i));
 	if(i->type == IO_SIN) {
 		size_t len = size * nmemb; 
-		size_t copy = MIN(i->position + len, i->max);
+		size_t copy = MIN(len, i->max - i->position);
 		assert(size && len / size == nmemb); /*overflow check*/
 		memcpy(ptr, i->p.str + i->position, copy);
 		i->position += copy;

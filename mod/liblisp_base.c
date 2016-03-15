@@ -103,7 +103,9 @@ ISX_LIST /*defines lisp subroutines for checking whether a string only contains 
 	X("strstr",     subr_strstr,     "Z Z", "return offset of first occurrence of second string in the first")\
 	X("system",     subr_system,     NULL,  "execute a command with the system command interpreter")\
 	X("timed-eval", subr_timed_eval, "A",   "time an evaluation")\
-	X("time",       subr_time,       "",    "create a list representing the time")
+	X("time",       subr_time,       "",    "create a list representing the time")\
+	X("validation-string", subr_validation_string, "x", "return the format string from a procedure")\
+	X("validate",    subr_validate,  "d Z c", "validate an argument list against a format string")
 
 #define X(NAME, SUBR, VALIDATION , DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
@@ -209,6 +211,12 @@ static uint32_t crc_final(uint32_t crc)
 
 /******************************************************************************/
 
+static lisp_cell_t *subr_validate(lisp_t * l, lisp_cell_t * args)
+{
+	return LISP_VALIDATE_ARGS(l, "validate", get_int(car(args)), get_str(CADR(args)), CADDR(args), 0) ? 
+			gsym_tee() : gsym_nil();
+}
+
 static lisp_cell_t *subr_proc_code(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(l);
@@ -225,6 +233,12 @@ static lisp_cell_t *subr_proc_env(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(l);
 	return get_proc_env(car(args));
+}
+
+static lisp_cell_t *subr_validation_string(lisp_t * l, lisp_cell_t * args)
+{
+	char *s = get_func_format(car(args));
+	return s ? mk_str(l, lisp_strdup(l, s)) : gsym_nil();
 }
 
 static lisp_cell_t *subr_doc_string(lisp_t * l, lisp_cell_t * args)

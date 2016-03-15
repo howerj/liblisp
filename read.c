@@ -7,14 +7,7 @@
  *  An S-Expression parser, it takes it's input from a generic input
  *  port that can be set up to read from a string or a file.
  *
- *  The hash table arguments are all not evaluated, but the primitive
- *  "hash-create" can be used to create a table where the arguments are
- *  evaluated.
- *
- *  @todo Parsing macros and vector "[ list ]"
- *  @todo Parse binary data (including NULs in strings)
- *  @return Unique pointer when the parser requires more input
- **/
+ *  @todo Parse binary data (including NULs in strings) **/
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
@@ -25,12 +18,13 @@
 /* These are options that control what gets parsed */
 static const int parse_strings = 1,	/*parse strings? e.g. "Hello" */
     parse_floats = 1,		/*parse floating point numbers? e.g. 1.3e4 */
-    parse_ints = 1,		/*parse integers? e.g. 3 */
+    parse_ints   = 1,		/*parse integers? e.g. 3 */
     parse_hashes = 1, 		/*parse hashes? e.g. { a b c (1 2 3) } */
-    parse_dotted = 1 /*parse dotted pairs? e.g. (a . b) */ ;
+    parse_dotted = 1;		/*parse dotted pairs? e.g. (a . b) */
 
+/**@brief process a comment from I/O stream**/
 static int comment(io_t * i)
-{			    /**@brief process a comment from I/O stream**/
+{
 	int c;
 	while (((c = io_getc(i)) > 0) && (c != '\n')) ;
 	return c;

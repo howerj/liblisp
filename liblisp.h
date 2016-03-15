@@ -200,22 +200,22 @@ LIBLISP_API char *getadelim(FILE *in, int delim);
  *  @return char *      a NUL terminated string that can be freed**/
 LIBLISP_API char *vstrcatsep(const char *separator, const char *first, ...);
 
-/** @brief return the "balance" of a string of parens, this function
- *         takes into account strings.
+/** @brief returns whether a string is balanced, that is if the number
+ *         of parenthesis match up, it also takes into account strings.
  *
- *  For example:
+ *  For example, the following statements are true:
  *
- *         balance("(((", '(', ')') == 3;
- *         balance(")))", '(', ')') == -3;
- *         balance("()", '(', ')') == 0;
- *         balance("", '(', ')') == 0;
- *         balance("\"( Hello World\\" ( \" ))", '(', ')') == 2;
+ *         unbalance("(((", '(', ')') > 0;
+ *         unbalance(")))", '(', ')') < 0;
+ *         unbalance("()", '(', ')') == 0;
+ *         unbalance("", '(', ')') == 0;
+ *         unbalance("\"( Hello World\\" ( \" ))", '(', ')') > 0;
  *
  *  @param sexpr string to count balance in
  *  @param  lpar left  parenthesis 
  *  @param  rpar right parenthesis
  *  @return int  positive more '(', negative more ')', zero == balanced**/
-LIBLISP_API int balance(const char *sexpr, char lpar, char rpar);
+LIBLISP_API int unbalanced(const char *sexpr, char lpar, char rpar);
 
 /** @brief reverse a block of characters *in place* of a given length
  *  @param  s     character string to reverse
@@ -1086,7 +1086,7 @@ LIBLISP_API char *lisp_strdup(lisp_t *l, const char *s);
  *         The "fmt" format string acts like the "printf" format string,
  *
  *         '%'  print out a single escape char '%'
- *         '*'  print out "depth" many of the next character
+ *         '@'  print out "depth" many of the next character
  *         'c'  print out a single (c)haracter
  *         's'  print out a (s)tring
  *         'S'  print out a (S)-expression
