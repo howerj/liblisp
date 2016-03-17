@@ -30,11 +30,15 @@ extern "C" {
  * gsym_X functions defined in there liblisp.h header (such as gsym_nil,
  * gsym_tee or gsym_error). */
 #define CELL_XLIST /**< list of all special cells for initializer*/ \
-	X(nil,     "nil")    X(tee,     "t")      X(quote,   "quote")\
-	X(iif,     "if")     X(lambda,  "lambda") X(flambda, "flambda")\
-	X(define,  "define") X(set,     "set!")   X(progn,   "progn")\
-	X(cond,    "cond")   X(error,   "error")  X(loop,    "loop")\
-	X(let,     "let")    X(ret,     "return") X(compile, "compile")
+	X(nil,     "nil")     X(tee,     "t")      X(quote,   "quote")\
+	X(iif,     "if")      X(lambda,  "lambda") X(flambda, "flambda")\
+	X(define,  "define")  X(set,     "set!")   X(progn,   "progn")\
+	X(cond,    "cond")    X(error,   "error")  X(let,     "let")\
+       	X(compile, "compile") X(macro,   "macro")  X(dowhile, "while")\
+      	X(apply,   "apply")
+	/*@note apply-partially
+	 * https://www.gnu.org/software/emacs/manual/html_node/elisp/Calling-Functions.html
+	 * */
 
 /**@brief This restores a jmp_buf stored in lisp environment if it
  *	has been copied out to make way for another jmp_buf.
@@ -161,10 +165,12 @@ typedef struct gc_list {
 
 /** @brief functions the interpreter uses for user defined types */
 typedef struct { 
+	/**@todo I should provide a framework for overloading various other
+	 * built in functions (+, -, *, /, %, coerce, reverse, read, <, >)*/
 	lisp_free_func   free;  /**< to free a user defined type*/
 	lisp_mark_func   mark;  /**< to mark a user defined type*/
 	lisp_equal_func  equal; /**< to compare two user defined types*/
-	lisp_print_func  print; /**< to print two user defined types*/
+	lisp_print_func  print; /**< to print user defined types*/
 } lisp_user_defined_funcs_t; 
 
 /** @brief The state for a lisp interpreter, multiple such instances
@@ -263,6 +269,13 @@ lisp_cell_t *lisp_extend_top(lisp_t *l, lisp_cell_t *sym, lisp_cell_t *val);
  *         validation format string, as passed to lisp_validate_args()
  * @return argument count**/
 size_t lisp_validate_arg_count(const char *fmt);
+
+/**@brief  Coerce an object from one type to another type, if possible
+ * @param  l    an initialized lisp environment
+ * @param  type the type to convert to
+ * @param  from the cell to convert
+ * @return lisp_cell_t* the coerced type*/
+lisp_cell_t *lisp_coerce(lisp_t * l, lisp_type type, lisp_cell_t *from);
 
 #ifdef __cplusplus
 }

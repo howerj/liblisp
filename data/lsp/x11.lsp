@@ -72,40 +72,29 @@
 
 (load-redraw-list redraw-file)
 
-(progn
-	(let (event ())
-		(progn 
-			(set! event (select-input w))
-			;(format *output* "%S\n" event)
-			(if (is-mouse? event) 
-			  (progn 
-			    ;(format *output* "mouse\n")
-			    (draw-rectangle w (mouse-x event) (mouse-y event) rectangle-width rectangle-height) 
-			    (add-rectangle (mouse-x event) (mouse-y event))
-			    ;(format *output* "%S\n" redraw-list)
-			    nil)
-			  nil)
-			(if (is-redraw? event)
-			  (progn
-			    ; (format *output* "redraw\n")
-			    (redraw)
-			    nil)
-			  nil)
+(let (event ())
+  (while
+	(progn 
+		(set! event (select-input w))
+		(if (is-mouse? event) 
+		  (progn 
+		    (draw-rectangle w (mouse-x event) (mouse-y event) rectangle-width rectangle-height) 
+		    (add-rectangle (mouse-x event) (mouse-y event)))
+		  nil)
+		(cond ((is-redraw? event) (redraw)))
 
-			; must be last event
-			(if (is-key? event)
-			  (cond 
-			    ((= (key event) "q") (return return))
-			    ((= (key event) "s") (save-redraw-list redraw-file))
-			    ; clear screen
-			    ((= (key event) "c")
-			     (progn
-			       (set! redraw-list ())
-			       (clear-window w)
-			       nil))
-			    (t (format *output* "key %s\n" (key event))))
-			  nil)))
-	loop
-	t)
+		; must be last event
+		(if (is-key? event)
+		  (cond 
+		    ((= (key event) "q") nil)
+		    ((= (key event) "s") (save-redraw-list redraw-file))
+		    ; clear screen
+		    ((= (key event) "c")
+		     (progn
+		       (set! redraw-list ())
+		       (clear-window w)
+		       t))
+		    (t (format *output* "key %s\n" (key event))))
+		  t))))
 
 (save-redraw-list redraw-file)

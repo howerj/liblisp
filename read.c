@@ -62,6 +62,7 @@ static void unget_token(lisp_t * l, char *token)
 	l->ungettok = 1;
 }
 
+static const char lex[] = "(){}\'\""; /**@todo add '`', ','*/
 static char *lexer(lisp_t * l, io_t * i)
 {
 	assert(l && i);
@@ -75,10 +76,11 @@ static char *lexer(lisp_t * l, io_t * i)
 		if (ch == '#' || ch == ';') {
 			comment(i);
 			continue;
-		}		/*ugly */
+		}		/*ugly*/
 	} while (isspace(ch) || ch == '#' || ch == ';');
 	add_char(l, ch);
-	if (strchr("(){}\'\"", ch))
+	/**@bug if parse_hashes is off, "{}" gets processed as two tokens*/
+	if (strchr(lex, ch))
 		return new_token(l);
 	for (;;) {
 		if ((ch = io_getc(i)) == EOF)
@@ -87,7 +89,7 @@ static char *lexer(lisp_t * l, io_t * i)
 			comment(i);
 			continue;
 		}		/*ugly */
-		if (strchr("(){}\'\"", ch) || isspace(ch)) {
+		if (strchr(lex, ch) || isspace(ch)) {
 			io_ungetc(ch, i);
 			return new_token(l);
 		}

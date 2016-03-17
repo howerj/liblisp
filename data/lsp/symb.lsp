@@ -284,14 +284,15 @@
   (lambda
     "repeatedly simplify a tree of arity-n functions until there is no change."
     (poly)
-    (let (poly-new ()) 
-      (progn
-        (set! poly-new (simplifyn poly))
-        (if (equal poly-new poly) 
-          (return poly)
-          (set! poly poly-new))
-          loop
-          error))))
+    (let (poly-new ())
+      (progn 
+	(while
+	  (progn
+	    (set! poly-new (simplifyn poly))
+	    (if (equal poly-new poly)
+	      nil
+	      (set! poly poly-new))))
+      poly))))
 
 (define infix->prefix
   (lambda

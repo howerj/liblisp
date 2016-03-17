@@ -56,7 +56,6 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 #   USE_ABORT_HANDLER This adds in a handler that catches SIGABRT
 #                and prints out a stack trace if it can.
 DEFINES = -DUSE_DL -DUSE_ABORT_HANDLER -DUSE_MUTEX
-LINK    = -ldl -lpthread
 INCLUDE = -I.
 # This is for convenience only, it may cause problems.
 RPATH   ?= -Wl,-rpath=.
@@ -105,6 +104,7 @@ MKDIR    = mkdir
 MKDIR_FLAGS= -p
 SED      = sed
 LDCONFIG = ldconfig
+LINK    = -ldl -lpthread
 # misc
 DLL=so
 EXE=
@@ -190,7 +190,7 @@ VCS_DEFINES=-DVCS_ORIGIN="$(VCS_ORIGIN)" -DVCS_COMMIT="$(VCS_COMMIT)" -DVERSION=
 
 repl.o: repl.c lib$(TARGET).h
 	@echo CC $<
-	@$(CC) $(CFLAGS) $(INCLUDE) $(DEFINES) $(VCS_DEFINES) $< -c -o $@
+	@$(CC) $(CFLAGS) $(INCLUDE) $(DEFINES) -DCOMPILING_LIBLISP $(VCS_DEFINES) $< -c -o $@
 
 main.o: main.c lib$(TARGET).h lispmod.h
 	@echo CC $<

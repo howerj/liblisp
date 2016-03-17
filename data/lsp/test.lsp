@@ -15,13 +15,10 @@
          (i iter)
          (c 0)
          (progn
-           (set! i (- i 1))
-           (set! c (+ (inner) c))
-           (if 
-             (< i 1)
-             (return c)
-             loop)
-           ()))))
+	   (while (> i 1)
+		  (set! i (- i 1))
+		  (set! c (+ (inner) c)))
+           c))))
   (define monte-carlo-pi
     (lambda (iter)
       "determine the approximate value of pi with Monte-Carlo methods, more iterations produces a better approximation"

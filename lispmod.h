@@ -46,7 +46,7 @@ typedef HMODULE dl_handle_t;
 
 #define DL_OPEN(NAME)        LoadLibrary((NAME))
 #define DL_CLOSE(HANDLE)     FreeLibrary((HANDLE))
-#define DL_SYM(HANDLE, NAME) (subr)GetProcAddress((HMODULE)(HANDLE), (NAME))
+#define DL_SYM(HANDLE, NAME) (lisp_subr_func)GetProcAddress((HMODULE)(HANDLE), (NAME))
 #define DL_ERROR()           lisp_mod_dlerror()
 
 const char *lisp_mod_dlerror(void);

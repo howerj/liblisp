@@ -518,15 +518,10 @@ lisp_cell_t *lisp_assoc(lisp_cell_t * key, lisp_cell_t * alist)
 /** @brief "Compile" an expression, that is, perform optimizations
  *         and bind as many variables as possible. This function
  *         is a work in progress.
- *  @note Things that can be done here; partial argument checking,
- *        optimizing called procedures, constant folding and
- *        inlining small procedures. This function could also
- *        use set_car to replace the current list to save memory.
- *  @todo This function should be called bind
  *  @bug  This function really, really needs fixing.
  *  @bug  F-Expressions should be prevent compilation of their arguments
  **/
-static lisp_cell_t *compiler(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * env)
+static lisp_cell_t *binding_lambda(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * env)
 {
 	size_t i;
 	lisp_cell_t *head, *op, *tmp, *code = gsym_nil();
@@ -536,7 +531,7 @@ static lisp_cell_t *compiler(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp
 	if (is_sym(car(exp)) && !is_nil(tmp = lisp_assoc(car(exp), env)))
 		op = cdr(tmp);
 	else if (is_cons(car(exp)))
-		op = compiler(l, depth + 1, car(exp), env);
+		op = binding_lambda(l, depth + 1, car(exp), env);
 	else
 		op = car(exp);
 
@@ -547,7 +542,7 @@ static lisp_cell_t *compiler(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp
 		if (is_sym(car(exp)) && !is_nil(tmp = lisp_assoc(car(exp), env)))
 			code = cdr(tmp);
 		if (is_cons(car(exp)))
-			code = compiler(l, depth + 1, car(exp), env);
+			code = binding_lambda(l, depth + 1, car(exp), env);
 		set_cdr(op, cons(l, code, gsym_nil()));
 	}
 	if(!is_nil(exp))
@@ -663,8 +658,6 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 		}
 		if (first == l->quote)
 			DEBUG_RETURN(car(exp));
-		if (first == l->ret)
-			DEBUG_RETURN(cons(l, l->ret, cons(l, eval(l, depth + 1, car(exp), env), l->nil)));
 		if (first == l->define) {
 			LISP_VALIDATE_ARGS(l, "define", 2, "s A", exp, 1);
 			l->gc_stack_used = gc_stack_save;
@@ -686,7 +679,7 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			for (tmp = CADR(exp); !is_nil(tmp); tmp = cdr(tmp))
 				if (!is_sym(car(tmp)) || !is_proper_cons(tmp))
 					LISP_RECOVER(l, "%y'lambda\n %r\"expected only symbols (or nil) as arguments\"%t\n %S", exp);
-			tmp = compiler(l, depth + 1, CADDR(exp), env);
+			tmp = binding_lambda(l, depth + 1, CADDR(exp), env);
 			DEBUG_RETURN(mk_proc(l, CADR(exp), cons(l, tmp, gsym_nil()), env, doc));
 		}
 		if (first == l->let) {
@@ -703,28 +696,36 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			}
 			DEBUG_RETURN(eval(l, depth + 1, car(exp), env));
 		}
-		/**@bug  loop/return and tail call optimization do not mix
-                 * @todo improve looping constructs, also the current lambda
-                 *       could be stored and used. "while" should really
-                 *       replace these looping constructions along with
-                 *       macros. */
 		if (first == l->progn) {
-			lisp_cell_t *head = exp, *tmp;
+			lisp_cell_t *head = exp;
 			if (is_nil(exp))
 				DEBUG_RETURN(l->nil);
- begin:		for (exp = head;;) {
-				if (is_nil(cdr(exp))) {
-					exp = car(exp);
-					goto tail;
-				}
+			for (exp = head; !is_nil(cdr(exp)); exp = cdr(exp)) {
 				l->gc_stack_used = gc_stack_save;
-				tmp = eval(l, depth + 1, car(exp), env);
-				if (tmp == l->loop)
-					goto begin;
-				if (is_cons(tmp) && car(tmp) == l->ret)
-					DEBUG_RETURN(CADR(tmp));
-				exp = cdr(exp);
+				(void)eval(l, depth + 1, car(exp), env);
 			}
+			exp = car(exp);
+			goto tail;
+		}
+
+		if(first == l->dowhile) {
+			lisp_cell_t *wh = car(exp), *head = cdr(exp);
+			while(!is_nil(eval(l, depth + 1, wh, env))) {
+				l->gc_stack_used = gc_stack_save;
+				for(exp = head; is_cons(exp); exp = cdr(exp)) 
+					(void)eval(l, depth + 1, car(exp), env);
+				if(!is_nil(exp))
+					LISP_RECOVER(l, "%r\"while cannot eval dotted pairs\"%t\n '%S", head);
+			}
+			DEBUG_RETURN(l->nil);
+		}
+
+		if(first == l->macro) {
+			/**@todo implement me*/
+		}
+
+		if(first == l->apply) {
+			/**@todo implement me*/
 		}
 
 		proc = eval(l, depth + 1, first, env);

@@ -977,18 +977,21 @@ LIBLISP_API lisp_cell_t *gsym_error(void);
  * and evaluating expressions in the modified local environment */
 LIBLISP_API lisp_cell_t *gsym_let(void);
 
-/**@brief  return the "return" symbol
- * @return lisp_cell_t* The special "return" symbol, used to return from a "progn"
- * early */
-LIBLISP_API lisp_cell_t *gsym_ret(void);
-
-/**@brief  return the "loop" symbol
- * @return lisp_cell_t* The special "loop" symbol, used for looping in a "progn" */
-LIBLISP_API lisp_cell_t *gsym_loop(void);
-
 /**@brief  return the "compile" symbol
  * @return lisp_cell_t* The special "compile" symbol, */
 LIBLISP_API lisp_cell_t *gsym_compile(void);
+
+/**@brief  return the "macro" symbol
+ * @return lisp_cell_t* The special "macro" symbol, */
+LIBLISP_API lisp_cell_t *gsym_macro(void);
+
+/**@brief  return the "while" symbol
+ * @return lisp_cell_t* The special "while" symbol, */
+LIBLISP_API lisp_cell_t *gsym_dowhile(void);
+
+/**@brief  return the "apply" symbol
+ * @return lisp_cell_t* The special "apply" symbol, */
+LIBLISP_API lisp_cell_t *gsym_apply(void);
 
 /**@brief fix a lists length after calls to set_cdr
  * @warning This function, along with set_car and set_cdr

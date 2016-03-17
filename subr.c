@@ -693,16 +693,22 @@ static lisp_cell_t *subr_hash_info(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_coerce(lisp_t * l, lisp_cell_t * args)
 {
+	if (!lisp_check_length(args, 2) && !is_int(car(args)))
+		goto fail;
+	return lisp_coerce(l, get_int(car(args)), CADR(args));
+ fail:	LISP_RECOVER(l, "\"expected (int any)\"\n %S", args);
+	return gsym_error();
+}
+
+lisp_cell_t *lisp_coerce(lisp_t * l, lisp_type type, lisp_cell_t *from)
+{
 	char *fltend = NULL;
 	intptr_t d = 0;
 	size_t i = 0, j;
-	lisp_cell_t *from, *x, *y, *head;
-	if (!lisp_check_length(args, 2) && !is_int(car(args)))
-		goto fail;
-	from = CADR(args);
-	if (get_int(car(args)) == from->type)
+	lisp_cell_t *x, *y, *head;
+	if (type == from->type)
 		return from;
-	switch (get_int(car(args))) {
+	switch (type) {
 	case INTEGER:
 		if (is_str(from)) {
 			if (!is_number(get_str(from)))
@@ -746,16 +752,16 @@ static lisp_cell_t *subr_coerce(lisp_t * l, lisp_cell_t * args)
 		}
 		break;
 	case STRING:
-		if (is_int(from)) {	/*int to string */
+		if (is_int(from)) {		/*int to string */
 			char s[64] = "";	/*holds all integer strings */
 			sprintf(s, "%" PRIiPTR, get_int(from));
 			return mk_str(l, lisp_strdup(l, s));
 		}
-		if (is_sym(from))	/*symbol to string */
+		if (is_sym(from))		/*symbol to string */
 			return mk_str(l, lisp_strdup(l, get_str(from)));
 		if (is_floating(from)) {	/*float to string */
-			char s[512] = "";	/*holds all float strings */
-			sprintf(s, "%.6f", get_float(from));
+			char s[64] = "";	/*holds all float strings */
+			sprintf(s, "%e", get_float(from));
 			return mk_str(l, lisp_strdup(l, s));
 		}
 		if (is_cons(from)) {	/*list of chars/ints to string */
@@ -800,7 +806,7 @@ static lisp_cell_t *subr_coerce(lisp_t * l, lisp_cell_t * args)
 	default:
 		break;
 	}
- fail:	LISP_RECOVER(l, "\"invalid conversion or argument length not 2\"\n %S", args);
+ fail:	LISP_RECOVER(l, "%r\"invalid conversion\"\n %m%d%t %S", type, from);
 	return gsym_error();
 }
 

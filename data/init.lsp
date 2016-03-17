@@ -26,7 +26,7 @@
         (define type?   (compile "is a object of a certain type" (type-enum x) (eq type-enum (type-of x))))
         (define symbol? (compile "is x a symbol" (x) (type? *symbol* x)))
         (define string? (compile "is x a string" (x) (type? *string* x)))
-        (define exit    (compile "exit the interpreter" ()  (raise-signal *sig-term*)))
+        (define exit    (compile "exit the interpreter" ()  (signal *sig-term*)))
         (define string->symbol (compile "coerce a symbol into a string" (sym) (coerce *symbol* sym)))
         (define *file-separator* 
                 (cond 
@@ -52,12 +52,12 @@
                       (if print-result
                         (format *output* "%S\n" x)
                         nil)
-                      loop)))))
+                      t)))))
              (cond ; If we have been given a potential file name, try to open it
               ((or (string? file) (symbol? file))
                 (let (file-handle (open *file-in* file))
                   (if (input? file-handle)
-                    (progn (eval-file-inner file-handle on-error-fn)
+                    (progn (while (eval-file-inner file-handle on-error-fn))
                            (close file-handle) ; Close file!
                            nil)
                     (progn (format *error* "Could not open file for reading: %s\n" file)
