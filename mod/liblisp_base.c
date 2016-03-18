@@ -16,6 +16,58 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <time.h>
+#include <math.h>
+#include "utf8.h"
+
+/**@brief Template for most of the functions in "math.h"
+ * @param NAME name of math function such as "log", "sin", etc.*/
+#define SUBR_MATH_UNARY(NAME, VALIDATION, DOCSTRING)\
+static lisp_cell_t *subr_ ## NAME (lisp_t *l, lisp_cell_t *args) {\
+        return mk_float(l, NAME (get_a2f(car(args))));\
+}
+
+#define MATH_UNARY_LIST\
+	X(log,   "a", "natural logarithm")\
+	X(fabs,  "a", "absolute value")\
+	X(sin,   "a", "sine")\
+	X(cos,   "a", "cosine")\
+	X(tan,   "a", "tangent")\
+	X(asin,  "a", "arcsine")\
+	X(acos,  "a", "arcosine")\
+	X(atan,  "a", "arctangent")\
+	X(sinh,  "a", "hyperbolic sine")\
+	X(cosh,  "a", "hyperbolic cosine")\
+	X(tanh,  "a", "hyperbolic tangent")\
+	X(exp,   "a", "exponential function")\
+	X(sqrt,  "a", "square root")\
+	X(ceil,  "a", "ceiling")\
+	X(floor, "a", "floor")\
+	X(log10, "a", "logarithm (base 10)")
+
+#define X(FUNC, VALIDATION, DOCSTRING) SUBR_MATH_UNARY(FUNC, VALIDATION, DOCSTRING)
+MATH_UNARY_LIST
+#undef X
+static lisp_cell_t *subr_pow(lisp_t * l, lisp_cell_t * args)
+{
+	return mk_float(l, pow(get_a2f(car(args)), get_a2f(CADR(args))));
+}
+
+static lisp_cell_t *subr_modf(lisp_t * l, lisp_cell_t * args)
+{
+	double x, fracpart, intpart = 0;
+	x = get_a2f(car(args));
+	fracpart = modf(x, &intpart);
+	return cons(l, mk_float(l, intpart), mk_float(l, fracpart));
+}
+
+#define X(SUBR, VALIDATION, DOCSTRING) { # SUBR, VALIDATION, MK_DOCSTR( #SUBR, DOCSTRING), subr_ ## SUBR },
+static lisp_module_subroutines_t math_primitives[] = {
+	MATH_UNARY_LIST		/*all of the subr functions */
+	{ "modf", "a", MK_DOCSTR("modf", "split a float into integer and fractional parts"), subr_modf}, 
+	{ "pow", "a a", MK_DOCSTR("pow:", "raise a base to a power"), subr_pow}, 
+	{ NULL, NULL, NULL, NULL}	/*must be terminated with NULLs */
+};
+#undef X
 
 #define INTEGER_XLIST\
 	X("*lc-all*",       LC_ALL)       X("*lc-collate*",  LC_COLLATE)\
@@ -105,14 +157,17 @@ ISX_LIST /*defines lisp subroutines for checking whether a string only contains 
 	X("timed-eval", subr_timed_eval, "A",   "time an evaluation")\
 	X("time",       subr_time,       "",    "create a list representing the time")\
 	X("validation-string", subr_validation_string, "x", "return the format string from a procedure")\
-	X("validate",    subr_validate,  "d Z c", "validate an argument list against a format string")
+	X("validate",   subr_validate,  "d Z c", "validate an argument list against a format string")\
+	X("is-utf8?",   subr_isutf8,     "Z",   "return t if string is valid utf8, nil otherwise")\
+	X("utf8-length", subr_utf8_length, "Z", "return length of UTF-8 string, or error if UTF-8 validation fails")\
+	X("utf8-strchr", subr_utf8_strchr, "C Z", "return index into first occurrence of character in UTF-8 string")
 
 #define X(NAME, SUBR, VALIDATION , DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(NAME, DOCSTRING), SUBR },
-static lisp_module_subroutines_t primitives[] = {
+static lisp_module_subroutines_t main_primitives[] = {
 	SUBROUTINE_XLIST		/*all of the subr functions */
 	{ NULL, NULL, NULL, NULL}	/*must be terminated with NULLs */
 };
@@ -210,6 +265,44 @@ static uint32_t crc_final(uint32_t crc)
 }
 
 /******************************************************************************/
+
+static lisp_cell_t *subr_utf8_strchr(lisp_t * l, lisp_cell_t * args)
+{
+	char *utf8str = get_str(CADR(args));
+	char *res;
+	size_t utf8len  = get_length(CADR(args));
+	int i = 0;
+	uint32_t utf8char;
+
+	if(utf8_validate(utf8str, utf8len) == UTF8_REJECT)
+		return gsym_error();
+	if(is_asciiz(car(args))) { 
+		if(utf8_validate(get_str(car(args)), get_length(car(args))) == UTF8_REJECT)
+			return gsym_error();
+		utf8char = utf8_nextchar(get_str(car(args)), &i);
+	} else { /**@todo perform validation on integer*/
+		utf8char = get_int(car(args));
+	}
+	i = 0;
+	if((res = utf8_strchr(utf8str, utf8char, &i))) 
+		return mk_int(l, res - utf8str);
+	return gsym_nil();
+}
+
+static lisp_cell_t *subr_utf8_length(lisp_t * l, lisp_cell_t * args)
+{
+	if(utf8_validate(get_str(car(args)), get_length(car(args))) == UTF8_REJECT)
+		return gsym_error();
+	return mk_int(l, utf8_strlen(get_str(car(args))));
+}
+
+static lisp_cell_t *subr_isutf8(lisp_t * l, lisp_cell_t * args)
+{
+	UNUSED(l);
+	if(utf8_validate(get_str(car(args)), get_length(car(args))) == UTF8_ACCEPT)
+		return gsym_tee();
+	return gsym_nil();
+}
 
 static lisp_cell_t *subr_validate(lisp_t * l, lisp_cell_t * args)
 {
@@ -403,7 +496,10 @@ ISX_LIST /*add all of the subroutines for string character class testing*/
                 if(!lisp_add_cell(l, floats[i].name, mk_float(l, floats[i].val)))
                         goto fail;
 
-	return lisp_add_module_subroutines(l, primitives, 0);
+	if(lisp_add_module_subroutines(l, math_primitives, 0) < 0)
+		return -1;
+
+	return lisp_add_module_subroutines(l, main_primitives, 0);
 fail:
 	return -1;
 }

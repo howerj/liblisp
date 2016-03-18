@@ -24,13 +24,17 @@ modules: $(MODULES)
 	@echo CC $<
 	@$(CC) $(CFLAGS) -I. $< -c -o $@
 
+utf8.o: $(CURDIR)utf8.c $(CURDIR)utf8.h
+	@echo CC $<
+	@$(CC) $(CFLAGS) -I. $< -c -o $@
+
 liblisp_pcre.$(DLL): liblisp_pcre.o $(MOD_DEPS)
 	@echo CC -o $@
 	@$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lpcre -o $@
 
-liblisp_base.$(DLL): liblisp_base.o $(MOD_DEPS)
+liblisp_base.$(DLL): liblisp_base.o utf8.o $(MOD_DEPS)
 	@echo CC -o $@
-	@$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -o $@
+	@$(CC) $(CFLAGS) -shared $< utf8.o -lm $(ADDITIONAL) -o $@
 
 liblisp_line.o: $(CURDIR)liblisp_line.c $(MOD_DEPS)
 	@echo CC -o $@

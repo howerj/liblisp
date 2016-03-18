@@ -509,8 +509,8 @@ static lisp_cell_t *subr_open(lisp_t * l, lisp_cell_t * args)
 	io_t *ret = NULL;
 	char *file  = get_str(CADR(args));
 	size_t flen = get_length(CADR(args));
-
-	switch (get_int(car(args))) {
+	intptr_t type = get_int(car(args));
+	switch (type) { 
 	case IO_FIN:
 		ret = io_fin(fopen(file, "rb"));
 		break;
@@ -714,9 +714,11 @@ lisp_cell_t *lisp_coerce(lisp_t * l, lisp_type type, lisp_cell_t *from)
 			if (!is_number(get_str(from)))
 				goto fail;
 			sscanf(get_str(from), "%" SCNiPTR, &d);
-		}
-		if (is_floating(from))	/*float to string */
+		} else if (is_floating(from)) {	/*float to string */
 			d = (intptr_t) get_float(from);
+		} else {
+			goto fail;
+		}
 		return mk_int(l, d);
 	case CONS:
 		if (is_str(from)) {	/*string to list of chars */
