@@ -9,6 +9,27 @@
 #include "private.h"
 #include <assert.h>
 #include <ctype.h>
+#include <stdlib.h>
+
+char *lisp_serialize(lisp_t *l, lisp_cell_t *x)
+{
+	assert(l && x);
+	char *rs = NULL;
+	io_t *s = io_sout(2);
+	if(!s)
+		goto fail;
+	if(printer(l, s, x, 0) < 0)
+		goto fail;
+	rs = io_get_string(s);
+	io_close(s); /*this does not free the string it contains*/
+	return rs;
+fail:
+	if(s) {
+		free(io_get_string(s));
+		io_close(s);
+	}
+	return NULL;
+}
 
 static int print_escaped_string(lisp_t * l, io_t * o, unsigned depth, char *s)
 {

@@ -149,14 +149,12 @@ int io_puts(const char *s, io_t * o)
 	return EOF;
 }
 
-size_t io_read(void *ptr, size_t size, size_t nmemb, io_t *i)
+size_t io_read(char *ptr, size_t size, io_t *i)
 {
 	if(i->type == IO_FIN)
-		return fread(ptr, size, nmemb, io_get_file(i));
+		return fread(ptr, 1, size, io_get_file(i));
 	if(i->type == IO_SIN) {
-		size_t len = size * nmemb; 
-		size_t copy = MIN(len, i->max - i->position);
-		assert(size && len / size == nmemb); /*overflow check*/
+		size_t copy = MIN(size, i->max - i->position);
 		memcpy(ptr, i->p.str + i->position, copy);
 		i->position += copy;
 		return copy;
@@ -165,14 +163,13 @@ size_t io_read(void *ptr, size_t size, size_t nmemb, io_t *i)
 	return 0;
 }
 
-size_t io_write(void *ptr, size_t size, size_t nmemb, io_t *o)
+size_t io_write(char *ptr, size_t size, io_t *o)
 { /**@todo test me, this function is untested*/
 	if(o->type == IO_SOUT) {
 		char *p;
-		size_t len = size * nmemb, newpos, maxt; 
-		assert(size && len / size == nmemb); /*overflow check*/
-		if (o->position + len >= (o->max - 1)) {/*grow the "file" */
-			maxt = (o->position + len) * 2;
+		size_t newpos, maxt; 
+		if (o->position + size >= (o->max - 1)) {/*grow the "file" */
+			maxt = (o->position + size) * 2;
 			if (maxt < o->position)	/*overflow */
 				return o->eof = 1, EOF;
 			o->max = maxt;
@@ -181,18 +178,17 @@ size_t io_write(void *ptr, size_t size, size_t nmemb, io_t *o)
 			memset(p + o->position, 0, maxt - o->position);
 			o->p.str = p;
 		}
-		newpos = o->position + len;
+		newpos = o->position + size;
 		if (newpos >= o->max)
-			len = newpos - o->max;
-		memmove(o->p.str + o->position, ptr, len);
+			size = newpos - o->max;
+		memmove(o->p.str + o->position, ptr, size);
 		o->position = newpos;
-		return len;
+		return size;
 	}
-	if(o->type == IO_FOUT) {
-		return fwrite(ptr, size, nmemb, io_get_file(o));
-	}
+	if(o->type == IO_FOUT)
+		return fwrite(ptr, 1, size, io_get_file(o));
 	if(o->type == IO_NULLOUT)
-		return nmemb;
+		return size;
 	FATAL("unknown or invalid IO type");
 	return 0;
 }

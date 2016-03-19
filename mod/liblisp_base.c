@@ -118,20 +118,21 @@ static lisp_cell_t *subr_ ## NAME (lisp_t *l, lisp_cell_t *args) { UNUSED(l);\
         return gsym_tee();\
 }
 
+/**@todo give these functions better names*/
 #define ISX_LIST\
-        X(isalnum,  "Is a string or integer composed of alphanumeric characters?")\
-        X(isalpha,  "Is a string or integer composed of alphabetic characters?")\
-        X(iscntrl,  "Is a string or integer composed of control characters?")\
-        X(isdigit,  "Is a string or integer composed of digits?")\
-        X(isgraph,  "Is a string or integer composed of printable characters (excluding space)?")\
-        X(islower,  "Is a string or integer composed of lower case characters?")\
-        X(isprint,  "Is a string or integer composed of printable characters?")\
-        X(ispunct,  "Is a string or integer composed of punctuation characters?")\
-        X(isspace,  "Is a string or integer composed of whitespace characters?")\
-        X(isupper,  "Is a string or integer composed of upper case characters?")\
-        X(isxdigit, "Is a string or integer composed of hexadecimal digits?")
+        X("alphanumeric?", isalnum,  "Is a string or integer composed of alphanumeric characters?")\
+        X("alpha?",        isalpha,  "Is a string or integer composed of alphabetic characters?")\
+        X("control-character?", iscntrl,  "Is a string or integer composed of control characters?")\
+        X("digit?",       isdigit,  "Is a string or integer composed of digits?")\
+        X("printable-excluding-space?", isgraph,  "Is a string or integer composed of printable characters (excluding space)?")\
+        X("lowercase?",   islower,  "Is a string or integer composed of lower case characters?")\
+        X("printable?",   isprint,  "Is a string or integer composed of printable characters?")\
+        X("punctuation?", ispunct,  "Is a string or integer composed of punctuation characters?")\
+        X("space?",       isspace,  "Is a string or integer composed of whitespace characters?")\
+        X("uppercase?",   isupper,  "Is a string or integer composed of upper case characters?")\
+        X("hex-digit?",   isxdigit, "Is a string or integer composed of hexadecimal digits?")
 
-#define X(FUNC, IGNORE) SUBR_ISX(FUNC)
+#define X(NAME, FUNC, IGNORE) SUBR_ISX(FUNC)
 ISX_LIST /*defines lisp subroutines for checking whether a string only contains a character class*/
 #undef X
 
@@ -484,7 +485,7 @@ int lisp_module_initialize(lisp_t *l)
         for(size_t i = 0; i < 4096; i++) /*discard first N numbers*/
                 (void)xorshift128plus(xorshift128plus_state);
 
-#define X(FUNC, DOCSTRING) if(!lisp_add_subr(l, # FUNC "?", subr_ ## FUNC, "C", MK_DOCSTR(# FUNC "?", DOCSTRING))) goto fail;
+#define X(NAME, FUNC, DOCSTRING) if(!lisp_add_subr(l, NAME, subr_ ## FUNC, "C", MK_DOCSTR(# FUNC "?", DOCSTRING))) goto fail;
 ISX_LIST /*add all of the subroutines for string character class testing*/
 #undef X
 

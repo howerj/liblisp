@@ -24,12 +24,12 @@
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST		/*function prototypes for all of the built-in subroutines */
 #undef X
+
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) { NAME, VALIDATION, MK_DOCSTR(#SUBR, DOCSTRING), SUBR },
 static lisp_module_subroutines_t primitives[] = {
 	SUBROUTINE_XLIST	/*all of the subr functions */
 	{NULL, NULL, NULL, NULL}	/*must be terminated with NULLs */
 };
-
 #undef X
 
 static int ud_tcc = 0;

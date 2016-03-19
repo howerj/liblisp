@@ -35,10 +35,6 @@ extern "C" {
 	X(define,  "define")  X(set,     "set!")   X(progn,   "progn")\
 	X(cond,    "cond")    X(error,   "error")  X(let,     "let")\
        	X(compile, "compile") X(macro,   "macro")  X(dowhile, "while")\
-      	X(apply,   "apply")
-	/*@note apply-partially
-	 * https://www.gnu.org/software/emacs/manual/html_node/elisp/Calling-Functions.html
-	 * */
 
 /**@brief This restores a jmp_buf stored in lisp environment if it
  *	has been copied out to make way for another jmp_buf.
@@ -58,7 +54,7 @@ typedef enum lisp_type {
 	CONS,    /**< cons cell*/
 	PROC,    /**< lambda procedure*/
 	SUBR,    /**< subroutine or primitive written in C*/
-	STRING,  /**< a NUL terminated string, @todo strings should operate on UTF-8 */
+	STRING,  /**< a NUL terminated string, @todo strings should operate on UTF-8, or binary data */
 	IO,      /**< Input/Output port*/
 	HASH,    /**< Associative hash table*/
 	FPROC,   /**< F-Expression*/
@@ -93,8 +89,7 @@ struct cell {
 		mark:    1,        /**< mark for garbage collection*/
 		uncollectable: 1,  /**< do not free object?*/
 		close:   1,        /**< object closed/invalid?*/
-		used:    1, /**< object is in use by something outside lisp interpreter*/
-		len:     BITS_IN_LENGTH; /**< length of data p*/
+		used:    1; /**< object is in use by something outside lisp interpreter*/
 	cell_data_t p[1]; /**< uses the "struct hack", 
 	                     c99 does not quite work here*/
 } /*__attribute__((packed)) <- saves a fair bit of space */;  
@@ -166,7 +161,7 @@ typedef struct gc_list {
 /** @brief functions the interpreter uses for user defined types */
 typedef struct { 
 	/**@todo I should provide a framework for overloading various other
-	 * built in functions (+, -, *, /, %, coerce, reverse, read, <, >)*/
+	 * built in functions (+, -, *, /, %, coerce, length, reverse, read, <, >)*/
 	lisp_free_func   free;  /**< to free a user defined type*/
 	lisp_mark_func   mark;  /**< to mark a user defined type*/
 	lisp_equal_func  equal; /**< to compare two user defined types*/

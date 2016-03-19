@@ -38,6 +38,8 @@
 (define cadddr (compile "cadddr" (x) (car (cdr (cdr (cdr x))))))
 (define cadadr (compile "cadadr" (x)  (car (cdr (car (cdr x))))))
 
+(define /= (compile "not equal" (x y) (not (= x y))))
+
 (define subst 
   (compile
     "substitute all y for x in tree z" 
@@ -240,14 +242,14 @@
       ((atom? (car l)) (lat? (cdr l)))
       (t nil))))
 
-(define member?
+(define member
   (compile
     "find an atom in a list of atoms"
     (a lat)
     (cond
       ((nil? lat) ())
       (t (or (equal (car lat) a)
-                (member? a (cdr lat)))))))
+                (member a (cdr lat)))))))
 
 (define remove-member 
   (compile

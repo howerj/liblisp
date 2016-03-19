@@ -9,7 +9,7 @@
     (lat)
     (cond
       ((nil? lat) t)
-      ((member? (car lat) (cdr lat)) nil)
+      ((member (car lat) (cdr lat)) nil)
       (t (set? (cdr lat))))))
 
 (define make-set 
@@ -18,7 +18,7 @@
      (lambda (lat)
        (cond
          ((nil? lat) nil)
-         ((member? (car lat) (cdr lat)) (*make-set (cdr lat)))
+         ((member (car lat) (cdr lat)) (*make-set (cdr lat)))
          (t (cons (car lat) (*make-set (cdr lat)))))))
    (lambda "make a set from a list of strings *or* numbers" (lat)
     (*make-set (sort lat)))))
@@ -29,7 +29,7 @@
     (A B)
     (cond 
       ((nil? A) t)
-      ((member? (car A) B)
+      ((member (car A) B)
        (subset? (cdr A) B))
       (t nil))))
 
@@ -45,7 +45,7 @@
     "does set A intersect with set B?"
     (cond
       ((nil? A) nil)
-      ((member? (car A) B) t)
+      ((member (car A) B) t)
       (t (intersects? (cdr A) B)))))
 
 (define intersection ; A ∩ B 
@@ -53,7 +53,7 @@
     "compute the intersection of sets A and B"
     (cond
       ((nil? A) nil)
-      ((member? (car A) B)
+      ((member (car A) B)
        (cons 
          (car A) 
          (intersection (cdr A) B)))
@@ -65,7 +65,7 @@
     (A B)
     (cond
       ((nil? A) B)
-      ((member? (car A) B)
+      ((member (car A) B)
        (union (cdr A) B))
       (t (cons 
            (car A) 
@@ -75,7 +75,7 @@
   (lambda (A B)
     (cond
       ((nil? A) nil)
-      ((member? (car A) B)
+      ((member (car A) B)
        (A\B (cdr A) B))
       (t (cons 
            (car A) 

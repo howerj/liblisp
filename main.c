@@ -72,6 +72,7 @@ fail:   signal(sig, SIG_DFL);
 #else
 #error "USE_MUTEX not supported on Unknown platform"
 #endif
+
 /**@todo improve this code and test it on Windows, also add it to a liblisp
  * module header.
  *

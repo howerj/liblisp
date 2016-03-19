@@ -6,7 +6,15 @@
  *  
  *  An S-Expression parser, it takes it's input from a generic input
  *  port that can be set up to read from a string or a file.
- *
+ *  @todo Add various syntax sugar, as from Arc lisp, examples:
+ *        a.b <=> (a b),
+ *        a!b <=> (a 'b),
+ *        a:b <=> (compose a b),
+ *        ~a  <=> (complement a),
+ *        `a  <=> (quasiquote a), needs macros 
+ *        ,a  <=> (unquote a),    needs macros
+ *        ,@a <=> (unquote-splicing a), needs macros
+ *        (caddr a) <=> (car (cdr (cdr a)))
  *  @todo Parse binary data (including NULs in strings) **/
 #include "liblisp.h"
 #include "private.h"
@@ -131,6 +139,9 @@ static char *read_string(lisp_t * l, io_t * i)
 			case '1':
 			case '2':
 			case '3':
+				/**@todo use io_read*
+				if(io_read(num, 1, 3, i) != 3)
+				       goto fail;*/
 				num[0] = ch;
 				if ((ch = io_getc(i)) == EOF)
 					return NULL;
@@ -221,6 +232,26 @@ fail:
 	return NULL;
 }
 
+static lisp_cell_t *process_symbol(lisp_t *l, char *token)
+{ /**@note any syntax sugar goes here (eg. a.b => (a b), or (caar a) => (car (car a)) */
+	for(size_t len = strlen(token), i = 0; i < len; i++)
+	{
+		switch(token[i]) {
+		case '.': /**@todo*/
+		case '!':
+		case ':':
+		case 'c': /*process lengths of c(a|d)+r*/
+		default:
+			break;
+		}
+	}
+
+	lisp_cell_t *ret = lisp_intern(l, token);
+	if (get_sym(ret) != token)
+		free(token);
+	return ret;
+}
+
 static lisp_cell_t *read_list(lisp_t * l, io_t * i);
 lisp_cell_t *reader(lisp_t * l, io_t * i)
 {
@@ -275,10 +306,7 @@ lisp_cell_t *reader(lisp_t * l, io_t * i)
 		}
  nostring:
  nohash:
-		ret = lisp_intern(l, token);
-		if (get_sym(ret) != token)
-			free(token);
-		return ret;
+		return process_symbol(l, token);
 	}
 	return gsym_nil();
 }

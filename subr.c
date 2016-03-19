@@ -29,6 +29,7 @@
  *       subroutine name (as it appears with in the interpreter) */
 #define SUBROUTINE_XLIST\
 	X("all-symbols", subr_all_syms,  "",     "get a hash of all the symbols encountered so far")\
+	X("apply",       subr_apply,     NULL,   "apply a function to an argument list")\
 	X("assoc",       subr_assoc,     "A c",  "lookup a variable in an 'a-list'")\
 	X("base",        subr_base,      "d d",  "convert a integer into a string in a base")\
 	X("car",         subr_car,       "c",    "return the first object in a list")\
@@ -93,7 +94,7 @@
 	X("top-environment", subr_top_env, "",   "return the top level environment")\
 	X("trace!",      subr_trace,     "d",    "set the log level, from no errors printed, to copious debugging information")\
 	X("tr",          subr_tr,        "Z Z Z Z", "translate a string given a format and mode")\
-	X("type-of",     subr_typeof,    "A",    "return an integer representing the type of an object")\
+	X("type-of",     subr_typeof,    "A",    "return an integer representing the type of an object")
 
 #define X(NAME, SUBR, VALIDATION, DOCSTRING) static lisp_cell_t * SUBR (lisp_t *l, lisp_cell_t *args);
 SUBROUTINE_XLIST /*function prototypes for all of the built-in subroutines*/
@@ -131,7 +132,7 @@ static const struct integer_list { char *name; intptr_t val; } integers[] = {
 };
 #undef X
 
-#define X(CNAME, LNAME) static lisp_cell_t _ ## CNAME = { SYMBOL, 0, 1, 0, 0, 0 /*incorrect length!*/, .p[0].v = LNAME};
+#define X(CNAME, LNAME) static lisp_cell_t _ ## CNAME = { SYMBOL, 0, 1, 0, 0, .p[0].v = LNAME};
 CELL_XLIST /*structs for special cells*/
 #undef X
 
@@ -391,10 +392,6 @@ static lisp_cell_t *subr_setcdr(lisp_t * l, lisp_cell_t * args)
 	UNUSED(l);
 	lisp_cell_t *c = car(args);
 	set_cdr(c, CADR(args));
-	if (is_cons(CADR(args)) || is_nil(CADR(args)))
-		set_length(c, get_length(CADR(args)) + 1);
-	else
-		set_length(c, 1);
 	return car(args);
 }
 
@@ -408,7 +405,6 @@ static lisp_cell_t *subr_list(lisp_t * l, lisp_cell_t * args)
 	args = cdr(args);
 	for (i = 1; !is_nil(args); args = cdr(args), op = cdr(op), i++)
 		set_cdr(op, cons(l, car(args), gsym_nil()));
-	fix_list_len(head, i);
 	return head;
 }
 
@@ -723,8 +719,9 @@ lisp_cell_t *lisp_coerce(lisp_t * l, lisp_type type, lisp_cell_t *from)
 	case CONS:
 		if (is_str(from)) {	/*string to list of chars */
 			size_t fromlen = get_length(from);
-			/**@bug (explode "") = nil, (implode nil) = error*/
 			head = x = cons(l, gsym_nil(), gsym_nil());
+			if(!fromlen)
+				return cons(l, mk_str(l, lstrdup_or_abort("")), gsym_nil());
 			for (i = 0; i < fromlen; i++) {
 				/**@todo fix for binary data */
 				char c[2] = { '\0', '\0' };
@@ -733,7 +730,6 @@ lisp_cell_t *lisp_coerce(lisp_t * l, lisp_type type, lisp_cell_t *from)
 				set_cdr(x, cons(l, y, gsym_nil()));
 				x = cdr(x);
 			}
-			fix_list_len(cdr(head), i);
 			return cdr(head);
 		}
 		if (is_hash(from)) {	/*hash to list */
@@ -749,7 +745,6 @@ lisp_cell_t *lisp_coerce(lisp_t * l, lisp_type type, lisp_cell_t *from)
 						set_cdr(x, cons(l, tmp, gsym_nil()));
 						x = cdr(x);
 					}
-			fix_list_len(cdr(head), j);
 			return cdr(head);
 		}
 		break;
@@ -1188,5 +1183,16 @@ static lisp_cell_t *subr_base(lisp_t * l, lisp_cell_t * args)
 	if (base < 2 || base > 36)
 		LISP_RECOVER(l, "%r\"base < 2 || base > 36\"%t\n '%S", args);
 	return mk_str(l, dtostr(get_int(car(args)), base));
+}
+
+/*@note apply-partially https://www.gnu.org/software/emacs/manual/html_node/elisp/Calling-Functions.html */
+static lisp_cell_t *subr_apply(lisp_t * l, lisp_cell_t * args)
+{
+	lisp_cell_t *head = args, *prev = args;
+	prev = head = args;
+	for(args = cdr(args); is_cons(args); prev = args, args = cdr(args))
+		if(is_nil(cdr(args)) && is_cons(car(args)))
+			set_cdr(prev, car(args));
+	return eval(l, l->cur_depth, head, l->cur_env);
 }
 

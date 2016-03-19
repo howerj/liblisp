@@ -49,15 +49,8 @@ static lisp_cell_t *mk(lisp_t * l, lisp_type type, size_t count, ...)
 
 lisp_cell_t *cons(lisp_t * l, lisp_cell_t * x, lisp_cell_t * y)
 {
-	lisp_cell_t *z = mk(l, CONS, 2, x, y);
-	assert(l /*&& x && y */ );
-	if (!z || !x || !y)
-		return NULL;
-	if (is_cons(y))
-		z->len = y->len + 1;
-	if (is_nil(y))
-		z->len++;
-	return z;
+	assert(l);
+	return mk(l, CONS, 2, x, y);
 }
 
 lisp_cell_t *car(lisp_cell_t * con)
@@ -93,13 +86,7 @@ void close_cell(lisp_cell_t * x)
 int lisp_check_length(lisp_cell_t * x, size_t expect)
 {
 	assert(x);
-	return x->len == expect;
-}
-
-void set_length(lisp_cell_t * x, size_t len)
-{
-	assert(x);
-	x->len = len;
+	return get_length(x) == expect;
 }
 
 int is_nil(lisp_cell_t * x)
@@ -219,26 +206,10 @@ int is_list(lisp_cell_t * x)
 	return 1;
 }
 
-void fix_list_len(lisp_cell_t * x, size_t l)
-{
-	assert(x);
-	for (; !is_nil(x); x = cdr(x))
-		x->len = l--;
-	if(l)
-		fprintf(stderr, "(error \"incorrect length\" %zu)\n", l);
-	assert(!l);
-}
-
 static lisp_cell_t *mk_asciiz(lisp_t * l, char *s, lisp_type type)
 {
-	size_t slen;
 	assert(l && s && (type == STRING || type == SYMBOL));
-	lisp_cell_t *x = mk(l, type, 1, (lisp_cell_t *) s);
-	if (!x)
-		return NULL;
-	slen = strlen(s);
-	assert((BITS_IN_LENGTH >= 32) && slen < 0xFFFFFFFFu);
-	x->len = slen;
+	lisp_cell_t *x = mk(l, type, 2, (lisp_cell_t *) s, strlen(s));
 	return x;
 }
 
@@ -258,7 +229,6 @@ lisp_cell_t *mk_list(lisp_t * l, lisp_cell_t * x, ...)
 	for (i = 1; (next = va_arg(ap, lisp_cell_t *)); op = cdr(op), i++)
 		set_cdr(op, cons(l, next, gsym_nil()));
 	va_end(ap);
-	fix_list_len(head, i);
 	return head;
 }
 
@@ -278,11 +248,11 @@ lisp_cell_t *mk_subr(lisp_t * l, lisp_subr_func p, const char *fmt, const char *
 {
 	assert(l && p);
 	lisp_cell_t *t;
-	t = mk(l, SUBR, 3, p);
+	t = mk(l, SUBR, 4, p, NULL, NULL, NULL);
 	if (fmt) {
 		size_t tlen = lisp_validate_arg_count(fmt);
 		assert((BITS_IN_LENGTH >= 32) && tlen < 0xFFFFFFFFu);
-		t->len = tlen;
+		t->p[3].v = (void*)tlen;
 	}
 	t->p[1].v = (void *)fmt;
 	t->p[2].v = (void *)mk_str(l, lisp_strdup(l, doc ? doc : ""));
@@ -333,9 +303,24 @@ lisp_cell_t *mk_user(lisp_t * l, void *x, intptr_t type)
 }
 
 unsigned get_length(lisp_cell_t * x)
-{
+{ 
+	size_t i;
 	assert(x);
-	return x->len;
+	if(is_nil(x))
+		return 0;
+	switch(x->type) {
+	case STRING:
+	case SYMBOL:
+		return (uintptr_t)(x->p[1].v);
+	case CONS:
+		for(i = 0; is_cons(x); x = cdr(x))
+			i++;
+		return i;
+	case SUBR:
+		return (uintptr_t)(x->p[3].v);
+	default:
+		return 0;
+	}
 }
 
 void *get_raw(lisp_cell_t * x)
@@ -547,7 +532,6 @@ static lisp_cell_t *binding_lambda(lisp_t * l, unsigned depth, lisp_cell_t * exp
 	}
 	if(!is_nil(exp))
 		LISP_RECOVER(l, "%r\"compile cannot eval dotted pairs\"%t\n '%S", head);
-	fix_list_len(head, i);
 	return head;
 }
 
@@ -724,10 +708,6 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			/**@todo implement me*/
 		}
 
-		if(first == l->apply) {
-			/**@todo implement me*/
-		}
-
 		proc = eval(l, depth + 1, first, env);
 		if (is_proc(proc) || is_subr(proc)) {	/*eval their args */
 			vals = evlis(l, depth + 1, exp, env);
@@ -781,7 +761,6 @@ static lisp_cell_t *evlis(lisp_t * l, unsigned depth, lisp_cell_t * exps, lisp_c
 		set_cdr(op, cons(l, eval(l, depth + 1, car(exps), env), gsym_nil()));
 	if(!is_nil(exps))
 		LISP_RECOVER(l, "%r\"evlis cannot eval dotted pairs\"%t\n '%S", start);
-	fix_list_len(head, i);
 	return head;
 }
 

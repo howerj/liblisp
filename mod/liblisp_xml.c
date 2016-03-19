@@ -80,7 +80,6 @@ static lisp_cell_t *xml2lisp(lisp_t *l, mxml_node_t *node)
 				j++;
 			}
 		}
-		fix_list_len(ehead, j);
 
 		if(hash)
 			return mk_list(l, ename, hash, cdr(ehead), NULL);

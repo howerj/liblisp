@@ -13,6 +13,7 @@
  *            when they were compiled. This test suite can handle SIGABRT
  *            signals being generated, it will fail the unit that caused
  *            it and continue processing the next tests. 
+ *  @todo     Every function exported in "liblisp.h" should be tested here.
  **/
 
 /*** module to test ***/
@@ -312,7 +313,7 @@ int main(int argc, char **argv)
 		static char block_out[16] = {0};
 		state((in = io_sin(block_in, 16)));
 		test(io_getc(in) == 1);
-		test(io_read(block_out, 1, 15, in) == 15);
+		test(io_read(block_out, 15, in) == 15);
 		test(!memcmp(block_out, block_in+1, 15));
 
 		state(io_close(in));
@@ -395,6 +396,10 @@ int main(int argc, char **argv)
 		test(is_asciiz(x));
 		test(!is_str(x));
 		test(gsym_error() == lisp_eval_string(l, "(eval (cons quote 0))"));
+
+		char *serial = NULL;
+		test(!strcmp((serial = lisp_serialize(l, cons(l, gsym_tee(), gsym_error()))), "(t . error)"));
+		state(free(serial));
 
 		state(lisp_destroy(l));
 	}
