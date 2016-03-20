@@ -21,7 +21,7 @@
       ((nil? p) (nil? s))
       ((atom? (car p))
        (and s
-	    (equal (car p) (car s))))
+	    (equal car.p car.s)))
       (t nil))))
 
 (define me-to-you
@@ -72,10 +72,10 @@
       (word ())
       (progn
 	(format *output* "Hello, %s, how are you today?\n" "INSERT-NAME")
-	(while (not (= error (set! word (read *input*))))
+	(while (not (= error (setq word (read *input*))))
 	       (if (= word '.)
 		(eliza-inner (to-me-to-you (reverse line)))
-		(set! line (cons (coerce *symbol* (lower->upper word)) line))))))
+		(setq line (cons (coerce *symbol* (lower->upper word)) line))))))
     'GOODBYE))
 
 

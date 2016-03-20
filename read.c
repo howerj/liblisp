@@ -6,15 +6,6 @@
  *  
  *  An S-Expression parser, it takes it's input from a generic input
  *  port that can be set up to read from a string or a file.
- *  @todo Add various syntax sugar, as from Arc lisp, examples:
- *        a.b <=> (a b),
- *        a!b <=> (a 'b),
- *        a:b <=> (compose a b),
- *        ~a  <=> (complement a),
- *        `a  <=> (quasiquote a), needs macros 
- *        ,a  <=> (unquote a),    needs macros
- *        ,@a <=> (unquote-splicing a), needs macros
- *        (caddr a) <=> (car (cdr (cdr a)))
  *  @todo Parse binary data (including NULs in strings) **/
 #include "liblisp.h"
 #include "private.h"
@@ -28,6 +19,7 @@ static const int parse_strings = 1,	/*parse strings? e.g. "Hello" */
     parse_floats = 1,		/*parse floating point numbers? e.g. 1.3e4 */
     parse_ints   = 1,		/*parse integers? e.g. 3 */
     parse_hashes = 1, 		/*parse hashes? e.g. { a b c (1 2 3) } */
+    parse_sugar  = 1,           /*parse syntax sugar eg a.b <=> (a b) */
     parse_dotted = 1;		/*parse dotted pairs? e.g. (a . b) */
 
 /**@brief process a comment from I/O stream**/
@@ -232,24 +224,84 @@ fail:
 	return NULL;
 }
 
-static lisp_cell_t *process_symbol(lisp_t *l, char *token)
-{ /**@note any syntax sugar goes here (eg. a.b => (a b), or (caar a) => (car (car a)) */
-	for(size_t len = strlen(token), i = 0; i < len; i++)
+static lisp_cell_t *new_sym(lisp_t *l, const char *token, size_t end)
+{
+	lisp_cell_t *ret;
+	if((parse_ints && is_number(token)) || (parse_floats && is_fnumber(token)))
+		LISP_RECOVER(l, "%r\"unexpected integer or float\"\n %m%s%t", token);
+	char *tnew = calloc(end+1, 1);
+	if(!tnew)
+		LISP_HALT(l, "%s", "out of memory");
+	memcpy(tnew, token, end);
+	ret = lisp_intern(l, tnew);
+	if(get_sym(ret) != tnew)
+		free(tnew);
+	return ret;
+}
+
+static lisp_cell_t *make_run_of_cadrs(lisp_t *l, const char *fmt, size_t end)
+{
+	lisp_cell_t *a = new_sym(l, "car", 3), *d = new_sym(l, "cdr", 3), *r = gsym_nil();
+	assert(l && fmt && end);
+	for(size_t i = end - 1; i; i--)
 	{
-		switch(token[i]) {
-		case '.': /**@todo*/
-		case '!':
-		case ':':
-		case 'c': /*process lengths of c(a|d)+r*/
-		default:
-			break;
+		if(fmt[i] == 'a') {
+			r = cons(l, a, r);
+		} else if(fmt[i] == 'd') {
+			r = cons(l, d, r);
+		} else {
+			FATAL("invalid format");
 		}
 	}
+	return r;
+}
 
-	lisp_cell_t *ret = lisp_intern(l, token);
-	if (get_sym(ret) != token)
-		free(token);
-	return ret;
+static const char symbol_splitters[] = ".!";
+static lisp_cell_t *process_symbol(lisp_t *l, const char *token)
+{ 
+	size_t i;
+	if(!parse_sugar)
+		goto nosugar;
+	if(!token[0])
+		goto fail;
+
+	if(strchr(symbol_splitters, token[0]))
+		LISP_RECOVER(l, "%r\"invalid prefix\"\n \"%s\"%t", token);
+	switch(token[0]){ 
+	case 'c': /*process runs of car and cdrs*/
+	{
+		i = strspn(token+1, "ad");
+		if(i && token[i+1] == 'r') {
+			if(!token[i+2]) { /*c(a|d)+r$*/
+			} else if(strchr(symbol_splitters, token[i+2])) { /*c(a|d)+r.more*/
+			}
+		}
+	}
+		break;
+	case '~': /*negate, requires macros, returns function that acts as complement*/
+		break;
+	default:
+		break;
+	}
+
+	i = strcspn(token, symbol_splitters);
+	switch(token[i]) {
+	case '.': /* a.b <=> (a b) */
+		if(!token[i+1])
+			goto fail;
+		return mk_list(l, new_sym(l, token, i), process_symbol(l, token+i+1), NULL);
+	case '!': /* a!b <=> (a 'b) */
+		if(!token[i+1])
+			goto fail;
+		return mk_list(l, new_sym(l, token, i), mk_list(l, l->quote, process_symbol(l, token+i+1), NULL), NULL);
+	default:
+		break;
+	}
+nosugar:
+	return new_sym(l, token, strlen(token));
+fail:
+	LISP_RECOVER(l, "%r\"invalid symbol/expected more\"\n \"%s\"%t", token);
+	return NULL;
 }
 
 static lisp_cell_t *read_list(lisp_t * l, io_t * i);
@@ -290,7 +342,7 @@ lisp_cell_t *reader(lisp_t * l, io_t * i)
 	}
 	case '\'':
 		free(token);
-		return mk_list(l, gsym_quote(), reader(l, i), NULL);
+		return mk_list(l, l->quote, reader(l, i), NULL);
 	default:
 		if (parse_ints && is_number(token)) {
 			ret = mk_int(l, strtol(token, NULL, 0));
@@ -306,7 +358,9 @@ lisp_cell_t *reader(lisp_t * l, io_t * i)
 		}
  nostring:
  nohash:
-		return process_symbol(l, token);
+		ret = process_symbol(l, token);
+		free(token);
+		return ret;
 	}
 	return gsym_nil();
 }

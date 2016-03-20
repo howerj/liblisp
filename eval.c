@@ -573,7 +573,7 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 		/* checks could be added here so special forms are not looked
 		 * up, but only if this improves the speed of things*/
 		if (is_nil(tmp = lisp_assoc(exp, env)))
-			LISP_RECOVER(l, "%r\"unbound symbol\"%t\n '%s", get_sym(exp));
+			LISP_RECOVER(l, "%r\"unbound symbol\"\n %y'%s%t", get_sym(exp));
 		DEBUG_RETURN(cdr(tmp));
 	case CONS:
 		first = car(exp);
@@ -647,7 +647,7 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			l->gc_stack_used = gc_stack_save;
 			DEBUG_RETURN(lisp_gc_add(l, lisp_extend_top(l, car(exp), eval(l, depth + 1, CADR(exp), env))));
 		}
-		if (first == l->set) {
+		if (first == l->setq) {
 			lisp_cell_t *pair, *newval;
 			LISP_VALIDATE_ARGS(l, "set!", 2, "s A", exp, 1);
 			if (is_nil(pair = lisp_assoc(car(exp), env)))

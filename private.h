@@ -32,7 +32,7 @@ extern "C" {
 #define CELL_XLIST /**< list of all special cells for initializer*/ \
 	X(nil,     "nil")     X(tee,     "t")      X(quote,   "quote")\
 	X(iif,     "if")      X(lambda,  "lambda") X(flambda, "flambda")\
-	X(define,  "define")  X(set,     "set!")   X(progn,   "progn")\
+	X(define,  "define")  X(setq,    "setq")   X(progn,   "progn")\
 	X(cond,    "cond")    X(error,   "error")  X(let,     "let")\
        	X(compile, "compile") X(macro,   "macro")  X(dowhile, "while")\
 

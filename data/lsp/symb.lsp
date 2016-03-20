@@ -288,10 +288,10 @@
       (progn 
 	(while
 	  (progn
-	    (set! poly-new (simplifyn poly))
+	    (setq poly-new (simplifyn poly))
 	    (if (equal poly-new poly)
 	      nil
-	      (set! poly poly-new))))
+	      (setq poly poly-new))))
       poly))))
 
 (define infix->prefix

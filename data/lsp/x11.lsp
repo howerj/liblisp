@@ -30,7 +30,7 @@
 
 (define add-rectangle
   (lambda (x y)
-    (set! redraw-list (cons (list x y) redraw-list))))
+    (setq redraw-list (cons (list x y) redraw-list))))
 
 (define redraw-rectangle
   (lambda (point)
@@ -49,7 +49,7 @@
       (file (open *file-in* save-file))
       (if file 
 	(progn 
-	  (set! redraw-list (read file))
+	  (setq redraw-list (read file))
 	  ; test if this succeeded
 	  (format *output* "loaded file '%s'\n%S\n" save-file redraw-list)
 	  (redraw)
@@ -75,7 +75,7 @@
 (let (event ())
   (while
 	(progn 
-		(set! event (select-input w))
+		(setq event (select-input w))
 		(if (is-mouse? event) 
 		  (progn 
 		    (draw-rectangle w (mouse-x event) (mouse-y event) rectangle-width rectangle-height) 
@@ -91,7 +91,7 @@
 		    ; clear screen
 		    ((= (key event) "c")
 		     (progn
-		       (set! redraw-list ())
+		       (setq redraw-list ())
 		       (clear-window w)
 		       t))
 		    (t (format *output* "key %s\n" (key event))))

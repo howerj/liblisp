@@ -950,10 +950,10 @@ LIBLISP_API lisp_cell_t *gsym_flambda(void);
  * to the global environment */
 LIBLISP_API lisp_cell_t *gsym_define(void);
 
-/**@brief  return the "set!" symbol
- * @return lisp_cell_t* The special "set!" symbol, used for binding a symbol to a new
+/**@brief  return the "setq" symbol
+ * @return lisp_cell_t* The special "setq" symbol, used for binding a symbol to a new
  * variable */
-LIBLISP_API lisp_cell_t *gsym_set(void);
+LIBLISP_API lisp_cell_t *gsym_setq(void);
 
 /**@brief  return the progn symbol
  * @return lisp_cell_t* The special "progn" symbol, used for evaluating expressions in

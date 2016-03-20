@@ -46,9 +46,9 @@
               (lambda (S on-error-fn)
                (cond
                  ((eof? S) nil)
-                 ((eq (set! x (read S)) 'error) (on-error-fn S file))
+                 ((eq (setq x (read S)) 'error) (on-error-fn S file))
                  (t (progn
-                      (set! x (eval x))
+                      (setq x (eval x))
                       (if print-result
                         (format *output* "%S\n" x)
                         nil)
@@ -92,10 +92,10 @@
 	  (define *home* nil)
 
 	  (cond
-	    ((set! *home* (getenv "LISPHOME")) *home*) ; highest priority
-	    ((set! *home* (getenv "HOME"))     *home*) ; unix
-	    ((set! *home* (getenv "HOMEPATH")) *home*) ; windows
-	    ((set! *home* nil) *home*))
+	    ((setq *home* (getenv "LISPHOME")) *home*) ; highest priority
+	    ((setq *home* (getenv "HOME"))     *home*) ; unix
+	    ((setq *home* (getenv "HOMEPATH")) *home*) ; windows
+	    ((setq *home* nil) *home*))
 	  (if *home*
 	    (eval-file (make-path (list *home* *lisprc*)) error-ignore nil)
 	    nil)

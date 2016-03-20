@@ -115,8 +115,8 @@
     "get the nth (i) element of a string or a list (x)" 
     (i x)
     (if (zero? i)
-      (if (string? x) (scar x) (car x))
-      (nth (- i 1) (if (string? x) (scdr x) (cdr x))))))
+      (if (string? x) scar.x car.x)
+      (nth (- i 1) (if (string? x) scdr.x cdr.x)))))
 
 (define append
   (compile
@@ -351,7 +351,7 @@
 (define gensym-counter 0) ; *GLOBAL* counter for gensym
 (define gensym
   (lambda "generate a unique, new symbol" ()
-      (set! gensym-counter (inc gensym-counter))
+      (setq gensym-counter (inc gensym-counter))
       (coerce *symbol*
         (join
           "-"
