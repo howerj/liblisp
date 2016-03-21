@@ -542,12 +542,14 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 	size_t gc_stack_save = l->gc_stack_used;
 	lisp_cell_t *tmp, *first, *proc, *ret = NULL, *vals = l->nil;
 #define DEBUG_RETURN(EXPR) do { ret = (EXPR); goto debug; } while(0);
+	if(!exp || !env)
+		return NULL;
 	if (depth > MAX_RECURSION_DEPTH)
 		LISP_RECOVER(l, "%y'recursion-depth-reached%t %d", 0);
 	lisp_gc_add(l, exp);
 	lisp_gc_add(l, env);
  tail:
-	if (!exp || !env) /*happens when s-expression parser has an error*/
+	if(!exp || !env)
 		return NULL;
 	lisp_log_debug(l, "%y'eval%t '%S", exp);
 	if (is_nil(exp))

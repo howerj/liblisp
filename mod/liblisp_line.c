@@ -93,11 +93,11 @@ static int i_want_more_lines(const char *line)
 }
 
 static char *line_editing_function(const char *prompt)
-{
+{ /**@todo come up with a solution for reading back history with comments in it*/
 	static int warned = 0; /**< have we warned the user we cannot write to
                                     the history file?*/
 	char *line, *new = NULL, *conc = NULL;
-	char varprompt[128];
+	char varprompt[80];
 	int max_len = 0;
 	running = 0; /*SIGINT handling off when reading input */
 	line = line_editor(prompt);
@@ -106,7 +106,7 @@ static char *line_editing_function(const char *prompt)
 		return line;
 	max_len = strlen(line);
 	while (i_want_more_lines(line)) {
-		sprintf(varprompt, "%*.*s", max_len+2, 120, "=>");
+		sprintf(varprompt, "%*.*s", max_len+2, 72, "=>");
 		if (!(new = line_editor(varprompt))) { 
 			free(line);
 			return NULL;

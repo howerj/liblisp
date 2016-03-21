@@ -58,6 +58,7 @@ static lisp_module_subroutines_t primitives[] = {
 
 static lisp_cell_t *subr_finite(lisp_t *l, lisp_cell_t *args)
 {
+	UNUSED(l);
 	double a = get_float(car(args));
 	return isfinite(a) ? gsym_tee() : gsym_nil();
 }

@@ -5,8 +5,7 @@
  *  @email      howe.r.j.89@gmail.com 
  *  
  *  An S-Expression parser, it takes it's input from a generic input
- *  port that can be set up to read from a string or a file.
- *  @todo Parse binary data (including NULs in strings) **/
+ *  port that can be set up to read from a string or a file. **/
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
@@ -131,28 +130,21 @@ static char *read_string(lisp_t * l, io_t * i)
 			case '1':
 			case '2':
 			case '3':
-				/**@todo use io_read*
-				if(io_read(num, 1, 3, i) != 3)
-				       goto fail;*/
 				num[0] = ch;
-				if ((ch = io_getc(i)) == EOF)
-					return NULL;
-				num[1] = ch;
-				if ((ch = io_getc(i)) == EOF)
-					return NULL;
-				num[2] = ch;
+				if(io_read(num+1, 2, i) != 2)
+				       goto fail;
 				if (num[strspn(num, "01234567")])
 					goto fail;
 				ch = (char)strtol(num, NULL, 8);
-				if (!ch)	/*cannot handle NUL in strings! */
+				if (!ch) /*currently cannot handle NUL in strings*/
 					goto fail;
 				add_char(l, ch);
 				continue;
- fail:				LISP_RECOVER(l, "'invalid-escape-literal \"%s\"", num);
+ fail:				LISP_RECOVER(l, "%y'invalid-escape-literal\n %r\"%s\"%t", num);
 			case EOF:
 				return NULL;
 			default:
-				LISP_RECOVER(l, "'invalid-escape-char \"%c\"", ch);
+				LISP_RECOVER(l, "%y'invalid-escape-char\n %r\"%c\"%t", ch);
 			}
 		}
 		if (ch == '"')
@@ -239,26 +231,9 @@ static lisp_cell_t *new_sym(lisp_t *l, const char *token, size_t end)
 	return ret;
 }
 
-static lisp_cell_t *make_run_of_cadrs(lisp_t *l, const char *fmt, size_t end)
-{
-	lisp_cell_t *a = new_sym(l, "car", 3), *d = new_sym(l, "cdr", 3), *r = gsym_nil();
-	assert(l && fmt && end);
-	for(size_t i = end - 1; i; i--)
-	{
-		if(fmt[i] == 'a') {
-			r = cons(l, a, r);
-		} else if(fmt[i] == 'd') {
-			r = cons(l, d, r);
-		} else {
-			FATAL("invalid format");
-		}
-	}
-	return r;
-}
-
-static const char symbol_splitters[] = ".!";
+static const char symbol_splitters[] = ".!"; /**@note '~' (negate) and ':' (compose) go here, when implemented*/
 static lisp_cell_t *process_symbol(lisp_t *l, const char *token)
-{ 
+{
 	size_t i;
 	if(!parse_sugar)
 		goto nosugar;
@@ -267,22 +242,6 @@ static lisp_cell_t *process_symbol(lisp_t *l, const char *token)
 
 	if(strchr(symbol_splitters, token[0]))
 		LISP_RECOVER(l, "%r\"invalid prefix\"\n \"%s\"%t", token);
-	switch(token[0]){ 
-	case 'c': /*process runs of car and cdrs*/
-	{
-		i = strspn(token+1, "ad");
-		if(i && token[i+1] == 'r') {
-			if(!token[i+2]) { /*c(a|d)+r$*/
-			} else if(strchr(symbol_splitters, token[i+2])) { /*c(a|d)+r.more*/
-			}
-		}
-	}
-		break;
-	case '~': /*negate, requires macros, returns function that acts as complement*/
-		break;
-	default:
-		break;
-	}
 
 	i = strcspn(token, symbol_splitters);
 	switch(token[i]) {
@@ -342,7 +301,9 @@ lisp_cell_t *reader(lisp_t * l, io_t * i)
 	}
 	case '\'':
 		free(token);
-		return mk_list(l, l->quote, reader(l, i), NULL);
+		if(!(ret = reader(l, i)))
+			return NULL;
+		return mk_list(l, l->quote, ret, NULL);
 	default:
 		if (parse_ints && is_number(token)) {
 			ret = mk_int(l, strtol(token, NULL, 0));
@@ -370,7 +331,7 @@ static lisp_cell_t *read_list(lisp_t * l, io_t * i)
 {
 	assert(l && i);
 	char *token = lexer(l, i), *stok;
-	lisp_cell_t *tmp;
+	lisp_cell_t *a, *b;
 	if (!token) 
 		return NULL;
 	switch (token[0]) {
@@ -383,7 +344,7 @@ static lisp_cell_t *read_list(lisp_t * l, io_t * i)
 	case '.':
 		if (!parse_dotted)
 			goto nodots;
-		if (!(tmp = reader(l, i)))
+		if (!(a = reader(l, i)))
 			return NULL;
 		if (!(stok = lexer(l, i)))
 			return NULL;
@@ -393,14 +354,16 @@ static lisp_cell_t *read_list(lisp_t * l, io_t * i)
 		}
 		free(token);
 		free(stok);
-		return tmp;
+		return a;
 	default:
 		break;
 	}
  nodots:
 	unget_token(l, token);
-	if (!(tmp = reader(l, i)))
+	if (!(a = reader(l, i)))
 		return NULL;	/* force evaluation order */
-	return cons(l, tmp, read_list(l, i));
+	if (!(b = read_list(l, i)))
+		return NULL;
+	return cons(l, a, b);
 }
 

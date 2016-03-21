@@ -73,7 +73,7 @@
       (progn
 	(format *output* "Hello, %s, how are you today?\n" "INSERT-NAME")
 	(while (not (= error (setq word (read *input*))))
-	       (if (= word '.)
+	       (if (= word '$)
 		(eliza-inner (to-me-to-you (reverse line)))
 		(setq line (cons (coerce *symbol* (lower->upper word)) line))))))
     'GOODBYE))
