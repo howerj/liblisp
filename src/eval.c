@@ -470,11 +470,16 @@ static lisp_cell_t *multiple_extend(lisp_t * l, lisp_cell_t *proc, lisp_cell_t *
 	assert(l && proc && vals);
 	lisp_cell_t *env = dynamic_on ? l->cur_env : get_proc_env(proc);
        	lisp_cell_t *syms = get_proc_args(proc);
-	for (; is_cons(syms); syms = cdr(syms), vals = cdr(vals))
+	size_t i, test, expect = get_length(get_proc_args(proc));
+	if(!expect)
+		return env;
+	test = is_sym(syms) ? 0 : 1;
+	for (i = 0; is_cons(syms) && is_cons(vals); syms = cdr(syms), vals = cdr(vals), i++)
 		env = lisp_extend(l, env, car(syms), car(vals));
 	if(!is_nil(syms))
 		env = lisp_extend(l, env, syms, vals);
-	/**@todo bind left over args */
+	if(test && expect != i)
+		LISP_RECOVER(l, "%y'argument-count-error%t\n %S\n '%S", proc, vals);
 	return env;
 }
 
@@ -492,7 +497,7 @@ lisp_cell_t *lisp_assoc(lisp_cell_t * key, lisp_cell_t * alist)
 {
 	assert(key && alist);
 	lisp_cell_t *lookup;
-	for (; !is_nil(alist); alist = cdr(alist))
+	for (; is_cons(alist); alist = cdr(alist))
 		if (is_cons(car(alist))) {	/*normal assoc */
 			if (get_int(CAAR(alist)) == get_int(key))
 				return car(alist);
@@ -500,6 +505,8 @@ lisp_cell_t *lisp_assoc(lisp_cell_t * key, lisp_cell_t * alist)
 			if ((lookup = hash_lookup(get_hash(car(alist)), get_str(key))))
 				return lookup;
 		}
+	if(!is_nil(alist)) /* should LISP_RECOVER really*/
+		gsym_error();
 	return gsym_nil();
 }
 
@@ -531,7 +538,7 @@ static lisp_cell_t *binding_lambda(lisp_t * l, unsigned depth, lisp_cell_t * exp
 		code = car(exp);
 		if (is_sym(car(exp)) && !is_nil(tmp = lisp_assoc(car(exp), env)))
 			code = cdr(tmp);
-		if (is_cons(car(exp)))
+		else if (is_cons(car(exp)))
 			code = binding_lambda(l, depth + 1, car(exp), env);
 		set_cdr(op, cons(l, code, gsym_nil()));
 	}
@@ -616,11 +623,6 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			} else {
 				doc = l->empty_docstr;
 			}
-			if (!is_nil(car(exp)) && !is_cons(car(exp)))
-				LISP_RECOVER(l, "'lambda\n \"not an argument list (or nil)\"\n '%S", exp);
-			/*for (tmp = car(exp); is_cons(tmp); tmp = cdr(tmp));
-			 *	if(!is_nil(tmp))
-			 * 		mark_function_as_variadic()*/
 			l->gc_stack_used = gc_stack_save;
 			tmp = mk_proc(l, car(exp), cdr(exp), env, doc);
 			DEBUG_RETURN(lisp_gc_add(l, tmp));
@@ -732,13 +734,7 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			DEBUG_RETURN((*get_subr(proc)) (l, vals));
 		}
 		if (is_proc(proc) || is_fproc(proc)) {
-			/**@todo mark a function as variadic, and only then use
-			 * greater than in get length check, this can be done
-			 * by moving the checks into multiple_extend*/
-			if (get_length(get_proc_args(proc)) > get_length(vals))
-				LISP_RECOVER(l, "%y'arg-error%t\n %S\n '%S", proc, vals);
-			if (get_length(get_proc_args(proc)))
-				env = multiple_extend(l, proc, vals);
+			env = multiple_extend(l, proc, vals);
 			exp = cons(l, l->progn, get_proc_code(proc));
 			goto tail;
 		}

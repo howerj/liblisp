@@ -32,7 +32,8 @@ lisp_cell_t *lisp_environment(lisp_t *l)
 
 int lisp_add_module_subroutines(lisp_t *l, const lisp_module_subroutines_t *ms, size_t len)
 {
-	for(size_t i = 0; ms[i].name && (!len || i < len); i++)
+	size_t i;
+	for(i = 0; ms[i].name && (!len || i < len); i++)
 		if(!lisp_add_subr(l, ms[i].name, ms[i].p, ms[i].validate, ms[i].docstring))
 			return -1;
 	return 0;

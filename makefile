@@ -71,6 +71,8 @@ RUN_FLAGS=-Ep
 DLL	=dll
 EXE	=.exe
 LINKFLAGS=-Wl,-E 
+SRC=src
+
 else # Unix assumed {only Linux has been tested}
 # Install paths
 FixPath = $1
@@ -99,14 +101,14 @@ CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fstack-protector
 CFLAGS += -fPIC
 CFLAGS_RELAXED += -fPIC
 LINKFLAGS=-Wl,-E -Wl,-z,relro
+SRC=src
 endif
 
-SRC=$(call FixPath,src/)
 INCLUDE = -I$(SRC)
 CFLAGS += -std=c99
-DOC=$(call FixPath,doc/)
+DOC=doc$(FS)
 
-VALGRIND_SUPP=$(DOC)/valgrind.supp
+VALGRIND_SUPP=$(DOC)valgrind.supp
 VALOPTS=--leak-resolution=high --num-callers=40 --leak-check=full --log-file=valgrind.log
 
 ##############################################################################
@@ -117,7 +119,7 @@ TARGET = lisp
 
 all: shorthelp $(TARGET)$(EXE) lib$(TARGET).$(DLL) lib$(TARGET).a 
 
-include $(SRC)mod/makefile.in
+include $(SRC)$(FS)mod/makefile.in
 
 shorthelp:
 	@echo "Use 'make help' for a list of options."
@@ -169,30 +171,30 @@ lib$(TARGET).a: $(OBJFILES)
 	@echo AR $@
 	@$(AR) $(AR_FLAGS) $@ $^
 
-lib$(TARGET).$(DLL): $(OBJFILES) $(SRC)lib$(TARGET).h $(SRC)private.h
+lib$(TARGET).$(DLL): $(OBJFILES) $(SRC)$(FS)lib$(TARGET).h $(SRC)$(FS)private.h
 	@echo CC -o $@
 	@$(CC) $(CFLAGS) -shared $(OBJFILES) -o $@
 
 # -DCOMPILING_LIBLISP is only needed on Windows
-%.o: $(SRC)%.c $(SRC)lib$(TARGET).h $(SRC)private.h
+%.o: $(SRC)$(FS)%.c $(SRC)$(FS)lib$(TARGET).h $(SRC)$(FS)private.h
 	@echo CC $<
 	@$(CC) $(CFLAGS) $(INCLUDE) -DCOMPILING_LIBLISP $< -c -o $@
 
 VCS_DEFINES=-DVCS_ORIGIN="$(VCS_ORIGIN)" -DVCS_COMMIT="$(VCS_COMMIT)" -DVERSION="$(VERSION)" 
 
-repl.o: $(SRC)repl.c $(SRC)lib$(TARGET).h
+repl.o: $(SRC)$(FS)repl.c $(SRC)$(FS)lib$(TARGET).h
 	@echo CC $<
 	@$(CC) $(CFLAGS) $(INCLUDE) $(DEFINES) -DCOMPILING_LIBLISP $(VCS_DEFINES) $< -c -o $@
 
-main.o: $(SRC)main.c $(SRC)lib$(TARGET).h $(SRC)lispmod.h
+main.o: $(SRC)$(FS)main.c $(SRC)$(FS)lib$(TARGET).h $(SRC)$(FS)lispmod.h
 	@echo CC $<
-	@$(CC) $(CFLAGS_RELAXED) $(INCLUDE)  $(DEFINES) $< -c -o $@
+	$(CC) $(CFLAGS_RELAXED) $(INCLUDE)  $(DEFINES) $< -c -o $@
 
 $(TARGET)$(EXE): main.o lib$(TARGET).$(DLL)
 	@echo CC -o $@
-	@$(CC) $(CFLAGS) $(LINKFLAGS) $(RPATH) $^ $(LINK) -o $(TARGET)
+	$(CC) $(CFLAGS) $(LINKFLAGS) $(RPATH) $^ $(LINK) -o $(TARGET)
 
-unit$(EXE): $(SRC)/t/unit.c lib$(TARGET).a
+unit$(EXE): $(SRC)$(FS)t/$(FS)unit.c lib$(TARGET).a
 	@echo CC -o $@
 	@$(CC) $(CFLAGS) $(INCLUDE) $(RPATH) $^ -o unit$(EXE)
 
@@ -200,7 +202,7 @@ test: unit$(EXE)
 	./unit -c
 
 app: all test modules
-	$(SRC)./app -vpa  ./lisp -f $(DOC) -f lsp -e -Epc '"$${SCRIPT_PATH}"/lsp/init.lsp'
+	$(SRC)$(FS)./app -vpa  ./lisp -f $(DOC) -f lsp -e -Epc '"$${SCRIPT_PATH}"/lsp/init.lsp'
 
 ### running ##################################################################
 
@@ -226,8 +228,8 @@ doxygen:
 
 TARBALL=$(strip $(TARGET)-$(VERSION)).tgz
 # make distribution tarball
-dist: $(TARGET) lib$(TARGET).a lib$(TARGET).$(DLL) lib$(TARGET).htm $(SRC)lib$(TARGET).h modules
-	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) $(SRC)lib$(TARGET).h *.a $(DOC)*.1 $(DOC)*.3 
+dist: $(TARGET) lib$(TARGET).a lib$(TARGET).$(DLL) lib$(TARGET).htm $(SRC)$(FS)lib$(TARGET).h modules
+	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) $(SRC)$(FS)lib$(TARGET).h *.a $(DOC)*.1 $(DOC)*.3 
 
 install: all 
 	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/bin)
@@ -238,8 +240,8 @@ install: all
 	$(CP) $(CP_FLAGS) $(TARGET)$(EXE) $(call FixPath,$(DESTDIR)$(prefix)/bin)
 	$(CP) $(CP_FLAGS) *.a $(call FixPath,$(DESTDIR)$(prefix)/lib)
 	$(CP) $(CP_FLAGS) *.$(DLL) $(call FixPath,$(DESTDIR)$(prefix)/lib)
-	$(CP) $(CP_FLAGS) $(SRC)lib$(TARGET).h $(call FixPath,$(DESTDIR)$(prefix)/include)
-	$(CP) $(CP_FLAGS) $(SRC)lispmod.h $(call FixPath,$(DESTDIR)$(prefix)/include)
+	$(CP) $(CP_FLAGS) $(SRC)$(FS)lib$(TARGET).h $(call FixPath,$(DESTDIR)$(prefix)/include)
+	$(CP) $(CP_FLAGS) $(SRC)$(FS)lispmod.h $(call FixPath,$(DESTDIR)$(prefix)/include)
 	$(SED) "s/VERSION/$(VERSION)/g" < $(DOC)$(TARGET).1 > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
 	$(SED) "s/VERSION/$(VERSION)/g" < $(DOC)lib$(TARGET).3 > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
 	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(prefix)/bin/$(TARGET))

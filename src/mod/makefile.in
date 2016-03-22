@@ -3,9 +3,9 @@
 MODULES=liblisp_bignum.$(DLL) liblisp_math.$(DLL)\
 	liblisp_text.$(DLL) liblisp_base.$(DLL)
 
-MOD_DEPS=$(SRC)liblisp.h liblisp.a liblisp.$(DLL) $(SRC)lispmod.h
+MOD_DEPS=$(SRC)$(FS)liblisp.h liblisp.a liblisp.$(DLL) $(SRC)$(FS)lispmod.h
 
-CURDIR:=$(SRC)mod$(FS)
+CURDIR:=$(SRC)$(FS)mod$(FS)
 
 ifeq ($(OS),Windows_NT)
 ADDITIONAL=liblisp.$(DLL)
