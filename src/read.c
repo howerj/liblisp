@@ -5,7 +5,11 @@
  *  @email      howe.r.j.89@gmail.com 
  *  
  *  An S-Expression parser, it takes it's input from a generic input
- *  port that can be set up to read from a string or a file. **/
+ *  port that can be set up to read from a string or a file. 
+ *  @todo quasiquote, unquote, unquote-splicing, compose, negate, and
+ *        runs of car and cdr.
+ *  @bug '('a . 'b)
+ **/
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
@@ -219,6 +223,7 @@ fail:
 static lisp_cell_t *new_sym(lisp_t *l, const char *token, size_t end)
 {
 	lisp_cell_t *ret;
+	assert(l && token && end);
 	if((parse_ints && is_number(token)) || (parse_floats && is_fnumber(token)))
 		LISP_RECOVER(l, "%r\"unexpected integer or float\"\n %m%s%t", token);
 	char *tnew = calloc(end+1, 1);
@@ -235,6 +240,7 @@ static const char symbol_splitters[] = ".!"; /**@note '~' (negate) and ':' (comp
 static lisp_cell_t *process_symbol(lisp_t *l, const char *token)
 {
 	size_t i;
+	assert(l && token);
 	if(!parse_sugar)
 		goto nosugar;
 	if(!token[0])
@@ -304,6 +310,16 @@ lisp_cell_t *reader(lisp_t * l, io_t * i)
 		if(!(ret = reader(l, i)))
 			return NULL;
 		return mk_list(l, l->quote, ret, NULL);
+/*	case '`': // TODO
+		free(token);
+		if(!(ret = reader(l, i)))
+			return NULL;
+		return mk_list(l, l->quasiquote, ret, NULL);
+	case ',':
+		free(token);
+		if(!(ret = reader(l, i)))
+			return NULL;
+		return mk_list(l, l->unquote, ret, NULL);*/
 	default:
 		if (parse_ints && is_number(token)) {
 			ret = mk_int(l, strtol(token, NULL, 0));

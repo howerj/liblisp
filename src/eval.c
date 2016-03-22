@@ -465,11 +465,16 @@ lisp_cell_t *lisp_intern(lisp_t * l, char *name)
 
 /***************************** environment ************************************/
 
-static lisp_cell_t *multiple_extend(lisp_t * l, lisp_cell_t * env, lisp_cell_t * syms, lisp_cell_t * vals)
+static lisp_cell_t *multiple_extend(lisp_t * l, lisp_cell_t *proc, lisp_cell_t * vals)
 {
-	assert(l && env && syms && vals);
-	for (; !is_nil(syms); syms = cdr(syms), vals = cdr(vals))
+	assert(l && proc && vals);
+	lisp_cell_t *env = dynamic_on ? l->cur_env : get_proc_env(proc);
+       	lisp_cell_t *syms = get_proc_args(proc);
+	for (; is_cons(syms); syms = cdr(syms), vals = cdr(vals))
 		env = lisp_extend(l, env, car(syms), car(vals));
+	if(!is_nil(syms))
+		env = lisp_extend(l, env, syms, vals);
+	/**@todo bind left over args */
 	return env;
 }
 
@@ -613,9 +618,9 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			}
 			if (!is_nil(car(exp)) && !is_cons(car(exp)))
 				LISP_RECOVER(l, "'lambda\n \"not an argument list (or nil)\"\n '%S", exp);
-			for (tmp = car(exp); !is_nil(tmp); tmp = cdr(tmp))
-				if (!is_sym(car(tmp)) || !is_proper_cons(tmp))
-					LISP_RECOVER(l, "%y'lambda\n %r\"expected only symbols (or nil) as arguments\"%t\n '%S", exp);
+			/*for (tmp = car(exp); is_cons(tmp); tmp = cdr(tmp));
+			 *	if(!is_nil(tmp))
+			 * 		mark_function_as_variadic()*/
 			l->gc_stack_used = gc_stack_save;
 			tmp = mk_proc(l, car(exp), cdr(exp), env, doc);
 			DEBUG_RETURN(lisp_gc_add(l, tmp));
@@ -711,13 +716,12 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 		}
 
 		proc = eval(l, depth + 1, first, env);
-		if (is_proc(proc) || is_subr(proc)) {	/*eval their args */
+		if (is_proc(proc) || is_subr(proc)) /*eval their args */
 			vals = evlis(l, depth + 1, exp, env);
-		} else if (is_fproc(proc)) {	/*f-expr do not eval their args */
+		else if (is_fproc(proc)) /*f-expr do not eval their args */
 			vals = cons(l, exp, l->nil);
-		} else {
+		else 
 			LISP_RECOVER(l, "%r\"not a procedure\"%t\n '%S", first);
-		}
 		l->cur_depth = depth;	/*tucked away for function use */
 		l->cur_env = env;	/*also tucked away */
 		if (is_subr(proc)) {
@@ -728,11 +732,13 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			DEBUG_RETURN((*get_subr(proc)) (l, vals));
 		}
 		if (is_proc(proc) || is_fproc(proc)) {
-			if (get_length(get_proc_args(proc)) != get_length(vals))
-				LISP_RECOVER(l, "%y'lambda%t\n '%S\n %y'expected%t\n '%S\n '%S", 
-						get_func_docstring(proc), get_proc_args(proc), vals);
+			/**@todo mark a function as variadic, and only then use
+			 * greater than in get length check, this can be done
+			 * by moving the checks into multiple_extend*/
+			if (get_length(get_proc_args(proc)) > get_length(vals))
+				LISP_RECOVER(l, "%y'arg-error%t\n %S\n '%S", proc, vals);
 			if (get_length(get_proc_args(proc)))
-				env = multiple_extend(l, (dynamic_on ? env : get_proc_env(proc)), get_proc_args(proc), vals);
+				env = multiple_extend(l, proc, vals);
 			exp = cons(l, l->progn, get_proc_code(proc));
 			goto tail;
 		}

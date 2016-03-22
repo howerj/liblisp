@@ -79,14 +79,14 @@
 	     t
 	     nil))
          (progn
-          (eval-file (make-path '("data" "lsp" "mods.lsp")) exit-if-not-eof nil)
-          (eval-file (make-path '("data" "lsp" "base.lsp")) exit-if-not-eof nil)
-          (eval-file (make-path '("data" "lsp" "data.lsp")) exit-if-not-eof nil)
-          (eval-file (make-path '("data" "lsp" "sets.lsp")) exit-if-not-eof nil)
-          (eval-file (make-path '("data" "lsp" "symb.lsp")) exit-if-not-eof nil)
-          (eval-file (make-path '("data" "lsp" "test.lsp")) exit-if-not-eof nil)
-          (eval-file (make-path '("data" "lsp" "sql.lsp"))  exit-if-not-eof nil)
-        ; (eval-file (make-path '("data" "lsp" "tcc.lsp"))  exit-if-not-eof nil)
+          (eval-file (make-path '("lsp" "mods.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("lsp" "base.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("lsp" "data.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("lsp" "sets.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("lsp" "symb.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("lsp" "test.lsp")) exit-if-not-eof nil)
+          (eval-file (make-path '("lsp" "sql.lsp"))  exit-if-not-eof nil)
+        ; (eval-file (make-path '("lsp" "tcc.lsp"))  exit-if-not-eof nil)
 	
 	  (define *lisprc* ".lisprc") ; start up file
 	  (define *home* nil)

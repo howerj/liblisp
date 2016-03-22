@@ -58,6 +58,7 @@ typedef enum lisp_type {
 	IO,      /**< Input/Output port*/
 	HASH,    /**< Associative hash table*/
 	FPROC,   /**< F-Expression*/
+/*	MACRO,   // Macro */
 	FLOAT,   /**< Floating point number; could be float or double*/
 	USERDEF  /**< User defined types*/
 	/**@todo CLOSURE, MACRO (replaces FPROC), VECTORs (array of same type, strings really
@@ -85,6 +86,7 @@ typedef union { /**< ideally we would use void* for everything*/
  * The cell uses the "struct hack", see
  * <http://c-faq.com/struct/structhack.html> **/
 struct cell {
+	/**@todo look at optimizing these fields*/
 	unsigned type:   4,        /**< Type of the lisp object*/
 		mark:    1,        /**< mark for garbage collection*/
 		uncollectable: 1,  /**< do not free object?*/

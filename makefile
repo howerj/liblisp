@@ -14,6 +14,8 @@
 # <https://stackoverflow.com/questions/559216/what-is-your-experience-with-non-recursive-make>
 # and specifically:
 # <https://github.com/dmoulding/boilermake>
+# I should also use foreach loops, see
+# <https://stackoverflow.com/questions/4134764/how-to-define-several-include-path-in-makefile>
 MAKEFLAGS += --no-builtin-rules
 
 .SUFFIXES:
@@ -27,28 +29,18 @@ MAKEFLAGS += --no-builtin-rules
 # make run options
 RUN_FLAGS=-Epc
 
-# Version control variables and information
-## These commands will depend on what version control is being run, or
-## if any is being used at all. Currently git is being used.
 VERSION    =$(shell git describe) 
 VCS_COMMIT =$(shell git rev-parse --verify HEAD)
 VCS_ORIGIN =$(shell git config --get remote.origin.url)
 
 CC= gcc
-# The CFLAGS_RELAXED is used to compile main.c, main.c uses
-# several libraries that require a cast from "void*" to a
-# function pointer, which causes warnings which are unnecessary.
 CFLAGS_RELAXED = -Wall -Wextra -g -fwrapv -O2 -Wmissing-prototypes
 CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
-# Add the following to CFLAGS_RELAXED:
-#  -fprofile-arcs -ftest-coverage
-# For profiling information, see:
-#  <https://gcc.gnu.org/onlinedocs/gcc/Gcov.html>
 
 # Compilation options
-
 ## CPP defines of use
 #   NDEBUG       Disable asserts
+#   @todo Merge USE_DL and USE_MUTEX
 #   USE_DL	 Add support for dlopen/LoadLibrary, requires "-ldl" 
 #                on Unix systems
 #   USE_MUTEX    Add support for Mutexes/Critical Sections, requires
@@ -56,13 +48,8 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 #   USE_ABORT_HANDLER This adds in a handler that catches SIGABRT
 #                and prints out a stack trace if it can.
 DEFINES = -DUSE_DL -DUSE_ABORT_HANDLER -DUSE_MUTEX
-INCLUDE = -I.
 # This is for convenience only, it may cause problems.
 RPATH   ?= -Wl,-rpath=.
-
-# Valgrind
-VALGRIND_SUPP=data/doc/valgrind.supp
-VALOPTS=--leak-resolution=high --num-callers=40 --leak-check=full --log-file=valgrind.log
 
 ifeq ($(OS),Windows_NT)
 FixPath =$(subst /,\,$1)
@@ -105,7 +92,6 @@ MKDIR_FLAGS= -p
 SED      = sed
 LDCONFIG = ldconfig
 LINK    = -ldl -lpthread
-# misc
 DLL=so
 EXE=
 
@@ -115,7 +101,13 @@ CFLAGS_RELAXED += -fPIC
 LINKFLAGS=-Wl,-E -Wl,-z,relro
 endif
 
+SRC=$(call FixPath,src/)
+INCLUDE = -I$(SRC)
 CFLAGS += -std=c99
+DOC=$(call FixPath,doc/)
+
+VALGRIND_SUPP=$(DOC)/valgrind.supp
+VALOPTS=--leak-resolution=high --num-callers=40 --leak-check=full --log-file=valgrind.log
 
 ##############################################################################
 ### Main Makefile ############################################################
@@ -125,7 +117,7 @@ TARGET = lisp
 
 all: shorthelp $(TARGET)$(EXE) lib$(TARGET).$(DLL) lib$(TARGET).a 
 
-include mod/makefile.in
+include $(SRC)mod/makefile.in
 
 shorthelp:
 	@echo "Use 'make help' for a list of options."
@@ -177,22 +169,22 @@ lib$(TARGET).a: $(OBJFILES)
 	@echo AR $@
 	@$(AR) $(AR_FLAGS) $@ $^
 
-lib$(TARGET).$(DLL): $(OBJFILES) lib$(TARGET).h private.h
+lib$(TARGET).$(DLL): $(OBJFILES) $(SRC)lib$(TARGET).h $(SRC)private.h
 	@echo CC -o $@
 	@$(CC) $(CFLAGS) -shared $(OBJFILES) -o $@
 
 # -DCOMPILING_LIBLISP is only needed on Windows
-%.o: %.c lib$(TARGET).h private.h
+%.o: $(SRC)%.c $(SRC)lib$(TARGET).h $(SRC)private.h
 	@echo CC $<
 	@$(CC) $(CFLAGS) $(INCLUDE) -DCOMPILING_LIBLISP $< -c -o $@
 
 VCS_DEFINES=-DVCS_ORIGIN="$(VCS_ORIGIN)" -DVCS_COMMIT="$(VCS_COMMIT)" -DVERSION="$(VERSION)" 
 
-repl.o: repl.c lib$(TARGET).h
+repl.o: $(SRC)repl.c $(SRC)lib$(TARGET).h
 	@echo CC $<
 	@$(CC) $(CFLAGS) $(INCLUDE) $(DEFINES) -DCOMPILING_LIBLISP $(VCS_DEFINES) $< -c -o $@
 
-main.o: main.c lib$(TARGET).h lispmod.h
+main.o: $(SRC)main.c $(SRC)lib$(TARGET).h $(SRC)lispmod.h
 	@echo CC $<
 	@$(CC) $(CFLAGS_RELAXED) $(INCLUDE)  $(DEFINES) $< -c -o $@
 
@@ -200,7 +192,7 @@ $(TARGET)$(EXE): main.o lib$(TARGET).$(DLL)
 	@echo CC -o $@
 	@$(CC) $(CFLAGS) $(LINKFLAGS) $(RPATH) $^ $(LINK) -o $(TARGET)
 
-unit$(EXE): unit.c lib$(TARGET).a
+unit$(EXE): $(SRC)/t/unit.c lib$(TARGET).a
 	@echo CC -o $@
 	@$(CC) $(CFLAGS) $(INCLUDE) $(RPATH) $^ -o unit$(EXE)
 
@@ -208,39 +200,34 @@ test: unit$(EXE)
 	./unit -c
 
 app: all test modules
-	./app -vpa  ./lisp -e -Epc '"$${SCRIPT_PATH}"/data/init.lsp'
+	$(SRC)./app -vpa  ./lisp -f $(DOC) -f lsp -e -Epc '"$${SCRIPT_PATH}"/lsp/init.lsp'
 
 ### running ##################################################################
 
 run: all
 	@echo running the executable with default arguments
-	./$(TARGET) $(RUN_FLAGS) data/init.lsp -
+	./$(TARGET) $(RUN_FLAGS) lsp/init.lsp -
 
-# From <http://valgrind.org/>
 valgrind: all
 	@echo running the executable through leak detection program, valgrind
-	valgrind $(VALOPTS) --suppressions=$(VALGRIND_SUPP) ./$(TARGET) $(RUN_FLAGS) data/init.lsp -
+	valgrind $(VALOPTS) --suppressions=$(VALGRIND_SUPP) ./$(TARGET) $(RUN_FLAGS) lsp/init.lsp -
 
 ### documentation ############################################################
 
-# From <https://daringfireball.net/projects/markdown/>
-lib$(TARGET).htm: lib$(TARGET).md
+lib$(TARGET).htm: $(DOC)lib$(TARGET).md
 	markdown $^ > $@
 
 doc: lib$(TARGET).htm doxygen
 
-# From <http://www.stack.nl/~dimitri/doxygen/>
 doxygen: 
-	#doxygen -g  # old method
-	#doxygen Doxyfile 2> doxygen.log
-	doxygen data/doc/doxygen.conf
+	doxygen $(DOC)doxygen.conf
 
 ### distribution and installation ############################################
 
 TARBALL=$(strip $(TARGET)-$(VERSION)).tgz
 # make distribution tarball
-dist: $(TARGET) lib$(TARGET).a lib$(TARGET).$(DLL) lib$(TARGET).htm lib$(TARGET).h modules
-	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) lib$(TARGET).h *.a *.1 *.3 
+dist: $(TARGET) lib$(TARGET).a lib$(TARGET).$(DLL) lib$(TARGET).htm $(SRC)lib$(TARGET).h modules
+	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) $(SRC)lib$(TARGET).h *.a $(DOC)*.1 $(DOC)*.3 
 
 install: all 
 	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/bin)
@@ -251,15 +238,17 @@ install: all
 	$(CP) $(CP_FLAGS) $(TARGET)$(EXE) $(call FixPath,$(DESTDIR)$(prefix)/bin)
 	$(CP) $(CP_FLAGS) *.a $(call FixPath,$(DESTDIR)$(prefix)/lib)
 	$(CP) $(CP_FLAGS) *.$(DLL) $(call FixPath,$(DESTDIR)$(prefix)/lib)
-	$(CP) $(CP_FLAGS) lib$(TARGET).h $(call FixPath,$(DESTDIR)$(prefix)/include)
-	$(SED) "s/VERSION/$(VERSION)/g" < $(TARGET).1    > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
-	$(SED) "s/VERSION/$(VERSION)/g" < lib$(TARGET).3 > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
+	$(CP) $(CP_FLAGS) $(SRC)lib$(TARGET).h $(call FixPath,$(DESTDIR)$(prefix)/include)
+	$(CP) $(CP_FLAGS) $(SRC)lispmod.h $(call FixPath,$(DESTDIR)$(prefix)/include)
+	$(SED) "s/VERSION/$(VERSION)/g" < $(DOC)$(TARGET).1 > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
+	$(SED) "s/VERSION/$(VERSION)/g" < $(DOC)lib$(TARGET).3 > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
 	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(prefix)/bin/$(TARGET))
 	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
 	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
 	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(prefix)/lib/lib$(TARGET).a)
 	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(prefix)/lib/lib$(TARGET).$(DLL))
 	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(prefix)/include/lib$(TARGET).h)
+	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(prefix)/include/lispmod.h)
 	#$(LDCONFIG)
 	@echo "installation complete"
 

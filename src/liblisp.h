@@ -403,7 +403,6 @@ LIBLISP_API size_t io_read(char *ptr, size_t size, io_t *i);
  *  @param  ptr     a point to a block of memory size bytes long at
  *                  minimum
  *  @param  size    size of ptr array
- *  @param  nmemb   number of members to write
  *  @param  o       stream to write to
  *  @return size_t number of members written */
 LIBLISP_API size_t io_write(char *ptr, size_t size, io_t *o);

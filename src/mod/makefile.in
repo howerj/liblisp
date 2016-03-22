@@ -3,9 +3,9 @@
 MODULES=liblisp_bignum.$(DLL) liblisp_math.$(DLL)\
 	liblisp_text.$(DLL) liblisp_base.$(DLL)
 
-MOD_DEPS=liblisp.h liblisp.a liblisp.$(DLL) lispmod.h
+MOD_DEPS=$(SRC)liblisp.h liblisp.a liblisp.$(DLL) $(SRC)lispmod.h
 
-CURDIR:=mod$(FS)
+CURDIR:=$(SRC)mod$(FS)
 
 ifeq ($(OS),Windows_NT)
 ADDITIONAL=liblisp.$(DLL)
@@ -22,11 +22,11 @@ modules: $(MODULES)
 
 %.o: $(CURDIR)%.c
 	@echo CC $<
-	@$(CC) $(CFLAGS) -I. $< -c -o $@
+	@$(CC) $(CFLAGS) $(INCLUDE) -I$(CURDIR) $< -c -o $@
 
 utf8.o: $(CURDIR)utf8.c $(CURDIR)utf8.h
 	@echo CC $<
-	@$(CC) $(CFLAGS) -I. $< -c -o $@
+	@$(CC) $(CFLAGS) $(INCLUDE) -I$(CURDIR) $< -c -o $@
 
 liblisp_pcre.$(DLL): liblisp_pcre.o $(MOD_DEPS)
 	@echo CC -o $@
@@ -38,7 +38,7 @@ liblisp_base.$(DLL): liblisp_base.o utf8.o $(MOD_DEPS)
 
 liblisp_line.o: $(CURDIR)liblisp_line.c $(MOD_DEPS)
 	@echo CC -o $@
-	@$(CC) $(CFLAGS) -I. -I$(CURDIR)libline $< -c -o $@
+	@$(CC) $(CFLAGS) $(INCLUDE) -I$(CURDIR) -I$(CURDIR)libline $< -c -o $@
 
 liblisp_sql.$(DLL): liblisp_sql.o $(MOD_DEPS)
 	@echo CC -o $@
@@ -50,7 +50,7 @@ liblisp_unix.$(DLL): liblisp_unix.o $(MOD_DEPS)
 
 liblisp_tcc.o: $(CURDIR)liblisp_tcc.c
 	@echo CC -o $@
-	@$(CC) $(CFLAGS_RELAXED) -I. $< -c -o $@
+	@$(CC) $(CFLAGS_RELAXED) $(INCLUDE) -I$(CURDIR) $< -c -o $@
 
 liblisp_curl.$(DLL): liblisp_curl.o $(MOD_DEPS)
 	@echo CC -o $@

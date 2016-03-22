@@ -2,7 +2,7 @@ readme.md {#mainpage}
 =========
 
 A small lisp interpreter library and wrapper written in C. The documentation 
-is in [liblisp.md][], this contains information on how to build and run the
+is in [doc/liblisp.md][], this contains information on how to build and run the
 interpreter. The project runs (and has been tested under) Linux and Windows.
 
 
@@ -47,24 +47,5 @@ or
 
 (which is more likely to fail as it requires installed dependencies).
 
-For packaging of this application there are two options:
-
-1)
-
-	make app
-
-2) The [debian][] directory
-
-This directory contains most of what is needed to create a Debian package, for
-more details on how to build a Debian package see this [introduction][], but
-this following instructions should work (tested on Debian 8):
-
-	mv liblisp/ liblisp-0.6/
-	tar zcf liblisp_0.6.orig.tar.gz liblisp-0.6/
-	cd liblisp-0.6/
-	debuild -us -uc
-	sudo dpkg -i ../liblisp_0.6-1_XXX.deb # XXX is your architecture
-
-[liblisp.md]: liblisp.md
-[debian]: debian/
+[doc/liblisp.md]: doc/liblisp.md
 [introduction]: https://wiki.debian.org/IntroDebianPackaging

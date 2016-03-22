@@ -48,6 +48,7 @@ OS=$(uname -s)
 MACHINE=$(uname -m)
 TARGET=$(echo "${OS}-${MACHINE}" | tr '[:upper:]' '[:lower:]')
 PLUGINS_ON="false"
+DATA=(data)
 
 read -r -d '' HELP <<EOF || true
 This script creates an application with all dependencies needed to run it for
@@ -60,6 +61,8 @@ Options:
 	-v	verbose mode on
 	-e	stop processing arguments and add arguments after the "-e"
 		to the script that calls your application
+	-f      add folder to data folder, if this is not given, a folder
+		called "data/" will be copied, if it exists.
 
 When passing in variables to be passed to your executable, you might want to
 use the \${SCRIPT_PATH} variable, which contains the current working directory
@@ -131,9 +134,10 @@ if [ 0 -eq "${#}" ]; then
 	die "no application provided"
 fi
 
+
 # To do
 #	* Process multiple apps
-while getopts "ehpva:" opt; do
+while getopts "ehpva:f:" opt; do
 	case ${opt} in
 		a)
 			APP="${OPTARG##*/}"
@@ -142,6 +146,14 @@ while getopts "ehpva:" opt; do
 				BUILDDIR='./'
 			fi
 			verbose "app '${APP}' selected in '${BUILDDIR}'"
+			;;
+		f)
+			if [ "${DATA[0]}" = "data" ]; then
+				DATA=("${OPTARG}");
+			else
+				DATA=("${DATA[@]}"  "${OPTARG}")
+			fi
+			verbose "adding ${OPTARG} to data/"
 			;;
 		h)
 			echo "${HELP}"
@@ -174,28 +186,25 @@ if [ -z "${APP}" ]; then
 fi
 
 APPDIR="${APP}-${TARGET}"
-DOCS=("${BUILDDIR}"/*.pdf "${BUILDDIR}"/{*.htm,*.html} "${BUILDDIR}"/*.[1-9])
 
 ## Process application #########################################################
 
 mkdir ${VERBOSE} -p "${APPDIR}"
 mkdir ${VERBOSE} -p "${APPDIR}"/bin
-mkdir ${VERBOSE} -p "${APPDIR}"/data
-mkdir ${VERBOSE} -p "${APPDIR}"/docs
 
 verbose "processing application: ${APP}"
 cp ${VERBOSE} "${BUILDDIR}"/${APP} "${APPDIR}"/bin/${APP}
 cp ${VERBOSE} `ldd "${APPDIR}"/bin/${APP} | grep -o '\W/[^ ]*'` "${APPDIR}"/bin
 
-if [ -n "${DOCS}" ]; then
-	verbose "copying documentation ${DOCS[@]}:"
-	cp ${VERBOSE} ${DOCS[@]} "${APPDIR}"/docs 
-fi
-
-if [ -d "${BUILDDIR}/data" ]; then
-	verbose "copying data directory:"
-	cp ${VERBOSE} -r "${BUILDDIR}"/data "${APPDIR}"
-fi
+# Copy and data directories
+for i in "${DATA[@]}"; do
+	if [ -d "${BUILDDIR}/${i}" ]; then
+		verbose "copying \"${i}\" to data directory:"
+		cp ${VERBOSE} -r "${BUILDDIR}/${i}" "${APPDIR}"
+	else
+		verbose "data directory \"${i}\" does not exist, failed to copy";
+	fi
+done
 
 # Copy dependencies of any plugins, and the plugins
 if [ "true" = ${PLUGINS_ON} ]; then
@@ -215,7 +224,7 @@ SCRIPT_PATH=\$(dirname \$(readlink -f \${0}))
 "\${SCRIPT_PATH}"/bin/ld-*.so.2 --library-path "\${SCRIPT_PATH}"/bin "\${SCRIPT_PATH}"/bin/"${APP}" ${EXTRA} "\${@}" 
 EOF
 
-if [ -n ${VERBOSE} ] ; then
+if [ "-v" = "${VERBOSE}" ] ; then
 	cat "${APPDIR}/${APP}"
 fi
 
