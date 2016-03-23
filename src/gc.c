@@ -139,7 +139,7 @@ lisp_cell_t *lisp_gc_add(lisp_t * l, lisp_cell_t * op)
 			LISP_HALT(l, "%s", "overflow in allocator size variable");
 		olist = realloc(l->gc_stack, l->gc_stack_allocated * sizeof(*l->gc_stack));
 		if (!olist)
-			LISP_HALT(l, "%s", "out of memory");
+			lisp_out_of_memory(l);
 		l->gc_stack = olist;
 	}
 	l->gc_stack[l->gc_stack_used - 1] = op;	/**<anything reachable in here is not freed*/

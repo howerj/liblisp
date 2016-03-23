@@ -1,6 +1,6 @@
 /** @file       lisp.c
  *  @brief      A minimal lisp interpreter and utility library, interface
- *              functions.
+ *              functions and lisp utility functions
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com**/
@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <errno.h>
 
 void lisp_throw(lisp_t * l, int ret)
 {
@@ -30,13 +31,18 @@ lisp_cell_t *lisp_environment(lisp_t *l)
 	return l->top_env;
 }
 
-int lisp_add_module_subroutines(lisp_t *l, const lisp_module_subroutines_t *ms, size_t len)
+void lisp_out_of_memory(lisp_t *l)
 {
-	size_t i;
-	for(i = 0; ms[i].name && (!len || i < len); i++)
-		if(!lisp_add_subr(l, ms[i].name, ms[i].p, ms[i].validate, ms[i].docstring))
-			return -1;
-	return 0;
+	LISP_HALT(l, "%y'allocation-failed%\n %r\"%s\"%t", strerror(errno));
+}
+
+void *lisp_calloc(lisp_t *l, size_t size)
+{
+	assert(l);
+	void *ret;
+	if(!(ret = calloc(size, 1)))
+		lisp_out_of_memory(l);
+	return ret;
 }
 
 char *lisp_strdup(lisp_t *l, const char *s)
@@ -44,8 +50,17 @@ char *lisp_strdup(lisp_t *l, const char *s)
 	assert(l && s);
 	char *r = lstrdup(s);
 	if(!r)
-		LISP_HALT(l, "\"%s\"", "out of memory");
+		lisp_out_of_memory(l);
 	return r;
+}
+
+int lisp_add_module_subroutines(lisp_t *l, const lisp_module_subroutines_t *ms, size_t len)
+{
+	size_t i;
+	for(i = 0; ms[i].name && (!len || i < len); i++)
+		if(!lisp_add_subr(l, ms[i].name, ms[i].p, ms[i].validate, ms[i].docstring))
+			return -1;
+	return 0;
 }
 
 lisp_cell_t *lisp_add_subr(lisp_t * l, const char *name, lisp_subr_func func, const char *fmt, const char *doc)

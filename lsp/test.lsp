@@ -20,8 +20,9 @@
 		  (setq c (+ (inner) c)))
            c))))
   (define monte-carlo-pi
-    (lambda (iter)
+    (compile 
       "determine the approximate value of pi with Monte-Carlo methods, more iterations produces a better approximation"
+      (iter)
       (* (/ (coerce *float* (outer iter)) iter) 4))))
 
 ; This is a series of simple tests that is not comprehensive

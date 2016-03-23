@@ -58,7 +58,6 @@
 	X("hash-lookup", subr_hash_lookup,   "h Z",  "loop up a variable in a hash")\
 	X("input?",      subr_inp,       "A",    "is an object an input port?")\
 	X("length",      subr_length,    "A",    "return the length of a list or string")\
-	X("list",        subr_list,      NULL,   "create a list from the arguments")\
 	X("match",       subr_match,     "Z Z",  "perform a primitive match on a string")\
 	X("open",        subr_open,      "d Z",  "open a port (either a file or a string) for reading *or* writing")\
 	X("output?",     subr_outp,      "A",    "is an object an output port?")\
@@ -152,13 +151,17 @@ static const struct special_cell_list { lisp_cell_t *internal; } special_cells[]
 CELL_XLIST /**< defines functions to get a lisp "cell" for the built in special symbols*/
 #undef X
 
-static lisp_cell_t *forced_add_symbol(lisp_t *l, lisp_cell_t *ob) { assert(l && ob); 
+static lisp_cell_t *forced_add_symbol(lisp_t *l, lisp_cell_t *ob) 
+{ 
+	assert(l && ob); 
         assert(hash_lookup(get_hash(l->all_symbols), get_sym(ob)) == NULL);
-        if(hash_insert(get_hash(l->all_symbols), get_sym(ob), ob) < 0) return NULL;
+        if(hash_insert(get_hash(l->all_symbols), get_sym(ob), ob) < 0) 
+		return NULL;
         return l->tee;
 }
 
-lisp_t *lisp_init(void) {
+lisp_t *lisp_init(void) 
+{
         lisp_t *l;
         io_t *ifp, *ofp, *efp;
         unsigned i;
@@ -183,11 +186,11 @@ CELL_XLIST
 
         /* The lisp init function is now ready to add built in subroutines
          * and other variables, the order in which is does this matters. */
-        if(!(l->all_symbols = mk_hash(l, hash_create(LARGE_DEFAULT_LEN)))) 
+        if(!(l->all_symbols = mk_hash(l, hash_create(DEFAULT_LEN)))) 
                 goto fail;
-        if(!(l->top_env = cons(l, cons(l, gsym_nil(), gsym_nil()),gsym_nil())))
+        if(!(l->top_env = cons(l, cons(l, l->nil, l->nil), l->nil)))
                 goto fail;
-        if(!(l->top_hash = mk_hash(l, hash_create(LARGE_DEFAULT_LEN))))
+        if(!(l->top_hash = mk_hash(l, hash_create(DEFAULT_LEN))))
                 goto fail;
          set_cdr(l->top_env, cons(l, l->top_hash, cdr(l->top_env)));
 
@@ -313,15 +316,15 @@ static lisp_cell_t *subr_greater(lisp_t * l, lisp_cell_t * args)
 	y = CADR(args);
 	if (is_arith(x) && is_arith(y)) {
 		return (is_floating(x) ? get_float(x) : get_int(x)) >
-		    (is_floating(y) ? get_float(y) : get_int(y)) ? gsym_tee() : gsym_nil();
+		    (is_floating(y) ? get_float(y) : get_int(y)) ? l->tee : l->nil;
 	} else if (is_asciiz(x) && is_asciiz(y)) {
 		size_t lx = get_length(x), ly = get_length(y);
 		if(lx == ly)
-			return memcmp(get_str(x), get_str(y), lx) > 0 ? gsym_tee() : gsym_nil();
-		return lx > ly ? gsym_tee() : gsym_nil();
+			return memcmp(get_str(x), get_str(y), lx) > 0 ? l->tee : l->nil;
+		return lx > ly ? l->tee : l->nil;
 	}
  fail:	LISP_RECOVER(l, "\"expected (number number) or (string string)\"\n '%S", args);
-	return gsym_error();
+	return l->error;
 }
 
 static lisp_cell_t *subr_less(lisp_t * l, lisp_cell_t * args)
@@ -333,15 +336,15 @@ static lisp_cell_t *subr_less(lisp_t * l, lisp_cell_t * args)
 	y = CADR(args);
 	if (is_arith(x) && is_arith(y)) {
 		return (is_floating(x) ? get_float(x) : get_int(x)) <
-		    (is_floating(y) ? get_float(y) : get_int(y)) ? gsym_tee() : gsym_nil();
+		    (is_floating(y) ? get_float(y) : get_int(y)) ? l->tee : l->nil;
 	} else if (is_asciiz(x) && is_asciiz(y)) {
 		size_t lx = get_length(x), ly = get_length(y);
 		if(lx == ly)
-			return memcmp(get_str(x), get_str(y), lx) < 0 ? gsym_tee() : gsym_nil();
-		return lx < ly ? gsym_tee() : gsym_nil();
+			return memcmp(get_str(x), get_str(y), lx) < 0 ? l->tee : l->nil;
+		return lx < ly ? l->tee : l->nil;
 	}
  fail:	LISP_RECOVER(l, "\"expected (number number) or (string string)\"\n '%S", args);
-	return gsym_error();
+	return l->error;
 }
 
 static lisp_cell_t *subr_eq(lisp_t * l, lisp_cell_t * args)
@@ -350,17 +353,17 @@ static lisp_cell_t *subr_eq(lisp_t * l, lisp_cell_t * args)
 	x = car(args);
 	y = CADR(args);
 	if (is_userdef(x) && l->ufuncs[get_user_type(x)].equal)
-		return (l->ufuncs[get_user_type(x)].equal) (x, y) ? gsym_tee() : gsym_nil();
+		return (l->ufuncs[get_user_type(x)].equal) (x, y) ? l->tee : l->nil;
 	if (get_int(x) == get_int(y))
-		return gsym_tee();
+		return l->tee;
 	if (is_floating(x) && is_floating(y))
-		return get_float(x) == get_float(y) ? gsym_tee() : gsym_nil();
+		return get_float(x) == get_float(y) ? l->tee : l->nil;
 	if (is_str(x) && is_str(y)) {
 		size_t lx = get_length(x), ly = get_length(y);
 		if(lx == ly)
-			return !memcmp(get_str(x), get_str(y), lx) ? gsym_tee() : gsym_nil();
+			return !memcmp(get_str(x), get_str(y), lx) ? l->tee : l->nil;
 	}
-	return gsym_nil();
+	return l->nil;
 }
 
 static lisp_cell_t *subr_cons(lisp_t * l, lisp_cell_t * args)
@@ -395,23 +398,9 @@ static lisp_cell_t *subr_setcdr(lisp_t * l, lisp_cell_t * args)
 	return car(args);
 }
 
-static lisp_cell_t *subr_list(lisp_t * l, lisp_cell_t * args)
-{
-	size_t i;
-	lisp_cell_t *op, *head;
-	if (lisp_check_length(args, 0))
-		return gsym_nil();
-	head = op = cons(l, car(args), gsym_nil());
-	args = cdr(args);
-	for (i = 1; !is_nil(args); args = cdr(args), op = cdr(op), i++)
-		set_cdr(op, cons(l, car(args), gsym_nil()));
-	return head;
-}
-
 static lisp_cell_t *subr_match(lisp_t * l, lisp_cell_t * args)
 {
-	UNUSED(l);
-	return match(get_sym(car(args)), get_sym(CADR(args))) ? gsym_tee() : gsym_nil();
+	return match(get_sym(car(args)), get_sym(CADR(args))) ? l->tee : l->nil;
 }
 
 static lisp_cell_t *subr_scons(lisp_t * l, lisp_cell_t * args)
@@ -449,7 +438,7 @@ static lisp_cell_t *subr_eval(lisp_t * l, lisp_cell_t * args)
 	if ((r = setjmp(l->recover))) {
 		LISP_RECOVER_RESTORE(restore_used, l, restore);
 		l->errors_halt = errors_halt;
-		return gsym_error();
+		return l->error;
 	}
 
 	if (lisp_check_length(args, 1))
@@ -480,7 +469,7 @@ static lisp_cell_t *subr_trace(lisp_t * l, lisp_cell_t * args)
 	default:
 		LISP_RECOVER(l, "%r\"invalid log level\"\n %m%d%t", (intptr_t)level);
 	}
-	return gsym_tee();
+	return l->tee;
 }
 
 static lisp_cell_t *subr_length(lisp_t * l, lisp_cell_t * args)
@@ -490,14 +479,12 @@ static lisp_cell_t *subr_length(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_inp(lisp_t * l, lisp_cell_t * args)
 {
-	UNUSED(l);
-	return is_in(car(args)) ? gsym_tee() : gsym_nil();
+	return is_in(car(args)) ? l->tee : l->nil;
 }
 
 static lisp_cell_t *subr_outp(lisp_t * l, lisp_cell_t * args)
 {
-	UNUSED(l);
-	return is_out(car(args)) ? gsym_tee() : gsym_nil();
+	return is_out(car(args)) ? l->tee : l->nil;
 }
 
 static lisp_cell_t *subr_open(lisp_t * l, lisp_cell_t * args)
@@ -522,26 +509,27 @@ static lisp_cell_t *subr_open(lisp_t * l, lisp_cell_t * args)
 	default:
 		LISP_RECOVER(l, "\"invalid operation %d\"\n '%S", get_int(car(args)), args);
 	}
-	return ret == NULL ? gsym_nil() : mk_io(l, ret);
+	return ret == NULL ? l->nil : mk_io(l, ret);
 }
 
 static lisp_cell_t *subr_get_io_str(lisp_t *l, lisp_cell_t *args)
 { /**@todo fix for binary data */
 	if(!io_is_string(get_io(car(args))))
-		LISP_RECOVER(l, "\"get string only works on string output IO ports\"", args);
+		LISP_RECOVER(l, "%r\"get string only works on string output IO ports\"%t '%S", args);
 	return mk_str(l, lisp_strdup(l, io_get_string(get_io(car(args)))));
 }
 
 static lisp_cell_t *subr_getchar(lisp_t * l, lisp_cell_t * args)
 {
-	return mk_int(l, io_getc(get_io(car(args))));
+	int i;
+	return (i = io_getc(get_io(car(args)))) >= 0 ? mk_int(l, i) : l->nil;
 }
 
 static lisp_cell_t *subr_getdelim(lisp_t * l, lisp_cell_t * args)
 {
 	char *s;
 	int ch = is_asciiz(CADR(args)) ? get_str(CADR(args))[0] : get_int(CADR(args));
-	return (s = io_getdelim(get_io(car(args)), ch)) ? mk_str(l, s) : gsym_nil();
+	return (s = io_getdelim(get_io(car(args)), ch)) ? mk_str(l, s) : l->nil;
 }
 
 static lisp_cell_t *subr_read(lisp_t * l, lisp_cell_t * args)
@@ -559,14 +547,14 @@ static lisp_cell_t *subr_read(lisp_t * l, lisp_cell_t * args)
 	if ((r = setjmp(l->recover))) {	/*handle exception in reader */
 		LISP_RECOVER_RESTORE(restore_used, l, restore);
 		l->errors_halt = errors_halt;
-		return gsym_error();
+		return l->error;
 	}
 	s = NULL;
 	x = NULL;
 	io_t *i = NULL;
 	if (!(i = is_in(car(args)) ? get_io(car(args)) : io_sin(get_str(car(args)), get_length(car(args)))))
-		LISP_HALT(l, "\"%s\"", "out of memory");
-	x = (x = reader(l, i)) ? x : gsym_error();
+		lisp_out_of_memory(l);
+	x = (x = reader(l, i)) ? x : l->error;
 	if (s)
 		io_close(i);
 	LISP_RECOVER_RESTORE(restore_used, l, restore);
@@ -576,19 +564,17 @@ static lisp_cell_t *subr_read(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_puts(lisp_t * l, lisp_cell_t * args)
 {
-	UNUSED(l);
-	return io_puts(get_str(CADR(args)), get_io(car(args))) < 0 ? gsym_nil() : CADR(args);
+	return io_puts(get_str(CADR(args)), get_io(car(args))) < 0 ? l->nil : CADR(args);
 }
 
 static lisp_cell_t *subr_putchar(lisp_t * l, lisp_cell_t * args)
 {
-	UNUSED(l);
-	return io_putc(get_int(CADR(args)), get_io(car(args))) < 0 ? gsym_nil() : CADR(args);
+	return io_putc(get_int(CADR(args)), get_io(car(args))) < 0 ? l->nil : CADR(args);
 }
 
 static lisp_cell_t *subr_print(lisp_t * l, lisp_cell_t * args)
 {
-	return printer(l, get_io(car(args)), CADR(args), 0) < 0 ? gsym_nil() : CADR(args);
+	return printer(l, get_io(car(args)), CADR(args), 0) < 0 ? l->nil : CADR(args);
 }
 
 static lisp_cell_t *subr_flush(lisp_t * l, lisp_cell_t * args)
@@ -596,9 +582,9 @@ static lisp_cell_t *subr_flush(lisp_t * l, lisp_cell_t * args)
 	if (lisp_check_length(args, 0))
 		return mk_int(l, fflush(NULL));
 	if (lisp_check_length(args, 1) && is_io(car(args)))
-		return io_flush(get_io(car(args))) ? gsym_nil() : gsym_tee();
+		return io_flush(get_io(car(args))) ? l->nil : l->tee;
 	LISP_RECOVER(l, "\"expected () or (io)\"\n '%S", args);
-	return gsym_error();
+	return l->error;
 }
 
 static lisp_cell_t *subr_tell(lisp_t * l, lisp_cell_t * args)
@@ -621,40 +607,35 @@ static lisp_cell_t *subr_seek(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_eofp(lisp_t * l, lisp_cell_t * args)
 {
-	UNUSED(l);
-	return io_eof(get_io(car(args))) ? gsym_tee() : gsym_nil();
+	return io_eof(get_io(car(args))) ? l->tee : l->nil;
 }
 
 static lisp_cell_t *subr_ferror(lisp_t * l, lisp_cell_t * args)
 {
-	UNUSED(l);
-	return io_error(get_io(car(args))) ? gsym_tee() : gsym_nil();
+	return io_error(get_io(car(args))) ? l->tee : l->nil;
 }
 
 static lisp_cell_t *subr_remove(lisp_t * l, lisp_cell_t * args)
 {
-	UNUSED(l);
-	return remove(get_str(car(args))) ? gsym_nil() : gsym_tee();
+	return remove(get_str(car(args))) ? l->nil : l->tee;
 }
 
 static lisp_cell_t *subr_rename(lisp_t * l, lisp_cell_t * args)
 {
-	UNUSED(l);
-	return rename(get_str(car(args)), get_str(CADR(args))) ? gsym_nil() : gsym_tee();
+	return rename(get_str(car(args)), get_str(CADR(args))) ? l->nil : l->tee;
 }
 
 static lisp_cell_t *subr_hash_lookup(lisp_t * l, lisp_cell_t * args)
 { /*arbitrary expressions could be used as keys if they are serialized to strings first*/
-	UNUSED(l);
 	lisp_cell_t *x;
-	return (x = hash_lookup(get_hash(car(args)), get_sym(CADR(args)))) ? x : gsym_nil();
+	return (x = hash_lookup(get_hash(car(args)), get_sym(CADR(args)))) ? x : l->nil;
 }
 
 static lisp_cell_t *subr_hash_insert(lisp_t * l, lisp_cell_t * args)
 {
 	if (hash_insert(get_hash(car(args)),
 			get_sym(CADR(args)), cons(l, CADR(args), CADR(cdr(args)))))
-		LISP_HALT(l, "%s", "out of memory");
+		lisp_out_of_memory(l);
 	return car(args);
 }
 
@@ -664,17 +645,17 @@ static lisp_cell_t *subr_hash_create(lisp_t * l, lisp_cell_t * args)
 	if (get_length(args) % 2)
 		goto fail;
 	if (!(ht = hash_create(SMALL_DEFAULT_LEN)))
-		LISP_HALT(l, "%s", "out of memory");
+		lisp_out_of_memory(l);
 	for (; !is_nil(args); args = cdr(cdr(args))) {
 		if (!is_asciiz(car(args)))
 			goto fail;
 		if (hash_insert(ht, get_sym(car(args)), cons(l, car(args), CADR(args))) < 0)
-			LISP_HALT(l, "%s", "out of memory");
+			lisp_out_of_memory(l);
 	}
 	return mk_hash(l, ht);
  fail:	hash_destroy(ht);
 	LISP_RECOVER(l, "\"expected ({symbol any}*)\"\n '%S", args);
-	return gsym_error();
+	return l->error;
 }
 
 static lisp_cell_t *subr_hash_info(lisp_t * l, lisp_cell_t * args)
@@ -693,7 +674,7 @@ static lisp_cell_t *subr_coerce(lisp_t * l, lisp_cell_t * args)
 		goto fail;
 	return lisp_coerce(l, get_int(car(args)), CADR(args));
  fail:	LISP_RECOVER(l, "\"expected (int any)\"\n %S", args);
-	return gsym_error();
+	return l->error;
 }
 
 lisp_cell_t *lisp_coerce(lisp_t * l, lisp_type type, lisp_cell_t *from)
@@ -719,15 +700,15 @@ lisp_cell_t *lisp_coerce(lisp_t * l, lisp_type type, lisp_cell_t *from)
 	case CONS:
 		if (is_str(from)) {	/*string to list of chars */
 			size_t fromlen = get_length(from);
-			head = x = cons(l, gsym_nil(), gsym_nil());
+			head = x = cons(l, l->nil, l->nil);
 			if(!fromlen)
-				return cons(l, mk_str(l, lstrdup_or_abort("")), gsym_nil());
+				return cons(l, mk_str(l, lstrdup_or_abort("")), l->nil);
 			for (i = 0; i < fromlen; i++) {
 				/**@todo fix for binary data */
 				char c[2] = { '\0', '\0' };
 				c[0] = get_str(from)[i];
 				y = mk_str(l, lisp_strdup(l, c));
-				set_cdr(x, cons(l, y, gsym_nil()));
+				set_cdr(x, cons(l, y, l->nil));
 				x = cdr(x);
 			}
 			return cdr(head);
@@ -735,14 +716,14 @@ lisp_cell_t *lisp_coerce(lisp_t * l, lisp_type type, lisp_cell_t *from)
 		if (is_hash(from)) {	/*hash to list */
 			hash_entry_t *cur;
 			hash_table_t *h = get_hash(from);
-			head = x = cons(l, gsym_nil(), gsym_nil());
+			head = x = cons(l, l->nil, l->nil);
 			for (j = 0, i = 0; i < h->len; i++)
 				if (h->table[i])
 					for (cur = h->table[i]; cur; cur = cur->next, j++) {
 						lisp_cell_t *tmp = (lisp_cell_t *) cur->val;
 						if (!is_cons(tmp))	/*handle special case for all_symbols hash */
 							tmp = cons(l, tmp, tmp);
-						set_cdr(x, cons(l, tmp, gsym_nil()));
+						set_cdr(x, cons(l, tmp, l->nil));
 						x = cdr(x);
 					}
 			return cdr(head);
@@ -771,8 +752,7 @@ lisp_cell_t *lisp_coerce(lisp_t * l, lisp_type type, lisp_cell_t *from)
 					goto fail;	/*convert only integers */
 			}
 			x = from;
-			if (!(s = calloc(get_length(x) + 1, 1)))
-				LISP_HALT(l, "\"%s\"", "out of memory");
+			s = lisp_calloc(l, get_length(x) + 1);
 			for (i = 0; !is_nil(x); x = cdr(x), i++)
 				s[i] = get_int(car(x));
 			return mk_str(l, s);
@@ -804,7 +784,7 @@ lisp_cell_t *lisp_coerce(lisp_t * l, lisp_type type, lisp_cell_t *from)
 		break;
 	}
  fail:	LISP_RECOVER(l, "%r\"invalid conversion\"\n %m%d%t %S", type, from);
-	return gsym_error();
+	return l->error;
 }
 
 static lisp_cell_t *subr_assoc(lisp_t * l, lisp_cell_t * args)
@@ -821,8 +801,7 @@ static lisp_cell_t *subr_typeof(lisp_t * l, lisp_cell_t * args)
 static lisp_cell_t *subr_close(lisp_t * l, lisp_cell_t * args)
 {
 	UNUSED(l);
-	lisp_cell_t *x;
-	x = car(args);
+	lisp_cell_t *x = car(args);
 	x->close = 1;
 	io_close(get_io(x));
 	return x;
@@ -832,15 +811,13 @@ static lisp_cell_t *subr_reverse(lisp_t * l, lisp_cell_t * args)
 {
 	if (!lisp_check_length(args, 1))
 		goto fail;
-	if (gsym_nil() == car(args))
-		return gsym_nil();
+	if (l->nil == car(args))
+		return l->nil;
 	switch (car(args)->type) {
 	case STRING:
 		{
 			char *s = lisp_strdup(l, get_str(car(args)));
 			size_t len;
-			if (!s)
-				LISP_HALT(l, "\"%s\"", "out of memory");
 			if (lisp_check_length(car(args), 0))
 				return mk_str(l, s);
 			len = get_length(car(args));
@@ -849,7 +826,7 @@ static lisp_cell_t *subr_reverse(lisp_t * l, lisp_cell_t * args)
 		break;
 	case CONS:
 		{
-			lisp_cell_t *x = car(args), *y = gsym_nil();
+			lisp_cell_t *x = car(args), *y = l->nil;
 			if (!is_cons(cdr(x)) && !is_nil(cdr(x)))
 				return cons(l, cdr(x), car(x));
 			for (; is_cons(x); x = cdr(x))
@@ -881,7 +858,7 @@ static lisp_cell_t *subr_reverse(lisp_t * l, lisp_cell_t * args)
 							goto hfail;
 						}
 						if(hash_insert(new, get_str(key), cons(l, key, val)) < 0)
-							LISP_HALT(l, "\"%s\"", "out of memory");
+							lisp_out_of_memory(l);
 					}
 			return mk_hash(l, new);
 hfail:
@@ -892,13 +869,12 @@ hfail:
 		break;
 	}
  fail:	LISP_RECOVER(l, "\"expected () (string) (list)\"\n '%S", args);
-	return gsym_error();
+	return l->error;
 }
 
 static lisp_cell_t *subr_signal(lisp_t * l, lisp_cell_t * args)
 {
-	UNUSED(l);
-	return raise(get_int(car(args))) ? gsym_nil() : gsym_tee();
+	return raise(get_int(car(args))) ? l->nil : l->tee;
 }
 
 static lisp_cell_t *subr_substring(lisp_t * l, lisp_cell_t * args)
@@ -923,8 +899,7 @@ static lisp_cell_t *subr_substring(lisp_t * l, lisp_cell_t * args)
 		} else if (left < 0) {
 			left = (int)get_length(car(args)) + left;
 			left = MAX(0, left);
-			if (!(subs = calloc(left + 1, 1)))
-				LISP_HALT(l, "\"%s\"", "out of memory");
+			subs = lisp_calloc(l, left + 1);
 			assert((get_length(car(args)) - left) > 0);
 			assert((get_str(car(args)) + left) <
 			       (get_str(car(args)) + get_length(car(args))));
@@ -940,13 +915,12 @@ static lisp_cell_t *subr_substring(lisp_t * l, lisp_cell_t * args)
 		right = right - tmp;
 		assert((left + right) <= (int)get_length(car(args)));
 	}
-	if (!(subs = calloc(right + 1, 1)))
-		LISP_HALT(l, "\"%s\"", "out of memory");
+	subs = lisp_calloc(l, right + 1);
 	memcpy(subs, get_str(car(args)) + left, right);
 	return mk_str(l, subs);
 fail:   
 	LISP_RECOVER(l, "\"expected (string int int?)\"\n '%S", args);
-	return gsym_error();
+	return l->error;
 }
 
 static lisp_cell_t *subr_format(lisp_t * l, lisp_cell_t * args)
@@ -973,7 +947,7 @@ static lisp_cell_t *subr_format(lisp_t * l, lisp_cell_t * args)
 	if (len < 1 || !is_asciiz(car(args)))
 		goto fail;
 	if (!(t = io_sout(2)))
-		LISP_HALT(l, "%r\"%s\"%t", "out of memory");
+		lisp_out_of_memory(l);
 	fmt = get_str(car(args));
 	args = cdr(args);
 	while ((c = *fmt++))
@@ -1037,7 +1011,7 @@ static lisp_cell_t *subr_format(lisp_t * l, lisp_cell_t * args)
 				if (is_nil(args) || !is_int(car(args)))
 					goto fail;
 				if (!(ts = dtostr(get_int(car(args)), 16u)))
-					LISP_HALT(l, "%r\"%s\"%t", "out of memory");
+					lisp_out_of_memory(l);
 				io_puts(ts[0] == '-' ? "-0x" : "0x", t);
 				ret = io_puts(ts[0] == '-' ? ts + 1 : ts, t);
 				free(ts);
@@ -1050,7 +1024,7 @@ static lisp_cell_t *subr_format(lisp_t * l, lisp_cell_t * args)
 				if (is_nil(args) || !is_int(car(args)))
 					goto fail;
 				if (!(ts = utostr(get_int(car(args)), 10u)))
-					LISP_HALT(l, "%r\"%s\"%t", "out of memory");
+					lisp_out_of_memory(l);
 				ret = io_puts(ts, t);
 				free(ts);
 				args = cdr(args);
@@ -1082,7 +1056,7 @@ static lisp_cell_t *subr_format(lisp_t * l, lisp_cell_t * args)
 	 * means format should return (error-status "string") not just
 	 * "string" */
 	LISP_RECOVER(l, "\"format error\"\n %S", args);
-	return gsym_error();
+	return l->error;
 }
 
 static lisp_cell_t *subr_tr(lisp_t * l, lisp_cell_t * args)
@@ -1108,8 +1082,7 @@ static lisp_cell_t *subr_tr(lisp_t * l, lisp_cell_t * args)
 	default:
 		LISP_RECOVER(l, "\"unknown tr error\"\n '%S", args);
 	}
-	if (!(ret = calloc(len + 1, 1)))
-		LISP_HALT(l, "\"%s\"", "out of memory");
+	ret = lisp_calloc(l, len + 1);
 	tr_block(&st, (uint8_t *) tr, (uint8_t *) ret, len);
 	return mk_str(l, ret);
 }
@@ -1151,14 +1124,14 @@ static lisp_cell_t *subr_all_syms(lisp_t * l, lisp_cell_t * args)
 static lisp_cell_t *subr_getenv(lisp_t * l, lisp_cell_t * args)
 {
 	char *ret;
-	return (ret = getenv(get_str(car(args)))) ? mk_str(l, lisp_strdup(l, ret)) : gsym_nil();
+	return (ret = getenv(get_str(car(args)))) ? mk_str(l, lisp_strdup(l, ret)) : l->nil;
 }
 
 static lisp_cell_t *subr_is_closed(lisp_t * l, lisp_cell_t * args)
 {
 	if (!lisp_check_length(args, 1))
 		LISP_RECOVER(l, "%r\"expected (any)\"%t\n '%S", args);
-	return is_closed(car(args)) ? gsym_tee() : gsym_nil();
+	return is_closed(car(args)) ? l->tee : l->nil;
 }
 
 static lisp_cell_t *subr_foldl(lisp_t * l, lisp_cell_t * args)
@@ -1169,7 +1142,7 @@ static lisp_cell_t *subr_foldl(lisp_t * l, lisp_cell_t * args)
 	start = eval(l, l->cur_depth, car(tmp), l->cur_env);
 	tmp = cdr(tmp);
 	for (ret = start; is_cons(tmp); tmp = cdr(tmp)) {
-		ret = mk_list(l, gsym_quote(), ret, NULL);
+		ret = mk_list(l, l->quote, ret, NULL);
 		ret = eval(l, l->cur_depth, mk_list(l, f, car(tmp), ret, NULL), l->cur_env);
 	}
 	if(!is_nil(tmp))

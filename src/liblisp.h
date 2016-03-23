@@ -1036,6 +1036,19 @@ LIBLISP_API int is_fnumber(const char *buf);
  *             from**/
 LIBLISP_API void lisp_throw(lisp_t *l, int ret);
 
+/** @brief Allocate a new block of memory with calloc, this memory can 
+ *         freed with free() from stdlib, this version of calloc will
+ *         attempt to halt the interpreter if it fails.
+ *  @param  l     an initialized lisp interpreter environment
+ *  @param  size  number of bytes to allocate
+ *  @return void* a new block of memory which can be freed with free() */
+LIBLISP_API void* lisp_calloc(lisp_t *l, size_t size);
+
+/** @brief Attempt to handle an out of memory condition within the lisp
+ *         interpreter by throwing an exception (longjmp). 
+ * @param l an initialized lisp interpreter environment **/
+LIBLISP_API void lisp_out_of_memory(lisp_t *l);
+
 /**@brief  Get the top level lisp environment
  * @param  l lisp session to get lisp environment from
  * @return lisp_cell_t* the top level lisp environment */

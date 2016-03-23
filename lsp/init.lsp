@@ -6,6 +6,7 @@
 ;
 
 (progn
+  	(define list (lambda x x))
         (define join
                 (compile "join a list of strings" (sep l)
                         (foldl 

@@ -5,7 +5,8 @@
  *  @email      howe.r.j.89@gmail.com
  *
  *  This is the main evaluator and associated function, the built in
- *  subroutines for the interpreter are defined elsewhere. **/
+ *  subroutines for the interpreter are defined elsewhere. 
+ *  @todo Rename compile, and "compiling" variadic functions **/
 #include "liblisp.h"
 #include "private.h"
 #include <assert.h>
@@ -27,10 +28,8 @@ static lisp_cell_t *mk(lisp_t * l, lisp_type type, size_t count, ...)
 		lisp_gc_mark_and_sweep(l);
 
 	va_start(ap, count);
-	if (!(ret = calloc(1, sizeof(lisp_cell_t) + (count - 1) * sizeof(cell_data_t))))
-		LISP_HALT(l, "\"%s\"", "out of memory");
-	if (!(node = calloc(1, sizeof(*node))))
-		LISP_HALT(l, "\"%s\"", "out of memory");
+	ret  = lisp_calloc(l, sizeof(lisp_cell_t) + (count - 1) * sizeof(cell_data_t));
+	node = lisp_calloc(l, sizeof(*node));
 	ret->type = type;
 	for (i = 0; i < count; i++)
 		if (FLOAT == type)
@@ -224,10 +223,10 @@ lisp_cell_t *mk_list(lisp_t * l, lisp_cell_t * x, ...)
 	size_t i;
 	lisp_cell_t *head, *op, *next;
 	va_list ap;
-	head = op = cons(l, x, gsym_nil());
+	head = op = cons(l, x, l->nil);
 	va_start(ap, x);
 	for (i = 1; (next = va_arg(ap, lisp_cell_t *)); op = cdr(op), i++)
-		set_cdr(op, cons(l, next, gsym_nil()));
+		set_cdr(op, cons(l, next, l->nil));
 	va_end(ap);
 	return head;
 }
@@ -465,7 +464,7 @@ lisp_cell_t *lisp_intern(lisp_t * l, char *name)
 
 /***************************** environment ************************************/
 
-static lisp_cell_t *multiple_extend(lisp_t * l, lisp_cell_t *proc, lisp_cell_t * vals)
+static lisp_cell_t *function_args(lisp_t * l, lisp_cell_t *proc, lisp_cell_t * vals)
 {
 	assert(l && proc && vals);
 	lisp_cell_t *env = dynamic_on ? l->cur_env : get_proc_env(proc);
@@ -487,7 +486,7 @@ lisp_cell_t *lisp_extend_top(lisp_t * l, lisp_cell_t * sym, lisp_cell_t * val)
 {
 	assert(l && sym && val);
 	if (hash_insert(get_hash(l->top_hash), get_str(sym), cons(l, sym, val)) < 0)
-		LISP_HALT(l, "\"%s\"", "out of memory");
+		lisp_out_of_memory(l);
 	return val;
 }
 
@@ -520,31 +519,26 @@ lisp_cell_t *lisp_assoc(lisp_cell_t * key, lisp_cell_t * alist)
  **/
 static lisp_cell_t *binding_lambda(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * env)
 {
-	size_t i;
-	lisp_cell_t *head, *op, *tmp, *code = gsym_nil();
+	lisp_cell_t *head, *op, *tmp, *code = l->nil;
 	if (depth > MAX_RECURSION_DEPTH)
 		LISP_RECOVER(l, "%y'recursion-depth-reached%t %d", depth);
 
-	if (is_sym(car(exp)) && !is_nil(tmp = lisp_assoc(car(exp), env)))
-		op = cdr(tmp);
-	else if (is_cons(car(exp)))
-		op = binding_lambda(l, depth + 1, car(exp), env);
-	else
-		op = car(exp);
-
-	head = op = cons(l, op, gsym_nil());
-	exp = cdr(exp);
-	for (i = 1; is_cons(exp); exp = cdr(exp), op = cdr(op), i++) {
+	if(is_sym(exp))
+		return !is_nil(tmp = lisp_assoc(exp, env)) ? cdr(tmp) : exp;
+	head = op = cons(l, l->nil, l->nil);
+	for (; is_cons(exp); exp = cdr(exp), op = cdr(op)) {
 		code = car(exp);
 		if (is_sym(car(exp)) && !is_nil(tmp = lisp_assoc(car(exp), env)))
 			code = cdr(tmp);
-		else if (is_cons(car(exp)))
+		else if (is_cons(car(exp)) && (CAAR(exp) != l->quote))
 			code = binding_lambda(l, depth + 1, car(exp), env);
-		set_cdr(op, cons(l, code, gsym_nil()));
+		else
+			code = car(exp);
+		set_cdr(op, cons(l, code, l->nil));
 	}
 	if(!is_nil(exp))
 		LISP_RECOVER(l, "%r\"compile cannot eval dotted pairs\"%t\n '%S", head);
-	return head;
+	return cdr(head);
 }
 
 static lisp_cell_t *evlis(lisp_t * l, unsigned depth, lisp_cell_t * exps, lisp_cell_t * env);
@@ -565,7 +559,7 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 		return NULL;
 	lisp_log_debug(l, "%y'eval%t '%S", exp);
 	if (is_nil(exp))
-		return gsym_nil();
+		return exp;
 	if (l->sig) {
 		lisp_log_debug(l, "%y'eval%t 'signal-caught %d", (intptr_t)l->sig);
 		l->sig = 0;
@@ -658,7 +652,7 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 		}
 		if (first == l->setq) {
 			lisp_cell_t *pair, *newval;
-			LISP_VALIDATE_ARGS(l, "set!", 2, "s A", exp, 1);
+			LISP_VALIDATE_ARGS(l, "setq", 2, "s A", exp, 1);
 			if (is_nil(pair = lisp_assoc(car(exp), env)))
 				LISP_RECOVER(l, "%y'set!\n %r\"undefined variable\"%t\n '%S", exp);
 			newval = eval(l, depth + 1, CADR(exp), env);
@@ -667,13 +661,15 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 		}
 		if (first == l->compile) {
 			lisp_cell_t *doc;
-			LISP_VALIDATE_ARGS(l, "compile", 3, "Z L c", exp, 1);
+			LISP_VALIDATE_ARGS(l, "compile", 3, "Z L A", exp, 1);
 			doc = car(exp);
 			for (tmp = CADR(exp); !is_nil(tmp); tmp = cdr(tmp))
 				if (!is_sym(car(tmp)) || !is_proper_cons(tmp))
 					LISP_RECOVER(l, "%y'lambda\n %r\"expected only symbols (or nil) as arguments\"%t\n %S", exp);
+				else
+					env = lisp_extend(l, env, car(tmp), car(tmp));
 			tmp = binding_lambda(l, depth + 1, CADDR(exp), env);
-			DEBUG_RETURN(mk_proc(l, CADR(exp), cons(l, tmp, gsym_nil()), env, doc));
+			DEBUG_RETURN(mk_proc(l, CADR(exp), cons(l, tmp, l->nil), env, doc));
 		}
 		if (first == l->let) {
 			lisp_cell_t *r = NULL, *s = NULL;
@@ -734,16 +730,16 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			DEBUG_RETURN((*get_subr(proc)) (l, vals));
 		}
 		if (is_proc(proc) || is_fproc(proc)) {
-			env = multiple_extend(l, proc, vals);
+			env = function_args(l, proc, vals);
 			exp = cons(l, l->progn, get_proc_code(proc));
 			goto tail;
 		}
 		LISP_RECOVER(l, "%r\"not a procedure\"%t\n '%S", first);
 	case INVALID:
 	default:
-		LISP_HALT(l, "%r\"%s\"%t", "internal inconsistency: unknown type");
+		FATAL("internal inconsistency: unknown type");
 	}
-	LISP_HALT(l, "%r\"%s\"%t", "internal inconsistency: reached the unreachable");
+	FATAL("internal inconsistency: reached the unreachable");
 debug:
 	lisp_log_debug(l, "%y'eval 'returned%t '%S", ret);
 	return ret;
@@ -757,12 +753,12 @@ static lisp_cell_t *evlis(lisp_t * l, unsigned depth, lisp_cell_t * exps, lisp_c
 	lisp_cell_t *op, *head, *start = exps;
 	assert(l && exps && env);
 	if (is_nil(exps))
-		return gsym_nil();
+		return exps;
 	op = car(exps);
 	exps = cdr(exps);
-	head = op = cons(l, eval(l, depth + 1, op, env), gsym_nil());
+	head = op = cons(l, eval(l, depth + 1, op, env), l->nil);
 	for (i = 1; is_cons(exps); exps = cdr(exps), op = cdr(op), i++)
-		set_cdr(op, cons(l, eval(l, depth + 1, car(exps), env), gsym_nil()));
+		set_cdr(op, cons(l, eval(l, depth + 1, car(exps), env), l->nil));
 	if(!is_nil(exps))
 		LISP_RECOVER(l, "%r\"evlis cannot eval dotted pairs\"%t\n '%S", start);
 	return head;

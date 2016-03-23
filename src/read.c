@@ -43,7 +43,7 @@ static void add_char(lisp_t * l, char ch)
 		if (l->buf_allocated < l->buf_used)
 			LISP_HALT(l, "%s", "overflow in allocator size variable");
 		if (!(tmp = realloc(l->buf, l->buf_allocated)))
-			LISP_HALT(l, "%s", "out of memory");
+			lisp_out_of_memory(l);
 		l->buf = tmp;
 	}
 	l->buf[l->buf_used++] = ch;
@@ -173,7 +173,7 @@ static lisp_cell_t *read_hash(lisp_t * l, io_t * i)
 	hash_table_t *ht;
 	char *token = NULL; 
 	if (!(ht = hash_create(SMALL_DEFAULT_LEN))) /**@bug leaks memory on error*/
-		LISP_HALT(l, "%s", "out of memory");
+		lisp_out_of_memory(l);
 	for(;;) {
 		token = lexer(l, i);
 		if(!token)
@@ -226,9 +226,7 @@ static lisp_cell_t *new_sym(lisp_t *l, const char *token, size_t end)
 	assert(l && token && end);
 	if((parse_ints && is_number(token)) || (parse_floats && is_fnumber(token)))
 		LISP_RECOVER(l, "%r\"unexpected integer or float\"\n %m%s%t", token);
-	char *tnew = calloc(end+1, 1);
-	if(!tnew)
-		LISP_HALT(l, "%s", "out of memory");
+	char *tnew = lisp_calloc(l, end+1);
 	memcpy(tnew, token, end);
 	ret = lisp_intern(l, tnew);
 	if(get_sym(ret) != tnew)

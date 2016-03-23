@@ -37,6 +37,7 @@
         X('i', "input-port",        is_in(x))\
         X('o', "output-port",       is_out(x))\
         X('Z', "symbol-or-string",  is_asciiz(x))\
+        X('M', "symbol-or-cons",    is_cons(x) || is_sym(x))\
         X('a', "integer-or-float",  is_arith(x))\
         X('x', "function",          is_func(x))\
         X('I', "input-port-or-string", is_in(x) || is_str(x))\

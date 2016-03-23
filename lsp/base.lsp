@@ -36,7 +36,7 @@
 (define cddddr (compile "cddddr" (x) (cdr (cdr (cdr (cdr x))))))
 (define caddar (compile "caddar" (x) (car (cdr (cdr (car x))))))
 (define cadddr (compile "cadddr" (x) (car (cdr (cdr (cdr x))))))
-(define cadadr (compile "cadadr" (x)  (car (cdr (car (cdr x))))))
+(define cadadr (compile "cadadr" (x) (car (cdr (car (cdr x))))))
 
 (define /= (compile "not equal" (x y) (not (= x y))))
 
@@ -169,7 +169,7 @@
          (cons x l)
          (cons 
           (car l)
-          (sort-insert x (cdr l)))))))
+          ('sort-insert x (cdr l)))))))
  (define sort
    (compile
     "A super inefficient sort on a list of integers/floats or strings"
