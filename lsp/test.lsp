@@ -7,17 +7,21 @@
   (inner 
     (compile "calculate a hit" ()
       (if (< (sum-of-squares (frandom) (frandom)) 1)
-        1
-        0)))
+        1.0
+        0.0)))
   (outer 
      (compile "loop iter amount of times" (iter)
        (let 
          (i iter)
-         (c 0)
+         (c 0.0)
          (progn
 	   (while (> i 1)
-		  (setq i (- i 1))
-		  (setq c (+ (inner) c)))
+		  (-= i 1)
+		  ;(setq i (- i 1))
+		  (+= c (inner))
+		  ;(setq c (+ (inner) c))
+		  
+		  )
            c))))
   (define monte-carlo-pi
     (compile 

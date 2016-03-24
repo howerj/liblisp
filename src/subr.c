@@ -86,7 +86,9 @@
 	X("%",           subr_mod,       "d d",  "modulo operation")\
 	X("*",           subr_prod,      "a a",  "multiply two numbers")\
 	X("-",           subr_sub,       "a a",  "subtract two numbers")\
+	X("-=",          subr_sub_d,     "a a",  "subtract two numbers, destructively assigning it to the first argument")\
 	X("+",           subr_sum,       "a a",  "add two numbers")\
+	X("+=",          subr_sum_d,     "a a",  "add two numbers, destructively assigning it to the first argument")\
 	X("substring",   subr_substring, NULL,   "create a substring from a string")\
 	X("tell",        subr_tell,      "P",    "return the position indicator of a port")\
 	X("top-environment", subr_top_env, "",   "return the top level environment")\
@@ -254,20 +256,59 @@ static lisp_cell_t *subr_binv(lisp_t * l, lisp_cell_t * args)
 	return mk_int(l, ~get_int(car(args)));
 }
 
-static lisp_cell_t *subr_sum(lisp_t * l, lisp_cell_t * args)
+static lisp_cell_t *subr_sum_method(lisp_t * l, lisp_cell_t * args, int destructive)
 {
 	lisp_cell_t *x = car(args), *y = CADR(args);
-	if (is_int(x))
+	if (is_int(x)) {
+		if(destructive) {
+			x->p[0].v = (void*)(get_int(x) + get_a2i(y));
+			return x;
+		}
 		return mk_int(l, get_int(x) + get_a2i(y));
+	}
+	if(destructive) {
+		x->p[0].f = get_float(x) + get_a2f(y);
+		return x;
+	}
 	return mk_float(l, get_float(x) + get_a2f(y));
+}
+
+
+static lisp_cell_t *subr_sum_d(lisp_t * l, lisp_cell_t * args)
+{
+	return subr_sum_method(l, args, 1);
+}
+
+static lisp_cell_t *subr_sum(lisp_t * l, lisp_cell_t * args)
+{
+	return subr_sum_method(l, args, 0);
+}
+
+static lisp_cell_t *subr_sub_method(lisp_t * l, lisp_cell_t * args, int destructive)
+{
+	lisp_cell_t *x = car(args), *y = CADR(args);
+	if (is_int(x)) {
+		if(destructive) {
+			x->p[0].v = (void *)(get_int(x) - get_a2i(y));
+			return x;
+		}
+		return mk_int(l, get_int(x) - get_a2i(y));
+	}
+	if(destructive) {
+		x->p[0].f = get_float(x) - get_a2f(y);
+		return x;
+	}
+	return mk_float(l, get_float(x) - get_a2f(y));
+}
+
+static lisp_cell_t *subr_sub_d(lisp_t * l, lisp_cell_t * args)
+{
+	return subr_sub_method(l, args, 1);
 }
 
 static lisp_cell_t *subr_sub(lisp_t * l, lisp_cell_t * args)
 {
-	lisp_cell_t *x = car(args), *y = CADR(args);
-	if (is_int(x))
-		return mk_int(l, get_int(x) - get_a2i(y));
-	return mk_float(l, get_float(x) - get_a2f(y));
+	return subr_sub_method(l, args, 0);
 }
 
 static lisp_cell_t *subr_prod(lisp_t * l, lisp_cell_t * args)
