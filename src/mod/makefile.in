@@ -5,7 +5,7 @@ MODULES=liblisp_bignum.$(DLL) liblisp_math.$(DLL)\
 
 MOD_DEPS=$(SRC)$(FS)liblisp.h liblisp.a liblisp.$(DLL) $(SRC)$(FS)lispmod.h
 
-CURDIR:=$(SRC)$(FS)mod$(FS)
+CURDIR:=$(SRC)$(FS)mod
 
 ifeq ($(OS),Windows_NT)
 ADDITIONAL=liblisp.$(DLL)
@@ -20,11 +20,11 @@ endif
 
 modules: $(MODULES)
 
-%.o: $(CURDIR)%.c
+%.o: $(CURDIR)$(FS)%.c
 	@echo CC $<
-	@$(CC) $(CFLAGS) $(INCLUDE) -I$(CURDIR) $< -c -o $@
+	$(CC) $(CFLAGS) $(INCLUDE) -I$(CURDIR) $< -c -o $@
 
-utf8.o: $(CURDIR)utf8.c $(CURDIR)utf8.h
+utf8.o: $(CURDIR)$(FS)utf8.c $(CURDIR)$(FS)utf8.h
 	@echo CC $<
 	@$(CC) $(CFLAGS) $(INCLUDE) -I$(CURDIR) $< -c -o $@
 
@@ -36,9 +36,9 @@ liblisp_base.$(DLL): liblisp_base.o utf8.o $(MOD_DEPS)
 	@echo CC -o $@
 	@$(CC) $(CFLAGS) -shared $< utf8.o -lm $(ADDITIONAL) -o $@
 
-liblisp_line.o: $(CURDIR)liblisp_line.c $(MOD_DEPS)
+liblisp_line.o: $(CURDIR)$(FS)liblisp_line.c $(MOD_DEPS)
 	@echo CC -o $@
-	@$(CC) $(CFLAGS) $(INCLUDE) -I$(CURDIR) -I$(CURDIR)libline $< -c -o $@
+	@$(CC) $(CFLAGS) $(INCLUDE) -I$(CURDIR) -I$(CURDIR)$(FS)libline $< -c -o $@
 
 liblisp_sql.$(DLL): liblisp_sql.o $(MOD_DEPS)
 	@echo CC -o $@
@@ -48,7 +48,7 @@ liblisp_unix.$(DLL): liblisp_unix.o $(MOD_DEPS)
 	@echo CC -o $@
 	@$(CC) -Wall -Wextra -std=gnu99 -shared $< $(ADDITIONAL) -o $@
 
-liblisp_tcc.o: $(CURDIR)liblisp_tcc.c
+liblisp_tcc.o: $(CURDIR)$(FS)liblisp_tcc.c
 	@echo CC -o $@
 	@$(CC) $(CFLAGS_RELAXED) $(INCLUDE) -I$(CURDIR) $< -c -o $@
 
@@ -76,15 +76,15 @@ liblisp_xml.$(DLL): liblisp_xml.o $(MOD_DEPS)
 	@echo CC -o $@
 	@$(CC) $(CFLAGS) -shared $< $(ADDITIONAL) -lmxml -o $@
 
-liblisp_text.$(DLL): liblisp_text.o diff.o $(CURDIR)diff.h tsort.o $(CURDIR)tsort.h $(MOD_DEPS)
+liblisp_text.$(DLL): liblisp_text.o diff.o $(CURDIR)$(FS)diff.h tsort.o $(CURDIR)$(FS)tsort.h $(MOD_DEPS)
 	@echo CC -o $@
 	@$(CC) $(CFLAGS) -shared $< diff.o tsort.o $(ADDITIONAL) -o $@
 
-liblisp_bignum.$(DLL): liblisp_bignum.o bignum.o $(CURDIR)bignum.h $(MOD_DEPS)
+liblisp_bignum.$(DLL): liblisp_bignum.o bignum.o $(CURDIR)$(FS)bignum.h $(MOD_DEPS)
 	@echo CC -o $@
 	@$(CC) $(CFLAGS) -shared $< bignum.o $(ADDITIONAL) -o $@
 
 libline.$(DLL):
-	make -C $(CURDIR)libline
-	$(CP) $(CURDIR)libline$(FS)libline.$(DLL) .
+	make -C $(CURDIR)$(FS)libline
+	$(CP) $(CURDIR)$(FS)libline$(FS)libline.$(DLL) .
 

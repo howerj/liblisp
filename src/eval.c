@@ -462,6 +462,48 @@ lisp_cell_t *lisp_intern(lisp_t * l, char *name)
 	return op;
 }
 
+lisp_cell_t *lisp_copy(lisp_t *l, lisp_cell_t *src)
+{
+	assert(l && src);
+	switch(src->type) {
+	case SUBR:
+	case SYMBOL:
+		return src; /*symbols, subroutines must be immutable*/
+	case INTEGER:
+		return mk_int(l, get_int(src));
+	case STRING:
+		/**@todo do binary copy, not string copy, also do not copy
+		 * immutable strings*/
+		return mk_str(l, lisp_strdup(l, get_str(src)));
+	case CONS:
+		return cons(l, lisp_copy(l, car(src)), lisp_copy(l, cdr(src)));
+	case HASH:
+	{
+		hash_table_t *new = hash_copy(get_hash(src));
+		if(!new)
+			lisp_out_of_memory(l);
+		return mk_hash(l, new);
+	}
+	case FLOAT:
+		return mk_float(l, get_float(src));
+	case PROC:
+	case FPROC:
+		return mk(l, src->type, 5, 
+				lisp_copy(l, get_proc_args(src)), 
+				lisp_copy(l, get_proc_code(src)), 
+				lisp_copy(l, get_proc_env(src)), 
+				NULL, 
+				get_func_docstring(src));
+	case IO:
+	case USERDEF:
+		LISP_RECOVER(l, "%y'cannot-copy%t\n %S", src);
+	case INVALID:
+	default:
+		FATAL("internal inconsistency: unknown type");
+	}
+	return l->error;
+}
+
 /***************************** environment ************************************/
 
 static lisp_cell_t *function_args(lisp_t * l, lisp_cell_t *proc, lisp_cell_t * vals)

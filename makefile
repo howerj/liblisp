@@ -16,7 +16,7 @@
 # <https://github.com/dmoulding/boilermake>
 # I should also use foreach loops, see
 # <https://stackoverflow.com/questions/4134764/how-to-define-several-include-path-in-makefile>
-MAKEFLAGS += --no-builtin-rules
+MAKEFLAGS += --no-builtin-rules --keep-going
 
 .SUFFIXES:
 .PHONY: all clean dist doc doxygen valgrind run test

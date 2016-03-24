@@ -172,8 +172,9 @@ static lisp_cell_t *read_hash(lisp_t * l, io_t * i)
 {
 	hash_table_t *ht;
 	char *token = NULL; 
-	if (!(ht = hash_create(SMALL_DEFAULT_LEN))) /**@bug leaks memory on error*/
+	if (!(ht = hash_create(SMALL_DEFAULT_LEN))) 
 		lisp_out_of_memory(l);
+	lisp_cell_t *ret = mk_hash(l, ht);
 	for(;;) {
 		token = lexer(l, i);
 		if(!token)
@@ -181,7 +182,7 @@ static lisp_cell_t *read_hash(lisp_t * l, io_t * i)
 		switch(token[0]) {
 		case '}': 
 			free(token);
-			return mk_hash(l, ht);
+			return ret;
 		case '(': 
 		case ')': 
 		case '{': 

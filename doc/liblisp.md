@@ -352,6 +352,9 @@ to be worked out when it comes to printing color and pretty printing.
     cell.
 * The help for each subroutine could be optionally compiled into the binary
 itself and stored alongside the subroutine.
+* Hashes could be implemented as an array, the only difference would be a few
+  bits in the header, linear probing would be used instead. This could make
+  the internals cleaner.
 
 #### Modules
 

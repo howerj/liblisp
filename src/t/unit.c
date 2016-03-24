@@ -354,7 +354,7 @@ int main(int argc, char **argv)
 		test(!sstrcmp("val9", hash_lookup(h, "")));
 		test(!sstrcmp("", hash_lookup(h, "nil")));
 		test(!sstrcmp("z", hash_lookup(h, "a")));
-		test(!hash_get_load_factor(h) <= 0.75f);
+		test(hash_get_load_factor(h) <= 0.75f);
 
 		state(hash_destroy(h));
 	}

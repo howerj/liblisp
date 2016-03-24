@@ -2,7 +2,11 @@
  *  @brief      A small hash library
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com **/
+ *  @email      howe.r.j.89@gmail.com 
+ *  @todo Change to linear probing, making this into a generic table for use in the
+ *        lisp interpreter, make a custom callback for hashing lisp code,
+ *        simplifying all of the hash stuff instead of cons the key and value
+ *        and storing that. **/
 
 #include "liblisp.h"
 #include "private.h"
@@ -12,12 +16,27 @@
 
 /************************ small hash library **********************************/
 
-static uint32_t hash_alg(hash_table_t * table, const char *s)
+static void null_free(void *p)
 {
-	return djb2(s, strlen(s)) % (table->len ? table->len : 1);
+	UNUSED(p);
 }
 
-static hash_entry_t *hash_new_pair(const char *key, void *val)
+static int string_compare(const void *a, const void *b)
+{
+	return strcmp((const char*)a, (const char*)b);
+}
+
+static uint32_t string_hash(const void *s)
+{
+	return djb2(s, strlen(s));
+}
+
+static uint32_t hash_alg(const hash_table_t * table, const void *s)
+{
+	return table->hash(s) % (table->len ? table->len : 1);
+}
+
+static hash_entry_t *hash_new_pair(char *key, void *val)
 { /**@brief internal function to create a chained hash node**/
 	hash_entry_t *np;
 	if (!(np = calloc(1, sizeof(*np))))
@@ -31,10 +50,10 @@ static hash_entry_t *hash_new_pair(const char *key, void *val)
 
 hash_table_t *hash_create(size_t len)
 {
-	return hash_create_auto_free(len, 0, 0);
+	return hash_create_custom(len, null_free, null_free, string_compare, string_hash);
 }
 
-hash_table_t *hash_create_auto_free(size_t len, unsigned free_key, unsigned free_value)
+hash_table_t *hash_create_custom(size_t len, hash_free_key_f k, hash_free_val_f v, hash_compare_key_f c, hash_f h)
 {
 	hash_table_t *nt;
 	if (!len)
@@ -44,8 +63,10 @@ hash_table_t *hash_create_auto_free(size_t len, unsigned free_key, unsigned free
 	if (!(nt->table = calloc(len, sizeof(*nt->table))))
 		return free(nt), NULL;
 	nt->len = len;
-	nt->free_key = free_key;
-	nt->free_value = free_value;
+	nt->free_key = k;
+	nt->free_val = v;
+	nt->compare  = c;
+	nt->hash     = h;
 	return nt;
 }
 
@@ -59,35 +80,52 @@ void hash_destroy(hash_table_t * h)
 		if (h->table[i]) {
 			prev = NULL;
 			for (cur = h->table[i]; cur; prev = cur, cur = cur->next) {
-				if(h->free_key)
-					free(cur->key);
-				if(h->free_value)
-					free(cur->val);
+				h->free_key(cur->key);
+				h->free_val(cur->val);
 				free(prev);
 			}
-			if(h->free_key)
-				free(cur->key);
-			if(h->free_value)
-				free(cur->val);
 			free(prev);
 		}
 	free(h->table);
 	free(h);
 }
 
+static hash_table_t *hash_copy_and_resize(hash_table_t *old, size_t len)
+{
+	hash_entry_t *cur;
+	hash_table_t *new = hash_create(len);
+	if(!new)
+		return NULL;
+	for (size_t i = 0; i < old->len; i++)
+		if (old->table[i])
+			for (cur = old->table[i]; cur; cur = cur->next)
+				if (hash_insert(new, cur->key, cur->val) < 0)
+					goto fail;
+	new->free_key = old->free_key;
+	new->free_val = old->free_val;
+	new->compare = old->compare;
+	new->hash = old->hash;
+	return new;
+fail:
+	hash_destroy(new);
+	return NULL;
+}
+
+hash_table_t *hash_copy(hash_table_t *src)
+{
+	assert(src);
+	return hash_copy_and_resize(src, src->len);
+}
+
 static int hash_grow(hash_table_t * ht)
 {
 	size_t i;
-	hash_table_t *new;
+	if((ht->len*2) < ht->len)
+		return -1;
+	hash_table_t *new = hash_copy_and_resize(ht, ht->len*2);
 	hash_entry_t *cur, *prev;
-	memset(&new, 0, sizeof(new));
-	if (!(new = hash_create(ht->len * 2)))
-		goto fail;
-	for (i = 0; i < ht->len; i++)
-		if (ht->table[i])
-			for (cur = ht->table[i]; cur; cur = cur->next)
-				if (hash_insert(new, cur->key, cur->val) < 0)
-					goto fail;
+	if (!new)
+		return -1;
 	for (i = 0; i < ht->len; i++)
 		if (ht->table[i]) {
 			prev = NULL;
@@ -100,11 +138,9 @@ static int hash_grow(hash_table_t * ht)
 	ht->len = new->len;
 	free(new);
 	return 0;
- fail:	hash_destroy(new);
-	return -1;
 }
 
-int hash_insert(hash_table_t * ht, const char *key, void *val)
+int hash_insert(hash_table_t * ht, char *key, void *val)
 {
 	assert(ht && key && val);
 	uint32_t hash = hash_alg(ht, key);
@@ -115,10 +151,10 @@ int hash_insert(hash_table_t * ht, const char *key, void *val)
 
 	cur = ht->table[hash];
 
-	for (; cur && cur->key && strcmp(key, cur->key); cur = cur->next)
+	for (; cur && cur->key && ht->compare(key, cur->key); cur = cur->next)
 		last = cur;
 
-	if (cur && cur->key && !strcmp(key, cur->key)) {
+	if (cur && cur->key && !(ht->compare(key, cur->key))) {
 		ht->replacements++;
 		cur->val = val;	/*replace */
 	} else {
@@ -207,7 +243,7 @@ size_t hash_get_number_of_bins(hash_table_t * h)
 	return h->len;
 }
 
-void *hash_lookup(hash_table_t * h, const char *key)
+void *hash_lookup(const hash_table_t * h, const char *key)
 {
 	uint32_t hash;
 	hash_entry_t *cur;
@@ -215,9 +251,9 @@ void *hash_lookup(hash_table_t * h, const char *key)
 
 	hash = hash_alg(h, key);
 	cur = h->table[hash];
-	while (cur && cur->next && strcmp(cur->key, key))
+	while (cur && cur->next && h->compare(cur->key, key))
 		cur = cur->next;
-	if (!cur || !cur->key || strcmp(cur->key, key))
+	if (!cur || !cur->key || h->compare(cur->key, key))
 		return NULL;
 	else
 		return cur->val;

@@ -14,10 +14,7 @@
  *  Do not pass NULL to any of these functions unless they specifically mention
  *  that you can. They "assert()" their inputs.
  *
- *  @todo Come up with better API functions for immutable data; such as
- *        copy-and-free/free/no-free, a tree walker function (that can walk
- *        a lisp list in Depth First Pre, In or Post or Breadth first orders).
- *  @todo Rename some functions so they have "lisp_" prefix **/
+ **/
 #ifndef LIBLISP_H
 #define LIBLISP_H
 #ifdef __cplusplus
@@ -29,9 +26,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
-#ifdef __unix__
-        #define LIBLISP_API /**< not needed*/
-#elif _WIN32
+#ifdef _WIN32
 /** @brief The LIBLISP_API macro is needed due to the way Windows handles
  * DLLs, the build system should define COMPILING_LIBLISP when
  * building "liblisp.dll", but only then. **/
@@ -244,19 +239,35 @@ LIBLISP_API char* utostr(uintptr_t u, unsigned base);
 /* A small hash library implementation, all state needed for it is held
  * within the table. */
 
-/** @brief   create new instance of a hash table
+typedef void  (*hash_free_key_f)(void *);
+typedef void  (*hash_free_val_f)(void *);
+typedef int   (*hash_compare_key_f)(const void *, const void*);
+typedef uint32_t (*hash_f)(const void *);
+
+/** @brief   create new instance of a hash table, hashes created by
+ *           this method will treat keys as string, use strcmp to
+ *           compare strings, hash strings with djb2, and will not
+ *           free either the key or the value when destroyed.
  *  @param   len number of buckets in the table
  *  @return  hash_table_t* initialized hash table or NULL**/
 LIBLISP_API hash_table_t *hash_create(size_t len);
 
-/** @brief   create new instance of a hash table, possibly freeing either the
- *           key or the value, using free(). It would probably be better
- *           to pass in function pointers that can do the freeing.
+/** @brief  copy a hash table
+ *  @param  src  the hash table you want to copy 
+ *  @return hash_table_t*  a new hash table, which is a copy of src.*/
+LIBLISP_API hash_table_t *hash_copy(hash_table_t *src);
+
+/** @brief   create new instance of a hash table, with custom functions
+ *           for freeing the key, the value, comparing keys and hashing
+ *           keys.
  *  @param   len number of buckets in the table
- *  @param   free_key   if non zero, hash_destroy will free the key with free()
- *  @param   free_value if non zero, hash_destroy will free the value with free()
+ *  @param   k   function called to free a key on destruction of hash
+ *  @param   v   function called to free a value on destruction of hash
+ *  @param   c   function called to compare two keys
+ *  @param   h   function called to hash a key into a bucket
  *  @return  hash_table_t* initialized hash table or NULL**/
-LIBLISP_API hash_table_t *hash_create_auto_free(size_t len, unsigned free_key, unsigned free_value);
+LIBLISP_API hash_table_t *hash_create_custom(size_t len, hash_free_key_f k, hash_free_val_f v, hash_compare_key_f c, hash_f h);
+
 
 /** @brief   destroy and invalidate a hash table, this will not attempt to
  *           free the values associated with a key, or the keys, this is
@@ -270,13 +281,13 @@ LIBLISP_API void hash_destroy(hash_table_t *h);
  *  @param   key   key to associate with a value
  *  @param   val   value to lookup
  *  @return  int   0 on success, < 0 on failure**/
-LIBLISP_API int hash_insert(hash_table_t *ht, const char *key, void *val);
+LIBLISP_API int hash_insert(hash_table_t *ht, char *key, void *val);
 
 /** @brief   look up a key in a table
  *  @param   table table to look for value in
  *  @param   key   a key to look up a value with
  *  @return  void* either the value you were looking for a NULL**/
-LIBLISP_API void *hash_lookup(hash_table_t *table, const char *key);
+LIBLISP_API void *hash_lookup(const hash_table_t *table, const char *key);
 
 /** @brief  Apply "func" on each key-val pair in the hash table until
  *          the function returns non-NULL or it has been applied to all
@@ -1072,6 +1083,13 @@ LIBLISP_API int lisp_add_module_subroutines(lisp_t *l, const lisp_module_subrout
  *  @return char* duplicated string, or throw an exception using lisp_throw
  *                on error */
 LIBLISP_API char *lisp_strdup(lisp_t *l, const char *s);
+
+/** @brief Perform a copy on lisp cells, some forms cannot be copied
+ *         (eg. IO port types). The copy is recursive.
+ *  @param l   initialized lisp environment
+ *  @param src cells to copy
+ *  @return lisp_cell_t* a copied lisp cell */
+LIBLISP_API lisp_cell_t *lisp_copy(lisp_t *l, lisp_cell_t *src);
 
 /** @brief Serialize a lisp S-Expression, turning it into a string
  *  @param  l      lisp environment

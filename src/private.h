@@ -47,7 +47,7 @@ extern "C" {
 		else (ENV)->recover_init = 0;\
 	} while(0)
 
-typedef enum lisp_type { 
+typedef enum { 
 	INVALID, /**< invalid object (default), halts interpreter*/
 	SYMBOL,  /**< symbol */
 	INTEGER, /**< integer, a normal fixed with number*/
@@ -113,11 +113,13 @@ struct hash_table {	        /**< a hash table*/
 	       replacements, /**< number of entries replaced*/
 	       used          /**< number of bins used*/;
 	/*state used for the foreach loop*/
-	unsigned foreach :1,  /**< if true, we are in a foreach loop*/
-		 free_key:1,  /**< if true, hash_destroy will free the key using free()*/
-		 free_value:1; /**< if true, hash_destroy will free the value using free()*/
+	unsigned foreach :1;  /**< if true, we are in a foreach loop*/
 	size_t foreach_index; /**< index into foreach loop*/
 	void *foreach_cur;    /**< current entry in foreach loop*/
+	hash_free_key_f free_key; /**< called to free a key */
+	hash_free_val_f free_val; /**< called to free a value */
+	hash_compare_key_f compare; /**< called to compare a key */
+	hash_f hash; /**< called to hash a key*/
 };
 
 /** @brief A structure that is used to wrap up the I/O operations 
@@ -163,7 +165,7 @@ typedef struct gc_list {
 /** @brief functions the interpreter uses for user defined types */
 typedef struct { 
 	/**@todo I should provide a framework for overloading various other
-	 * built in functions (+, -, *, /, %, coerce, length, reverse, read, <, >)*/
+	 * built in functions (+, -, *, /, %, copy, coerce, length, reverse, read, <, >)*/
 	lisp_free_func   free;  /**< to free a user defined type*/
 	lisp_mark_func   mark;  /**< to mark a user defined type*/
 	lisp_equal_func  equal; /**< to compare two user defined types*/

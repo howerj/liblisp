@@ -4,12 +4,10 @@
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com
  *
- *  @todo Documentation for each function as it behaves at the lisp interpreter
- *        level could be put next to each subroutine, this would help in
- *        keeping them in sync.  
- *  @todo Functions for hash: hash-keys, hash-values, hash-foreach, index
- *  arbitrary expressions by serializing them first
- *  @todo Functions for mutation of data structures, such as strings **/
+ *  @todo Subr General to-do; hash-foreach, hash-keys, hash-values, use
+ *  arbitrary expressions as keys by serializing them, copy function,
+ *  destructive operations (such as +, -, *, ...), use defined operations
+ *  for coerce, reverse, copy, arithemtic operations. Longer docstrings. */
 
 #include "liblisp.h"
 #include "private.h"
@@ -38,6 +36,7 @@
 	X("close",       subr_close,     "P",    "close a port, invalidating it")\
 	X("coerce",      subr_coerce,    NULL,   "coerce a variable from one type to another")\
 	X("cons",        subr_cons,      "A A",  "allocate a new cons cell with two arguments")\
+	X("copy",        subr_copy,      "A",    "perform a recursive copy of an expression, if possible")\
 	X("define-eval", subr_define_eval, "s A", "extend the top level environment with a computed symbol")\
 	X("depth",       subr_depth,     "",      "get the current evaluation depth")\
 	X("environment", subr_environment, "",    "get the current environment")\
@@ -73,8 +72,8 @@
 	X("scdr",        subr_scdr,      "Z",    "return a string excluding the first character")\
 	X("scons",       subr_scons,     "Z Z",  "concatenate two string")\
 	X("seek",        subr_seek,      "P d d", "perform a seek on a port (moving the port position indicator)")\
-	X("set-car!",    subr_setcar,    "c A",  "destructively set the first cell of a cons cell")\
-	X("set-cdr!",    subr_setcdr,    "c A",  "destructively set the second cell of a cons cell")\
+	X("set-car",     subr_setcar,    "c A",  "destructively set the first cell of a cons cell")\
+	X("set-cdr",     subr_setcdr,    "c A",  "destructively set the second cell of a cons cell")\
 	X("signal",      subr_signal,     "d",    "raise a signal")\
 	X("&",           subr_band,      "d d",  "bit-wise and of two integers")\
 	X("~",           subr_binv,      "d",    "bit-wise inversion of an integers")\
@@ -91,7 +90,7 @@
 	X("substring",   subr_substring, NULL,   "create a substring from a string")\
 	X("tell",        subr_tell,      "P",    "return the position indicator of a port")\
 	X("top-environment", subr_top_env, "",   "return the top level environment")\
-	X("trace!",      subr_trace,     "d",    "set the log level, from no errors printed, to copious debugging information")\
+	X("trace",       subr_trace,     "d",    "set the log level, from no errors printed, to copious debugging information")\
 	X("tr",          subr_tr,        "Z Z Z Z", "translate a string given a format and mode")\
 	X("type-of",     subr_typeof,    "A",    "return an integer representing the type of an object")
 
@@ -352,8 +351,6 @@ static lisp_cell_t *subr_eq(lisp_t * l, lisp_cell_t * args)
 	lisp_cell_t *x, *y;
 	x = car(args);
 	y = CADR(args);
-	if (is_userdef(x) && l->ufuncs[get_user_type(x)].equal)
-		return (l->ufuncs[get_user_type(x)].equal) (x, y) ? l->tee : l->nil;
 	if (get_int(x) == get_int(y))
 		return l->tee;
 	if (is_floating(x) && is_floating(y))
@@ -363,12 +360,21 @@ static lisp_cell_t *subr_eq(lisp_t * l, lisp_cell_t * args)
 		if(lx == ly)
 			return !memcmp(get_str(x), get_str(y), lx) ? l->tee : l->nil;
 	}
+	if (is_userdef(x) && is_userdef(y) && get_user_type(x) == get_user_type(y))
+		if (l->ufuncs[get_user_type(x)].equal)
+			return (l->ufuncs[get_user_type(x)].equal) (x, y) ? l->tee : l->nil;
+
 	return l->nil;
 }
 
 static lisp_cell_t *subr_cons(lisp_t * l, lisp_cell_t * args)
 {
 	return cons(l, car(args), CADR(args));
+}
+
+static lisp_cell_t *subr_copy(lisp_t * l, lisp_cell_t * args)
+{
+	return lisp_copy(l, car(args));
 }
 
 static lisp_cell_t *subr_car(lisp_t * l, lisp_cell_t * args)

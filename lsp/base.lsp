@@ -1,5 +1,6 @@
 ;;; base software library ;;;
-
+(define hello 4)
+(define world 3)
 (define not        (compile "if x nil?" (x) (if x nil t)))
 (define list?      (compile "is x a list?" (x) (type? *cons* x)))
 (define atom?      (compile "is x an atom? (not a list)" (x) (if (list? x) nil t)))

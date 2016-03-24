@@ -193,7 +193,7 @@ static lisp_cell_t *subr_dlopen(lisp_t *l, lisp_cell_t *args)
 	dl_handle_t handle;
         dl_list *h;
         if(!(handle = DL_OPEN(get_str(car(args))))) {
-		lisp_log_error(l, "'dynamic-load-failed \"%s\" \"%s\"", get_str(car(args)), DL_ERROR());
+		lisp_log_debug(l, "'dynamic-load-failed \"%s\" \"%s\"", get_str(car(args)), DL_ERROR());
                 return gsym_error();
 	}
         if(!(h = calloc(1, sizeof(*h))))
