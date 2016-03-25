@@ -33,7 +33,8 @@ static uint32_t string_hash(const void *s)
 
 static uint32_t hash_alg(const hash_table_t * table, const void *s)
 {
-	return table->hash(s) % (table->len ? table->len : 1);
+	assert(table->len);
+	return table->hash(s) % table->len;
 }
 
 static hash_entry_t *hash_new_pair(char *key, void *val)
@@ -143,15 +144,15 @@ static int hash_grow(hash_table_t * ht)
 int hash_insert(hash_table_t * ht, char *key, void *val)
 {
 	assert(ht && key && val);
-	uint32_t hash = hash_alg(ht, key);
+	uint32_t hash;
 	hash_entry_t *cur, *newt, *last = NULL;
 
 	if (hash_get_load_factor(ht) >= 0.75f)
 		hash_grow(ht);
 
-	cur = ht->table[hash];
+	hash = hash_alg(ht, key);
 
-	for (; cur && cur->key && ht->compare(key, cur->key); cur = cur->next)
+	for (cur = ht->table[hash]; cur && cur->key && ht->compare(key, cur->key); cur = cur->next)
 		last = cur;
 
 	if (cur && cur->key && !(ht->compare(key, cur->key))) {

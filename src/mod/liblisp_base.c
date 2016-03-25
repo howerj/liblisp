@@ -138,6 +138,7 @@ ISX_LIST /*defines lisp subroutines for checking whether a string only contains 
 
 #define SUBROUTINE_XLIST\
 	X("crc",        subr_crc,        "Z",   "CRC-32 of a string")\
+	X("hash",       subr_hash,       "Z",   "hash a string")\
 	X("date",       subr_date,       "",    "return a list representing the date (GMT) (not thread safe)")\
 	X("docstring",  subr_doc_string, "x",   "return the documentation string from a procedure")\
 	X("errno",      subr_errno,      "",    "return the current errno")\
@@ -472,6 +473,11 @@ static lisp_cell_t *subr_crc(lisp_t * l, lisp_cell_t * args)
 	uint32_t c;
 	c = crc_final(crc_init((uint8_t *) get_str(car(args)), get_length(car(args))));
 	return mk_int(l, c);
+}
+
+static lisp_cell_t *subr_hash(lisp_t * l, lisp_cell_t * args)
+{
+	return mk_int(l, djb2(get_str(car(args)), get_length(car(args))));
 }
 
 int lisp_module_initialize(lisp_t *l)

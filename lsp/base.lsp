@@ -1,5 +1,4 @@
 ;;; base software library ;;;
-(define world 3)
 (define not        (compile "if x nil?" (x) (if x nil t)))
 (define list?      (compile "is x a list?" (x) (type? *cons* x)))
 (define atom?      (compile "is x an atom? (not a list)" (x) (if (list? x) nil t)))
@@ -105,6 +104,10 @@
 (define even?
   (compile "is x an even integer?" (x)
     (if (= (% x 2) 0) t nil)))
+
+;(hash-lookup (cadr (top-environment)) 'even?)
+
+(even? 4)
 
 (define odd?
   (compile "is x an odd integer?" (x)
