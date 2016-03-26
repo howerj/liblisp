@@ -148,7 +148,7 @@ int hash_insert(hash_table_t * ht, char *key, void *val)
 	hash_entry_t *cur, *newt, *last = NULL;
 
 	if (hash_get_load_factor(ht) >= 0.75f)
-		hash_grow(ht);
+		hash_grow(ht); /**@warning grow must go before any other operation*/
 
 	hash = hash_alg(ht, key);
 

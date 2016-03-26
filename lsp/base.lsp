@@ -509,3 +509,31 @@
 (define identity 
         (lambda "return its argument" (x) x))
 
+(define swap-bits-in-byte
+  (compile
+    "swap the bits in a byte"
+    (b)
+    (progn
+      (setq b (| (>> (& b 0xF0) 4) (<< (& b 0x0F) 4)))
+      (setq b (| (>> (& b 0xCC) 2) (<< (& b 0x33) 2)))
+      (setq b (| (>> (& b 0xAA) 1) (<< (& b 0x55) 1)))
+      b)))
+
+(define swap-bytes-16
+  (compile
+    "swap bytes in a 16 bit value"
+    (x)
+    (progn
+      (setq x (| (>> (& 0xFF00 x) 8) (<< (& 0x00FF 8) 8)))
+      x)))
+
+(define swap-bytes-32
+  (compile
+    "swap bytes in a 32 bit value"
+    (x)
+    (progn
+      (setq x (| (>> (& 0xFFFF0000 x) 16) (<< (& 0x0000FFFF x) 16)))
+      (setq x (| (>> (& 0xFF00FF00 x)  8) (<< (& 0x00FF00FF x)  8)))
+      x)))
+
+

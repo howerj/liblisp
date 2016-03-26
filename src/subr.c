@@ -16,6 +16,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <time.h>
 
 /* X-Macro of primitive functions and their names; basic built in subr
@@ -79,6 +80,8 @@
 	X("~",           subr_binv,      "d",    "bit-wise inversion of an integers")\
 	X("|",           subr_bor,       "d d",  "bit-wise or of two integers")\
 	X("^",           subr_bxor,      "d d",  "bit-wise xor of two integers")\
+	X("<<",          subr_lshift,    "d d",  "logical left shift an integer")\
+	X(">>",          subr_rshift,    "d d",  "logical right shift an integer")\
 	X("/",           subr_div,       "a a",  "divide operation")\
 	X("=",           subr_eq,        "A A",  "equality operation")\
 	X(">",           subr_greater,   NULL,   "greater operation")\
@@ -238,17 +241,27 @@ fail:   l->gc_off = 0;
 
 static lisp_cell_t *subr_band(lisp_t * l, lisp_cell_t * args)
 {
-	return mk_int(l, get_int(car(args)) & get_int(CADR(args)));
+	return mk_int(l, (uintptr_t)get_int(car(args)) & (uintptr_t)get_int(CADR(args)));
 }
 
 static lisp_cell_t *subr_bor(lisp_t * l, lisp_cell_t * args)
 {
-	return mk_int(l, get_int(car(args)) | get_int(CADR(args)));
+	return mk_int(l, (uintptr_t)get_int(car(args)) | (uintptr_t)get_int(CADR(args)));
 }
 
 static lisp_cell_t *subr_bxor(lisp_t * l, lisp_cell_t * args)
 {
-	return mk_int(l, get_int(car(args)) ^ get_int(CADR(args)));
+	return mk_int(l, (uintptr_t)get_int(car(args)) ^ (uintptr_t)get_int(CADR(args)));
+}
+
+static lisp_cell_t *subr_lshift(lisp_t * l, lisp_cell_t * args)
+{
+	return mk_int(l, (uintptr_t)get_int(car(args)) << (uintptr_t)get_int(CADR(args)));
+}
+
+static lisp_cell_t *subr_rshift(lisp_t * l, lisp_cell_t * args)
+{
+	return mk_int(l, (uintptr_t)get_int(car(args)) >> (uintptr_t)get_int(CADR(args)));
 }
 
 static lisp_cell_t *subr_binv(lisp_t * l, lisp_cell_t * args)
@@ -980,8 +993,8 @@ static lisp_cell_t *subr_format(lisp_t * l, lisp_cell_t * args)
 	 *  @bug  What happens if it cannot write to a file!? */
 	lisp_cell_t *cret;
 	io_t *o = NULL, *t = NULL;
-	char *fmt, c, *ts;
-	int ret = 0, pchar;
+	char *fmt, c, *ts; /*, *end = NULL;*/
+	int ret = 0, pchar, base = 0; /*, precision = 0, precision_set = 0;*/
 	intptr_t d;
 	size_t len;
 	len = get_length(args);
@@ -1004,6 +1017,15 @@ static lisp_cell_t *subr_format(lisp_t * l, lisp_cell_t * args)
 			switch ((c = *fmt++)) {
 			case '\0':
 				goto fail;
+			/*case '1': case '2': case '3': case '4': case '5':
+			case '6': case '7': case '8': case '9':
+				errno = 0;
+				precision = strtol(fmt--, &end, 10);
+				if(errno)
+					goto fail;
+				fmt = end;
+				precision_set = 1;
+				break;*/
 			case '%':
 				ret = io_putc(c, t);
 				break;
@@ -1054,36 +1076,32 @@ static lisp_cell_t *subr_format(lisp_t * l, lisp_cell_t * args)
 					io_putc(pchar, t);
 				args = cdr(args);
 				break;
-			case 'x':
+			case 'x': case 'o': case 'u': case 'b':
+				switch(c) {
+				case 'x': base = 16u; break;
+				case 'u': base = 10u; break;
+				case 'o': base = 8u; break;
+				case 'b': base = 2u;  break;
+				default: FATAL("'unreachable");
+				}
 				if (is_nil(args) || !is_int(car(args)))
 					goto fail;
-				if (!(ts = dtostr(get_int(car(args)), 16u)))
+				if (!(ts = utostr(get_int(car(args)), base)))
 					lisp_out_of_memory(l);
-				io_puts(ts[0] == '-' ? "-0x" : "0x", t);
-				ret = io_puts(ts[0] == '-' ? ts + 1 : ts, t);
-				free(ts);
-				args = cdr(args);
-				break;
-			/**@todo 'u' should be a type qualifier, so it can
-                         * print out unsigned hexadecimal, octal or decimal
-                         * strings*/
-			case 'u':
-				if (is_nil(args) || !is_int(car(args)))
-					goto fail;
-				if (!(ts = utostr(get_int(car(args)), 10u)))
-					lisp_out_of_memory(l);
+				switch(c) {
+				case 'x': io_puts("0x", t); break;
+				case 'u': break;
+				case 'o': io_puts("0",  t); break;
+				case 'b': io_puts("0b", t); break;
+				default: FATAL("'unreachable");
+				}
 				ret = io_puts(ts, t);
 				free(ts);
 				args = cdr(args);
 				break;
-				/* case 'o': // octal */
-				/* case 'b': // binary */
-				/* case '$': // literal '$' */
-				/* case '0': case '1': case '2': case '3': // char literal */
 			default:
 				goto fail;
 			}
-			/* } else if ('$' == c) { // interpolate */
 		} else {
 			ret = io_putc(c, t);
 		}

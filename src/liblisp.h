@@ -11,9 +11,8 @@
  *  See <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> for the
  *  license.
  *
- *  Do not pass NULL to any of these functions unless they specifically mention
- *  that you can. They "assert()" their inputs.
- *
+ *  @warning Do not pass NULL to any of these functions unless they specifically 
+ *  mention that you can. They "assert()" their inputs.
  **/
 #ifndef LIBLISP_H
 #define LIBLISP_H

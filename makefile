@@ -16,6 +16,11 @@
 # <https://github.com/dmoulding/boilermake>
 # I should also use foreach loops, see
 # <https://stackoverflow.com/questions/4134764/how-to-define-several-include-path-in-makefile>
+#
+# @todo Move the binary files to a bin/ directory
+# @todo Make a makefile.in for src/
+# @todo The build options USE_MUTEX and USE_DL should be merged
+#
 MAKEFLAGS += --no-builtin-rules --keep-going
 
 .SUFFIXES:
@@ -32,6 +37,7 @@ RUN_FLAGS=-Epc
 VERSION    =$(shell git describe) 
 VCS_COMMIT =$(shell git rev-parse --verify HEAD)
 VCS_ORIGIN =$(shell git config --get remote.origin.url)
+VCS_DEFINES=-DVCS_ORIGIN="$(VCS_ORIGIN)" -DVCS_COMMIT="$(VCS_COMMIT)" -DVERSION="$(VERSION)" 
 
 CC= gcc
 CFLAGS_RELAXED = -Wall -Wextra -g -fwrapv -O2 -Wmissing-prototypes
@@ -47,7 +53,7 @@ CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
 #                "-lpthread" on Unix systems
 #   USE_ABORT_HANDLER This adds in a handler that catches SIGABRT
 #                and prints out a stack trace if it can.
-DEFINES = -DUSE_DL -DUSE_ABORT_HANDLER -DUSE_MUTEX
+DEFINES = -DUSE_DL -DUSE_ABORT_HANDLER -DUSE_MUTEX $(VCS_DEFINES)
 # This is for convenience only, it may cause problems.
 RPATH   ?= -Wl,-rpath=.
 
@@ -165,7 +171,8 @@ help:
 
 ### building #################################################################
 
-OBJFILES=hash.o io.o util.o gc.o read.o print.o subr.o repl.o eval.o lisp.o valid.o 
+SOURCES=$(wildcard $(SRC)$(FS)*.c)
+OBJFILES=$(SOURCES:$(SRC)$(FS)%.c=%.o)
 
 lib$(TARGET).a: $(OBJFILES)
 	@echo AR $@
@@ -175,16 +182,13 @@ lib$(TARGET).$(DLL): $(OBJFILES) $(SRC)$(FS)lib$(TARGET).h $(SRC)$(FS)private.h
 	@echo CC -o $@
 	@$(CC) $(CFLAGS) -shared $(OBJFILES) -o $@
 
-# -DCOMPILING_LIBLISP is only needed on Windows
 %.o: $(SRC)$(FS)%.c $(SRC)$(FS)lib$(TARGET).h $(SRC)$(FS)private.h
 	@echo CC $<
 	@$(CC) $(CFLAGS) $(INCLUDE) -DCOMPILING_LIBLISP $< -c -o $@
 
-VCS_DEFINES=-DVCS_ORIGIN="$(VCS_ORIGIN)" -DVCS_COMMIT="$(VCS_COMMIT)" -DVERSION="$(VERSION)" 
-
 repl.o: $(SRC)$(FS)repl.c $(SRC)$(FS)lib$(TARGET).h
 	@echo CC $<
-	@$(CC) $(CFLAGS) $(INCLUDE) $(DEFINES) -DCOMPILING_LIBLISP $(VCS_DEFINES) $< -c -o $@
+	@$(CC) $(CFLAGS) $(INCLUDE) $(DEFINES) -DCOMPILING_LIBLISP $< -c -o $@
 
 main.o: $(SRC)$(FS)main.c $(SRC)$(FS)lib$(TARGET).h $(SRC)$(FS)lispmod.h
 	@echo CC $<

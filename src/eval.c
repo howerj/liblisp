@@ -696,7 +696,7 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			lisp_cell_t *pair, *newval;
 			LISP_VALIDATE_ARGS(l, "setq", 2, "s A", exp, 1);
 			if (is_nil(pair = lisp_assoc(car(exp), env)))
-				LISP_RECOVER(l, "%y'set!\n %r\"undefined variable\"%t\n '%S", exp);
+				LISP_RECOVER(l, "%y'setq\n %r\"undefined variable\"%t\n '%S", exp);
 			newval = eval(l, depth + 1, CADR(exp), env);
 			set_cdr(pair, newval);
 			DEBUG_RETURN(newval);

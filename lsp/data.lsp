@@ -1,14 +1,39 @@
 ;;; a list of "databases" and functions which act on them ;;;
 
 (define *months* ; months of the year association list
-  '((0 January)  (1 February)  (2 March) 
-    (3 April)    (4 May)       (5 June) 
-    (6 July)     (7 August)    (8 September)
-    (9 October)  (10 November) (11 December)))
+  '((0 'January)  (1 'February)  (2 'March) 
+    (3 'April)    (4 'May)       (5 'June) 
+    (6 'July)     (7 'August)    (8 'September)
+    (9 'October)  (10 'November) (11 'December)))
 
 (define *week-days* ; days of the week association list
-  '((0 Sunday)  (1 Monday)  (2 Tuesday) (3 Wednesday)
-    (4 Thurday) (5 Friday)  (6 Saturday)))
+  '((0 'Sunday)  (1 'Monday)  (2 'Tuesday) (3 'Wednesday)
+    (4 'Thurday) (5 'Friday)  (6 'Saturday)))
+
+; https://en.wikipedia.org/wiki/Zeller%27s_congruence
+; https://news.ycombinator.com/item?id=11358999
+(define day-of-week 
+  (lambda
+    (year month day)
+    (let
+      (nday 
+	(+ day
+	      (if
+		(< month 3)
+		(setq year (- year 1))
+		(- year 2))))
+      (%
+	(+ 
+	  (-
+	    (+
+	      (+ nday 4)
+	      (+ (/ year 4)
+		 (/
+		   (* 23 month)
+		   9)))
+	    (/ year 100))
+	  (/ year 400))
+	7))))
 
 (define date-string 
   (lambda 
@@ -20,10 +45,10 @@
       (wd    (cadr (assoc (caddr d) *week-days*)))
       (mday  (cadddr d))
       (hrms  (cddddr d))
-      (hrmss (join ":" (symbol->string (car hrms)) 
+      (hrmss (join ":" (list (symbol->string (car hrms)) 
                        (symbol->string (cadr hrms)) 
-                       (symbol->string (caddr hrms))))
-      (join " " (symbol->string (car d)) month wd (symbol->string mday) hrmss))))
+                       (symbol->string (caddr hrms)))))
+      (join " " (list (symbol->string (car d)) month wd (symbol->string mday) hrmss)))))
 
 ; association list of type numbers and a description of that type
 (define *type-names* 
@@ -83,4 +108,149 @@
 (define integer->ascii
   (lambda "convert an ASCII integer into character (string)" (x)
     (if (> x 0177) nil (cdr (assoc x ascii-integers)))))
+
+; See https://en.wikipedia.org/wiki/Morse_code
+(define char-morse
+  {
+	"A"  (".-" Letters)
+	"B"  ("-..." Letters)
+	"C"  ("-.-." Letters)
+	"D"  ("-.." Letters)
+	"E"  ("." Letters)
+	"F"  ("..-." Letters)
+	"G"  ("--." Letters)
+	"H"  ("...." Letters)
+	"I"  (".." Letters)
+	"J"  (".---" Letters)
+	"K"  ("-.-" Letters "Prosign for \"Invitation to transmit\"")
+	"L"  (".-.." Letters)
+	"M"  ("--" Letters)
+	"N"  ("-." Letters)
+	"O"  ("---" Letters)
+	"P"  (".--." Letters)
+	"Q"  ("--.-" Letters)
+	"R"  (".-." Letters)
+	"S"  ("..." Letters)
+	"T"  ("-" Letters)
+	"U"  ("..-" Letters)
+	"V"  ("...-" Letters)
+	"W"  (".--" Letters)
+	"X"  ("-..-" Letters)
+	"Y"  ("-.--" Letters)
+	"Z"  ("--.." Letters)
+	"0"  ("-----" Numbers)
+	"1"  (".----" Numbers)
+	"2"  ("..---" Numbers)
+	"3"  ("...--" Numbers)
+	"4"  ("....-" Numbers)
+	"5"  ("....." Numbers)
+	"6"  ("-...." Numbers)
+	"7"  ("--..." Numbers)
+	"8"  ("---.." Numbers)
+	"9"  ("----." Numbers)
+	"."  (".-.-.-" Punctuation)
+	","  ("--..--" Punctuation)
+	"?"  ("..--.." Punctuation)
+	"'"  (".----." Punctuation)
+	"!" ("-.-.--" Punctuation "KW digraph" )
+	"/"  ("-..-." Punctuation)
+	"(" ("-.--." Punctuation)
+	")"  ("-.--.-" Punctuation)
+	"&" (".-..." Punctuation "AS digraph Prosign for \"Wait\"" "Not in ITU-R recommendation" )
+	":"  ("---..." Punctuation)
+	";"  ("-.-.-." Punctuation)
+	"="  ("-...-" Punctuation)
+	"+"  (".-.-." Punctuation)
+	"-"  ("-....-" Punctuation)
+	"_" ("..--.-" Punctuation "Not in ITU-R recommendation")
+	"\""  (".-..-." Punctuation)
+	"$" ("...-..-" Punctuation "SX digraph" "Not in ITU-R recommendation" )
+	"@" (".--.-." Punctuation "AC digraph" )
+	;"End of work"  ("...-.-" Prosigns)
+	;"Error"  ("........" Prosigns)
+	;"Invitation to Transmit"  ("-.-" Prosigns "Also used for K")
+	;"Starting Signal"  ("-.-.-" Prosigns)
+	;"New Page Signal" (".-.-." Prosigns "AR digraph" "Message separator" "Single-line display may use printed \"+\"")
+	;"Understood" ("...-." Prosigns "Also used for Ŝ")
+	;"Wait" (".-..." Prosigns "also used for Ampersand [&]")
+	})
+
+(define morse-char
+  {
+	".-" ("A" Letters)
+	"-..." ("B" Letters)
+	"-.-." ("C" Letters)
+	"-.." ("D" Letters)
+	"." ("E" Letters)
+	"..-." ("F" Letters)
+	"--." ("G" Letters)
+	"...." ("H" Letters)
+	".." ("I" Letters)
+	".---" ("J" Letters)
+	"-.-" ("K" Letters "Prosign for \"Invitation to transmit\"")
+	".-.." ("L" Letters)
+	"--" ("M" Letters)
+	"-." ("N" Letters)
+	"---" ("O" Letters)
+	".--." ("P" Letters)
+	"--.-" ("Q" Letters)
+	".-." ("R" Letters)
+	"..." ("S" Letters)
+	"-" ("T" Letters)
+	"..-" ("U" Letters)
+	"...-" ("V" Letters)
+	".--" ("W" Letters)
+	"-..-" ("X" Letters)
+	"-.--" ("Y" Letters)
+	"--.." ("Z" Letters)
+	"-----" ("0" Numbers)
+	".----" ("1" Numbers)
+	"..---" ("2" Numbers)
+	"...--" ("3" Numbers)
+	"....-" ("4" Numbers)
+	"....." ("5" Numbers)
+	"-...." ("6" Numbers)
+	"--..." ("7" Numbers)
+	"---.." ("8" Numbers)
+	"----." ("9" Numbers)
+	".-.-.-" ("." Punctuation)
+	"--..--" ("," Punctuation)
+	"..--.." ("?" Punctuation)
+	".----." ("'" Punctuation)
+	"-.-.--" ("!" Punctuation "KW digraph")
+	"-..-." ("/" Punctuation)
+	"-.--." ("(" Punctuation)
+	"-.--.-" (")" Punctuation)
+	".-..." ("&" Punctuation "AS digraph Prosign for \"Wait\"" "Not in ITU-R recommendation")
+	"---..." (":" Punctuation)
+	"-.-.-." (";" Punctuation)
+	"-...-" ("=" Punctuation)
+	".-.-." ("+" Punctuation)
+	"-....-" ("-" Punctuation)
+	"..--.-" ("_" Punctuation "Not in ITU-R recommendation")
+	".-..-." ("\"" Punctuation)
+	"...-..-" ("$" Punctuation "SX digraph" "Not in ITU-R recommendation")
+	".--.-." ("@" Punctuation "AC digraph")
+	;"...-.-" ("End of work" Prosigns)
+	;"........" ("Error" Prosigns)
+	;"-.-" ("Invitation to Transmit" Prosigns "Also used for K")
+	;"-.-.-" ("Starting Signal" Prosigns)
+	;".-.-." ("New Page Signal" Prosigns "AR digraph" "Message separator" "Single-line display may use printed \"+\"")
+	;"...-." ("Understood" Prosigns "Also used for Ŝ")
+	;".-..." ("Wait" Prosigns "also used for Ampersand [&]") 
+	})
+
+(define char->morse
+  (compile
+    "Convert a character into Morse code"
+    (s)
+    (let (r (hash-lookup char-morse s))
+    (if r (cadr r) r))))
+
+(define morse->char
+  (compile
+    ""
+    (m)
+    (let (r (hash-lookup morse-char m))
+    (if r (cadr r) r))))
 
