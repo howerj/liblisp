@@ -4,24 +4,21 @@
 ; test suite as comprehensive as possible.
 
 (let
+  ; Use monte-carlo-pi to do simple bench marks with timed-eval
   (inner 
     (compile "calculate a hit" ()
       (if (< (sum-of-squares (frandom) (frandom)) 1)
-        1.0
-        0.0)))
+        1
+        0)))
   (outer 
      (compile "loop iter amount of times" (iter)
        (let 
-         (i iter)
-         (c 0.0)
+         (i (copy iter))
+         (c (copy 0))
          (progn
 	   (while (> i 1)
 		  (-= i 1)
-		  ;(setq i (- i 1))
-		  (+= c (inner))
-		  ;(setq c (+ (inner) c))
-		  
-		  )
+		  (+= c (inner)))
            c))))
   (define monte-carlo-pi
     (compile 
