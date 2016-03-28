@@ -1,4 +1,7 @@
 ;; eliza.lsp
+;; An ELIZA chatbot clone
+;; TODO
+;; 	* Implement this
 
 (define wpred
   (lambda (w)
@@ -18,8 +21,8 @@
 (define ematch
   (lambda (p s)
     (cond
-      ((nil? p) (nil? s))
-      ((atom? (car p))
+      ((is-nil p) (is-nil s))
+      ((is-atom (car p))
        (and s
 	    (equal car.p car.s)))
       (t nil))))

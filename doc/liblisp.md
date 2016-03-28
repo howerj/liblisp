@@ -56,6 +56,13 @@ your machine.
 ## Introduction
 ### LISP
 ### Interacting with the interpreter
+### Coding conventions
+
+* is-x
+* get-x
+* set-x
+* shorthand
+
 #### Command Line Options
 
 For the most up to date options, consult the manual pages for this program

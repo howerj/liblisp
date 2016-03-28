@@ -4,6 +4,8 @@
 ;; saving those shapes to a file, non-blocking events (which
 ;; requires changes in the X11 module), text drawing functions
 ;; and more.
+;;
+;; @todo Make something more useful
 
 (define w (create-window))
 
@@ -13,16 +15,16 @@
 (define mouse-y (lambda (elist) (cadddr elist)))
 (define key (lambda (elist) (cadr elist)))
 
-(define is-mouse?
+(define is-mouse
   (lambda (elist) 
-    (and (integer? (mouse-x elist)) 
-	 (integer? (mouse-y elist)))))
+    (and (is-integer (mouse-x elist)) 
+	 (is-integer (mouse-y elist)))))
 
-(define is-key?
+(define is-key
   (lambda (elist)
     (string? (cadr elist))))
 
-(define is-redraw?
+(define is-redraw
   (lambda (elist)
     (car elist)))
 
@@ -76,15 +78,15 @@
   (while
 	(progn 
 		(setq event (select-input w))
-		(if (is-mouse? event) 
+		(if (is-mouse event) 
 		  (progn 
 		    (draw-rectangle w (mouse-x event) (mouse-y event) rectangle-width rectangle-height) 
 		    (add-rectangle (mouse-x event) (mouse-y event)))
 		  nil)
-		(cond ((is-redraw? event) (redraw)))
+		(cond ((is-redraw event) (redraw)))
 
 		; must be last event
-		(if (is-key? event)
+		(if (is-key event)
 		  (cond 
 		    ((= (key event) "q") nil)
 		    ((= (key event) "s") (save-redraw-list redraw-file))

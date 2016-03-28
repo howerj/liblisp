@@ -463,7 +463,7 @@ lisp_cell_t *lisp_intern(lisp_t * l, char *name)
 }
 
 lisp_cell_t *lisp_copy(lisp_t *l, lisp_cell_t *src)
-{
+{ /**@todo make use of lisp_copy to make closures work */
 	assert(l && src);
 	switch(src->type) {
 	case SUBR:
@@ -558,6 +558,7 @@ lisp_cell_t *lisp_assoc(lisp_cell_t * key, lisp_cell_t * alist)
  *         is a work in progress.
  *  @bug  This function really, really needs fixing.
  *  @bug  F-Expressions should be prevent compilation of their arguments
+ *  @todo Add warning about unbound variables
  **/
 static lisp_cell_t *binding_lambda(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * env)
 {

@@ -3,6 +3,24 @@
 ; should be tested here to both document functionality and make the
 ; test suite as comprehensive as possible.
 
+;
+; it is sort of possible to make closures like this
+;(define counter (lambda () (copy (lambda () (let (a 0) (+= a 1))))))
+; and like this:
+(define counter 
+  (lambda (i) 
+    (let (a 0)
+    (copy 
+      (lambda () 
+          (setq a (+ a i)))))))
+
+; quine
+((lambda (x)
+   (list x (list (quote quote) x)))
+ (quote
+   (lambda (x)
+     (list x (list (quote quote) x)))))
+
 (let
   ; Use monte-carlo-pi to do simple bench marks with timed-eval
   (inner 
@@ -14,11 +32,11 @@
      (compile "loop iter amount of times" (iter)
        (let 
          (i (copy iter))
-         (c (copy 0))
+         (c (copy 0.0))
          (progn
-	   (while (> i 1)
-		  (-= i 1)
-		  (+= c (inner)))
+           (while (> i 1)
+                  (setq i (- i 1))
+                  (setq c (+ c (inner))))
            c))))
   (define monte-carlo-pi
     (compile 
@@ -52,10 +70,6 @@
     (test = (match "abc*" "abcd")   t)
     (test = (match "abc"  "abcd")   nil)
     (test = (match "abcd" "abc")    nil)
-  ; (test < (ilog2 0)               255)
-  ; (test = (ilog2 1)               0)
-  ; (test = (ilog2 5)               2)
-  ; (test = (ilog2 8)               3)
     (test = (substring "hello, world" 2 12) "llo, world")
     (test = (median '(1 7 3 13))    5)
     ; Tests from https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-demo.txt
@@ -69,12 +83,19 @@
     ; ║└─╥─┘║ │╚═╤═╝│ │╘═╪═╛│ │╙─╀─╜│ ┃└─╂─┘┃  ░░▒▒▓▓██ ┊  ┆ ╎ ╏  ┇ ┋ ▏
     ; ╚══╩══╝ └──┴──┘ ╰──┴──╯ ╰──┴──╯ ┗━━┻━━┛  ▗▄▖▛▀▜   └╌╌┘ ╎ ┗╍╍┛ ┋  ▁▂▃▄▅▆▇█
     ;                                          ▝▀▘▙▄▟
-;    (test = (is-utf8? "∀x∈ℝ: ⌈x⌉ = −⌊−x⌋") t)
-;    (test = (is-utf8? "α ∧ ¬β = ¬(¬α ∨ β)") t)
-;    (test = (is-utf8? "ℕ ⊆ ℕ₀ ⊂ ℤ ⊂ ℚ ⊂ ℝ ⊂ ℂ") t)
-;    (test = (is-utf8? "2H₂ + O₂ ⇌ 2H₂O, R = 4.7 kΩ, ⌀ 200 mm") t)
-;    (test = (is-utf8? "▁▂▃▄▅▆▇█") t)
-;    (test = (is-utf8? "\377") nil)
+    (if *have-base*
+      (progn
+        (test < (ilog2 0)               255)
+        (test = (ilog2 1)               0)
+        (test = (ilog2 5)               2)
+        (test = (ilog2 8)               3)
+        (test = (is-utf8 "∀x∈ℝ: ⌈x⌉ = −⌊−x⌋") t)
+        (test = (is-utf8 "α ∧ ¬β = ¬(¬α ∨ β)") t)
+        (test = (is-utf8 "ℕ ⊆ ℕ₀ ⊂ ℤ ⊂ ℚ ⊂ ℝ ⊂ ℂ") t)
+        (test = (is-utf8 "2H₂ + O₂ ⇌ 2H₂O, R = 4.7 kΩ, ⌀ 200 mm") t)
+        (test = (is-utf8 "▁▂▃▄▅▆▇█") t)
+        (test = (is-utf8 "\377") nil))
+      t)
     (if *have-math* (test float-equal (standard-deviation '(206 76 -224 36 -94)) 147.322775) t)
     (test 
       (lambda 

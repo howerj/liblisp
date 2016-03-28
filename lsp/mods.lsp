@@ -11,7 +11,7 @@
     (if 
       (and 
 	*have-dynamic-loader* 
-	(nil? (= (dynamic-load-lisp-module 
+	(is-nil (= (dynamic-load-lisp-module 
 	     (string->symbol 
 	       (join "" 
 		     (list "liblisp_" name 

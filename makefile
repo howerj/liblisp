@@ -19,7 +19,7 @@
 #
 # @todo Move the binary files to a bin/ directory
 # @todo Make a makefile.in for src/
-# @todo The build options USE_MUTEX and USE_DL should be merged
+# @todo The build options USE_MUTEX, USE_ABORT_HANDLER, USE_DL should be merged.
 #
 MAKEFLAGS += --no-builtin-rules --keep-going
 
@@ -37,11 +37,11 @@ RUN_FLAGS=-Epc
 VERSION    =$(shell git describe) 
 VCS_COMMIT =$(shell git rev-parse --verify HEAD)
 VCS_ORIGIN =$(shell git config --get remote.origin.url)
-VCS_DEFINES=-DVCS_ORIGIN="$(VCS_ORIGIN)" -DVCS_COMMIT="$(VCS_COMMIT)" -DVERSION="$(VERSION)" 
+VCS_DEFINES=-DVCS_ORIGIN="${VCS_ORIGIN}" -DVCS_COMMIT="${VCS_COMMIT}" -DVERSION="${VERSION}" 
 
-CC= gcc
-CFLAGS_RELAXED = -Wall -Wextra -g -fwrapv -O2 -Wmissing-prototypes
-CFLAGS 	= $(CFLAGS_RELAXED) -pedantic
+CC := gcc
+CFLAGS_RELAXED := -Wall -Wextra -g -fwrapv -O2 -Wmissing-prototypes
+CFLAGS := $(CFLAGS_RELAXED) -pedantic
 
 # Compilation options
 ## CPP defines of use
@@ -60,62 +60,60 @@ RPATH   ?= -Wl,-rpath=.
 ifeq ($(OS),Windows_NT)
 FixPath =$(subst /,\,$1)
 FS      =$(subst /,\,/)
-AR       = ar
-AR_FLAGS = rcs
-DESTDIR =C:$(FS)
-prefix  =lisp
-MANPREFIX =$(prefix)$(FS)share$(FS)man
-RM	=del
-RM_FLAGS= /Q
-LDCONFIG=
-CP	=copy
-CP_FLAGS=
-MV	=move
-CHMOD	=echo
-MKDIR_FLAGS=
-RUN_FLAGS=-Ep
-DLL	=dll
-EXE	=.exe
-LINKFLAGS=-Wl,-E 
+AR       := ar
+AR_FLAGS := rcs
+DESTDIR :=C:${FS}
+prefix  :=lisp
+MANPREFIX :=${prefix}${FS}share${FS}man
+RM	:=del
+RM_FLAGS:= /Q
+LDCONFIG:=
+CP	:=copy
+CP_FLAGS:=
+MV	:=move
+CHMOD	:=echo
+MKDIR_FLAGS:=
+RUN_FLAGS:=-Ep
+DLL	:=dll
+EXE	:=.exe
+LINKFLAGS:=-Wl,-E 
 SRC=src
-
 else # Unix assumed {only Linux has been tested}
 # Install paths
-FixPath = $1
+FixPath   = $1
 FS        =/
 DESTDIR   ?= 
 prefix 	  ?=
-MANPREFIX = $(call FixPath,$(prefix)/share/man)
+MANPREFIX = $(call FixPath,${prefix}/share/man)
 # commands and their flags
-AR       = ar
-AR_FLAGS = rcs
-RM    	 = rm
-RM_FLAGS = -rf
-CP       = cp
-CP_FLAGS = -f
-MV       = mv
-CHMOD    = chmod
-MKDIR    = mkdir
-MKDIR_FLAGS= -p
-SED      = sed
-LDCONFIG = ldconfig
-LINK    = -ldl -lpthread
-DLL=so
-EXE=
+AR       :=ar
+AR_FLAGS :=rcs
+RM    	 :=rm
+RM_FLAGS :=-rfv
+CP       :=cp
+CP_FLAGS :=-f
+MV       :=mv
+CHMOD    :=chmod
+MKDIR    :=mkdir
+MKDIR_FLAGS:=-p
+SED      :=sed
+LDCONFIG :=ldconfig
+LINK     :=-ldl -lpthread
+DLL      :=so
+EXE      :=
 
-CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fstack-protector 
-CFLAGS += -fPIC
+CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fstack-protector -fPIC
 CFLAGS_RELAXED += -fPIC
 LINKFLAGS=-Wl,-E -Wl,-z,relro
 SRC=src
 endif
 
-INCLUDE = -I$(SRC)
+INCLUDE = -I${SRC}
 CFLAGS += -std=c99
-DOC=doc$(FS)
+DOC=doc${FS}
 
-VALGRIND_SUPP=$(DOC)valgrind.supp
-VALOPTS=--leak-resolution=high --num-callers=40 --leak-check=full --log-file=valgrind.log
+VALGRIND_SUPPRESSION_FILE=${DOC}valgrind.supp
+VALGRIND_OPTIONS=--leak-resolution=high --num-callers=40 --leak-check=full --log-file=valgrind.log
 
 ##############################################################################
 ### Main Makefile ############################################################
@@ -123,21 +121,20 @@ VALOPTS=--leak-resolution=high --num-callers=40 --leak-check=full --log-file=val
 
 TARGET = lisp
 
-all: shorthelp $(TARGET)$(EXE) lib$(TARGET).$(DLL) lib$(TARGET).a 
+all: shorthelp ${TARGET}${EXE} lib${TARGET}.${DLL} lib${TARGET}.a 
 
-include $(SRC)$(FS)mod/makefile.in
+include ${SRC}${FS}mod/makefile.in
 
 shorthelp:
 	@echo "Use 'make help' for a list of options."
 
 help:
 	@echo ""
-	@echo "project:     lib$(TARGET)"
+	@echo "project:     lib${TARGET}"
 	@echo "description: A small lisp library and example implementation"
-	@echo "version:     $(VERSION)"
-	@echo "commit:      $(VCS_COMMIT)"
-	@echo "origin:      $(VCS_ORIGIN)"
-	@echo "target:      $(TARGET_SYSTEM)"
+	@echo "version:     ${VERSION}"
+	@echo "commit:      ${VCS_COMMIT}"
+	@echo "origin:      ${VCS_ORIGIN}"
 	@echo ""
 	@echo "If this makefile fails to build the project a simple interpreter,"
 	@echo "lacking some features, can be built with:"
@@ -153,9 +150,9 @@ help:
 	@echo "     dist        make a distribution tar.gz file"
 	@echo "     install     install the example executable, library and man pages"
 	@echo "     uninstall   uninstall the example executable, library and man pages"
-	@echo "     $(TARGET)$(EXE)      build the example executable"
-	@echo "     lib$(TARGET).$(DLL)  build the library (dynamic)"
-	@echo "     lib$(TARGET).a   build the library (static)"
+	@echo "     ${TARGET}${EXE}      build the example executable"
+	@echo "     lib${TARGET}.${DLL}  build the library (dynamic)"
+	@echo "     lib${TARGET}.a   build the library (static)"
 	@echo "     modules     make as many modules as is possible (ignoring failures)"
 	@echo "     run         make the example executable and run it"
 	@echo "     app         make a self contained app with all dependencies"
@@ -165,107 +162,107 @@ help:
 	@echo "     doc         make html and doxygen documentation"
 	@echo "     TAGS        update project tags table (ctags)"
 	@echo "     indent      indent the source code sensibly (instead of what I like)"
-	@echo "     unit$(EXE)  executable for performing unit tests on liblisp"
+	@echo "     unit${EXE}  executable for performing unit tests on liblisp"
 	@echo "     test	run the unit tests"
 	@echo ""
 
 ### building #################################################################
 
-SOURCES=$(wildcard $(SRC)$(FS)*.c)
-OBJFILES=$(SOURCES:$(SRC)$(FS)%.c=%.o)
+SOURCES=$(wildcard ${SRC}${FS}*.c)
+OBJFILES=$(SOURCES:${SRC}${FS}%.c=%.o)
 
-lib$(TARGET).a: $(OBJFILES)
+lib${TARGET}.a: ${OBJFILES}
 	@echo AR $@
 	@$(AR) $(AR_FLAGS) $@ $^
 
-lib$(TARGET).$(DLL): $(OBJFILES) $(SRC)$(FS)lib$(TARGET).h $(SRC)$(FS)private.h
+lib${TARGET}.${DLL}: ${OBJFILES} ${SRC}${FS}lib${TARGET}.h ${SRC}${FS}private.h
 	@echo CC -o $@
-	@$(CC) $(CFLAGS) -shared $(OBJFILES) -o $@
+	@${CC} ${CFLAGS} -shared ${OBJFILES} -o $@
 
-%.o: $(SRC)$(FS)%.c $(SRC)$(FS)lib$(TARGET).h $(SRC)$(FS)private.h
+%.o: ${SRC}${FS}%.c ${SRC}${FS}lib${TARGET}.h ${SRC}${FS}private.h makefile
 	@echo CC $<
-	@$(CC) $(CFLAGS) $(INCLUDE) -DCOMPILING_LIBLISP $< -c -o $@
+	@${CC} ${CFLAGS} ${INCLUDE} -DCOMPILING_LIBLISP $< -c -o $@
 
-repl.o: $(SRC)$(FS)repl.c $(SRC)$(FS)lib$(TARGET).h
+repl.o: ${SRC}${FS}repl.c ${SRC}${FS}lib${TARGET}.h makefile
 	@echo CC $<
-	@$(CC) $(CFLAGS) $(INCLUDE) $(DEFINES) -DCOMPILING_LIBLISP $< -c -o $@
+	@${CC} ${CFLAGS} ${INCLUDE} ${DEFINES} -DCOMPILING_LIBLISP $< -c -o $@
 
-main.o: $(SRC)$(FS)main.c $(SRC)$(FS)lib$(TARGET).h $(SRC)$(FS)lispmod.h
+main.o: ${SRC}${FS}main.c ${SRC}${FS}lib${TARGET}.h ${SRC}${FS}lispmod.h makefile
 	@echo CC $<
-	$(CC) $(CFLAGS_RELAXED) $(INCLUDE)  $(DEFINES) $< -c -o $@
+	@${CC} $(CFLAGS_RELAXED) ${INCLUDE} ${DEFINES} $< -c -o $@
 
-$(TARGET)$(EXE): main.o lib$(TARGET).$(DLL)
+${TARGET}${EXE}: main.o lib${TARGET}.${DLL}
 	@echo CC -o $@
-	$(CC) $(CFLAGS) $(LINKFLAGS) $(RPATH) $^ $(LINK) -o $(TARGET)
+	@${CC} ${CFLAGS} ${LINKFLAGS} ${RPATH} $^ ${LINK} -o ${TARGET}
 
-unit$(EXE): $(SRC)$(FS)t/$(FS)unit.c lib$(TARGET).a
+unit${EXE}: ${SRC}${FS}t/${FS}unit.c lib${TARGET}.a
 	@echo CC -o $@
-	@$(CC) $(CFLAGS) $(INCLUDE) $(RPATH) $^ -o unit$(EXE)
+	@${CC} ${CFLAGS} ${INCLUDE} ${RPATH} $^ -o unit${EXE}
 
-test: unit$(EXE)
+test: unit${EXE}
 	./unit -c
 
 app: all test modules
-	$(SRC)$(FS)./app -vpa  ./lisp -f $(DOC) -f lsp -e -Epc '"$${SCRIPT_PATH}"/lsp/init.lsp'
+	${SRC}${FS}./app -vpa  ./lisp -f ${DOC} -f lsp -e -Epc '"$${SCRIPT_PATH}"/lsp/init.lsp'
 
 ### running ##################################################################
 
 run: all
 	@echo running the executable with default arguments
-	./$(TARGET) $(RUN_FLAGS) lsp/init.lsp -
+	./${TARGET} ${RUN_FLAGS} lsp/init.lsp -
 
 valgrind: all
 	@echo running the executable through leak detection program, valgrind
-	valgrind $(VALOPTS) --suppressions=$(VALGRIND_SUPP) ./$(TARGET) $(RUN_FLAGS) lsp/init.lsp -
+	valgrind ${VALGRIND_OPTIONS} --suppressions=${VALGRIND_SUPPRESSION_FILE} ./${TARGET} ${RUN_FLAGS} lsp/init.lsp -
 
 ### documentation ############################################################
 
-lib$(TARGET).htm: $(DOC)lib$(TARGET).md
+lib${TARGET}.htm: ${DOC}lib${TARGET}.md
 	markdown $^ > $@
 
-doc: lib$(TARGET).htm doxygen
+doc: lib${TARGET}.htm doxygen
 
 doxygen: 
-	doxygen $(DOC)doxygen.conf
+	doxygen ${DOC}doxygen.conf
 
 ### distribution and installation ############################################
 
-TARBALL=$(strip $(TARGET)-$(VERSION)).tgz
+TARBALL=$(strip ${TARGET}-${VERSION}).tgz
 # make distribution tarball
-dist: $(TARGET) lib$(TARGET).a lib$(TARGET).$(DLL) lib$(TARGET).htm $(SRC)$(FS)lib$(TARGET).h modules
-	tar -zcf $(TARBALL) $(TARGET) *.htm *.$(DLL) $(SRC)$(FS)lib$(TARGET).h *.a $(DOC)*.1 $(DOC)*.3 
+dist: ${TARGET} lib${TARGET}.a lib${TARGET}.${DLL} lib${TARGET}.htm ${SRC}${FS}lib${TARGET}.h modules
+	tar -zcf ${TARBALL} ${TARGET} *.htm *.${DLL} ${SRC}${FS}lib${TARGET}.h *.a ${DOC}*.1 ${DOC}*.3 
 
 install: all 
-	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/bin)
-	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/lib)
-	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/include)
-	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1)
-	-$(MKDIR) $(MKDIR_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3)
-	$(CP) $(CP_FLAGS) $(TARGET)$(EXE) $(call FixPath,$(DESTDIR)$(prefix)/bin)
-	$(CP) $(CP_FLAGS) *.a $(call FixPath,$(DESTDIR)$(prefix)/lib)
-	$(CP) $(CP_FLAGS) *.$(DLL) $(call FixPath,$(DESTDIR)$(prefix)/lib)
-	$(CP) $(CP_FLAGS) $(SRC)$(FS)lib$(TARGET).h $(call FixPath,$(DESTDIR)$(prefix)/include)
-	$(CP) $(CP_FLAGS) $(SRC)$(FS)lispmod.h $(call FixPath,$(DESTDIR)$(prefix)/include)
-	$(SED) "s/VERSION/$(VERSION)/g" < $(DOC)$(TARGET).1 > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
-	$(SED) "s/VERSION/$(VERSION)/g" < $(DOC)lib$(TARGET).3 > $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
-	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(prefix)/bin/$(TARGET))
-	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
-	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
-	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(prefix)/lib/lib$(TARGET).a)
-	$(CHMOD) 755 $(call FixPath,$(DESTDIR)$(prefix)/lib/lib$(TARGET).$(DLL))
-	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(prefix)/include/lib$(TARGET).h)
-	$(CHMOD) 644 $(call FixPath,$(DESTDIR)$(prefix)/include/lispmod.h)
+	-${MKDIR} ${MKDIR_FLAGS} $(call FixPath,${DESTDIR}${prefix}/bin)
+	-${MKDIR} ${MKDIR_FLAGS} $(call FixPath,${DESTDIR}${prefix}/lib)
+	-${MKDIR} ${MKDIR_FLAGS} $(call FixPath,${DESTDIR}${prefix}/include)
+	-${MKDIR} ${MKDIR_FLAGS} $(call FixPath,${DESTDIR}${MANPREFIX}/man1)
+	-${MKDIR} ${MKDIR_FLAGS} $(call FixPath,${DESTDIR}${MANPREFIX}/man3)
+	${CP} $(CP_FLAGS) ${TARGET}${EXE} $(call FixPath,${DESTDIR}${prefix}/bin)
+	${CP} $(CP_FLAGS) *.a $(call FixPath,${DESTDIR}${prefix}/lib)
+	${CP} $(CP_FLAGS) *.${DLL} $(call FixPath,${DESTDIR}${prefix}/lib)
+	${CP} $(CP_FLAGS) ${SRC}${FS}lib${TARGET}.h $(call FixPath,${DESTDIR}${prefix}/include)
+	${CP} $(CP_FLAGS) ${SRC}${FS}lispmod.h $(call FixPath,${DESTDIR}${prefix}/include)
+	${SED} "s/VERSION/${VERSION}/g" < ${DOC}${TARGET}.1 > $(call FixPath,${DESTDIR}${MANPREFIX}/man1/${TARGET}.1)
+	${SED} "s/VERSION/${VERSION}/g" < ${DOC}lib${TARGET}.3 > $(call FixPath,${DESTDIR}${MANPREFIX}/man3/lib${TARGET}.3)
+	${CHMOD} 755 $(call FixPath,${DESTDIR}${prefix}/bin/${TARGET})
+	${CHMOD} 644 $(call FixPath,${DESTDIR}${MANPREFIX}/man1/${TARGET}.1)
+	${CHMOD} 644 $(call FixPath,${DESTDIR}${MANPREFIX}/man3/lib${TARGET}.3)
+	${CHMOD} 755 $(call FixPath,${DESTDIR}${prefix}/lib/lib${TARGET}.a)
+	${CHMOD} 755 $(call FixPath,${DESTDIR}${prefix}/lib/lib${TARGET}.${DLL})
+	${CHMOD} 644 $(call FixPath,${DESTDIR}${prefix}/include/lib${TARGET}.h)
+	${CHMOD} 644 $(call FixPath,${DESTDIR}${prefix}/include/lispmod.h)
 	#$(LDCONFIG)
 	@echo "installation complete"
 
 uninstall:
-	@echo uninstalling $(TARGET)$(EXE)
-	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man1/$(TARGET).1)
-	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(MANPREFIX)/man3/lib$(TARGET).3)
-	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/bin/$(TARGET)$(EXE))
-	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/lib/lib$(TARGET).a)
-	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/lib/*.$(DLL))
-	$(RM) $(RM_FLAGS) $(call FixPath,$(DESTDIR)$(prefix)/include/lib$(TARGET).h)
+	@echo uninstalling ${TARGET}${EXE}
+	${RM} ${RM_FLAGS} $(call FixPath,${DESTDIR}${MANPREFIX}/man1/${TARGET}.1)
+	${RM} ${RM_FLAGS} $(call FixPath,${DESTDIR}${MANPREFIX}/man3/lib${TARGET}.3)
+	${RM} ${RM_FLAGS} $(call FixPath,${DESTDIR}${prefix}/bin/${TARGET}${EXE})
+	${RM} ${RM_FLAGS} $(call FixPath,${DESTDIR}${prefix}/lib/lib${TARGET}.a)
+	${RM} ${RM_FLAGS} $(call FixPath,${DESTDIR}${prefix}/lib/*.${DLL})
+	${RM} ${RM_FLAGS} $(call FixPath,${DESTDIR}${prefix}/include/lib${TARGET}.h)
 
 # From <http://ctags.sourceforge.net/>
 TAGS:
@@ -274,32 +271,17 @@ TAGS:
 # From <https://www.gnu.org/software/indent/>
 indent:
 	indent -linux -l 110 *.c *.h */*.c */*.h
-	$(RM) $(RM_FLAGS) *~ 
-	$(RM) $(RM_FLAGS) *$(FS)*~
+	${RM} ${RM_FLAGS} *~ 
+	${RM} ${RM_FLAGS} *${FS}*~
 
 ### clean up #################################################################
 
+CLEAN=unit${EXE} *.${DLL} *.a *.o *.db *.htm Doxyfile *.tgz *~ */*~ *.log \
+      *.out *.bak tags html/ latex/ lisp-linux-*/ core ${TARGET}${EXE}
+
 clean:
 	@echo Cleaning repository.
-	-$(RM) $(RM_FLAGS) $(TARGET)$(EXE)
-	-$(RM) $(RM_FLAGS) unit$(EXE)
-	-$(RM) $(RM_FLAGS) *.$(DLL) 
-	-$(RM) $(RM_FLAGS) *.a 
-	-$(RM) $(RM_FLAGS) *.o 
-	-$(RM) $(RM_FLAGS) *.db
-	-$(RM) $(RM_FLAGS) *.htm 
-	-$(RM) $(RM_FLAGS) Doxyfile 
-	-$(RM) $(RM_FLAGS) *.tgz 
-	-$(RM) $(RM_FLAGS) *~ 
-	-$(RM) $(RM_FLAGS) */*~ 
-	-$(RM) $(RM_FLAGS) *.log 
-	-$(RM) $(RM_FLAGS) *.out 
-	-$(RM) $(RM_FLAGS) *.bak
-	-$(RM) $(RM_FLAGS) tags
-	-$(RM) $(RM_FLAGS) html/ 
-	-$(RM) $(RM_FLAGS) latex/ 
-	-$(RM) $(RM_FLAGS) lisp-linux-*/ 
-	-$(RM) $(RM_FLAGS) core
+	@echo $(foreach DEL,${CLEAN},$(shell ${RM} ${RM_FLAGS} ${DEL}))
 
 ##############################################################################
 

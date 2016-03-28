@@ -222,7 +222,7 @@ fail:
 }
 
 static lisp_cell_t *new_sym(lisp_t *l, const char *token, size_t end)
-{
+{ /**@bug '2.a <=> (2 a) */
 	lisp_cell_t *ret;
 	assert(l && token && end);
 	if((parse_ints && is_number(token)) || (parse_floats && is_fnumber(token)))

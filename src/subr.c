@@ -4,7 +4,7 @@
  *  @license    LGPL v2.1 or Later
  *  @email      howe.r.j.89@gmail.com
  *
- *  @todo Subr General to-do; hash-foreach, hash-keys, hash-values, use
+ *  @todo Subr General to-do; setf, hash-foreach, hash-keys, hash-values, use
  *  arbitrary expressions as keys by serializing them, copy function,
  *  destructive operations (such as +, -, *, ...), use defined operations
  *  for coerce, reverse, copy, arithemtic operations. Longer docstrings. */
@@ -31,9 +31,9 @@
 	X("apply",       subr_apply,     NULL,   "apply a function to an argument list")\
 	X("assoc",       subr_assoc,     "A c",  "lookup a variable in an 'a-list'")\
 	X("base",        subr_base,      "d d",  "convert a integer into a string in a base")\
-	X("car",         subr_car,       "c",    "return the first object in a list")\
-	X("cdr",         subr_cdr,       "c",    "return every object apart from the first in a list")\
-	X("closed?",     subr_is_closed, NULL,   "is a object closed?")\
+	X("car",         subr_car,       "L",    "return the first object in a list")\
+	X("cdr",         subr_cdr,       "L",    "return every object apart from the first in a list")\
+	X("is-closed",   subr_is_closed, NULL,   "is a object closed?")\
 	X("close",       subr_close,     "P",    "close a port, invalidating it")\
 	X("coerce",      subr_coerce,    NULL,   "coerce a variable from one type to another")\
 	X("cons",        subr_cons,      "A A",  "allocate a new cons cell with two arguments")\
@@ -41,7 +41,7 @@
 	X("define-eval", subr_define_eval, "s A", "extend the top level environment with a computed symbol")\
 	X("depth",       subr_depth,     "",      "get the current evaluation depth")\
 	X("environment", subr_environment, "",    "get the current environment")\
-	X("eof?",        subr_eofp,      "P",    "is the EOF flag set on a port?")\
+	X("is-eof",      subr_eofp,      "P",    "is the EOF flag set on a port?")\
 	X("eq",          subr_eq,        "A A",  "equality operation")\
 	X("eval",        subr_eval,      NULL,   "evaluate an expression")\
 	X("ferror",      subr_ferror,    "P",    "is the error flag set on a port")\
@@ -50,17 +50,17 @@
 	X("format",      subr_format,    NULL,   "print a string given a format and arguments")\
 	X("get-char",    subr_getchar,   "i",    "read in a character from a port")\
 	X("get-delim",   subr_getdelim,  "i C",  "read in a string delimited by a character from a port")\
-	X("getenv",      subr_getenv,    "Z",    "get an environment variable (not thread safe)")\
+	X("get-system-variable", subr_getenv,    "Z",    "get an environment variable from the system (not thread safe)")\
 	X("get-io-str",  subr_get_io_str,"P",    "get a copy of a string from an IO string port")\
 	X("hash-create", subr_hash_create,   NULL,   "create a new hash")\
 	X("hash-info",   subr_hash_info,     "h",    "get information about a hash")\
 	X("hash-insert", subr_hash_insert,   "h Z A", "insert a variable into a hash")\
 	X("hash-lookup", subr_hash_lookup,   "h Z",  "loop up a variable in a hash")\
-	X("input?",      subr_inp,       "A",    "is an object an input port?")\
+	X("is-input",    subr_inp,       "A",    "is an object an input port?")\
 	X("length",      subr_length,    "A",    "return the length of a list or string")\
 	X("match",       subr_match,     "Z Z",  "perform a primitive match on a string")\
 	X("open",        subr_open,      "d Z",  "open a port (either a file or a string) for reading *or* writing")\
-	X("output?",     subr_outp,      "A",    "is an object an output port?")\
+	X("is-output",   subr_outp,      "A",    "is an object an output port?")\
 	X("print",       subr_print,     "o A",  "print out an s-expression")\
 	X("put-char",    subr_putchar,   "o d",  "write a character to a output port")\
 	X("put",         subr_puts,      "o Z",  "write a string to a output port")\
@@ -89,9 +89,7 @@
 	X("%",           subr_mod,       "d d",  "modulo operation")\
 	X("*",           subr_prod,      "a a",  "multiply two numbers")\
 	X("-",           subr_sub,       "a a",  "subtract two numbers")\
-	X("-=",          subr_sub_d,     "a a",  "subtract two numbers, destructively assigning it to the first argument")\
 	X("+",           subr_sum,       "a a",  "add two numbers")\
-	X("+=",          subr_sum_d,     "a a",  "add two numbers, destructively assigning it to the first argument")\
 	X("substring",   subr_substring, NULL,   "create a substring from a string")\
 	X("tell",        subr_tell,      "P",    "return the position indicator of a port")\
 	X("top-environment", subr_top_env, "",   "return the top level environment")\
@@ -269,59 +267,20 @@ static lisp_cell_t *subr_binv(lisp_t * l, lisp_cell_t * args)
 	return mk_int(l, ~get_int(car(args)));
 }
 
-static lisp_cell_t *subr_sum_method(lisp_t * l, lisp_cell_t * args, int destructive)
-{
-	lisp_cell_t *x = car(args), *y = CADR(args);
-	if (is_int(x)) {
-		if(destructive) {
-			x->p[0].v = (void*)(get_int(x) + get_a2i(y));
-			return x;
-		}
-		return mk_int(l, get_int(x) + get_a2i(y));
-	}
-	if(destructive) {
-		x->p[0].f = get_float(x) + get_a2f(y);
-		return x;
-	}
-	return mk_float(l, get_float(x) + get_a2f(y));
-}
-
-
-static lisp_cell_t *subr_sum_d(lisp_t * l, lisp_cell_t * args)
-{
-	return subr_sum_method(l, args, 1);
-}
-
 static lisp_cell_t *subr_sum(lisp_t * l, lisp_cell_t * args)
 {
-	return subr_sum_method(l, args, 0);
-}
-
-static lisp_cell_t *subr_sub_method(lisp_t * l, lisp_cell_t * args, int destructive)
-{
 	lisp_cell_t *x = car(args), *y = CADR(args);
-	if (is_int(x)) {
-		if(destructive) {
-			x->p[0].v = (void *)(get_int(x) - get_a2i(y));
-			return x;
-		}
-		return mk_int(l, get_int(x) - get_a2i(y));
-	}
-	if(destructive) {
-		x->p[0].f = get_float(x) - get_a2f(y);
-		return x;
-	}
-	return mk_float(l, get_float(x) - get_a2f(y));
-}
-
-static lisp_cell_t *subr_sub_d(lisp_t * l, lisp_cell_t * args)
-{
-	return subr_sub_method(l, args, 1);
+	if (is_int(x))
+		return mk_int(l, get_int(x) + get_a2i(y));
+	return mk_float(l, get_float(x) + get_a2f(y));
 }
 
 static lisp_cell_t *subr_sub(lisp_t * l, lisp_cell_t * args)
 {
-	return subr_sub_method(l, args, 0);
+	lisp_cell_t *x = car(args), *y = CADR(args);
+	if (is_int(x))
+		return mk_int(l, get_int(x) - get_a2i(y));
+	return mk_float(l, get_float(x) - get_a2f(y));
 }
 
 static lisp_cell_t *subr_prod(lisp_t * l, lisp_cell_t * args)
@@ -401,7 +360,15 @@ static lisp_cell_t *subr_less(lisp_t * l, lisp_cell_t * args)
 }
 
 static lisp_cell_t *subr_eq(lisp_t * l, lisp_cell_t * args)
-{
+{ 
+	/**@warning Most versions of equality treat the floating
+	 * point value NaN specially, NaN does not equal NaN, 
+	 * disregarding the reflexive property that is usually
+	 * expected for equality. However this implementation
+	 * compares the raw values contained within a cell first,
+	 * meaning NaN == NaN, but only on some platforms! (the
+	 * size of a lisp float could be greater than or less
+	 * than a pointer. What should be done needs to be decided. */
 	lisp_cell_t *x, *y;
 	x = car(args);
 	y = CADR(args);
@@ -433,13 +400,15 @@ static lisp_cell_t *subr_copy(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_car(lisp_t * l, lisp_cell_t * args)
 {
-	UNUSED(l);
+	if(is_nil(car(args)))
+		return l->nil;
 	return CAAR(args);
 }
 
 static lisp_cell_t *subr_cdr(lisp_t * l, lisp_cell_t * args)
-{
-	UNUSED(l);
+{	
+	if(is_nil(car(args)))
+		return l->nil;
 	return CDAR(args);
 }
 
@@ -820,7 +789,7 @@ lisp_cell_t *lisp_coerce(lisp_t * l, lisp_type type, lisp_cell_t *from)
 		break;
 	case SYMBOL:
 		if (is_str(from))
-			if (!strpbrk(get_str(from), " ;#()\t\n\r'\"\\"))
+			if (!strpbrk(get_str(from), " `,!;#()\t\n\r'\"\\"))
 				return lisp_intern(l, lisp_strdup(l, get_str(from)));
 		break;
 	case HASH:

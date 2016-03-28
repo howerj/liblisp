@@ -120,17 +120,17 @@ static lisp_cell_t *subr_ ## NAME (lisp_t *l, lisp_cell_t *args) { UNUSED(l);\
 
 /**@todo give these functions better names*/
 #define ISX_LIST\
-        X("alphanumeric?", isalnum,  "Is a string or integer composed of alphanumeric characters?")\
-        X("alpha?",        isalpha,  "Is a string or integer composed of alphabetic characters?")\
-        X("control-character?", iscntrl,  "Is a string or integer composed of control characters?")\
-        X("digit?",       isdigit,  "Is a string or integer composed of digits?")\
-        X("printable-excluding-space?", isgraph,  "Is a string or integer composed of printable characters (excluding space)?")\
-        X("lowercase?",   islower,  "Is a string or integer composed of lower case characters?")\
-        X("printable?",   isprint,  "Is a string or integer composed of printable characters?")\
-        X("punctuation?", ispunct,  "Is a string or integer composed of punctuation characters?")\
-        X("space?",       isspace,  "Is a string or integer composed of whitespace characters?")\
-        X("uppercase?",   isupper,  "Is a string or integer composed of upper case characters?")\
-        X("hex-digit?",   isxdigit, "Is a string or integer composed of hexadecimal digits?")
+        X("is-alphanumeric", isalnum,  "Is a string or integer composed of alphanumeric characters?")\
+        X("is-alpha",        isalpha,  "Is a string or integer composed of alphabetic characters?")\
+        X("is-control-character", iscntrl,  "Is a string or integer composed of control characters?")\
+        X("is-digit",       isdigit,  "Is a string or integer composed of digits?")\
+        X("is-printable-excluding-space", isgraph,  "Is a string or integer composed of printable characters (excluding space)?")\
+        X("is-lowercase",   islower,  "Is a string or integer composed of lower case characters?")\
+        X("is-printable",   isprint,  "Is a string or integer composed of printable characters?")\
+        X("is-punctuation", ispunct,  "Is a string or integer composed of punctuation characters?")\
+        X("is-space",       isspace,  "Is a string or integer composed of whitespace characters?")\
+        X("is-uppercase",   isupper,  "Is a string or integer composed of upper case characters?")\
+        X("is-hex-digit",   isxdigit, "Is a string or integer composed of hexadecimal digits?")
 
 #define X(NAME, FUNC, IGNORE) SUBR_ISX(FUNC)
 ISX_LIST /*defines lisp subroutines for checking whether a string only contains a character class*/
@@ -140,27 +140,27 @@ ISX_LIST /*defines lisp subroutines for checking whether a string only contains 
 	X("crc",        subr_crc,        "Z",   "CRC-32 of a string")\
 	X("hash",       subr_hash,       "Z",   "hash a string")\
 	X("date",       subr_date,       "",    "return a list representing the date (GMT) (not thread safe)")\
-	X("docstring",  subr_doc_string, "x",   "return the documentation string from a procedure")\
+	X("documentation",  subr_doc_string, "x",   "return the documentation string from a procedure")\
 	X("errno",      subr_errno,      "",    "return the current errno")\
 	X("gc",         subr_gc,         "",    "force the collection of garbage")\
 	X("ilog2",      subr_ilog2,      "d",   "compute the binary logarithm of an integer")\
 	X("ipow",       subr_ipow,       "d d", "compute the integer exponentiation of two numbers")\
-	X("locale!",    subr_setlocale,  "d Z", "set the locale, this affects global state!")\
-	X("proc-args",  subr_proc_args,  "l",   "return the arguments for a lambda or F-expression")\
-	X("proc-code",  subr_proc_code,  "l",   "return the code from a lambda or F-expression")\
-	X("proc-env",   subr_proc_env,   "l",   "return the environment captured for a lambda or F-expression")\
+	X("set-locale", subr_setlocale,  "d Z", "set the locale, this affects global state!")\
+	X("procedure-arguments",  subr_proc_args,  "l",   "return the arguments for a lambda or F-expression")\
+	X("procedure-code",  subr_proc_code,  "l",   "return the code from a lambda or F-expression")\
+	X("procedure-environment",   subr_proc_env,   "l",   "return the environment captured for a lambda or F-expression")\
 	X("random",     subr_rand,       "",    "return a pseudo random number generator")\
 	X("seed",       subr_seed,       "d d", "seed the pseudo random number generator")\
-	X("strcspn",    subr_strcspn,    "Z Z", "offset into first string of first occurrence of character in second string")\
-	X("strerror",   subr_strerror,   "d",   "convert an errno into a string describing that error")\
-	X("strspn",     subr_strspn,     "Z Z", "offset into first string of last occurrence of character in second string")\
+	X("string-not-span", subr_strcspn,    "Z Z", "offset into first string of first occurrence of character in second string")\
+	X("errno->string",   subr_strerror,   "d",   "convert an errno into a string describing that error")\
+	X("string-span",     subr_strspn,     "Z Z", "offset into first string of last occurrence of character in second string")\
 	X("strstr",     subr_strstr,     "Z Z", "return offset of first occurrence of second string in the first")\
 	X("system",     subr_system,     NULL,  "execute a command with the system command interpreter")\
 	X("timed-eval", subr_timed_eval, "A",   "time an evaluation")\
 	X("time",       subr_time,       "",    "create a list representing the time")\
 	X("validation-string", subr_validation_string, "x", "return the format string from a procedure")\
 	X("validate",   subr_validate,  "d Z c", "validate an argument list against a format string")\
-	X("is-utf8?",   subr_isutf8,     "Z",   "return t if string is valid utf8, nil otherwise")\
+	X("is-utf8",    subr_isutf8,     "Z",   "return t if string is valid utf8, nil otherwise")\
 	X("utf8-length", subr_utf8_length, "Z", "return length of UTF-8 string, or error if UTF-8 validation fails")\
 	X("utf8-strchr", subr_utf8_strchr, "C Z", "return index into first occurrence of character in UTF-8 string")
 

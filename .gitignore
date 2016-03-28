@@ -78,6 +78,8 @@ AppDir*/docs/
 AppDir*/docs/*
 plugins/*
 bin/*
+lisp-*/
+lisp-*/*
 lisp-*/bin
 lisp-*/bin/*
 lisp-*/data
