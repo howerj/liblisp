@@ -267,8 +267,14 @@ static lisp_cell_t *subr_binv(lisp_t * l, lisp_cell_t * args)
 	return mk_int(l, ~get_int(car(args)));
 }
 
+/** For numerical operations 
+ * @todo Floating point numbers should infect the operation:
+ *       float + integer = float, integer + float = float
+ * @todo Add in overloads for user defined types
+ * @todo Take an arbitrary number of arguments */
+
 static lisp_cell_t *subr_sum(lisp_t * l, lisp_cell_t * args)
-{
+{ 
 	lisp_cell_t *x = car(args), *y = CADR(args);
 	if (is_int(x))
 		return mk_int(l, get_int(x) + get_a2i(y));
