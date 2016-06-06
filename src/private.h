@@ -86,7 +86,7 @@ typedef union { /**< ideally we would use void* for everything*/
  * The cell uses the "struct hack", see
  * <http://c-faq.com/struct/structhack.html> **/
 struct cell {
-	/**@todo look at optimizing these fields*/
+	/**@todo look at optimizing these fields, also add weak references*/
 	unsigned type:   4,        /**< Type of the lisp object*/
 		mark:    1,        /**< mark for garbage collection*/
 		uncollectable: 1,  /**< do not free object?*/
@@ -94,7 +94,7 @@ struct cell {
 		used:    1; /**< object is in use by something outside lisp interpreter*/
 	cell_data_t p[1]; /**< uses the "struct hack", 
 	                     c99 does not quite work here*/
-} /*__attribute__((packed)) <- saves a fair bit of space */;  
+} /*__attribute__((packed)) <- saves a bit of space */;  
 
 /** @brief This describes an entry in a hash table, which is an
  *	 implementation detail of the hash, so should not be

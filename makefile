@@ -32,7 +32,6 @@ MAKEFLAGS += --no-builtin-rules --keep-going
 # liblisp configuration and build system options
 
 # make run options
-RUN_FLAGS=-Epc
 
 VERSION    =$(shell git describe) 
 VCS_COMMIT =$(shell git rev-parse --verify HEAD)
@@ -58,6 +57,7 @@ DEFINES = -DUSE_DL -DUSE_ABORT_HANDLER -DUSE_MUTEX $(VCS_DEFINES)
 RPATH   ?= -Wl,-rpath=.
 
 ifeq ($(OS),Windows_NT)
+COLOR   =
 FixPath =$(subst /,\,$1)
 FS      =$(subst /,\,/)
 AR       := ar
@@ -73,7 +73,6 @@ CP_FLAGS:=
 MV	:=move
 CHMOD	:=echo
 MKDIR_FLAGS:=
-RUN_FLAGS:=-Ep
 DLL	:=dll
 EXE	:=.exe
 LINKFLAGS:=-Wl,-E 
@@ -102,12 +101,14 @@ LINK     :=-ldl -lpthread
 DLL      :=so
 EXE      :=
 
+COLOR = -c
 CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fstack-protector -fPIC
 CFLAGS_RELAXED += -fPIC
 LINKFLAGS=-Wl,-E -Wl,-z,relro
 SRC=src
 endif
 
+RUN_FLAGS:=-Ep ${COLOR}
 INCLUDE = -I${SRC}
 CFLAGS += -std=c99
 DOC=doc${FS}
@@ -168,8 +169,8 @@ help:
 
 ### building #################################################################
 
-SOURCES=$(wildcard ${SRC}${FS}*.c)
-OBJFILES=$(SOURCES:${SRC}${FS}%.c=%.o)
+SOURCES=$(wildcard ${SRC}/*.c)
+OBJFILES=$(SOURCES:${SRC}/%.c=%.o)
 
 lib${TARGET}.a: ${OBJFILES}
 	@echo AR $@
@@ -200,7 +201,7 @@ unit${EXE}: ${SRC}${FS}t/${FS}unit.c lib${TARGET}.a
 	@${CC} ${CFLAGS} ${INCLUDE} ${RPATH} $^ -o unit${EXE}
 
 test: unit${EXE}
-	./unit -c
+	./unit ${COLOR}
 
 app: all test modules
 	${SRC}${FS}./app -vpa  ./lisp -f ${DOC} -f lsp -e -Epc '"$${SCRIPT_PATH}"/lsp/init.lsp'

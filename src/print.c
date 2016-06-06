@@ -215,22 +215,35 @@ int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth)
 		lisp_printf(l, o, depth, "%m%f", get_float(op)); 
 		break; 
 	case CONS:    
-		if(depth && o->pretty) lisp_printf(l, o, depth, "\n%@ ");
-			io_putc('(', o);
-			for(;;) {
-				printer(l, o, car(op), depth + 1);
-				if(is_nil(cdr(op))) {
-					io_putc(')', o);
-					break;
-				}
-				op = cdr(op);
-				if(!is_cons(op)) {
-					lisp_printf(l, o, depth, " . %S)", op);
-					break;
-				}
-				io_putc(' ', o);
+		if(depth && o->pretty) 
+			lisp_printf(l, o, depth, "\n%@ ");
+		if(op->mark) {
+			op->mark = 0;
+			lisp_printf(l, o, depth, "%g<recurse:%d>%t", (intptr_t)op);
+			return 0;
+		}
+		tmp = op;
+		op->mark = 1;
+		io_putc('(', o);
+		for(;;) {
+			printer(l, o, car(op), depth + 1);
+			if(is_nil(cdr(op))) {
+				io_putc(')', o);
+				break;
 			}
-			break;
+			op = cdr(op);
+			if(op->mark) {
+				lisp_printf(l, o, depth, "%g <recurse:%d>%t)", (intptr_t)op);
+				break;
+			}
+			if(!is_cons(op)) {
+				lisp_printf(l, o, depth, " . %S)", op);
+				break;
+			}
+			io_putc(' ', o);
+		}
+		tmp->mark = 0;
+		break;
 	case SYMBOL:
 		if(is_nil(op)) lisp_printf(l, o, depth, "%rnil");
 		else           lisp_printf(l, o, depth, "%y%s", get_sym(op));
