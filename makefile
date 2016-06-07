@@ -169,7 +169,8 @@ help:
 
 ### building #################################################################
 
-SOURCES=$(wildcard ${SRC}/*.c)
+SOURCES:=$(wildcard ${SRC}/*.c)
+SOURCES:=$(filter-out ${SRC}/main.c,${SOURCES})
 OBJFILES=$(SOURCES:${SRC}/%.c=%.o)
 
 lib${TARGET}.a: ${OBJFILES}
@@ -177,19 +178,19 @@ lib${TARGET}.a: ${OBJFILES}
 	@$(AR) $(AR_FLAGS) $@ $^
 
 lib${TARGET}.${DLL}: ${OBJFILES} ${SRC}${FS}lib${TARGET}.h ${SRC}${FS}private.h
-	@echo CC -o $@
+	@echo ${SOURCES}
 	@${CC} ${CFLAGS} -shared ${OBJFILES} -o $@
 
 %.o: ${SRC}${FS}%.c ${SRC}${FS}lib${TARGET}.h ${SRC}${FS}private.h makefile
-	@echo CC $<
+	@echo CC $< -c -o $@
 	@${CC} ${CFLAGS} ${INCLUDE} -DCOMPILING_LIBLISP $< -c -o $@
 
 repl.o: ${SRC}${FS}repl.c ${SRC}${FS}lib${TARGET}.h makefile
-	@echo CC $<
+	@echo CC $< -c -o $@
 	@${CC} ${CFLAGS} ${INCLUDE} ${DEFINES} -DCOMPILING_LIBLISP $< -c -o $@
 
 main.o: ${SRC}${FS}main.c ${SRC}${FS}lib${TARGET}.h ${SRC}${FS}lispmod.h makefile
-	@echo CC $<
+	@echo CC $< -c -o $@
 	@${CC} $(CFLAGS_RELAXED) ${INCLUDE} ${DEFINES} $< -c -o $@
 
 ${TARGET}${EXE}: main.o lib${TARGET}.${DLL}
