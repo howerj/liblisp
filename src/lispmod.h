@@ -38,7 +38,7 @@ typedef void* dl_handle_t;
 #define DL_OPEN(NAME)        dlopen((NAME), RTLD_NOW)
 #define DL_CLOSE(HANDLE)     dlclose((HANDLE))
 #define DL_SYM(HANDLE, NAME) dlsym((HANDLE), (NAME))
-#define DL_ERROR()	     lisp_mod_dlerror()
+#define DL_ERROR()           lisp_mod_dlerror()
 
 const char *lisp_mod_dlerror(void);
 #elif __WIN32

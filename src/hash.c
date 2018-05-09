@@ -39,13 +39,13 @@ static uint32_t hash_alg(const hash_table_t * table, const void *s)
 
 static hash_entry_t *hash_new_pair(char *key, void *val)
 { /**@brief internal function to create a chained hash node**/
-	hash_entry_t *np;
+	hash_entry_t *np = NULL;
+	if (!key || !val)
+		return NULL;
 	if (!(np = calloc(1, sizeof(*np))))
 		return NULL;
 	np->key = (char *)key;
 	np->val = val;
-	if (!np->key || !np->val)
-		return NULL;
 	return np;
 }
 
@@ -124,12 +124,11 @@ static int hash_grow(hash_table_t * ht)
 	if((ht->len*2) < ht->len)
 		return -1;
 	hash_table_t *new = hash_copy_and_resize(ht, ht->len*2);
-	hash_entry_t *cur, *prev;
 	if (!new)
 		return -1;
 	for (i = 0; i < ht->len; i++)
 		if (ht->table[i]) {
-			prev = NULL;
+			hash_entry_t *cur = NULL, *prev = NULL;
 			for (cur = ht->table[i]; cur; prev = cur, cur = cur->next)
 				free(prev);
 			free(prev);
