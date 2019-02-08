@@ -1,8 +1,8 @@
 /** @file       liblisp_pcre.c
  *  @brief      Perl compatible regular expressions
  *  @author     Richard Howe (2016)
- *  @license    LGPL v2.1 or Later 
- *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @license    LGPL v2.1 or Later
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html>
  *  @email      howe.r.j.89@gmail.com
  *  @note       "int" has to be used in various places to conform to the
  *              PCRE API.
@@ -41,15 +41,15 @@ static lisp_cell_t *regex_engine_wrapper(lisp_t * l, lisp_cell_t * args, int spl
 	char *regex = get_sym(car(args)),
 		*string = get_sym(CADR(args)),
 		*last_string = NULL;
-	const char *errstr = NULL; 
-	int error_offset = 0, 
-	    ret = 0, 
+	const char *errstr = NULL;
+	int error_offset = 0,
+	    ret = 0,
 	    last_string_len = 0;
 	int ovector[OVECTOR_SIZE]; /*meant to be a multiple of 3 according to docs*/
-	unsigned string_offset = 0, 
+	unsigned string_offset = 0,
 		 string_length = get_length(CADR(args));
 	lisp_cell_t *x, *head;
-	
+
 
 	if(!(compiled = pcre_compile(regex, 0, &errstr, &error_offset, NULL))) {
 		lisp_log_error(l, "%y'pcre-error 'compile %r\"%s\" %r\"%s\"%t", regex, errstr ? errstr : "(nil)");
@@ -57,27 +57,27 @@ static lisp_cell_t *regex_engine_wrapper(lisp_t * l, lisp_cell_t * args, int spl
 	}
 
 	head = x = cons(l, gsym_nil(), gsym_nil());
-	while((string_offset < string_length) 
+	while((string_offset < string_length)
 	&& (ret = pcre_exec(compiled, NULL, string, string_length, string_offset, 0, ovector, OVECTOR_SIZE))) {
 		int next = 0; /*when matching "c*" the offset is not advanced, next is set to one later so it is*/
 		assert(string_offset < INT_MAX);
 		if(ret < 0) { /*error handler*/
 			switch(ret) {
-			case PCRE_ERROR_NOMATCH: 
+			case PCRE_ERROR_NOMATCH:
 				goto nomatch;
-			case PCRE_ERROR_NULL: 
+			case PCRE_ERROR_NULL:
 				lisp_log_error(l,"%y'pcre-error %r\"unexpected null\"%t");
 				goto fail;
-			case PCRE_ERROR_BADOPTION: 
+			case PCRE_ERROR_BADOPTION:
 				lisp_log_error(l,"%y'pcre-error %r\"bad option\"%t");
 				goto fail;
-			case PCRE_ERROR_BADMAGIC: 
+			case PCRE_ERROR_BADMAGIC:
 				lisp_log_error(l,"%y'pcre-error %r\"bad magic number\"%t");
 				goto fail;
-			case PCRE_ERROR_UNKNOWN_NODE: 
+			case PCRE_ERROR_UNKNOWN_NODE:
 				lisp_log_error(l,"%y'pcre-error %r\"bad compilation\"%t");
 				goto fail;
-			case PCRE_ERROR_NOMEMORY: 
+			case PCRE_ERROR_NOMEMORY:
 				lisp_log_error(l,"%y'pcre-error %r\"ran out of memory\"%t");
 				goto fail;
 			default:
@@ -99,7 +99,7 @@ static lisp_cell_t *regex_engine_wrapper(lisp_t * l, lisp_cell_t * args, int spl
 			if(return_strings) {
 				int asize = split ? (int)(start - string_offset) : size;
 				int astart = split ? (int)string_offset : start;
-				assert(asize >= 0); 
+				assert(asize >= 0);
 				assert(astart >= 0);
 				char *s = malloc(asize + 1);
 				if(!s)
@@ -113,8 +113,8 @@ static lisp_cell_t *regex_engine_wrapper(lisp_t * l, lisp_cell_t * args, int spl
 				int aend   = split ? (int)(astart + start - string_offset) : end;
 				assert(astart >= 0);
 				assert(aend >= 0);
-				set_cdr(x, 
-					cons(l, 
+				set_cdr(x,
+					cons(l,
 						mk_list(l, mk_int(l, astart), mk_int(l, aend), NULL),
 					       	gsym_nil()));
 			}
@@ -157,12 +157,12 @@ fail:
 static lisp_cell_t *subr_regex_span(lisp_t * l, lisp_cell_t * args)
 {
 	return regex_engine_wrapper(l, args, 0, 0);
-}	
+}
 
 static lisp_cell_t *subr_regex(lisp_t * l, lisp_cell_t * args)
 {
 	return regex_engine_wrapper(l, args, 0, 1);
-}	
+}
 
 static lisp_cell_t *subr_split_span(lisp_t * l, lisp_cell_t * args)
 {
@@ -181,7 +181,7 @@ int lisp_module_initialize(lisp_t *l)
 	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
 		goto fail;
 	return 0;
- fail:	
+ fail:
 	return -1;
 }
 

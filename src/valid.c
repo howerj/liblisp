@@ -3,8 +3,8 @@
  *              "liblisp.h" header or the code for the format options.
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com 
- *  
+ *  @email      howe.r.j.89@gmail.com
+ *
  *  @todo    Grouped format specifiers should be treated as an "or", or they
  *           should be be treated as an "and", with the length being calculated
  *           correctly, which it is not.
@@ -12,7 +12,7 @@
  *           passed into the validation string must be the same, this is the
  *           responsibility of the user of these functions
  **/
- 
+
 #include "liblisp.h"
 #include "private.h"
 #include <stdlib.h>
@@ -45,15 +45,14 @@
         X('C', "symbol-string-or-integer", is_asciiz(x) || is_int(x))\
         X('A', "any-expression",    1)
 
-static int print_type_string(lisp_t *l, const char *msg, unsigned len, const char *fmt, lisp_cell_t *args)
-{
-        const char *s, *head = fmt;
-        char c;
+static int print_type_string(lisp_t *l, const char *msg, unsigned len, const char *fmt, lisp_cell_t *args) {
+        const char *s = NULL, *head = fmt;
+        char c = 0;
         io_t *e = lisp_get_logging(l);
         msg = msg ? msg : "";
-        lisp_printf(l, e, 0, 
-                "\n(%Berror%t\n %y'validation\n %r\"%s\"\n%t '(%yexpected-length %r%d%t)\n '(%yexpected-arguments%t ", 
-                msg, (intptr_t)len); 
+        lisp_printf(l, e, 0,
+                "\n(%Berror%t\n %y'validation\n %r\"%s\"\n%t '(%yexpected-length %r%d%t)\n '(%yexpected-arguments%t ",
+                msg, (intptr_t)len);
         while((c = *fmt++)) {
                 s = "";
                 switch(c) {
@@ -69,8 +68,7 @@ static int print_type_string(lisp_t *l, const char *msg, unsigned len, const cha
         return lisp_printf(l, e, 1, ") %S)\n", args);
 }
 
-size_t lisp_validate_arg_count(const char *fmt)
-{
+size_t lisp_validate_arg_count(const char *fmt) {
 	size_t i = 0;
 	if (!fmt)
 		return 0;
@@ -81,29 +79,24 @@ size_t lisp_validate_arg_count(const char *fmt)
 	return i;
 }
 
-int lisp_validate_cell(lisp_t * l, lisp_cell_t * x, lisp_cell_t * args, int recover)
-{
-	char *fmt, *msg;
-	lisp_cell_t *ds;
+int lisp_validate_cell(lisp_t * l, lisp_cell_t * x, lisp_cell_t * args, int recover) {
 	assert(x && is_func(x));
-	ds = get_func_docstring(x);
-	msg = get_str(ds);
+	lisp_cell_t *ds = get_func_docstring(x);
+	char *msg = get_str(ds);
 	msg = msg ? msg : "";
-	fmt = get_func_format(x);
+	char *fmt = get_func_format(x);
 	if (!fmt)
 		return 1;	/*as there is no validation string, its up to the function */
 	return lisp_validate_args(l, msg, get_length(x), fmt, args, recover);
 }
 
-int lisp_validate_args(lisp_t * l, const char *msg, unsigned len, const char *fmt, lisp_cell_t * args, int recover)
-{
+int lisp_validate_args(lisp_t * l, const char *msg, unsigned len, const char *fmt, lisp_cell_t * args, int recover) {
 	assert(l && fmt && args && msg);
 	int v = 1;
-	char c;
-	const char *fmt_head;
-	lisp_cell_t *args_head, *x;
+	char c = 0;
+	const char *fmt_head = NULL;
 	assert(l && fmt && args);
-	args_head = args;
+	lisp_cell_t *args_head = args;
 	fmt_head = fmt;
 	if (!lisp_check_length(args, len))
 		goto fail;
@@ -111,7 +104,7 @@ int lisp_validate_args(lisp_t * l, const char *msg, unsigned len, const char *fm
 		if (is_nil(args) || !v || is_closed(car(args)))
 			goto fail;
 		v = 0;
-		x = car(args);
+		lisp_cell_t *x = car(args);
 		switch (c) {
 		case ' ':
 			v = 1;
@@ -127,7 +120,7 @@ int lisp_validate_args(lisp_t * l, const char *msg, unsigned len, const char *fm
 	if (!v)
 		goto fail;
 	return 1;
- fail:	
+ fail:
         print_type_string(l, msg, len, fmt_head, args_head);
 	if (recover)
 		lisp_throw(l, 1);

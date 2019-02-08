@@ -2,8 +2,8 @@
  *  @brief      Interface to mxml XML parser
  *  see: http://www.msweet.org/documentation/project3/Mini-XML.html
  *  @author     Richard Howe (2015)
- *  @license    LGPL v2.1 or Later 
- *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @license    LGPL v2.1 or Later
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html>
  *  @email      howe.r.j.89@gmail.com
  *  @todo 	Improve this module; XML writer, mxmlFindPath, Parse tree,
  *  Customized parsing (as integers, no attributes, ...)
@@ -35,12 +35,12 @@ static lisp_module_subroutines_t primitives[] = {
 #undef X
 
 /*I might want to export this function*/
-static lisp_cell_t *xml2lisp(lisp_t *l, mxml_node_t *node) 
+static lisp_cell_t *xml2lisp(lisp_t *l, mxml_node_t *node)
 {
 	if(!node)
 		return gsym_nil();
 	switch(node->type) {
-	case MXML_ELEMENT: 
+	case MXML_ELEMENT:
 	{
 		mxml_node_t *t = node;
 		hash_table_t *ht;
@@ -85,7 +85,7 @@ static lisp_cell_t *xml2lisp(lisp_t *l, mxml_node_t *node)
 			return mk_list(l, ename, hash, cdr(ehead), NULL);
 		else
 			return mk_list(l, ename, cdr(ehead), NULL);
-	}	
+	}
 	case MXML_INTEGER:
 		return mk_int(l, node->value.integer);
 	case MXML_REAL:
@@ -226,7 +226,7 @@ int lisp_module_initialize(lisp_t *l)
 	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
 		goto fail;
 	return 0;
- fail:	
+ fail:
 	return -1;
 }
 

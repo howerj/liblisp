@@ -29,8 +29,8 @@ static uint8_t binlog2(size_t v) {
 	 return r;
 }
 
-/************************ bignum library **************************************/ 
-	
+/************************ bignum library **************************************/
+
 static void adjust_last(bignum * n) {
 /*clean up after operation */
 	assert(n);
@@ -361,11 +361,11 @@ bignum_div_t *bignum_divide(bignum * a, bignum * b) {
 	result->remainder = remainder;
 
 	return result;
-free_row:	
+free_row:
 	free(row);
-free_quotient:  
+free_quotient:
 	free(quotient);
-fail:		
+fail:
 	return NULL;
 }
 

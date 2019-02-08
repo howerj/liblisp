@@ -502,7 +502,7 @@ int utf8_is_locale_utf8(char *locale)
 #else
 #include <alloca.h>
 #endif
- 
+
  int utf8_vprintf(char *fmt, va_list ap)
 {
     int cnt, sz=0;

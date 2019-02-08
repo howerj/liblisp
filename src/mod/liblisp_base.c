@@ -1,8 +1,8 @@
 /** @file       liblisp_base.c
  *  @brief      Miscellaneous functions
  *  @author     Richard Howe (2015)
- *  @license    LGPL v2.1 or Later 
- *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @license    LGPL v2.1 or Later
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html>
  *  @email      howe.r.j.89@gmail.com
  *
  *  @todo Add lock type and threading?
@@ -63,8 +63,8 @@ static lisp_cell_t *subr_modf(lisp_t * l, lisp_cell_t * args)
 #define X(SUBR, VALIDATION, DOCSTRING) { # SUBR, VALIDATION, MK_DOCSTR( #SUBR, DOCSTRING), subr_ ## SUBR },
 static lisp_module_subroutines_t math_primitives[] = {
 	MATH_UNARY_LIST		/*all of the subr functions */
-	{ "modf", "a", MK_DOCSTR("modf", "split a float into integer and fractional parts"), subr_modf}, 
-	{ "pow", "a a", MK_DOCSTR("pow:", "raise a base to a power"), subr_pow}, 
+	{ "modf", "a", MK_DOCSTR("modf", "split a float into integer and fractional parts"), subr_modf},
+	{ "pow", "a a", MK_DOCSTR("pow:", "raise a base to a power"), subr_pow},
 	{ NULL, NULL, NULL, NULL}	/*must be terminated with NULLs */
 };
 #undef X
@@ -96,7 +96,7 @@ static const struct float_list { char *name; lisp_float_t val; } floats[] = {
 };
 #undef X
 
-#define X(NAME, VAL) { NAME, VAL }, 
+#define X(NAME, VAL) { NAME, VAL },
 /**@brief A list of all integer values to be made available to the
  *        interpreter as lisp objects */
 static const struct integer_list { char *name; intptr_t val; } integers[] = {
@@ -278,7 +278,7 @@ static lisp_cell_t *subr_utf8_strchr(lisp_t * l, lisp_cell_t * args)
 
 	if(utf8_validate(utf8str, utf8len) == UTF8_REJECT)
 		return gsym_error();
-	if(is_asciiz(car(args))) { 
+	if(is_asciiz(car(args))) {
 		if(utf8_validate(get_str(car(args)), get_length(car(args))) == UTF8_REJECT)
 			return gsym_error();
 		utf8char = utf8_nextchar(get_str(car(args)), &i);
@@ -286,7 +286,7 @@ static lisp_cell_t *subr_utf8_strchr(lisp_t * l, lisp_cell_t * args)
 		utf8char = get_int(car(args));
 	}
 	i = 0;
-	if((res = utf8_strchr(utf8str, utf8char, &i))) 
+	if((res = utf8_strchr(utf8str, utf8char, &i)))
 		return mk_int(l, res - utf8str);
 	return gsym_nil();
 }
@@ -308,7 +308,7 @@ static lisp_cell_t *subr_isutf8(lisp_t * l, lisp_cell_t * args)
 
 static lisp_cell_t *subr_validate(lisp_t * l, lisp_cell_t * args)
 {
-	return LISP_VALIDATE_ARGS(l, "validate", get_int(car(args)), get_str(CADR(args)), CADDR(args), 0) ? 
+	return LISP_VALIDATE_ARGS(l, "validate", get_int(car(args)), get_str(CADR(args)), CADDR(args), 0) ?
 			gsym_tee() : gsym_nil();
 }
 

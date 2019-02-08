@@ -1,9 +1,9 @@
 /** @file       liblisp_diff.c
  *  @brief      diff util module
  *  @author     Richard Howe (2015)
- *  @license    LGPL v2.1 or Later 
- *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
- *  @email      howe.r.j.89@gmail.com 
+ *  @license    LGPL v2.1 or Later
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html>
+ *  @email      howe.r.j.89@gmail.com
  *  @bug        This is very buggy!**/
 
 #include "diff.h"
@@ -100,7 +100,7 @@ int lisp_module_initialize(lisp_t *l)
 	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
 		goto fail;
 	return 0;
- fail:	
+ fail:
 	return -1;
 }
 

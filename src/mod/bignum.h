@@ -65,7 +65,7 @@ bignum *bignum_subtract(bignum * a, bignum * b);
 bignum *bignum_multiply(bignum * a, bignum * b);
 
 /** @brief    Divide one bignum by another, producing a quotient and remainder
- *  @param    a         Operand 'a', dividend 
+ *  @param    a         Operand 'a', dividend
  *  @param    b         Operand 'b', divisor
  *  @return   bignum_div_t* a structure containing the quotient and remainder**/
 bignum_div_t *bignum_divide(bignum * a, bignum * b);

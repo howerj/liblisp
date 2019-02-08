@@ -18,35 +18,30 @@
 #include <limits.h>
 #include <errno.h>
 
-void lisp_throw(lisp_t * l, int ret)
-{
+void lisp_throw(lisp_t * l, const int ret) {
 	if (l && !l->errors_halt && l->recover_init)
 		longjmp(l->recover, ret);
 	else
 		exit(ret);
 }
 
-lisp_cell_t *lisp_environment(lisp_t *l)
-{
+lisp_cell_t *lisp_environment(lisp_t *l) {
 	return l->top_env;
 }
 
-void lisp_out_of_memory(lisp_t *l)
-{
+void lisp_out_of_memory(lisp_t *l) {
 	LISP_HALT(l, "%y'allocation-failed%\n %r\"%s\"%t", strerror(errno));
 }
 
-void *lisp_calloc(lisp_t *l, size_t size)
-{
+void *lisp_calloc(lisp_t *l, size_t size) {
 	assert(l);
-	void *ret;
-	if(!(ret = calloc(size, 1)))
+	void *ret = calloc(size, 1);
+	if(!ret)
 		lisp_out_of_memory(l);
 	return ret;
 }
 
-char *lisp_strdup(lisp_t *l, const char *s)
-{
+char *lisp_strdup(lisp_t *l, const char *s) {
 	assert(l && s);
 	char *r = lstrdup(s);
 	if(!r)
@@ -54,35 +49,29 @@ char *lisp_strdup(lisp_t *l, const char *s)
 	return r;
 }
 
-int lisp_add_module_subroutines(lisp_t *l, const lisp_module_subroutines_t *ms, size_t len)
-{
-	size_t i;
-	for(i = 0; ms[i].name && (!len || i < len); i++)
+int lisp_add_module_subroutines(lisp_t *l, const lisp_module_subroutines_t *ms, size_t len) {
+	for(size_t i = 0; ms[i].name && (!len || i < len); i++)
 		if(!lisp_add_subr(l, ms[i].name, ms[i].p, ms[i].validate, ms[i].docstring))
 			return -1;
 	return 0;
 }
 
-lisp_cell_t *lisp_add_subr(lisp_t * l, const char *name, lisp_subr_func func, const char *fmt, const char *doc)
-{
+lisp_cell_t *lisp_add_subr(lisp_t * l, const char *name, lisp_subr_func func, const char *fmt, const char *doc) {
 	assert(l && name && func);	/*fmt and doc are optional */
 	return lisp_extend_top(l, lisp_intern(l, lisp_strdup(l, name)), mk_subr(l, func, fmt, doc));
 }
 
-lisp_cell_t *lisp_get_all_symbols(lisp_t * l)
-{
+lisp_cell_t *lisp_get_all_symbols(lisp_t * l) {
 	assert(l);
 	return l->all_symbols;
 }
 
-lisp_cell_t *lisp_add_cell(lisp_t * l, const char *sym, lisp_cell_t * val)
-{
+lisp_cell_t *lisp_add_cell(lisp_t * l, const char *sym, lisp_cell_t * val) {
 	assert(l && sym && val);
 	return lisp_extend_top(l, lisp_intern(l, lisp_strdup(l, sym)), val);
 }
 
-void lisp_destroy(lisp_t * l)
-{
+void lisp_destroy(lisp_t * l) {
 	if (!l)
 		return;
 	free(l->buf);
@@ -101,8 +90,7 @@ void lisp_destroy(lisp_t * l)
 	free(l);
 }
 
-lisp_cell_t *lisp_read(lisp_t * l, io_t * i)
-{
+lisp_cell_t *lisp_read(lisp_t * l, io_t * i) {
 	assert(l && i);
 	lisp_cell_t *ret;
 	int restore_used, r;
@@ -121,18 +109,15 @@ lisp_cell_t *lisp_read(lisp_t * l, io_t * i)
 	return ret;
 }
 
-int lisp_print(lisp_t * l, lisp_cell_t * ob)
-{
+int lisp_print(lisp_t * l, lisp_cell_t * ob) {
 	assert(l && ob);
-	int ret = printer(l, lisp_get_output(l), ob, 0);
+	const int ret = printer(l, lisp_get_output(l), ob, 0);
 	io_putc('\n', lisp_get_output(l));
 	return ret;
 }
 
-lisp_cell_t *lisp_eval(lisp_t * l, lisp_cell_t * exp)
-{
+lisp_cell_t *lisp_eval(lisp_t * l, lisp_cell_t * exp) {
 	assert(l && exp);
-	lisp_cell_t *ret;
 	int restore_used, r;
 	jmp_buf restore;
 	if (l->recover_init) {
@@ -144,14 +129,13 @@ lisp_cell_t *lisp_eval(lisp_t * l, lisp_cell_t * exp)
 		return r > 0 ? l->error : NULL;
 	}
 	l->recover_init = 1;
-	ret = eval(l, 0, exp, l->top_env);
+	lisp_cell_t *ret = eval(l, 0, exp, l->top_env);
 	LISP_RECOVER_RESTORE(restore_used, l, restore);
 	return ret;
 }
 
 /**@bug the entire string should be evaluated, not just the first expression */
-lisp_cell_t *lisp_eval_string(lisp_t * l, const char *evalme)
-{
+lisp_cell_t *lisp_eval_string(lisp_t * l, const char *evalme) {
 	assert(l && evalme);
 	io_t *in = NULL;
 	lisp_cell_t *ret;
@@ -175,8 +159,7 @@ lisp_cell_t *lisp_eval_string(lisp_t * l, const char *evalme)
 	return ret;
 }
 
-int lisp_log_error(lisp_t *l, char *fmt, ...) 
-{
+int lisp_log_error(lisp_t *l, char *fmt, ...) {
 	int ret = 0;
 	if(lisp_get_log_level(l) >= LISP_LOG_LEVEL_ERROR) {
 		va_list ap;
@@ -190,8 +173,7 @@ int lisp_log_error(lisp_t *l, char *fmt, ...)
 	return ret;
 }
 
-int lisp_log_note(lisp_t *l, char *fmt, ...) 
-{
+int lisp_log_note(lisp_t *l, char *fmt, ...) {
 	int ret = 0;
 	if(lisp_get_log_level(l) >= LISP_LOG_LEVEL_NOTE) {
         	va_list ap;
@@ -205,8 +187,7 @@ int lisp_log_note(lisp_t *l, char *fmt, ...)
 	return ret;
 }
 
-int lisp_log_debug(lisp_t *l, char *fmt, ...) 
-{
+int lisp_log_debug(lisp_t *l, char *fmt, ...) {
 	int ret = 0;
 	if(lisp_get_log_level(l) >= LISP_LOG_LEVEL_DEBUG) {
 		va_list ap;
@@ -220,8 +201,7 @@ int lisp_log_debug(lisp_t *l, char *fmt, ...)
 	return ret;
 }
 
-int lisp_set_input(lisp_t * l, io_t * in)
-{
+int lisp_set_input(lisp_t * l, io_t * in) {
 	assert(l);
 	l->input->p[0].v = in;
 	if (!in || !io_is_in(in))
@@ -229,8 +209,7 @@ int lisp_set_input(lisp_t * l, io_t * in)
 	return 0;
 }
 
-int lisp_set_output(lisp_t * l, io_t * out)
-{
+int lisp_set_output(lisp_t * l, io_t * out) {
 	assert(l);
 	l->output->p[0].v = out;
 	if (!out || !io_is_out(out))
@@ -238,8 +217,7 @@ int lisp_set_output(lisp_t * l, io_t * out)
 	return 0;
 }
 
-int lisp_set_logging(lisp_t * l, io_t * logging)
-{
+int lisp_set_logging(lisp_t * l, io_t * logging) {
 	assert(l);
 	l->logging->p[0].v = logging;
 	if (!logging || !io_is_out(logging))
@@ -247,44 +225,37 @@ int lisp_set_logging(lisp_t * l, io_t * logging)
 	return 0;
 }
 
-void lisp_set_line_editor(lisp_t * l, lisp_editor_func ed)
-{
+void lisp_set_line_editor(lisp_t * l, lisp_editor_func ed) {
 	assert(l);
 	l->editor = ed;
 }
 
-void lisp_set_signal(lisp_t * l, int sig)
-{
+void lisp_set_signal(lisp_t * l, int sig) {
 	assert(l);
 	l->sig = sig;
 }
 
-io_t *lisp_get_input(lisp_t * l)
-{
+io_t *lisp_get_input(lisp_t * l) {
 	assert(l);
 	return get_io(l->input);
 }
 
-io_t *lisp_get_output(lisp_t * l)
-{
+io_t *lisp_get_output(lisp_t * l) {
 	assert(l);
 	return get_io(l->output);
 }
 
-io_t *lisp_get_logging(lisp_t * l)
-{
+io_t *lisp_get_logging(lisp_t * l) {
 	assert(l);
 	return get_io(l->logging);
 }
 
-void lisp_set_log_level(lisp_t *l, lisp_log_level level)
-{
+void lisp_set_log_level(lisp_t *l, lisp_log_level level) {
 	assert(l && level < LISP_LOG_LEVEL_LAST_INVALID);
 	l->log_level = level;
 }
 
-lisp_log_level lisp_get_log_level(lisp_t *l)
-{
+lisp_log_level lisp_get_log_level(lisp_t *l) {
 	assert(l);
 	return l->log_level;
 }

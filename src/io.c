@@ -13,44 +13,38 @@
 #include <stdio.h>
 #include <string.h>
 
-int io_is_in(io_t * i)
-{
+int io_is_in(io_t * i) {
 	assert(i);
 	return (i->type == IO_FIN || i->type == IO_SIN);
 }
 
-int io_is_out(io_t * o)
-{
+int io_is_out(io_t * o) {
 	assert(o);
 	return (o->type == IO_FOUT || o->type == IO_SOUT || o->type == IO_NULLOUT);
 }
 
-int io_is_file(io_t * f)
-{
+int io_is_file(io_t * f) {
 	assert(f);
 	return (f->type == IO_FIN || f->type == IO_FOUT);
 }
 
-int io_is_string(io_t * s)
-{
+int io_is_string(io_t * s) {
 	assert(s);
 	return (s->type == IO_SIN || s->type == IO_SOUT);
 }
 
-int io_is_null(io_t * n)
-{
+int io_is_null(io_t * n) {
 	assert(n);
 	return n->type == IO_NULLOUT;
 }
 
-int io_getc(io_t * i)
-{
+int io_getc(io_t * i) {
 	assert(i);
-	int r;
 	if (i->ungetc)
 		return i->ungetc = 0, i->c;
 	if (i->type == IO_FIN) {
-		if ((r = fgetc(i->p.file)) == EOF)
+		const int r = fgetc(i->p.file);
+		if (r == EOF)
 			i->eof = 1;
 		return r;
 	}
@@ -60,20 +54,17 @@ int io_getc(io_t * i)
 	return i->eof = 1, EOF;
 }
 
-char *io_get_string(io_t * x)
-{
+char *io_get_string(io_t * x) {
 	assert(x && io_is_string(x));
 	return x->p.str;
 }
 
-FILE *io_get_file(io_t * x)
-{
+FILE *io_get_file(io_t * x) {
 	assert(x && io_is_file(x));
 	return x->p.file;
 }
 
-int io_ungetc(char c, io_t * i)
-{
+int io_ungetc(const char c, io_t * i) {
 	assert(i);
 	if (i->ungetc)
 		return i->eof = 1, EOF;
@@ -82,24 +73,22 @@ int io_ungetc(char c, io_t * i)
 	return c;
 }
 
-int io_putc(char c, io_t * o)
-{
+int io_putc(char c, io_t * o) {
 	assert(o);
-	int r;
-	char *p;
-	size_t maxt;
 	if (o->type == IO_FOUT) {
-		if ((r = fputc(c, o->p.file)) == EOF)
+		const int r = fputc(c, o->p.file);
+		if (r == EOF)
 			o->eof = 1;
 		return r;
 	}
 	if (o->type == IO_SOUT) {
 		if (o->position >= (o->max - 1)) {	/*grow the "file" */
-			maxt = (o->max + 1) * 2;
+			const size_t maxt = (o->max + 1) * 2;
 			if (maxt < o->position)	/*overflow */
 				return o->eof = 1, EOF;
 			o->max = maxt;
-			if (!(p = realloc(o->p.str, maxt)))
+			char *p = realloc(o->p.str, maxt);
+			if (!p)
 				return o->eof = 1, EOF;
 			memset(p + o->position, 0, maxt - o->position);
 			o->p.str = p;
@@ -113,25 +102,24 @@ int io_putc(char c, io_t * o)
 	return o->eof = 1, EOF;
 }
 
-int io_puts(const char *s, io_t * o)
-{
+int io_puts(const char *s, io_t * o) {
 	assert(s && o);
-	int r;
 	if (o->type == IO_FOUT) {
-		if ((r = fputs(s, o->p.file)) == EOF)
+		const int r = fputs(s, o->p.file);
+		if (r == EOF)
 			o->eof = 1;
 		return r;
 	}
 	if (o->type == IO_SOUT) {
 		/*this "grow" functionality should be moved into a function*/
-		char *p;
 		size_t len = strlen(s), newpos, maxt;
 		if (o->position + len >= (o->max - 1)) {/*grow the "file" */
 			maxt = (o->position + len) * 2;
 			if (maxt < o->position)	/*overflow */
 				return o->eof = 1, EOF;
 			o->max = maxt;
-			if (!(p = realloc(o->p.str, maxt)))
+			char *p = realloc(o->p.str, maxt);
+			if (!p)
 				return o->eof = 1, EOF;
 			memset(p + o->position, 0, maxt - o->position);
 			o->p.str = p;
@@ -149,8 +137,7 @@ int io_puts(const char *s, io_t * o)
 	return EOF;
 }
 
-size_t io_read(char *ptr, size_t size, io_t *i)
-{
+size_t io_read(char *ptr, size_t size, io_t *i) {
 	if(i->type == IO_FIN)
 		return fread(ptr, 1, size, io_get_file(i));
 	if(i->type == IO_SIN) {
@@ -163,22 +150,21 @@ size_t io_read(char *ptr, size_t size, io_t *i)
 	return 0;
 }
 
-size_t io_write(char *ptr, size_t size, io_t *o)
-{ /**@todo test me, this function is untested*/
+/**@todo test me, this function is untested*/
+size_t io_write(char *ptr, size_t size, io_t *o) {
 	if(o->type == IO_SOUT) {
-		char *p;
-		size_t newpos, maxt; 
 		if (o->position + size >= (o->max - 1)) {/*grow the "file" */
-			maxt = (o->position + size) * 2;
+			const size_t maxt = (o->position + size) * 2;
 			if (maxt < o->position)	/*overflow */
 				return o->eof = 1, EOF;
 			o->max = maxt;
-			if (!(p = realloc(o->p.str, maxt)))
+			char *p = realloc(o->p.str, maxt);
+			if (!p)
 				return o->eof = 1, EOF;
 			memset(p + o->position, 0, maxt - o->position);
 			o->p.str = p;
 		}
-		newpos = o->position + size;
+		const size_t newpos = o->position + size;
 		if (newpos >= o->max)
 			size = newpos - o->max;
 		memmove(o->p.str + o->position, ptr, size);
@@ -193,20 +179,20 @@ size_t io_write(char *ptr, size_t size, io_t *o)
 	return 0;
 }
 
-char *io_getdelim(io_t * i, int delim)
-{
+char *io_getdelim(io_t * i, const int delim) {
 	assert(i);
-	char *newbuf, *retbuf = NULL;
+	char *retbuf = NULL;
 	size_t nchmax = 1, nchread = 0;
-	int c;
 	if (!(retbuf = calloc(1, 1)))
 		return NULL;
+	int c = 0;
 	while ((c = io_getc(i)) != EOF) {
 		if (nchread >= nchmax) {
 			nchmax = nchread * 2;
 			if (nchread >= nchmax)	/*overflow check */
 				return free(retbuf), NULL;
-			if (!(newbuf = realloc(retbuf, nchmax + 1)))
+			char *newbuf = realloc(retbuf, nchmax + 1);
+			if (!newbuf)
 				return free(retbuf), NULL;
 			retbuf = newbuf;
 		}
@@ -221,14 +207,12 @@ char *io_getdelim(io_t * i, int delim)
 	return retbuf;
 }
 
-char *io_getline(io_t * i)
-{
+char *io_getline(io_t * i) {
 	assert(i);
 	return io_getdelim(i, '\n');
 }
 
-int io_printd(intptr_t d, io_t * o)
-{
+int io_printd(intptr_t d, io_t * o) {
 	assert(o);
 	if (o->type == IO_FOUT)
 		return fprintf(o->p.file, "%" PRIiPTR, d);
@@ -240,8 +224,7 @@ int io_printd(intptr_t d, io_t * o)
 	return EOF;
 }
 
-int io_printflt(double f, io_t * o)
-{
+int io_printflt(const double f, io_t * o) {
 	assert(o);
 	if (o->type == IO_FOUT)
 		return fprintf(o->p.file, "%e", f);
@@ -254,9 +237,8 @@ int io_printflt(double f, io_t * o)
 	return EOF;
 }
 
-io_t *io_sin(const char *sin, size_t len)
-{
-	io_t *i;
+io_t *io_sin(const char *sin, const size_t len) {
+	io_t *i = NULL;
 	if (!sin || !(i = calloc(1, sizeof(*i))))
 		return NULL;
 	if (!(i->p.str = calloc(len, 1)))
@@ -267,9 +249,8 @@ io_t *io_sin(const char *sin, size_t len)
 	return i;
 }
 
-io_t *io_fin(FILE * fin)
-{
-	io_t *i;
+io_t *io_fin(FILE * fin) {
+	io_t *i = NULL;
 	if (!fin || !(i = calloc(1, sizeof(*i))))
 		return NULL;
 	i->p.file = fin;
@@ -277,11 +258,10 @@ io_t *io_fin(FILE * fin)
 	return i;
 }
 
-io_t *io_sout(size_t len)
-{
-	io_t *o;
-	char *sout;
+io_t *io_sout(size_t len) {
 	len = len == 0 ? 1 : len;
+	char *sout = NULL;
+	io_t *o = NULL;
 	if (!(sout = calloc(len, 1)) || !(o = calloc(1, sizeof(*o))))
 		return NULL;
 	o->p.str = sout;
@@ -290,9 +270,8 @@ io_t *io_sout(size_t len)
 	return o;
 }
 
-io_t *io_fout(FILE * fout)
-{
-	io_t *o;
+io_t *io_fout(FILE * fout) {
+	io_t *o = NULL;
 	if (!fout || !(o = calloc(1, sizeof(*o))))
 		return NULL;
 	o->p.file = fout;
@@ -300,17 +279,15 @@ io_t *io_fout(FILE * fout)
 	return o;
 }
 
-io_t *io_nout(void)
-{
-	io_t *o;
+io_t *io_nout(void) {
+	io_t *o = NULL;
 	if (!(o = calloc(1, sizeof(*o))))
 		return NULL;
 	o->type = IO_NULLOUT;
 	return o;
 }
 
-int io_close(io_t * c)
-{
+int io_close(io_t * c) {
 	int ret = 0;
 	if (!c)
 		return -1;
@@ -323,24 +300,21 @@ int io_close(io_t * c)
 	return ret;
 }
 
-int io_eof(io_t * f)
-{
+int io_eof(io_t * f) {
 	assert(f);
 	if (f->type == IO_FIN || f->type == IO_FOUT)
 		f->eof = feof(f->p.file) ? 1 : 0;
 	return f->eof;
 }
 
-int io_flush(io_t * f)
-{
+int io_flush(io_t * f) {
 	assert(f);
 	if (f->type == IO_FIN || f->type == IO_FOUT)
 		return fflush(f->p.file);
 	return 0;
 }
 
-long io_tell(io_t * f)
-{
+long io_tell(io_t * f) {
 	assert(f);
 	if (f->type == IO_FIN || f->type == IO_FOUT)
 		return ftell(f->p.file);
@@ -349,8 +323,7 @@ long io_tell(io_t * f)
 	return -1;
 }
 
-int io_seek(io_t * f, long offset, int origin)
-{
+int io_seek(io_t * f, long offset, int origin) {
 	assert(f);
 	if (f->type == IO_FIN || f->type == IO_FOUT)
 		return fseek(f->p.file, offset, origin);
@@ -375,22 +348,19 @@ int io_seek(io_t * f, long offset, int origin)
 	return -1;
 }
 
-int io_error(io_t * f)
-{
+int io_error(io_t * f) {
 	assert(f);
 	if (f->type == IO_FIN || f->type == IO_FOUT)
 		return ferror(f->p.file);
 	return 0;
 }
 
-void io_color(io_t * out, int color_on)
-{
+void io_color(io_t * out, const int color_on) {
 	assert(out);
 	out->color = color_on;
 }
 
-void io_pretty(io_t * out, int pretty_on)
-{
+void io_pretty(io_t * out, int pretty_on) {
 	assert(out);
 	out->pretty = pretty_on;
 }

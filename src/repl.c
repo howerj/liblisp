@@ -44,9 +44,8 @@ enum { OPTS_ERROR = -1,      /**< there's been an error processing the options*/
 	OPTS_IN_STDIN,	     /**< read input from stdin*/
 }; /**< getoptions enum*/
 
-static int getoptions(lisp_t * l, char *arg, char *arg_0)
-{ /**@brief simple parser for command line options**/
-	int c;
+static int getoptions(lisp_t * l, char *arg, char *arg_0) { /**@brief simple parser for command line options**/
+	int c = 0;
 	if ('-' != *arg++)
 		return OPTS_IN_FILE;
 	if (!arg[0])
@@ -65,7 +64,7 @@ static int getoptions(lisp_t * l, char *arg, char *arg_0)
 			lisp_log_note(l, "'color-on");
 			l->color_on = 1;
 			break;	/*colorize output */
-		case 'L': 
+		case 'L':
 			lisp_log_note(l, "'local 'default");
 			if(!setlocale(LC_ALL, ""))
 				FATAL("failed to default locale");
@@ -108,8 +107,7 @@ static int getoptions(lisp_t * l, char *arg, char *arg_0)
 	return OPTS_SWITCH;	/*this argument was a valid flag, nothing more */
 }
 
-int lisp_repl(lisp_t * l, char *prompt, int editor_on)
-{
+int lisp_repl(lisp_t * l, char *prompt, int editor_on) {
 	lisp_cell_t *ret;
 	io_t *ofp, *efp;
 	char *line = NULL;
@@ -159,9 +157,8 @@ int lisp_repl(lisp_t * l, char *prompt, int editor_on)
 	return r;
 }
 
-int main_lisp_env(lisp_t * l, int argc, char **argv)
-{
-	int i, stdin_off = 0;
+int main_lisp_env(lisp_t * l, int argc, char **argv) {
+	int i = 0, stdin_off = 0;
 	lisp_cell_t *ob = l->nil;
 	if (!l)
 		return -1;
@@ -240,9 +237,8 @@ int main_lisp_env(lisp_t * l, int argc, char **argv)
 	return 0;
 }
 
-int main_lisp(int argc, char **argv)
-{
-	lisp_t *l;
+int main_lisp(int argc, char **argv) {
+	lisp_t *l = NULL;
 	if (!(l = lisp_init()))
 		return -1;
 	return main_lisp_env(l, argc, argv);

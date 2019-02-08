@@ -1,8 +1,8 @@
 /** @file       main.c
  *  @brief      A minimal lisp interpreter and utility library, simple driver
  *  @author     Richard Howe (2015)
- *  @license    LGPL v2.1 or Later 
- *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @license    LGPL v2.1 or Later
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html>
  *  @email      howe.r.j.89@gmail.com
  *
  *  All of the non-portable code in the interpreter is isolated here, the
@@ -45,17 +45,15 @@ static char *os   = "unknown";
  *  https://stackoverflow.com/questions/5693192/win32-backtrace-from-c-code
  *  @todo add a function that prints stack traces in the lisp environment
  *  */
-static void sig_abrt_handler(int sig) 
-{
-        void *trace[TRACE_SIZE];
+static void sig_abrt_handler(int sig) {
+        void *trace[TRACE_SIZE] = { 0 };
         char **messages = NULL;
-        int i, trace_size;
-        trace_size = backtrace(trace, TRACE_SIZE);
+        const int trace_size = backtrace(trace, TRACE_SIZE);
         messages = backtrace_symbols(trace, trace_size);
         if(trace_size < 0)
                 goto fail;
         fprintf(stderr, "SIGABRT! Stack trace:\n");
-        for(i = 0; i < trace_size; i++)
+        for(int i = 0; i < trace_size; i++)
                 fprintf(stderr, "\t%s\n", messages[i]);
         fflush(stderr);
 fail:   signal(sig, SIG_DFL);
@@ -78,45 +76,41 @@ fail:   signal(sig, SIG_DFL);
  *
  * See: https://stackoverflow.com/questions/3555859/is-it-possible-to-do-static-initialization-of-mutexes-in-windows*/
 
-lisp_mutex_t* lisp_mutex_create(void)
-{
+lisp_mutex_t* lisp_mutex_create(void) {
         lisp_mutex_t* p;
 #ifdef __unix__
         if(!(p = calloc(1, sizeof(pthread_mutex_t))))
                 return NULL;
         pthread_mutex_init(p, NULL);
         return p;
-#elif _WIN32 
+#elif _WIN32
         if(!(p = calloc(1, sizeof(CRITICAL_SECTION))))
                 return NULL;
         InitializeCriticalSection(p);
-        return p; 
+        return p;
 #endif
 }
 
-int lisp_mutex_lock(lisp_mutex_t *m) 
-{
+int lisp_mutex_lock(lisp_mutex_t *m) {
 #ifdef __unix__
-        return pthread_mutex_lock(m); 
+        return pthread_mutex_lock(m);
 #elif  _WIN32
         EnterCriticalSection((LPCRITICAL_SECTION)m);
-        return 0; 
+        return 0;
 #endif
 }
 
-int lisp_mutex_trylock(lisp_mutex_t *m) 
-{
+int lisp_mutex_trylock(lisp_mutex_t *m) {
 #ifdef __unix__
-        return pthread_mutex_trylock(m); 
+        return pthread_mutex_trylock(m);
 #elif  _WIN32
 	return TryEnterCriticalSection(m);
 #endif
 }
 
-int lisp_mutex_unlock(lisp_mutex_t *m) 
-{ 
+int lisp_mutex_unlock(lisp_mutex_t *m) {
 #ifdef __unix__
-        return pthread_mutex_unlock(m); 
+        return pthread_mutex_unlock(m);
 #elif  _WIN32
         LeaveCriticalSection((LPCRITICAL_SECTION)m);
         return 0;
@@ -126,25 +120,23 @@ int lisp_mutex_unlock(lisp_mutex_t *m)
 #endif
 
 #ifdef USE_DL
-/* Module loader using dlopen/LoadLibrary, all functions acquired with 
- * dlsym/GetProcAddress must be of the "subr" function type as they will 
+/* Module loader using dlopen/LoadLibrary, all functions acquired with
+ * dlsym/GetProcAddress must be of the "subr" function type as they will
  * be used as internal lisp subroutines by the interpreter. */
 
 #ifdef __unix__ /*Only tested on Linux, not other Unixen */
 /*Supported*/
 
-const char *lisp_mod_dlerror(void) 
-{
+const char *lisp_mod_dlerror(void) {
 	return dlerror();
 }
 
 #elif _WIN32 /*Windows*/
 /*Supported*/
 
-const char *lisp_mod_dlerror(void) 
-{
+const char *lisp_mod_dlerror(void) {
         static char buf[256] = "";
-        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), 
+        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 256, NULL);
         return buf;
 }
@@ -165,31 +157,26 @@ dl_list *head; /**< *GLOBAL* list of all DLL handles for dlclose_atexit*/
 
 /** @brief close all of the open DLLs when the program exits, subr_dlopen
  *         adds the handles to this list **/
-static void dlclose_atexit(void) 
-{
-        dl_list *t; 
-        while(head) {
+static void dlclose_atexit(void) {
+        while (head) {
                 assert(head->handle);
                 DL_CLOSE(head->handle); /*closes DLL and calls its destructors*/
-                t = head;
+                dl_list *t = head;
                 head = head->next;
                 free(t);
         }
 }
 
-static void ud_dl_free(lisp_cell_t *f) 
-{
+static void ud_dl_free(lisp_cell_t *f) {
       /*DL_CLOSE(get_user(f)); This is handled atexit instead*/
         free(f);
 }
 
-static int ud_dl_print(io_t *o, unsigned depth, lisp_cell_t *f) 
-{
+static int ud_dl_print(io_t *o, unsigned depth, lisp_cell_t *f) {
         return lisp_printf(NULL, o, depth, "%B<DYNAMIC-MODULE:%d>%t", get_user(f));
 }
 
-static lisp_cell_t *subr_dlopen(lisp_t *l, lisp_cell_t *args) 
-{
+static lisp_cell_t *subr_dlopen(lisp_t *l, lisp_cell_t *args) {
 	dl_handle_t handle;
         dl_list *h;
         if(!(handle = DL_OPEN(get_str(car(args))))) {
@@ -205,8 +192,7 @@ static lisp_cell_t *subr_dlopen(lisp_t *l, lisp_cell_t *args)
 }
 
 /* loads a lisp module and runs the initialization function */
-static lisp_cell_t *subr_load_lisp_module(lisp_t *l, lisp_cell_t *args) 
-{
+static lisp_cell_t *subr_load_lisp_module(lisp_t *l, lisp_cell_t *args) {
 	lisp_cell_t *h = subr_dlopen(l, args);
 	dl_handle_t handle;
 	lisp_module_initializer_t init;
@@ -222,8 +208,7 @@ static lisp_cell_t *subr_load_lisp_module(lisp_t *l, lisp_cell_t *args)
 	return gsym_error();
 }
 
-static lisp_cell_t *subr_dlsym(lisp_t *l, lisp_cell_t *args) 
-{
+static lisp_cell_t *subr_dlsym(lisp_t *l, lisp_cell_t *args) {
         lisp_subr_func func;
         if(!lisp_check_length(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
                 LISP_RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
@@ -232,16 +217,14 @@ static lisp_cell_t *subr_dlsym(lisp_t *l, lisp_cell_t *args)
         return mk_subr(l, func, NULL, NULL);
 }
 
-static lisp_cell_t *subr_dlerror(lisp_t *l, lisp_cell_t *args) 
-{
+static lisp_cell_t *subr_dlerror(lisp_t *l, lisp_cell_t *args) {
         const char *s = DL_ERROR();
 	UNUSED(args);
         return mk_str(l, lisp_strdup(l, (s = DL_ERROR()) ? s : ""));
 }
 #endif
 
-int main(int argc, char **argv) 
-{
+int main(int argc, char **argv) {
         lisp_t *l;
 
 	ASSERT(l = lisp_init());

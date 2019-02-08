@@ -5,7 +5,7 @@
  *  @email      howe.r.j.89@gmail.com
  *
  *  This is the main evaluator and associated function, the built in
- *  subroutines for the interpreter are defined elsewhere. 
+ *  subroutines for the interpreter are defined elsewhere.
  *  @todo Rename compile, and "compiling" variadic functions **/
 #include "liblisp.h"
 #include "private.h"
@@ -16,8 +16,8 @@
 
 static const int dynamic_on = 0; /**< 0 for lexical scoping, !0 for dynamic scoping*/
 
-static lisp_cell_t *mk(lisp_t * l, lisp_type type, size_t count, ...)
-{ /**@brief make new lisp cells and perform garbage bookkeeping/collection*/
+/**@brief make new lisp cells and perform garbage bookkeeping/collection*/
+static lisp_cell_t *mk(lisp_t * l, lisp_type type, size_t count, ...) {
 	assert(l && type != INVALID && count);
 	lisp_cell_t *ret;
 	gc_list_t *node; /**< new node in linked list of all allocations*/
@@ -46,158 +46,132 @@ static lisp_cell_t *mk(lisp_t * l, lisp_type type, size_t count, ...)
 	return ret;
 }
 
-lisp_cell_t *cons(lisp_t * l, lisp_cell_t * x, lisp_cell_t * y)
-{
+lisp_cell_t *cons(lisp_t * l, lisp_cell_t * x, lisp_cell_t * y) {
 	assert(l);
 	return mk(l, CONS, 2, x, y);
 }
 
-lisp_cell_t *car(lisp_cell_t * con)
-{
+lisp_cell_t *car(lisp_cell_t * con) {
 	assert(con && is_cons(con));
 	return con->p[0].v;
 }
 
-lisp_cell_t *cdr(lisp_cell_t * con)
-{
+lisp_cell_t *cdr(lisp_cell_t * con) {
 	assert(con && is_cons(con));
 	return con->p[1].v;
 }
 
-void set_car(lisp_cell_t * con, lisp_cell_t * val)
-{
+void set_car(lisp_cell_t * con, lisp_cell_t * val) {
 	assert(con && is_cons(con) && val);
 	con->p[0].v = val;
 }
 
-void set_cdr(lisp_cell_t * con, lisp_cell_t * val)
-{
+void set_cdr(lisp_cell_t * con, lisp_cell_t * val) {
 	assert(con && is_cons(con) && val);
 	con->p[1].v = val;
 }
 
-void close_cell(lisp_cell_t * x)
-{
+void close_cell(lisp_cell_t * x) {
 	assert(x);
 	x->close = 1;
 }
 
-int lisp_check_length(lisp_cell_t * x, size_t expect)
-{
+int lisp_check_length(lisp_cell_t * x, const size_t expect) {
 	assert(x);
 	return get_length(x) == expect;
 }
 
-int is_nil(lisp_cell_t * x)
-{
+int is_nil(lisp_cell_t * x) {
 	assert(x);
 	return x == gsym_nil();
 }
 
-int is_int(lisp_cell_t * x)
-{
+int is_int(lisp_cell_t * x) {
 	assert(x);
 	return x->type == INTEGER;
 }
 
-int is_floating(lisp_cell_t * x)
-{
+int is_floating(lisp_cell_t * x) {
 	assert(x);
 	return x->type == FLOAT;
 }
 
-int is_io(lisp_cell_t * x)
-{
+int is_io(lisp_cell_t * x) {
 	assert(x);
 	return x->type == IO && !x->close;
 }
 
-int is_cons(lisp_cell_t * x)
-{
+int is_cons(lisp_cell_t * x) {
 	assert(x);
 	return x->type == CONS;
 }
 
-int is_proper_cons(lisp_cell_t * x)
-{
+int is_proper_cons(lisp_cell_t * x) {
 	assert(x);
 	return is_cons(x) && (is_nil(cdr(x)) || is_cons(cdr(x)));
 }
 
-int is_proc(lisp_cell_t * x)
-{
+int is_proc(lisp_cell_t * x) {
 	assert(x);
 	return x->type == PROC;
 }
 
-int is_fproc(lisp_cell_t * x)
-{
+int is_fproc(lisp_cell_t * x) {
 	assert(x);
 	return x->type == FPROC;
 }
 
-int is_str(lisp_cell_t * x)
-{
+int is_str(lisp_cell_t * x) {
 	assert(x);
 	return x->type == STRING;
 }
 
-int is_sym(lisp_cell_t * x)
-{
+int is_sym(lisp_cell_t * x) {
 	assert(x);
 	return x->type == SYMBOL;
 }
 
-int is_subr(lisp_cell_t * x)
-{
+int is_subr(lisp_cell_t * x) {
 	assert(x);
 	return x->type == SUBR;
 }
 
-int is_hash(lisp_cell_t * x)
-{
+int is_hash(lisp_cell_t * x) {
 	assert(x);
 	return x->type == HASH;
 }
 
-int is_userdef(lisp_cell_t * x)
-{
+int is_userdef(lisp_cell_t * x) {
 	assert(x);
 	return x->type == USERDEF && !x->close;
 }
 
-int is_usertype(lisp_cell_t * x, int type)
-{
+int is_usertype(lisp_cell_t * x, const int type) {
 	assert(x && type < MAX_USER_TYPES && type >= 0);
 	return x->type == USERDEF && get_user_type(x) == type && !x->close;
 }
 
-int is_asciiz(lisp_cell_t * x)
-{
+int is_asciiz(lisp_cell_t * x) {
 	assert(x);
 	return is_str(x) || is_sym(x);
 }
 
-int is_arith(lisp_cell_t * x)
-{
+int is_arith(lisp_cell_t * x) {
 	assert(x);
 	return is_int(x) || is_floating(x);
 }
 
-int is_func(lisp_cell_t * x)
-{
+int is_func(lisp_cell_t * x) {
 	assert(x);
 	return is_proc(x) || is_fproc(x) || is_subr(x);
 }
 
-int is_closed(lisp_cell_t * x)
-{
+int is_closed(lisp_cell_t * x) {
 	assert(x);
 	return x->close;
 }
 
-int is_list(lisp_cell_t * x)
-{
+int is_list(lisp_cell_t * x) {
 	assert(x);
 	for (; !is_nil(x); x = cdr(x))
 		if (!is_cons(cdr(x)) && !is_nil(cdr(x)))
@@ -205,49 +179,41 @@ int is_list(lisp_cell_t * x)
 	return 1;
 }
 
-static lisp_cell_t *mk_asciiz(lisp_t * l, char *s, lisp_type type)
-{
+static lisp_cell_t *mk_asciiz(lisp_t * l, char *s, lisp_type type) {
 	assert(l && s && (type == STRING || type == SYMBOL));
 	lisp_cell_t *x = mk(l, type, 2, (lisp_cell_t *) s, strlen(s));
 	return x;
 }
 
-static lisp_cell_t *mk_sym(lisp_t * l, char *s)
-{
+static lisp_cell_t *mk_sym(lisp_t * l, char *s) {
 	return mk_asciiz(l, s, SYMBOL);
 }
 
-lisp_cell_t *mk_list(lisp_t * l, lisp_cell_t * x, ...)
-{
+lisp_cell_t *mk_list(lisp_t * l, lisp_cell_t * x, ...) {
 	assert(x);
-	size_t i;
-	lisp_cell_t *head, *op, *next;
 	va_list ap;
-	head = op = cons(l, x, l->nil);
+	lisp_cell_t *op = cons(l, x, l->nil);
+	lisp_cell_t *head = op, *next = NULL;
 	va_start(ap, x);
-	for (i = 1; (next = va_arg(ap, lisp_cell_t *)); op = cdr(op), i++)
+	for (size_t i = 1; (next = va_arg(ap, lisp_cell_t *)); op = cdr(op), i++)
 		set_cdr(op, cons(l, next, l->nil));
 	va_end(ap);
 	return head;
 }
 
-lisp_cell_t *mk_int(lisp_t * l, intptr_t d)
-{
+lisp_cell_t *mk_int(lisp_t * l, const intptr_t d) {
 	assert(l);
 	return mk(l, INTEGER, 1, (lisp_cell_t *) d);
 }
 
-lisp_cell_t *mk_io(lisp_t * l, io_t * x)
-{
+lisp_cell_t *mk_io(lisp_t * l, io_t * x) {
 	assert(l && x);
 	return mk(l, IO, 1, (lisp_cell_t *) x);
 }
 
-lisp_cell_t *mk_subr(lisp_t * l, lisp_subr_func p, const char *fmt, const char *doc)
-{
+lisp_cell_t *mk_subr(lisp_t * l, lisp_subr_func p, const char *fmt, const char *doc) {
 	assert(l && p);
-	lisp_cell_t *t;
-	t = mk(l, SUBR, 4, p, NULL, NULL, NULL);
+	lisp_cell_t *t = mk(l, SUBR, 4, p, NULL, NULL, NULL);
 	if (fmt) {
 		size_t tlen = lisp_validate_arg_count(fmt);
 		assert((BITS_IN_LENGTH >= 32) && tlen < 0xFFFFFFFFu);
@@ -258,56 +224,49 @@ lisp_cell_t *mk_subr(lisp_t * l, lisp_subr_func p, const char *fmt, const char *
 	return t;
 }
 
-lisp_cell_t *mk_proc(lisp_t * l, lisp_cell_t * args, lisp_cell_t * code, lisp_cell_t * env, lisp_cell_t * doc)
-{
+lisp_cell_t *mk_proc(lisp_t * l, lisp_cell_t * args, lisp_cell_t * code, lisp_cell_t * env, lisp_cell_t * doc) {
 	assert(l && args && code && env);
 	return mk(l, PROC, 5, args, code, env, NULL, doc);
 }
 
-lisp_cell_t *mk_fproc(lisp_t * l, lisp_cell_t * args, lisp_cell_t * code, lisp_cell_t * env, lisp_cell_t * doc)
-{
+lisp_cell_t *mk_fproc(lisp_t * l, lisp_cell_t * args, lisp_cell_t * code, lisp_cell_t * env, lisp_cell_t * doc) {
 	assert(l && args && code && env);
 	return mk(l, FPROC, 5, args, code, env, NULL, doc);
 }
 
-lisp_cell_t *mk_float(lisp_t * l, lisp_float_t f)
-{
+lisp_cell_t *mk_float(lisp_t * l, lisp_float_t f) {
 	assert(l);
 	return mk(l, FLOAT, 1, f);
 }
 
-lisp_cell_t *mk_str(lisp_t * l, char *s)
-{ /**@todo fix for binary data, also make version that automatically does the string dup*/
+/**@todo fix for binary data, also make version that automatically does the string dup*/
+lisp_cell_t *mk_str(lisp_t * l, char *s) {
 	return mk_asciiz(l, s, STRING);
 }
 
-lisp_cell_t *mk_immutable_str(lisp_t * l, const char *s) 
-{
+lisp_cell_t *mk_immutable_str(lisp_t * l, const char *s) {
 	lisp_cell_t *r = mk_str(l, (char*)s);
 	r->uncollectable = 1;
 	return r;
 }
 
-lisp_cell_t *mk_hash(lisp_t * l, hash_table_t * h)
-{
+lisp_cell_t *mk_hash(lisp_t * l, hash_table_t * h) {
 	return mk(l, HASH, 1, (lisp_cell_t *) h);
 }
 
-lisp_cell_t *mk_user(lisp_t * l, void *x, intptr_t type)
-{
+lisp_cell_t *mk_user(lisp_t * l, void *x, const intptr_t type) {
 	assert(l && x && type >= 0 && type < l->user_defined_types_used);
 	lisp_cell_t *ret = mk(l, USERDEF, 2, x);
 	ret->p[1].v = (void *)type;
 	return ret;
 }
 
-unsigned get_length(lisp_cell_t * x)
-{ 
+unsigned get_length(lisp_cell_t * x) {
 	size_t i;
 	assert(x);
-	if(is_nil(x))
+	if (is_nil(x))
 		return 0;
-	switch(x->type) {
+	switch (x->type) {
 	case STRING:
 	case SYMBOL:
 		return (uintptr_t)(x->p[1].v);
@@ -322,121 +281,101 @@ unsigned get_length(lisp_cell_t * x)
 	}
 }
 
-void *get_raw(lisp_cell_t * x)
-{
+void *get_raw(lisp_cell_t * x) {
 	assert(x);
 	return x->p[0].v;
 }
 
-intptr_t get_int(lisp_cell_t * x)
-{
+intptr_t get_int(lisp_cell_t * x) {
 	return !x ? 0 : (intptr_t) (x->p[0].v);
 }
 
-lisp_subr_func get_subr(lisp_cell_t * x)
-{
+lisp_subr_func get_subr(lisp_cell_t * x) {
 	assert(x && is_subr(x));
 	return x->p[0].prim;
 }
 
-lisp_cell_t *get_proc_args(lisp_cell_t * x)
-{
+lisp_cell_t *get_proc_args(lisp_cell_t * x) {
 	assert(x && (is_proc(x) || is_fproc(x)));
 	return x->p[0].v;
 }
 
-lisp_cell_t *get_proc_code(lisp_cell_t * x)
-{
+lisp_cell_t *get_proc_code(lisp_cell_t * x) {
 	assert(x && (is_proc(x) || is_fproc(x)));
 	return x->p[1].v;
 }
 
-lisp_cell_t *get_proc_env(lisp_cell_t * x)
-{
+lisp_cell_t *get_proc_env(lisp_cell_t * x) {
 	assert(x && (is_proc(x) || is_fproc(x)));
 	return x->p[2].v;
 }
 
-lisp_cell_t *get_func_docstring(lisp_cell_t * x)
-{
+lisp_cell_t *get_func_docstring(lisp_cell_t * x) {
 	assert(x && is_func(x));
 	return is_subr(x) ? x->p[2].v : x->p[4].v;
 }
 
-char *get_func_format(lisp_cell_t * x)
-{
+char *get_func_format(lisp_cell_t * x) {
 	assert(x && is_func(x));
 	return is_subr(x) ? x->p[1].v : x->p[3].v;
 }
 
-io_t *get_io(lisp_cell_t * x)
-{
+io_t *get_io(lisp_cell_t * x) {
 	assert(x && x->type == IO);
 	return (io_t *) (x->p[0].v);
 }
 
-char *get_sym(lisp_cell_t * x)
-{
+char *get_sym(lisp_cell_t * x) {
 	assert(x && is_asciiz(x));
 	return (char *)(x->p[0].v);
 }
 
-char *get_str(lisp_cell_t * x)
-{
+char *get_str(lisp_cell_t * x) {
 	assert(x && is_asciiz(x));
 	return (char *)(x->p[0].v);
 }
 
-void *get_user(lisp_cell_t * x)
-{
+void *get_user(lisp_cell_t * x) {
 	assert(x && x->type == USERDEF);
 	return (void *)(x->p[0].v);
 }
 
-int get_user_type(lisp_cell_t * x)
-{
+int get_user_type(lisp_cell_t * x) {
 	assert(x && x->type == USERDEF);
 	return (intptr_t) x->p[1].v;
 }
 
-hash_table_t *get_hash(lisp_cell_t * x)
-{
+hash_table_t *get_hash(lisp_cell_t * x) {
 	assert(x && is_hash(x));
 	return (hash_table_t *) (x->p[0].v);
 }
 
-lisp_float_t get_float(lisp_cell_t * x)
-{
+lisp_float_t get_float(lisp_cell_t * x) {
 	assert(x && is_floating(x));
 	return x->p[0].f;
 }
 
-intptr_t get_a2i(lisp_cell_t * x)
-{
+intptr_t get_a2i(lisp_cell_t * x) {
 	assert(x && is_arith(x));
 	return is_int(x) ? get_int(x) : (intptr_t) get_float(x);
 }
 
-lisp_float_t get_a2f(lisp_cell_t * x)
-{
+lisp_float_t get_a2f(lisp_cell_t * x) {
 	assert(x && is_arith(x));
 	return is_floating(x) ? get_float(x) : (lisp_float_t) get_int(x);
 }
 
-int is_in(lisp_cell_t * x)
-{
+int is_in(lisp_cell_t * x) {
 	assert(x);
 	return (x && is_io(x) && io_is_in(get_io(x))) ? 1 : 0;
 }
 
-int is_out(lisp_cell_t * x)
-{
+int is_out(lisp_cell_t * x) {
 	assert(x);
 	return (x && is_io(x) && io_is_out(get_io(x))) ? 1 : 0;
 }
 
-int new_user_defined_type(lisp_t * l, lisp_free_func f, lisp_mark_func m, lisp_equal_func e, lisp_print_func p)
-{
+int new_user_defined_type(lisp_t * l, lisp_free_func f, lisp_mark_func m, lisp_equal_func e, lisp_print_func p) {
 	if (l->user_defined_types_used >= MAX_USER_TYPES)
 		return -1;
 	l->ufuncs[l->user_defined_types_used].free = f;
@@ -446,13 +385,11 @@ int new_user_defined_type(lisp_t * l, lisp_free_func f, lisp_mark_func m, lisp_e
 	return l->user_defined_types_used++;
 }
 
-lisp_cell_t *lisp_extend(lisp_t * l, lisp_cell_t * env, lisp_cell_t * sym, lisp_cell_t * val)
-{
+lisp_cell_t *lisp_extend(lisp_t * l, lisp_cell_t * env, lisp_cell_t * sym, lisp_cell_t * val) {
 	return cons(l, cons(l, sym, val), env);
 }
 
-lisp_cell_t *lisp_intern(lisp_t * l, char *name)
-{
+lisp_cell_t *lisp_intern(lisp_t * l, char *name) {
 	assert(l && name);
 	lisp_cell_t *op = hash_lookup(get_hash(l->all_symbols), name);
 	if (op)
@@ -462,8 +399,8 @@ lisp_cell_t *lisp_intern(lisp_t * l, char *name)
 	return op;
 }
 
-lisp_cell_t *lisp_copy(lisp_t *l, lisp_cell_t *src)
-{ /**@todo make use of lisp_copy to make closures work */
+/**@todo make use of lisp_copy to make closures work */
+lisp_cell_t *lisp_copy(lisp_t *l, lisp_cell_t *src) {
 	assert(l && src);
 	switch(src->type) {
 	case SUBR:
@@ -488,11 +425,11 @@ lisp_cell_t *lisp_copy(lisp_t *l, lisp_cell_t *src)
 		return mk_float(l, get_float(src));
 	case PROC:
 	case FPROC:
-		return mk(l, src->type, 5, 
-				lisp_copy(l, get_proc_args(src)), 
-				lisp_copy(l, get_proc_code(src)), 
-				lisp_copy(l, get_proc_env(src)), 
-				NULL, 
+		return mk(l, src->type, 5,
+				lisp_copy(l, get_proc_args(src)),
+				lisp_copy(l, get_proc_code(src)),
+				lisp_copy(l, get_proc_env(src)),
+				NULL,
 				get_func_docstring(src));
 	case IO:
 	case USERDEF:
@@ -506,15 +443,14 @@ lisp_cell_t *lisp_copy(lisp_t *l, lisp_cell_t *src)
 
 /***************************** environment ************************************/
 
-static lisp_cell_t *function_args(lisp_t * l, lisp_cell_t *proc, lisp_cell_t * vals)
-{
+static lisp_cell_t *function_args(lisp_t * l, lisp_cell_t *proc, lisp_cell_t * vals) {
 	assert(l && proc && vals);
 	lisp_cell_t *env = dynamic_on ? l->cur_env : get_proc_env(proc);
        	lisp_cell_t *syms = get_proc_args(proc);
-	size_t i, test, expect = get_length(get_proc_args(proc));
+	size_t i = 0, expect = get_length(get_proc_args(proc));
 	if(!expect)
 		return env;
-	test = is_sym(syms) ? 0 : 1;
+	const size_t test = is_sym(syms) ? 0 : 1;
 	for (i = 0; is_cons(syms) && is_cons(vals); syms = cdr(syms), vals = cdr(vals), i++)
 		env = lisp_extend(l, env, car(syms), car(vals));
 	if(!is_nil(syms))
@@ -524,8 +460,7 @@ static lisp_cell_t *function_args(lisp_t * l, lisp_cell_t *proc, lisp_cell_t * v
 	return env;
 }
 
-lisp_cell_t *lisp_extend_top(lisp_t * l, lisp_cell_t * sym, lisp_cell_t * val)
-{
+lisp_cell_t *lisp_extend_top(lisp_t * l, lisp_cell_t * sym, lisp_cell_t * val) {
 	assert(l && sym && val);
 	if (hash_insert(get_hash(l->top_hash), get_str(sym), cons(l, sym, val)) < 0)
 		lisp_out_of_memory(l);
@@ -534,16 +469,15 @@ lisp_cell_t *lisp_extend_top(lisp_t * l, lisp_cell_t * sym, lisp_cell_t * val)
 
 /**@todo an rassoc, that would search for a value and return a key, would be
  *       very useful*/
-lisp_cell_t *lisp_assoc(lisp_cell_t * key, lisp_cell_t * alist)
-{
+lisp_cell_t *lisp_assoc(lisp_cell_t * key, lisp_cell_t * alist) {
 	assert(key && alist);
-	lisp_cell_t *lookup;
 	for (; is_cons(alist); alist = cdr(alist))
 		if (is_cons(car(alist))) {	/*normal assoc */
 			if (get_int(CAAR(alist)) == get_int(key))
 				return car(alist);
 		} else if (is_hash(car(alist)) && is_asciiz(key)) {	/*assoc extended with hashes */
-			if ((lookup = hash_lookup(get_hash(car(alist)), get_str(key))))
+			lisp_cell_t *lookup = hash_lookup(get_hash(car(alist)), get_str(key));
+			if (lookup)
 				return lookup;
 		}
 	if(!is_nil(alist)) /* should LISP_RECOVER really*/
@@ -560,33 +494,33 @@ lisp_cell_t *lisp_assoc(lisp_cell_t * key, lisp_cell_t * alist)
  *  @bug  F-Expressions should be prevent compilation of their arguments
  *  @todo Add warning about unbound variables
  **/
-static lisp_cell_t *binding_lambda(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * env)
-{
-	lisp_cell_t *head, *op, *tmp, *code = l->nil;
+static lisp_cell_t *binding_lambda(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * env) {
 	if (depth > MAX_RECURSION_DEPTH)
 		LISP_RECOVER(l, "%y'recursion-depth-reached%t %d", depth);
 
-	if(is_sym(exp))
-		return !is_nil(tmp = lisp_assoc(exp, env)) ? cdr(tmp) : exp;
-	head = op = cons(l, l->nil, l->nil);
+	if(is_sym(exp)) {
+		lisp_cell_t *t = lisp_assoc(exp, env);
+		return !is_nil(t) ? cdr(t) : exp;
+	}
+	lisp_cell_t *op = cons(l, l->nil, l->nil);
+	lisp_cell_t *head = op;
 	for (; is_cons(exp); exp = cdr(exp), op = cdr(op)) {
-		code = car(exp);
-		if (is_sym(car(exp)) && !is_nil(tmp = lisp_assoc(car(exp), env)))
-			code = cdr(tmp);
+		lisp_cell_t *code = car(exp), *t = NULL;
+		if (is_sym(car(exp)) && !is_nil(t = lisp_assoc(car(exp), env)))
+			code = cdr(t);
 		else if (is_cons(car(exp)) && (CAAR(exp) != l->quote))
 			code = binding_lambda(l, depth + 1, car(exp), env);
 		else
 			code = car(exp);
 		set_cdr(op, cons(l, code, l->nil));
 	}
-	if(!is_nil(exp))
+	if (!is_nil(exp))
 		LISP_RECOVER(l, "%r\"compile cannot eval dotted pairs\"%t\n '%S", head);
 	return cdr(head);
 }
 
 static lisp_cell_t *evlis(lisp_t * l, unsigned depth, lisp_cell_t * exps, lisp_cell_t * env);
-lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * env)
-{
+lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * env) {
 	assert(l);
 	size_t gc_stack_save = l->gc_stack_used;
 	lisp_cell_t *tmp, *first, *proc, *ret = NULL, *vals = l->nil;
@@ -639,7 +573,7 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 		 * (SPECIAL-INPUT-PORT) => return line of text as string
 		 *
 		 * This could be done using references, the reference would
-		 * need to prevent collection of what was being pointed to. 
+		 * need to prevent collection of what was being pointed to.
 		 */
 		if (!is_nil(exp) && !is_proper_cons(exp))
 			LISP_RECOVER(l, "%y'evaluation\n %r\"cannot eval dotted pair\"%t\n '%S", exp);
@@ -744,7 +678,7 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			lisp_cell_t *wh = car(exp), *head = cdr(exp);
 			while(!is_nil(eval(l, depth + 1, wh, env))) {
 				l->gc_stack_used = gc_stack_save;
-				for(exp = head; is_cons(exp); exp = cdr(exp)) 
+				for(exp = head; is_cons(exp); exp = cdr(exp))
 					(void)eval(l, depth + 1, car(exp), env);
 				if(!is_nil(exp))
 					LISP_RECOVER(l, "%r\"while cannot eval dotted pairs\"%t\n '%S", head);
@@ -761,7 +695,7 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			vals = evlis(l, depth + 1, exp, env);
 		else if (is_fproc(proc)) /*f-expr do not eval their args */
 			vals = cons(l, exp, l->nil);
-		else 
+		else
 			LISP_RECOVER(l, "%r\"not a procedure\"%t\n '%S", first);
 		l->cur_depth = depth;	/*tucked away for function use */
 		l->cur_env = env;	/*also tucked away */
@@ -790,17 +724,16 @@ debug:
 }
 
 /**< evaluate a list*/
-static lisp_cell_t *evlis(lisp_t * l, unsigned depth, lisp_cell_t * exps, lisp_cell_t * env)
-{
-	size_t i;
-	lisp_cell_t *op, *head, *start = exps;
+static lisp_cell_t *evlis(lisp_t * l, unsigned depth, lisp_cell_t * exps, lisp_cell_t * env) {
+	lisp_cell_t *start = exps;
 	assert(l && exps && env);
 	if (is_nil(exps))
 		return exps;
-	op = car(exps);
+	lisp_cell_t *op = car(exps);
 	exps = cdr(exps);
-	head = op = cons(l, eval(l, depth + 1, op, env), l->nil);
-	for (i = 1; is_cons(exps); exps = cdr(exps), op = cdr(op), i++)
+	op = cons(l, eval(l, depth + 1, op, env), l->nil);
+	lisp_cell_t *head = op;
+	for (size_t i = 1; is_cons(exps); exps = cdr(exps), op = cdr(op), i++)
 		set_cdr(op, cons(l, eval(l, depth + 1, car(exps), env), l->nil));
 	if(!is_nil(exps))
 		LISP_RECOVER(l, "%r\"evlis cannot eval dotted pairs\"%t\n '%S", start);

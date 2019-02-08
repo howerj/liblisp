@@ -1,11 +1,11 @@
 /** @file       liblisp_unix.c
  *  @brief      Unix module interface module for liblisp
  *  @author     Richard Howe (2015)
- *  @license    LGPL v2.1 or Later 
- *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @license    LGPL v2.1 or Later
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html>
  *  @email      howe.r.j.89@gmail.com
  *
- *  This is an Unix OS interface module. 
+ *  This is an Unix OS interface module.
  *  @todo This module needs *significant* improvement **/
 #define _GNU_SOURCE
 #include <assert.h>
@@ -78,7 +78,7 @@
  *      int          tcsetpgrp(int, pid_t);
  *      int          truncate(const char *, off_t);
  *      int          ttyname_r(int, char *, size_t);
- *      ssize_t      write(int, const void *, size_t); 
+ *      ssize_t      write(int, const void *, size_t);
  *
  *      int open(const char *path, int oflag, ... );
  *
@@ -188,7 +188,7 @@ static lisp_cell_t *subr_stat(lisp_t * l, lisp_cell_t * args)
 		mk_int(l, st.st_blocks),
 		mk_int(l, st.st_ctime),
 		mk_int(l, st.st_atime),
-		mk_int(l, st.st_mtime), 
+		mk_int(l, st.st_mtime),
 		NULL);
 }
 
@@ -454,7 +454,7 @@ int lisp_module_initialize(lisp_t *l)
 	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
 		goto fail;
 	return 0;
- fail:	
+ fail:
 	return -1;
 }
 

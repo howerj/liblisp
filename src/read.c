@@ -2,10 +2,10 @@
  *  @brief      An S-Expression parser for liblisp
  *  @author     Richard Howe (2015, 2016)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com 
- *  
+ *  @email      howe.r.j.89@gmail.com
+ *
  *  An S-Expression parser, it takes it's input from a generic input
- *  port that can be set up to read from a string or a file. 
+ *  port that can be set up to read from a string or a file.
  *  @todo quasiquote, unquote, unquote-splicing, compose, negate, and
  *        runs of car and cdr.
  *  @bug '('a . 'b)
@@ -26,16 +26,14 @@ static const int parse_strings = 1,	/*parse strings? e.g. "Hello" */
     parse_dotted = 1;		/*parse dotted pairs? e.g. (a . b) */
 
 /**@brief process a comment from I/O stream**/
-static int comment(io_t * i)
-{
-	int c;
+static int comment(io_t * i) {
+	int c = 0;
 	while (((c = io_getc(i)) > 0) && (c != '\n')) ;
 	return c;
 }
 
 /**@brief add a char to the token buffer*/
-static void add_char(lisp_t * l, char ch)
-{
+static void add_char(lisp_t * l, char ch) {
 	assert(l);
 	char *tmp;
 	if (l->buf_used > l->buf_allocated - 1) {
@@ -50,24 +48,21 @@ static void add_char(lisp_t * l, char ch)
 }
 
 /**@brief allocate a new token */
-static char *new_token(lisp_t * l)
-{
+static char *new_token(lisp_t * l) {
 	assert(l);
 	l->buf[l->buf_used++] = '\0';
 	return lisp_strdup(l, l->buf);
 }
 
 /**@brief push back a single token */
-static void unget_token(lisp_t * l, char *token)
-{
+static void unget_token(lisp_t * l, char *token) {
 	assert(l && token);
 	l->token = token;
 	l->ungettok = 1;
 }
 
 static const char lex[] = "(){}\'\""; /**@todo add '`', ','*/
-static char *lexer(lisp_t * l, io_t * i)
-{
+static char *lexer(lisp_t * l, io_t * i) {
 	assert(l && i);
 	int ch, end = 0;
 	l->buf_used = 0;
@@ -103,9 +98,8 @@ static char *lexer(lisp_t * l, io_t * i)
 }
 
 /**@brief handle parsing a string*/
-static char *read_string(lisp_t * l, io_t * i)
-{
-	assert(l && i);					   
+static char *read_string(lisp_t * l, io_t * i) {
+	assert(l && i);
 	int ch;
 	char num[4] = { 0, 0, 0, 0 };
 	l->buf_used = 0;
@@ -158,8 +152,7 @@ static char *read_string(lisp_t * l, io_t * i)
 	return NULL;
 }
 
-static int keyval(lisp_t * l, io_t * i, hash_table_t *ht, char *key)
-{
+static int keyval(lisp_t * l, io_t * i, hash_table_t *ht, char *key) {
 	lisp_cell_t *val;
 	if(!(val = reader(l, i)))
 		return -1;
@@ -168,11 +161,10 @@ static int keyval(lisp_t * l, io_t * i, hash_table_t *ht, char *key)
 	return 0;
 }
 
-static lisp_cell_t *read_hash(lisp_t * l, io_t * i)
-{
+static lisp_cell_t *read_hash(lisp_t * l, io_t * i) {
 	hash_table_t *ht;
-	char *token = NULL; 
-	if (!(ht = hash_create(SMALL_DEFAULT_LEN))) 
+	char *token = NULL;
+	if (!(ht = hash_create(SMALL_DEFAULT_LEN)))
 		lisp_out_of_memory(l);
 	lisp_cell_t *ret = mk_hash(l, ht);
 	for(;;) {
@@ -180,16 +172,16 @@ static lisp_cell_t *read_hash(lisp_t * l, io_t * i)
 		if(!token)
 			goto fail;
 		switch(token[0]) {
-		case '}': 
+		case '}':
 			free(token);
 			return ret;
-		case '(': 
-		case ')': 
-		case '{': 
+		case '(':
+		case ')':
+		case '{':
 		case '\'':
-		case '.': 
+		case '.':
 			goto fail;
-		case '"': 
+		case '"':
 		{
 			char *key;
 			free(token);
@@ -221,8 +213,7 @@ fail:
 	return NULL;
 }
 
-static lisp_cell_t *new_sym(lisp_t *l, const char *token, size_t end)
-{ /**@bug '2.a <=> (2 a) */
+static lisp_cell_t *new_sym(lisp_t *l, const char *token, size_t end) { /**@bug '2.a <=> (2 a) */
 	lisp_cell_t *ret;
 	assert(l && token && end);
 	if((parse_ints && is_number(token)) || (parse_floats && is_fnumber(token)))
@@ -236,8 +227,7 @@ static lisp_cell_t *new_sym(lisp_t *l, const char *token, size_t end)
 }
 
 static const char symbol_splitters[] = ".!"; /**@note '~' (negate) and ':' (compose) go here, when implemented*/
-static lisp_cell_t *process_symbol(lisp_t *l, const char *token)
-{
+static lisp_cell_t *process_symbol(lisp_t *l, const char *token) {
 	size_t i;
 	assert(l && token);
 	if(!parse_sugar)
@@ -269,12 +259,10 @@ fail:
 }
 
 static lisp_cell_t *read_list(lisp_t * l, io_t * i);
-lisp_cell_t *reader(lisp_t * l, io_t * i)
-{
+lisp_cell_t *reader(lisp_t * l, io_t * i) {
 	assert(l && i);
 	char *token = lexer(l, i), *fltend = NULL;
-	double flt;
-	lisp_cell_t *ret;
+	lisp_cell_t *ret = NULL;
 	if (!token)
 		return NULL;
 	switch (token[0]) {
@@ -326,7 +314,7 @@ lisp_cell_t *reader(lisp_t * l, io_t * i)
 			return ret;
 		}
 		if (parse_floats && is_fnumber(token)) {
-			flt = strtod(token, &fltend);
+			double flt = strtod(token, &fltend);
 			if (!fltend[0]) {
 				free(token);
 				return mk_float(l, flt);
@@ -342,12 +330,11 @@ lisp_cell_t *reader(lisp_t * l, io_t * i)
 }
 
 /**@brief read in a list*/
-static lisp_cell_t *read_list(lisp_t * l, io_t * i)
-{
+static lisp_cell_t *read_list(lisp_t * l, io_t * i) {
 	assert(l && i);
 	char *token = lexer(l, i), *stok;
-	lisp_cell_t *a, *b;
-	if (!token) 
+	lisp_cell_t *a = NULL, *b = NULL;
+	if (!token)
 		return NULL;
 	switch (token[0]) {
 	case ')':

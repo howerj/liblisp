@@ -3,7 +3,7 @@
  *  @author  Bjoern Hoehrmann
  *  @license MIT
  *  @email   bjoern@hoehrmann.de */
- 
+
 #ifndef UTF8_H
 #define UTF8_H
 

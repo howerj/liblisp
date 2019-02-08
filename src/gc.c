@@ -9,20 +9,18 @@
 #include <assert.h>
 #include <stdlib.h>
 
-void lisp_gc_used(lisp_cell_t *x)
-{
+void lisp_gc_used(lisp_cell_t *x) {
 	assert(x);
 	x->used = 1;
 }
 
-void lisp_gc_not_used(lisp_cell_t *x)
-{
+void lisp_gc_not_used(lisp_cell_t *x) {
 	assert(x);
 	x->used = 0;
 }
 
-static void gc_free(lisp_t * l, lisp_cell_t * x)
-{	
+static void gc_free(lisp_t * l, lisp_cell_t * x) {
+	assert(l);
         /*assert(op) *//**< free a lisp cell*/
 	if (!x || x->uncollectable || x->used)
 		return;
@@ -65,8 +63,8 @@ static void gc_free(lisp_t * l, lisp_cell_t * x)
 	}
 }
 
-void lisp_gc_mark(lisp_t * l, lisp_cell_t * op)
-{						  
+void lisp_gc_mark(lisp_t * l, lisp_cell_t * op) {
+	assert(l);
         /*assert(op); *//**<recursively mark reachable cells*/
 	if (!op || op->mark)
 		return;
@@ -112,13 +110,12 @@ void lisp_gc_mark(lisp_t * l, lisp_cell_t * op)
 	}
 }
 
-void lisp_gc_sweep_only(lisp_t * l)
-{				
-	gc_list_t *v, **p;
+void lisp_gc_sweep_only(lisp_t * l) {
+	assert(l);
 	if (l->gc_off)
 		return;
-	for (p = &l->gc_head; *p != NULL;) {
-		v = *p;
+	for (gc_list_t **p = &l->gc_head; *p != NULL;) {
+		gc_list_t *v = *p;
 		if (v->ref->mark) {
 			p = &v->next;
 			v->ref->mark = 0;
@@ -130,14 +127,13 @@ void lisp_gc_sweep_only(lisp_t * l)
 	}
 }
 
-lisp_cell_t *lisp_gc_add(lisp_t * l, lisp_cell_t * op)
-{				  
-	lisp_cell_t **olist;
+lisp_cell_t *lisp_gc_add(lisp_t * l, lisp_cell_t * op) {
+	assert(l);
 	if (l->gc_stack_used++ > l->gc_stack_allocated - 1) {
 		l->gc_stack_allocated = l->gc_stack_used * 2;
 		if (l->gc_stack_allocated < l->gc_stack_used)
 			LISP_HALT(l, "%s", "overflow in allocator size variable");
-		olist = realloc(l->gc_stack, l->gc_stack_allocated * sizeof(*l->gc_stack));
+		lisp_cell_t **olist = realloc(l->gc_stack, l->gc_stack_allocated * sizeof(*l->gc_stack));
 		if (!olist)
 			lisp_out_of_memory(l);
 		l->gc_stack = olist;
@@ -146,29 +142,28 @@ lisp_cell_t *lisp_gc_add(lisp_t * l, lisp_cell_t * op)
 	return op;
 }
 
-int lisp_gc_status(lisp_t * l)
-{
+int lisp_gc_status(lisp_t * l) {
+	assert(l);
 	return !l->gc_off;
 }
 
-void lisp_gc_on(lisp_t * l)
-{
+void lisp_gc_on(lisp_t * l) {
+	assert(l);
 	l->gc_off = 0;
 }
 
-void lisp_gc_off(lisp_t * l)
-{
+void lisp_gc_off(lisp_t * l) {
+	assert(l);
 	l->gc_off = 1;
 }
 
-void lisp_gc_mark_and_sweep(lisp_t * l)
-{
-	size_t i;
+void lisp_gc_mark_and_sweep(lisp_t * l) {
+	assert(l);
 	if (l->gc_off)
 		return;
 	lisp_gc_mark(l, l->all_symbols);
 	lisp_gc_mark(l, l->top_env);
-	for (i = 0; i < l->gc_stack_used; i++)
+	for (size_t i = 0; i < l->gc_stack_used; i++)
 		lisp_gc_mark(l, l->gc_stack[i]);
 	lisp_gc_sweep_only(l);
 	l->gc_collectp = 0;

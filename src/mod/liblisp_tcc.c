@@ -1,8 +1,8 @@
 /** @file       liblisp_tcc.c
  *  @brief      Tiny C Compiler liblisp module
  *  @author     Richard Howe (2015)
- *  @license    LGPL v2.1 or Later 
- *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @license    LGPL v2.1 or Later
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html>
  *  @email      howe.r.j.89@gmail.com
  *  @todo       I should find out if this module is thread safe or not
  **/
@@ -119,7 +119,7 @@ static lisp_cell_t *subr_set_lib_path(lisp_t * l, lisp_cell_t * args)
 int lisp_module_initialize(lisp_t *l)
 {
 	assert(l);
-	/** Tiny C compiler library interface, special care has to be taken 
+	/** Tiny C compiler library interface, special care has to be taken
          *  when compiling and linking all of the C files within the liblisp
          *  project so the symbols in it are available to libtcc.
          *
@@ -141,7 +141,7 @@ int lisp_module_initialize(lisp_t *l)
 	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
 		goto fail;
 	return 0;
- fail:	
+ fail:
 	return -1;
 }
 

@@ -1,8 +1,8 @@
 /** @file       liblisp_line.c
  *  @brief      Line editor module
  *  @author     Richard Howe (2015)
- *  @license    LGPL v2.1 or Later 
- *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @license    LGPL v2.1 or Later
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html>
  *  @email      howe.r.j.89@gmail.com
  *  @bug	Needs to be ported to Windows!
  *  **/
@@ -16,7 +16,7 @@
 static char *histfile = ".lisphist";
 static char *homedir;
 static int running; /**< only handle errors when the lisp interpreter is running*/
-static lisp_t *locked_lisp; 
+static lisp_t *locked_lisp;
 static lisp_mutex_t mutex_single_threaded_module = LISP_MUTEX_INITIALIZER;
 
 /** @brief This function tells a running lisp REPL to halt if it is reading
@@ -107,11 +107,11 @@ static char *line_editing_function(const char *prompt)
 	max_len = strlen(line);
 	while (i_want_more_lines(line)) {
 		sprintf(varprompt, "%*.*s", max_len+2, 72, "=>");
-		if (!(new = line_editor(varprompt))) { 
+		if (!(new = line_editor(varprompt))) {
 			free(line);
 			return NULL;
 		}
-		max_len += strspn(new, " "); 
+		max_len += strspn(new, " ");
 
 		if (!(conc = VSTRCATSEP(" ", line, new))) {
 			free(new);
@@ -212,7 +212,7 @@ int lisp_module_initialize(lisp_t *l)
 	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
 		goto fail;
 	return 0;
- fail:	
+ fail:
 	return -1;
 }
 

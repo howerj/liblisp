@@ -1,8 +1,8 @@
 /** @file       liblisp_math.c
  *  @brief      c99 mathematical functions for module for liblisp
  *  @author     Richard Howe (2015)
- *  @license    LGPL v2.1 or Later 
- *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @license    LGPL v2.1 or Later
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html>
  *  @email      howe.r.j.89@gmail.com**/
 #include <lispmod.h>
 #include <assert.h>
@@ -29,7 +29,7 @@ static lisp_cell_t *subr_ ## NAME (lisp_t *l, lisp_cell_t *args) {\
 	X(atanh,  "a", "computes inverse hyperbolic tangent")\
 	X(trunc,  "a", "rounds to nearest integer not greater in magnitude than given value")\
 	X(round,  "a", "rounds to nearest integer, rounding away from zero in halfway cases")
-	
+
 #define SUBROUTINE_XLIST\
         X("nan?",  subr_isnan,   "f", "Is this float a NaN float?")\
         X("infinite?",  subr_isinf,   "f", "Is this float a Infinite float?")\
@@ -99,7 +99,7 @@ int lisp_module_initialize(lisp_t *l)
 	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
 		goto fail;
 	return 0;
- fail:	
+ fail:
 	return -1;
 }
 

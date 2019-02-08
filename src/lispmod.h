@@ -1,10 +1,10 @@
 /** @file       lispmod.h
  *  @brief      liblisp module interface and utility functions
  *  @author     Richard Howe (2016)
- *  @license    LGPL v2.1 or Later 
- *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @license    LGPL v2.1 or Later
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html>
  *  @email      howe.r.j.89@gmail.com */
- 
+
 #ifndef LISPMOD_H
 #define LISPMOD_H
 
@@ -50,6 +50,6 @@ typedef HMODULE dl_handle_t;
 #define DL_ERROR()           lisp_mod_dlerror()
 
 const char *lisp_mod_dlerror(void);
-#endif 
+#endif
 
 #endif /* LISPMOD_H */

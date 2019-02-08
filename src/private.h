@@ -47,7 +47,7 @@ extern "C" {
 		else (ENV)->recover_init = 0;\
 	} while(0)
 
-typedef enum { 
+typedef enum {
 	INVALID, /**< invalid object (default), halts interpreter*/
 	SYMBOL,  /**< symbol */
 	INTEGER, /**< integer, a normal fixed with number*/
@@ -67,8 +67,8 @@ typedef enum {
 
 typedef union { /**< ideally we would use void* for everything*/
 	void *v;     /**< use this for integers and pointers to cells*/
-	lisp_float_t f;    /**< if lisp_float_t is double it could be bigger than *v */ 
-	lisp_subr_func prim;   /**< function pointers are not guaranteed 
+	lisp_float_t f;    /**< if lisp_float_t is double it could be bigger than *v */
+	lisp_subr_func prim;   /**< function pointers are not guaranteed
 	                                              to fit into a void**/
 } cell_data_t; /**< a union of all the different C datatypes used*/
 
@@ -92,9 +92,9 @@ struct cell {
 		uncollectable: 1,  /**< do not free object?*/
 		close:   1,        /**< object closed/invalid?*/
 		used:    1; /**< object is in use by something outside lisp interpreter*/
-	cell_data_t p[1]; /**< uses the "struct hack", 
+	cell_data_t p[1]; /**< uses the "struct hack",
 	                     c99 does not quite work here*/
-} /*__attribute__((packed)) <- saves a bit of space */;  
+} /*__attribute__((packed)) <- saves a bit of space */;
 
 /** @brief This describes an entry in a hash table, which is an
  *	 implementation detail of the hash, so should not be
@@ -122,13 +122,13 @@ struct hash_table {	        /**< a hash table*/
 	hash_f hash; /**< called to hash a key*/
 };
 
-/** @brief A structure that is used to wrap up the I/O operations 
+/** @brief A structure that is used to wrap up the I/O operations
  *	 of the lisp interpreter. */
 struct io {
 	union { FILE *file; char *str; } p; /**< the actual file or string*/
 	size_t position, /**< current position, used for string*/
 	       max;      /**< max position in buffer, used for string*/
-	enum { IO_INVALID,    /**< invalid (default)*/ 
+	enum { IO_INVALID,    /**< invalid (default)*/
 	       IO_FIN,        /**< file input*/
 	       IO_FOUT,       /**< file output*/
 	       IO_SIN,        /**< string input*/
@@ -142,7 +142,7 @@ struct io {
 	char c; /**< one character of push back*/
 };
 
-/** @brief The internal state used to translate a block of memory 
+/** @brief The internal state used to translate a block of memory
  *	 using the "tr" routines, which behave similarly to the
  *	 Unix "tr" command. */
 struct tr_state {
@@ -157,20 +157,20 @@ struct tr_state {
 };
 
 /** @brief Type used to form linked list of all allocations */
-typedef struct gc_list { 
+typedef struct gc_list {
 	lisp_cell_t *ref; /**< reference to cell for the garbage collector to act on*/
 	struct gc_list *next; /**< next in list*/
-} gc_list_t; 
+} gc_list_t;
 
 /** @brief functions the interpreter uses for user defined types */
-typedef struct { 
+typedef struct {
 	/**@todo I should provide a framework for overloading various other
 	 * built in functions (+, -, *, /, %, copy, coerce, length, reverse, read, <, >)*/
 	lisp_free_func   free;  /**< to free a user defined type*/
 	lisp_mark_func   mark;  /**< to mark a user defined type*/
 	lisp_equal_func  equal; /**< to compare two user defined types*/
 	lisp_print_func  print; /**< to print user defined types*/
-} lisp_user_defined_funcs_t; 
+} lisp_user_defined_funcs_t;
 
 /** @brief The state for a lisp interpreter, multiple such instances
  *	 can run at the same time. It contains everything needed
@@ -190,7 +190,7 @@ struct lisp {
 		*empty_docstr,/**< empty doc string */
 		**gc_stack;   /**< garbage collection stack for working items*/
 	gc_list_t *gc_head;   /**< linked list of all allocated objects*/
-	char *token    /**< one token of put back for parser*/, 
+	char *token    /**< one token of put back for parser*/,
 		*buf   /**< input buffer for parser*/;
 	size_t buf_allocated,/**< size of buffer "l->buf"*/
 		buf_used,     /**< amount of buffer used by current string*/
@@ -229,7 +229,7 @@ lisp_cell_t *lisp_gc_add(lisp_t *l, lisp_cell_t *op);
 void lisp_gc_sweep_only(lisp_t *l);
 
 /**@brief Read in a lisp expression
- * @param l      a lisp environment 
+ * @param l      a lisp environment
  * @param i      the input port
  * @return cell* a fully parsed lisp expression**/
 lisp_cell_t *reader(lisp_t *l, io_t *i);
@@ -238,7 +238,7 @@ lisp_cell_t *reader(lisp_t *l, io_t *i);
  * @param  l      a lisp environment
  * @param  o      the output port
  * @param  op     S-Expression to print out
- * @param  depth  depth to print out S-Expression 
+ * @param  depth  depth to print out S-Expression
  * @return int    negative on error **/
 int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth);
 

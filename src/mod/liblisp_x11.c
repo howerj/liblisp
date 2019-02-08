@@ -1,8 +1,8 @@
 /** @file       liblisp_x11.c
  *  @brief      a small X11 window module
  *  @author     Richard Howe (2015)
- *  @license    LGPL v2.1 or Later 
- *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @license    LGPL v2.1 or Later
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html>
  *  @email      howe.r.j.89@gmail.com
  *
  *  See:
@@ -340,7 +340,7 @@ static lisp_cell_t *subr_window_info(lisp_t * l, lisp_cell_t * args)
 		       mk_int(l, x), mk_int(l, y), mk_int(l, width), mk_int(l, height), mk_int(l, border_width), mk_int(l, bit_depth), NULL);
 }
 
-/** @todo make either a framework, or hack, so this does not block 
+/** @todo make either a framework, or hack, so this does not block
  *  see https://stackoverflow.com/questions/8592292/how-to-quit-the-blocking-of-xlibs-xnextevent
  **/
 static lisp_cell_t *subr_select_input(lisp_t * l, lisp_cell_t * args)
@@ -413,7 +413,7 @@ int lisp_module_initialize(lisp_t *l)
 	/*w = open_window(); */
 	initialized = 1;
 	return 0;
- fail:	
+ fail:
 	return -1;
 }
 

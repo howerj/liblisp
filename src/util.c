@@ -15,36 +15,32 @@
 #include <stdlib.h>
 #include <string.h>
 
-void pfatal(const char *msg, const char *file, const char *func, long line)
-{
+void pfatal(const char *msg, const char *file, const char *func, long line) {
 	assert(msg && file);
-	if(errno)
+	if (errno)
 		fprintf(stderr, "(error \"%s\" \"%s\" \"%s\" %ld)\n", msg, file, func, line);
 	else
 		fprintf(stderr, "(error \"%s\" \"%s\" \"%s\" \"%s\" %ld)\n", msg, strerror(errno),file, func, line);
 	abort();
 }
 
-char *lstrdup(const char *s)
-{
+char *lstrdup(const char *s) {
 	assert(s);
-	char *str;
+	char *str = NULL;
 	if (!(str = malloc(strlen(s) + 1)))
 		return NULL;
 	strcpy(str, s);
 	return str;
 }
 
-char *lstrdup_or_abort(const char *s)
-{
+char *lstrdup_or_abort(const char *s) {
 	char *r = lstrdup(s);
 	if(!r)
 		FATAL("string duplication failed");
 	return r;
 }
 
-static int matcher(char *pat, char *str, size_t depth, jmp_buf * bf)
-{
+static int matcher(char *pat, char *str, size_t depth, jmp_buf * bf) {
 	if (!depth)
 		longjmp(*bf, -1);
 	if (!str)
@@ -76,8 +72,7 @@ static int matcher(char *pat, char *str, size_t depth, jmp_buf * bf)
 	}
 }
 
-int match(char *pat, char *str)
-{
+int match(char *pat, char *str) {
 	assert(pat && str);
 	jmp_buf bf;
 	if (setjmp(bf))
@@ -85,8 +80,7 @@ int match(char *pat, char *str)
 	return matcher(pat, str, LARGE_DEFAULT_LEN, &bf);
 }
 
-uint32_t djb2(const char *s, size_t len)
-{
+uint32_t djb2(const char *s, size_t len) {
 	assert(s);
 	uint32_t h = 5381;	/*magic number this hash uses, it just is */
 	size_t i = 0;
@@ -95,8 +89,7 @@ uint32_t djb2(const char *s, size_t len)
 	return h;
 }
 
-char *getadelim(FILE * in, int delim)
-{
+char *getadelim(FILE * in, int delim) {
 	assert(in);
 	io_t io_in;
 	memset(&io_in, 0, sizeof(io_in));
@@ -105,24 +98,21 @@ char *getadelim(FILE * in, int delim)
 	return io_getdelim(&io_in, delim);
 }
 
-char *getaline(FILE * in)
-{
+char *getaline(FILE * in) {
 	assert(in);
 	return getadelim(in, '\n');
 }
 
-char *lstrcatend(char *dest, const char *src)
-{
+char *lstrcatend(char *dest, const char *src) {
 	assert(dest && src);
 	size_t sz = strlen(dest);
 	strcpy(dest + sz, src);
 	return dest + sz + strlen(src);
 }
 
-char *vstrcatsep(const char *separator, const char *first, ...)
-{
-	size_t len, seplen, num = 0;
-	char *retbuf, *va, *p;
+char *vstrcatsep(const char *separator, const char *first, ...) {
+	size_t len = 0, seplen = 0, num = 0;
+	char *retbuf = NULL, *va = NULL, *p = NULL;
 	va_list argp1, argp2;
 
 	if (!separator || !first)
@@ -148,10 +138,9 @@ char *vstrcatsep(const char *separator, const char *first, ...)
 	return retbuf;
 }
 
-int unbalanced(const char *sexpr, char lpar, char rpar)
-{
+int unbalanced(const char *sexpr, char lpar, char rpar) {
 	assert(sexpr);
-	int bal = 0, c;
+	int bal = 0, c = 0;
 	while ((c = *sexpr++))
 		if (c == lpar)
 			bal++;
@@ -173,8 +162,7 @@ int unbalanced(const char *sexpr, char lpar, char rpar)
 	return bal;
 }
 
-int is_number(const char *buf)
-{
+int is_number(const char *buf) {
 	assert(buf);
 	char conv[] = "0123456789abcdefABCDEF";
 	if (!buf[0])
@@ -196,10 +184,9 @@ int is_number(const char *buf)
 	return buf[strspn(buf, conv)] == '\0';
 }
 
-int is_fnumber(const char *buf)
-{
+int is_fnumber(const char *buf) {
 	assert(buf);
-	size_t i;
+	size_t i = 0;
 	char conv[] = "0123456789";
 	if (!buf[0])
 		return 0;
@@ -220,7 +207,7 @@ int is_fnumber(const char *buf)
 		return 1;
 	if (buf[i] != 'e' && buf[i] != 'E')
 		return 0;
- expon: 
+ expon:
         buf = buf + i + 1;
 	if (buf[0] == '-' || buf[0] == '+')
 		buf++;
@@ -232,12 +219,10 @@ int is_fnumber(const char *buf)
 	return 0;
 }
 
-char *breverse(char *s, size_t len)
-{
-	char c;
+char *breverse(char *s, size_t len) {
 	size_t i = 0;
 	do {
-		c = s[i];
+		const char c = s[i];
 		s[i] = s[len - i];
 		s[len - i] = c;
 	} while (i++ < (len / 2));
@@ -245,8 +230,7 @@ char *breverse(char *s, size_t len)
 }
 
 static const char conv[] = "0123456789abcdefghijklmnopqrstuvwxzy";
-char *dtostr(intptr_t d, unsigned base)
-{
+char *dtostr(intptr_t d, unsigned base) {
 	assert(base > 1 && base < 37);
 	intptr_t i = 0, neg = d;
 	uintptr_t x = d;
@@ -261,8 +245,7 @@ char *dtostr(intptr_t d, unsigned base)
 	return lstrdup(breverse(s, i - 1));
 }
 
-char *utostr(uintptr_t u, unsigned base)
-{
+char *utostr(uintptr_t u, unsigned base) {
 	assert(base > 1 && base < 37);
 	uintptr_t i = 0;
 	char s[64 + 1] = "";
@@ -274,8 +257,7 @@ char *utostr(uintptr_t u, unsigned base)
 
 /*tr functionality*/
 
-static int tr_getnext(uint8_t ** s)
-{
+static int tr_getnext(uint8_t ** s) {
 	uint8_t seq[5] = "0000";
 	if ((*s)[0] == '\0') {
 	} else if ((*s)[0] == '\\') {
@@ -323,10 +305,9 @@ static int tr_getnext(uint8_t ** s)
 	return -1;
 }
 
-int tr_init(tr_state_t * tr, char *mode, uint8_t * s1, uint8_t * s2)
-{
+int tr_init(tr_state_t * tr, char *mode, uint8_t * s1, uint8_t * s2) {
 	unsigned i = 0;
-	int c, d, cp, dp;
+	int c = 0, d = 0, cp = 0, dp = 0;
 	assert(tr && mode && s1);	/*s2 is optional */
 	memset(tr, 0, sizeof(*tr));
 	while ((c = mode[i++]))
@@ -379,8 +360,7 @@ int tr_init(tr_state_t * tr, char *mode, uint8_t * s1, uint8_t * s2)
 	return TR_OK;
 }
 
-int tr_char(tr_state_t * tr, uint8_t c)
-{				/*return character to emit, -1 otherwise */
+int tr_char(tr_state_t * tr, uint8_t c) { /*return character to emit, -1 otherwise */
 	assert(tr);
 	if ((c == tr->previous_char) && tr->squeeze_seq && tr->set_squ[c])
 		return -1;
@@ -390,23 +370,21 @@ int tr_char(tr_state_t * tr, uint8_t c)
 	return tr->set_tr[c];
 }
 
-size_t tr_block(tr_state_t * tr, uint8_t * in, uint8_t * out, size_t len)
-{
-	int c;
+size_t tr_block(tr_state_t * tr, uint8_t * in, uint8_t * out, size_t len) {
 	size_t i = 0, j = 0;
-	for (; j < len; j++)
+	for (; j < len; j++) {
+		int c = 0;
 		if ((c = tr_char(tr, in[j])) >= 0)
 			out[i++] = c;
+	}
 	return i;
 }
 
-tr_state_t *tr_new(void)
-{
+tr_state_t *tr_new(void) {
 	return calloc(1, sizeof(tr_state_t));
 }
 
-void tr_delete(tr_state_t * st)
-{
+void tr_delete(tr_state_t * st) {
 	free(st);
 }
 

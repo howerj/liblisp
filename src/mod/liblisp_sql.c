@@ -1,10 +1,10 @@
 /** @file       liblisp_sql.c
  *  @brief      SQL (sqlite3) interface module for liblisp
  *  @author     Richard Howe (2015)
- *  @license    LGPL v2.1 or Later 
- *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html> 
+ *  @license    LGPL v2.1 or Later
+ *              <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html>
  *  @email      howe.r.j.89@gmail.com
- *  
+ *
  *  @todo Improve interface, add prepared statements, ...**/
 #include <assert.h>
 #include <lispmod.h>
@@ -79,11 +79,11 @@ static int sql_callback(void *obin, int argc, char **argv, char **azColName)
 	lisp_t *l = cb->l;
 	for (i = 0; i < argc; i++)
 		cur = cons(l,
-			  cons(l, 
-				  mk_str(l, lstrdup_or_abort(azColName[i])), 
-				  	argv[i] ? 
-						mk_str(l, lstrdup_or_abort(argv[i])) : 
-						gsym_nil()), 
+			  cons(l,
+				  mk_str(l, lstrdup_or_abort(azColName[i])),
+				  	argv[i] ?
+						mk_str(l, lstrdup_or_abort(argv[i])) :
+						gsym_nil()),
 			  	cur);
 	cb->ret = cons(l, cur, list);
 	return 0;
@@ -112,7 +112,7 @@ static lisp_cell_t *subr_sql_info(lisp_t *l, lisp_cell_t *args)
 	UNUSED(args);
 	return mk_list(l,
 		mk_immutable_str(l, "sqlite3"),
-		mk_immutable_str(l, sqlite3_libversion()), 
+		mk_immutable_str(l, sqlite3_libversion()),
 		mk_immutable_str(l, sqlite3_sourceid()), NULL);
 }
 
@@ -135,7 +135,7 @@ int lisp_module_initialize(lisp_t *l)
 	if(lisp_add_module_subroutines(l, primitives, 0) < 0)
 		goto fail;
 	return 0;
- fail:	
+ fail:
 	return -1;
 }
 

@@ -2,7 +2,7 @@
  *  @brief      A small hash library
  *  @author     Richard Howe (2015)
  *  @license    LGPL v2.1 or Later
- *  @email      howe.r.j.89@gmail.com 
+ *  @email      howe.r.j.89@gmail.com
  *  @todo Change to linear probing, making this into a generic table for use in the
  *        lisp interpreter, make a custom callback for hashing lisp code,
  *        simplifying all of the hash stuff instead of cons the key and value
@@ -16,50 +16,46 @@
 
 /************************ small hash library **********************************/
 
-static void null_free(void *p)
-{
+static void null_free(void *p) {
 	UNUSED(p);
 }
 
-static int string_compare(const void *a, const void *b)
-{
+static int string_compare(const void *a, const void *b) {
+	assert(a && b);
 	return strcmp((const char*)a, (const char*)b);
 }
 
-static uint32_t string_hash(const void *s)
-{
+static uint32_t string_hash(const void *s) {
+	assert(s);
 	return djb2(s, strlen(s));
 }
 
-static uint32_t hash_alg(const hash_table_t * table, const void *s)
-{
+static uint32_t hash_alg(const hash_table_t * table, const void *s) {
 	assert(table->len);
 	return table->hash(s) % table->len;
 }
 
-static hash_entry_t *hash_new_pair(char *key, void *val)
-{ /**@brief internal function to create a chained hash node**/
-	hash_entry_t *np = NULL;
+/**@brief internal function to create a chained hash node**/
+static hash_entry_t *hash_new_pair(char *key, void *val) {
 	if (!key || !val)
 		return NULL;
-	if (!(np = calloc(1, sizeof(*np))))
+	hash_entry_t *np = calloc(1, sizeof(*np));
+	if (!np)
 		return NULL;
 	np->key = (char *)key;
 	np->val = val;
 	return np;
 }
 
-hash_table_t *hash_create(size_t len)
-{
+hash_table_t *hash_create(const size_t len) {
 	return hash_create_custom(len, null_free, null_free, string_compare, string_hash);
 }
 
-hash_table_t *hash_create_custom(size_t len, hash_free_key_f k, hash_free_val_f v, hash_compare_key_f c, hash_f h)
-{
-	hash_table_t *nt;
+hash_table_t *hash_create_custom(size_t len, hash_free_key_f k, hash_free_val_f v, hash_compare_key_f c, hash_f h) {
 	if (!len)
 		len++;
-	if (!(nt = calloc(1, sizeof(*nt))))
+	hash_table_t *nt = calloc(1, sizeof(*nt));
+	if (!nt)
 		return NULL;
 	if (!(nt->table = calloc(len, sizeof(*nt->table))))
 		return free(nt), NULL;
@@ -71,16 +67,13 @@ hash_table_t *hash_create_custom(size_t len, hash_free_key_f k, hash_free_val_f 
 	return nt;
 }
 
-void hash_destroy(hash_table_t * h)
-{
-	size_t i;
-	hash_entry_t *cur, *prev;
+void hash_destroy(hash_table_t * h) {
 	if (!h)
 		return;
-	for (i = 0; i < h->len; i++)
+	for (size_t i = 0; i < h->len; i++)
 		if (h->table[i]) {
-			prev = NULL;
-			for (cur = h->table[i]; cur; prev = cur, cur = cur->next) {
+			hash_entry_t *prev = NULL;
+			for (hash_entry_t *cur = h->table[i]; cur; prev = cur, cur = cur->next) {
 				h->free_key(cur->key);
 				h->free_val(cur->val);
 				free(prev);
@@ -91,15 +84,14 @@ void hash_destroy(hash_table_t * h)
 	free(h);
 }
 
-static hash_table_t *hash_copy_and_resize(hash_table_t *old, size_t len)
-{
-	hash_entry_t *cur;
+static hash_table_t *hash_copy_and_resize(hash_table_t *old, const size_t len) {
+	assert(old);
 	hash_table_t *new = hash_create(len);
 	if(!new)
 		return NULL;
 	for (size_t i = 0; i < old->len; i++)
 		if (old->table[i])
-			for (cur = old->table[i]; cur; cur = cur->next)
+			for (hash_entry_t *cur = old->table[i]; cur; cur = cur->next)
 				if (hash_insert(new, cur->key, cur->val) < 0)
 					goto fail;
 	new->free_key = old->free_key;
@@ -112,21 +104,19 @@ fail:
 	return NULL;
 }
 
-hash_table_t *hash_copy(hash_table_t *src)
-{
+hash_table_t *hash_copy(hash_table_t *src) {
 	assert(src);
 	return hash_copy_and_resize(src, src->len);
 }
 
-static int hash_grow(hash_table_t * ht)
-{
-	size_t i;
-	if((ht->len*2) < ht->len)
+static int hash_grow(hash_table_t * ht) {
+	assert(ht);
+	if((ht->len * 2) < ht->len)
 		return -1;
 	hash_table_t *new = hash_copy_and_resize(ht, ht->len*2);
 	if (!new)
 		return -1;
-	for (i = 0; i < ht->len; i++)
+	for (size_t i = 0; i < ht->len; i++)
 		if (ht->table[i]) {
 			hash_entry_t *cur = NULL, *prev = NULL;
 			for (cur = ht->table[i]; cur; prev = cur, cur = cur->next)
@@ -140,17 +130,14 @@ static int hash_grow(hash_table_t * ht)
 	return 0;
 }
 
-int hash_insert(hash_table_t * ht, char *key, void *val)
-{
+int hash_insert(hash_table_t * ht, char *key, void *val) {
 	assert(ht && key && val);
-	uint32_t hash;
-	hash_entry_t *cur, *newt, *last = NULL;
+	hash_entry_t *cur = NULL, *newt = NULL, *last = NULL;
 
 	if (hash_get_load_factor(ht) >= 0.75f)
 		hash_grow(ht); /**@warning grow must go before any other operation*/
 
-	hash = hash_alg(ht, key);
-
+	const uint32_t hash = hash_alg(ht, key);
 	for (cur = ht->table[hash]; cur && cur->key && ht->compare(key, cur->key); cur = cur->next)
 		last = cur;
 
@@ -176,12 +163,10 @@ int hash_insert(hash_table_t * ht, char *key, void *val)
 	return 0;
 }
 
-void *hash_foreach(hash_table_t * h, hash_func func)
-{
+void *hash_foreach(hash_table_t * h, hash_func func) {
 	assert(h && func);
 	size_t i = 0;
 	hash_entry_t *cur = NULL;
-	void *ret;
 	if (h->foreach) {
 		i = h->foreach_index;
 		cur = h->foreach_cur;
@@ -191,7 +176,8 @@ void *hash_foreach(hash_table_t * h, hash_func func)
 	for (i = 0; i < h->len; i++)
 		if (h->table[i])
 			for (cur = h->table[i]; cur;) {
-				if ((ret = (*func) (cur->key, cur->val))) {
+				void *ret = (*func) (cur->key, cur->val);
+				if (ret) {
 					h->foreach_index = i;
 					h->foreach_cur = cur;
 					return ret;
@@ -202,55 +188,45 @@ void *hash_foreach(hash_table_t * h, hash_func func)
 	return NULL;
 }
 
-void hash_reset_foreach(hash_table_t * h)
-{
+void hash_reset_foreach(hash_table_t * h) {
+	assert(h);
 	h->foreach = 0;
 }
 
-static void *hprint(const char *key, void *val)
-{
+static void *hprint(const char *key, void *val) {
 	assert(key);
 	return printf("(\"%s\" %p)\n", key, val), NULL;
 }
 
-void hash_print(hash_table_t * h)
-{
+void hash_print(const hash_table_t * h) {
 	assert(h);
-	hash_foreach(h, hprint);
+	hash_foreach((hash_table_t*)h, hprint);
 }
 
-double hash_get_load_factor(hash_table_t * h)
-{
+double hash_get_load_factor(const hash_table_t * h) {
 	assert(h && h->len);
 	return (double)h->used / h->len;
 }
 
-size_t hash_get_collision_count(hash_table_t * h)
-{
+size_t hash_get_collision_count(const hash_table_t * h) {
 	assert(h);
 	return h->collisions;
 }
 
-size_t hash_get_replacements(hash_table_t * h)
-{
+size_t hash_get_replacements(const hash_table_t * h) {
 	assert(h);
 	return h->replacements;
 }
 
-size_t hash_get_number_of_bins(hash_table_t * h)
-{
+size_t hash_get_number_of_bins(const hash_table_t * h) {
 	assert(h);
 	return h->len;
 }
 
-void *hash_lookup(const hash_table_t * h, const char *key)
-{
-	uint32_t hash;
-	hash_entry_t *cur;
+void *hash_lookup(const hash_table_t * h, const char *key) {
 	assert(h && key);
-
-	hash = hash_alg(h, key);
-	cur = h->table[hash];
+	const uint32_t hash = hash_alg(h, key);
+	hash_entry_t *cur = h->table[hash];
 	while (cur && cur->next && h->compare(cur->key, key))
 		cur = cur->next;
 	if (!cur || !cur->key || h->compare(cur->key, key))
