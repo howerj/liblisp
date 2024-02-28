@@ -91,7 +91,7 @@ void hash_destroy(hash_table_t * h) {
 static hash_table_t *hash_copy_and_resize(hash_table_t *old, const size_t len) {
 	assert(old);
 	hash_table_t *new = hash_create(len);
-	if(!new)
+	if (!new)
 		return NULL;
 	for (size_t i = 0; i < old->len; i++)
 		if (old->table[i])
@@ -115,7 +115,7 @@ hash_table_t *hash_copy(hash_table_t *src) {
 
 static int hash_grow(hash_table_t * ht) {
 	assert(ht);
-	if((ht->len * 2) < ht->len)
+	if ((ht->len * 2) < ht->len)
 		return -1;
 	hash_table_t *new = hash_copy_and_resize(ht, ht->len*2);
 	if (!new)

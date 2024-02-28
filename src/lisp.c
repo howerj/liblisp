@@ -36,7 +36,7 @@ void lisp_out_of_memory(lisp_t *l) {
 void *lisp_calloc(lisp_t *l, size_t size) {
 	assert(l);
 	void *ret = calloc(size, 1);
-	if(!ret)
+	if (!ret)
 		lisp_out_of_memory(l);
 	return ret;
 }
@@ -44,14 +44,14 @@ void *lisp_calloc(lisp_t *l, size_t size) {
 char *lisp_strdup(lisp_t *l, const char *s) {
 	assert(l && s);
 	char *r = lstrdup(s);
-	if(!r)
+	if (!r)
 		lisp_out_of_memory(l);
 	return r;
 }
 
 int lisp_add_module_subroutines(lisp_t *l, const lisp_module_subroutines_t *ms, size_t len) {
-	for(size_t i = 0; ms[i].name && (!len || i < len); i++)
-		if(!lisp_add_subr(l, ms[i].name, ms[i].p, ms[i].validate, ms[i].docstring))
+	for (size_t i = 0; ms[i].name && (!len || i < len); i++)
+		if (!lisp_add_subr(l, ms[i].name, ms[i].p, ms[i].validate, ms[i].docstring))
 			return -1;
 	return 0;
 }
@@ -161,7 +161,7 @@ lisp_cell_t *lisp_eval_string(lisp_t * l, const char *evalme) {
 
 int lisp_log_error(lisp_t *l, char *fmt, ...) {
 	int ret = 0;
-	if(lisp_get_log_level(l) >= LISP_LOG_LEVEL_ERROR) {
+	if (lisp_get_log_level(l) >= LISP_LOG_LEVEL_ERROR) {
 		va_list ap;
 		io_t *e = lisp_get_logging(l);
 		va_start(ap, fmt);
@@ -175,7 +175,7 @@ int lisp_log_error(lisp_t *l, char *fmt, ...) {
 
 int lisp_log_note(lisp_t *l, char *fmt, ...) {
 	int ret = 0;
-	if(lisp_get_log_level(l) >= LISP_LOG_LEVEL_NOTE) {
+	if (lisp_get_log_level(l) >= LISP_LOG_LEVEL_NOTE) {
         	va_list ap;
 		io_t *e = lisp_get_logging(l);
         	va_start(ap, fmt);
@@ -189,7 +189,7 @@ int lisp_log_note(lisp_t *l, char *fmt, ...) {
 
 int lisp_log_debug(lisp_t *l, char *fmt, ...) {
 	int ret = 0;
-	if(lisp_get_log_level(l) >= LISP_LOG_LEVEL_DEBUG) {
+	if (lisp_get_log_level(l) >= LISP_LOG_LEVEL_DEBUG) {
 		va_list ap;
 		io_t *e = lisp_get_logging(l);
 		va_start(ap, fmt);

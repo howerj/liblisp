@@ -35,7 +35,7 @@ char *lstrdup(const char *s) {
 
 char *lstrdup_or_abort(const char *s) {
 	char *r = lstrdup(s);
-	if(!r)
+	if (!r)
 		FATAL("string duplication failed");
 	return r;
 }

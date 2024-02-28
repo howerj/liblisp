@@ -271,7 +271,7 @@ unsigned get_length(lisp_cell_t * x) {
 	case SYMBOL:
 		return (uintptr_t)(x->p[1].v);
 	case CONS:
-		for(i = 0; is_cons(x); x = cdr(x))
+		for (i = 0; is_cons(x); x = cdr(x))
 			i++;
 		return i;
 	case SUBR:
@@ -402,7 +402,7 @@ lisp_cell_t *lisp_intern(lisp_t * l, char *name) {
 /**@todo make use of lisp_copy to make closures work */
 lisp_cell_t *lisp_copy(lisp_t *l, lisp_cell_t *src) {
 	assert(l && src);
-	switch(src->type) {
+	switch (src->type) {
 	case SUBR:
 	case SYMBOL:
 		return src; /*symbols, subroutines must be immutable*/
@@ -417,7 +417,7 @@ lisp_cell_t *lisp_copy(lisp_t *l, lisp_cell_t *src) {
 	case HASH:
 	{
 		hash_table_t *new = hash_copy(get_hash(src));
-		if(!new)
+		if (!new)
 			lisp_out_of_memory(l);
 		return mk_hash(l, new);
 	}
@@ -450,14 +450,14 @@ static lisp_cell_t *function_args(lisp_t * l, lisp_cell_t *proc, lisp_cell_t * v
 	lisp_cell_t *env = dynamic_on ? l->cur_env : get_proc_env(proc);
        	lisp_cell_t *syms = get_proc_args(proc);
 	size_t i = 0, expect = get_length(get_proc_args(proc));
-	if(!expect)
+	if (!expect)
 		return env;
 	const size_t test = is_sym(syms) ? 0 : 1;
 	for (i = 0; is_cons(syms) && is_cons(vals); syms = cdr(syms), vals = cdr(vals), i++)
 		env = lisp_extend(l, env, car(syms), car(vals));
-	if(!is_nil(syms))
+	if (!is_nil(syms))
 		env = lisp_extend(l, env, syms, vals);
-	if(test && expect != i)
+	if (test && expect != i)
 		LISP_RECOVER(l, "%y'argument-count-error%t\n %S\n '%S", proc, vals);
 	return env;
 }
@@ -482,7 +482,7 @@ lisp_cell_t *lisp_assoc(lisp_cell_t * key, lisp_cell_t * alist) {
 			if (lookup)
 				return lookup;
 		}
-	if(!is_nil(alist)) /* should LISP_RECOVER really*/
+	if (!is_nil(alist)) /* should LISP_RECOVER really*/
 		gsym_error();
 	return gsym_nil();
 }
@@ -500,7 +500,7 @@ static lisp_cell_t *binding_lambda(lisp_t * l, unsigned depth, lisp_cell_t * exp
 	if (depth > MAX_RECURSION_DEPTH)
 		LISP_RECOVER(l, "%y'recursion-depth-reached%t %d", depth);
 
-	if(is_sym(exp)) {
+	if (is_sym(exp)) {
 		lisp_cell_t *t = lisp_assoc(exp, env);
 		return !is_nil(t) ? cdr(t) : exp;
 	}
@@ -526,15 +526,15 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 	assert(l);
 	size_t gc_stack_save = l->gc_stack_used;
 	lisp_cell_t *tmp, *first, *proc, *ret = NULL, *vals = l->nil;
-#define DEBUG_RETURN(EXPR) do { ret = (EXPR); goto debug; } while(0);
-	if(!exp || !env)
+#define DEBUG_RETURN(EXPR) do { ret = (EXPR); goto debug; } while (0);
+	if (!exp || !env)
 		return NULL;
 	if (depth > MAX_RECURSION_DEPTH)
 		LISP_RECOVER(l, "%y'recursion-depth-reached%t %d", 0);
 	lisp_gc_add(l, exp);
 	lisp_gc_add(l, env);
  tail:
-	if(!exp || !env)
+	if (!exp || !env)
 		return NULL;
 	lisp_log_debug(l, "%y'eval%t '%S", exp);
 	if (is_nil(exp))
@@ -676,19 +676,19 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			goto tail;
 		}
 
-		if(first == l->dowhile) {
+		if (first == l->dowhile) {
 			lisp_cell_t *wh = car(exp), *head = cdr(exp);
-			while(!is_nil(eval(l, depth + 1, wh, env))) {
+			while (!is_nil(eval(l, depth + 1, wh, env))) {
 				l->gc_stack_used = gc_stack_save;
-				for(exp = head; is_cons(exp); exp = cdr(exp))
+				for (exp = head; is_cons(exp); exp = cdr(exp))
 					(void)eval(l, depth + 1, car(exp), env);
-				if(!is_nil(exp))
+				if (!is_nil(exp))
 					LISP_RECOVER(l, "%r\"while cannot eval dotted pairs\"%t\n '%S", head);
 			}
 			DEBUG_RETURN(l->nil);
 		}
 
-		if(first == l->macro) {
+		if (first == l->macro) {
 			/**@todo implement me*/
 		}
 
@@ -739,7 +739,7 @@ static lisp_cell_t *evlis(lisp_t * l, unsigned depth, lisp_cell_t * exps, lisp_c
 	lisp_cell_t *head = op;
 	for (size_t i = 1; is_cons(exps); exps = cdr(exps), op = cdr(op), i++)
 		set_cdr(op, cons(l, eval(l, depth + 1, car(exps), env), l->nil));
-	if(!is_nil(exps))
+	if (!is_nil(exps))
 		LISP_RECOVER(l, "%r\"evlis cannot eval dotted pairs\"%t\n '%S", start);
 	return head;
 }

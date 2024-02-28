@@ -138,9 +138,9 @@ int io_puts(const char *s, io_t * o) {
 }
 
 size_t io_read(char *ptr, size_t size, io_t *i) {
-	if(i->type == IO_FIN)
+	if (i->type == IO_FIN)
 		return fread(ptr, 1, size, io_get_file(i));
-	if(i->type == IO_SIN) {
+	if (i->type == IO_SIN) {
 		size_t copy = MIN(size, i->max - i->position);
 		memcpy(ptr, i->p.str + i->position, copy);
 		i->position += copy;
@@ -152,7 +152,7 @@ size_t io_read(char *ptr, size_t size, io_t *i) {
 
 /**@todo test me, this function is untested*/
 size_t io_write(char *ptr, size_t size, io_t *o) {
-	if(o->type == IO_SOUT) {
+	if (o->type == IO_SOUT) {
 		if (o->position + size >= (o->max - 1)) {/*grow the "file" */
 			const size_t maxt = (o->position + size) * 2;
 			if (maxt < o->position)	/*overflow */
@@ -171,9 +171,9 @@ size_t io_write(char *ptr, size_t size, io_t *o) {
 		o->position = newpos;
 		return size;
 	}
-	if(o->type == IO_FOUT)
+	if (o->type == IO_FOUT)
 		return fwrite(ptr, 1, size, io_get_file(o));
-	if(o->type == IO_NULLOUT)
+	if (o->type == IO_NULLOUT)
 		return size;
 	FATAL("unknown or invalid IO type");
 	return 0;

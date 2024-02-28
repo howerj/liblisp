@@ -53,9 +53,9 @@ static int print_type_string(lisp_t *l, const char *msg, unsigned len, const cha
         lisp_printf(l, e, 0,
                 "\n(%Berror%t\n %y'validation\n %r\"%s\"\n%t '(%yexpected-length %r%d%t)\n '(%yexpected-arguments%t ",
                 msg, (intptr_t)len);
-        while((c = *fmt++)) {
+        while ((c = *fmt++)) {
                 s = "";
-                switch(c) {
+                switch (c) {
                 case ' ': continue;
 #define X(CHAR, STRING, ACTION) case (CHAR): s = (STRING); break;
                 LISP_VALIDATE_ARGS_XLIST
@@ -63,7 +63,7 @@ static int print_type_string(lisp_t *l, const char *msg, unsigned len, const cha
                 default: LISP_RECOVER(l, "\"invalid format string\" \"%s\" %S))", head, args);
                 }
                 lisp_printf(l, e, 0, "%y'%s%t", s);
-                if(*fmt) io_putc(' ', e);
+                if (*fmt) io_putc(' ', e);
         }
         return lisp_printf(l, e, 1, ") %S)\n", args);
 }

@@ -50,10 +50,10 @@ static void sig_abrt_handler(int sig) {
         char **messages = NULL;
         const int trace_size = backtrace(trace, TRACE_SIZE);
         messages = backtrace_symbols(trace, trace_size);
-        if(trace_size < 0)
+        if (trace_size < 0)
                 goto fail;
         fprintf(stderr, "SIGABRT! Stack trace:\n");
-        for(int i = 0; i < trace_size; i++)
+        for (int i = 0; i < trace_size; i++)
                 fprintf(stderr, "\t%s\n", messages[i]);
         fflush(stderr);
 fail:   signal(sig, SIG_DFL);
@@ -79,12 +79,12 @@ fail:   signal(sig, SIG_DFL);
 lisp_mutex_t* lisp_mutex_create(void) {
         lisp_mutex_t* p;
 #ifdef __unix__
-        if(!(p = calloc(1, sizeof(pthread_mutex_t))))
+        if (!(p = calloc(1, sizeof(pthread_mutex_t))))
                 return NULL;
         pthread_mutex_init(p, NULL);
         return p;
 #elif _WIN32
-        if(!(p = calloc(1, sizeof(CRITICAL_SECTION))))
+        if (!(p = calloc(1, sizeof(CRITICAL_SECTION))))
                 return NULL;
         InitializeCriticalSection(p);
         return p;
@@ -179,11 +179,11 @@ static int ud_dl_print(io_t *o, unsigned depth, lisp_cell_t *f) {
 static lisp_cell_t *subr_dlopen(lisp_t *l, lisp_cell_t *args) {
 	dl_handle_t handle;
         dl_list *h;
-        if(!(handle = DL_OPEN(get_str(car(args))))) {
+        if (!(handle = DL_OPEN(get_str(car(args))))) {
 		lisp_log_debug(l, "'dynamic-load-failed \"%s\" \"%s\"", get_str(car(args)), DL_ERROR());
                 return gsym_error();
 	}
-        if(!(h = calloc(1, sizeof(*h))))
+        if (!(h = calloc(1, sizeof(*h))))
                 LISP_HALT(l, "\"%s\"", "out of memory");
         h->handle = handle;
         h->next = head;
@@ -196,11 +196,11 @@ static lisp_cell_t *subr_load_lisp_module(lisp_t *l, lisp_cell_t *args) {
 	lisp_cell_t *h = subr_dlopen(l, args);
 	dl_handle_t handle;
 	lisp_module_initializer_t init;
-	if(!is_usertype(h, ud_dl))
+	if (!is_usertype(h, ud_dl))
 		return gsym_error();
 	handle = get_user(h);
 	lisp_log_debug(l, "'module-initialization \"%s\"", get_str(car(args)));
-	if((init = DL_SYM(handle, "lisp_module_initialize")) && (init(l) >= 0)) {
+	if ((init = DL_SYM(handle, "lisp_module_initialize")) && (init(l) >= 0)) {
 		lisp_log_note(l, "'module-initialized \"%s\"", get_str(car(args)));
 		return h;
 	}
@@ -210,9 +210,9 @@ static lisp_cell_t *subr_load_lisp_module(lisp_t *l, lisp_cell_t *args) {
 
 static lisp_cell_t *subr_dlsym(lisp_t *l, lisp_cell_t *args) {
         lisp_subr_func func;
-        if(!lisp_check_length(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
+        if (!lisp_check_length(args, 2) || !is_usertype(car(args), ud_dl) || !is_asciiz(CADR(args)))
                 LISP_RECOVER(l, "\"expected (dynamic-module string)\" '%S", args);
-        if(!(func = DL_SYM(get_user(car(args)), get_str(CADR(args)))))
+        if (!(func = DL_SYM(get_user(car(args)), get_str(CADR(args)))))
                 return gsym_error();
         return mk_subr(l, func, NULL, NULL);
 }

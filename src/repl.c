@@ -66,7 +66,7 @@ static int getoptions(lisp_t * l, char *arg, char *arg_0) { /**@brief simple par
 			break;	/*colorize output */
 		case 'L':
 			lisp_log_note(l, "'local 'default");
-			if(!setlocale(LC_ALL, ""))
+			if (!setlocale(LC_ALL, ""))
 				FATAL("failed to default locale");
 			break;
 		case 'p':
@@ -83,7 +83,7 @@ static int getoptions(lisp_t * l, char *arg, char *arg_0) { /**@brief simple par
 			break;
 		case 'v':
 			lisp_verbosity++;
-			if(lisp_verbosity < LISP_LOG_LEVEL_LAST_INVALID)
+			if (lisp_verbosity < LISP_LOG_LEVEL_LAST_INVALID)
 				lisp_set_log_level(l, lisp_verbosity);
 			else
 				lisp_log_note(l, "'verbosity \"already set to maximum\"");

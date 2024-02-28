@@ -15,15 +15,15 @@ char *lisp_serialize(lisp_t *l, lisp_cell_t *x) {
 	assert(l && x);
 	char *rs = NULL;
 	io_t *s = io_sout(2);
-	if(!s)
+	if (!s)
 		goto fail;
-	if(printer(l, s, x, 0) < 0)
+	if (printer(l, s, x, 0) < 0)
 		goto fail;
 	rs = io_get_string(s);
 	io_close(s); /*this does not free the string it contains*/
 	return rs;
 fail:
-	if(s) {
+	if (s) {
 		free(io_get_string(s));
 		io_close(s);
 	}
@@ -34,29 +34,29 @@ static int print_escaped_string(lisp_t * l, io_t * o, unsigned depth, char *s) {
 	assert(l && o && s);
 	int ret = 0, m = 0;
 	char c;
-	if((ret = lisp_printf(l, o, depth, "%r\"")) < 0)
+	if ((ret = lisp_printf(l, o, depth, "%r\"")) < 0)
 		return -1;
 	while ((c = *s++)) {
 		ret += m;
 		switch (c) {
 		case '\\':
-			if((m = lisp_printf(l, o, depth, "%m\\\\%r")) < 0)
+			if ((m = lisp_printf(l, o, depth, "%m\\\\%r")) < 0)
 				return -1;
 			continue;
 		case '\n':
-			if((m = lisp_printf(l, o, depth, "%m\\n%r")) < 0)
+			if ((m = lisp_printf(l, o, depth, "%m\\n%r")) < 0)
 				return -1;
 			continue;
 		case '\t':
-			if((m = lisp_printf(l, o, depth, "%m\\t%r")) < 0)
+			if ((m = lisp_printf(l, o, depth, "%m\\t%r")) < 0)
 				return -1;
 			continue;
 		case '\r':
-			if((m = lisp_printf(l, o, depth, "%m\\r%r")) < 0)
+			if ((m = lisp_printf(l, o, depth, "%m\\r%r")) < 0)
 				return -1;
 			continue;
 		case '"':
-			if((m = lisp_printf(l, o, depth, "%m\\\"%r")) < 0)
+			if ((m = lisp_printf(l, o, depth, "%m\\\"%r")) < 0)
 				return -1;
 			continue;
 		default:
@@ -66,14 +66,14 @@ static int print_escaped_string(lisp_t * l, io_t * o, unsigned depth, char *s) {
 			char num[5] = "\\";
 			sprintf(num + 1, "%03o", ((unsigned)c) & 0xFF);
 			assert(!num[4]);
-			if((m = lisp_printf(l, o, depth, "%m%s%r", num)) < 0)
+			if ((m = lisp_printf(l, o, depth, "%m%s%r", num)) < 0)
 				return -1;
 			continue;
 		}
-		if((m = io_putc(c, o)) < 0)
+		if ((m = io_putc(c, o)) < 0)
 			return -1;
 	}
-	if((m = io_putc('"', o)) < 0)
+	if ((m = io_putc('"', o)) < 0)
 		return -1;
 	return ret + m;
 }
@@ -91,28 +91,28 @@ static int print_hash(lisp_t *l, io_t *o, unsigned depth, hash_table_t *ht) {
 	int ret = 0, m = 0;
 	size_t i;
 	hash_entry_t *cur;
-	if((ret = lisp_printf(l, o, depth, "{")) < 0)
+	if ((ret = lisp_printf(l, o, depth, "{")) < 0)
 		return -1;
-	for(i = 0; i < ht->len; i++)
-		if(ht->table[i])
+	for (i = 0; i < ht->len; i++)
+		if (ht->table[i])
 		/**@warning messy hash stuff*/
-		for(cur = ht->table[i]; cur; cur = cur->next) {
+		for (cur = ht->table[i]; cur; cur = cur->next) {
 			int n = 0;
 			io_putc(' ', o);
-			if(is_cons(cur->val) && is_sym(car(cur->val)))
+			if (is_cons(cur->val) && is_sym(car(cur->val)))
 				m = lisp_printf(l, o, depth, "%S", car(cur->val));
 			else
 				m = print_escaped_string(l, o, depth, cur->key);
 
-			if(is_cons(cur->val))
+			if (is_cons(cur->val))
 				n = lisp_printf(l, o, depth, "%t %S", cdr(cur->val));
 			else
 				n = lisp_printf(l, o, depth, "%t %S", cur->val);
-			if(m < 0 || n < 0)
+			if (m < 0 || n < 0)
 				return -1;
 			ret += m + n;
 		}
-	if((m = io_puts(" }", o)) < 0)
+	if ((m = io_puts(" }", o)) < 0)
 		return -1;
 	return ret + m;
 }
@@ -125,9 +125,9 @@ int lisp_vprintf(lisp_t *l, io_t *o, unsigned depth, char *fmt, va_list ap) {
 	int ret = 0;
 	hash_table_t *ht;
 	lisp_cell_t *ob;
-	while(*fmt) {
-		if(ret == EOF) goto finish;
-		if('%' == (f = *fmt++)) {
+	while (*fmt) {
+		if (ret == EOF) goto finish;
+		if ('%' == (f = *fmt++)) {
 			switch (f = *fmt++) {
 			case '\0':
 				goto finish;
@@ -136,9 +136,9 @@ int lisp_vprintf(lisp_t *l, io_t *o, unsigned depth, char *fmt, va_list ap) {
 				break;
 			case '@':
 				f = *fmt++;
-				if(!f) goto finish;
+				if (!f) goto finish;
 				dep = depth;
-				while(dep--)
+				while (dep--)
 					ret = io_putc(f, o);
 				break;
 			case 'c':
@@ -166,9 +166,9 @@ int lisp_vprintf(lisp_t *l, io_t *o, unsigned depth, char *fmt, va_list ap) {
 				ret = print_hash(l, o, depth, ht);
 				break;
 			default:
-				if(o->color) {
+				if (o->color) {
 					char *color = "";
-					switch(f) {
+					switch (f) {
 					case 't': color = "\x1b[0m";  break; /*reset*/
 					case 'B': color = "\x1b[1m";  break; /*bold text*/
 					case 'v': color = "\x1b[7m";  break; /*reverse video*/
@@ -196,13 +196,13 @@ finish:
 
 int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth) {
 	lisp_cell_t *tmp;
-	if(!op)
+	if (!op)
 		return EOF;
-	if(l && depth > MAX_RECURSION_DEPTH) {
+	if (l && depth > MAX_RECURSION_DEPTH) {
 		lisp_log_error(l, "%r'print-depth-exceeded %d%t", (intptr_t) depth);
 		return -1;
 	}
-	switch(op->type) {
+	switch (op->type) {
 	case INTEGER:
 		lisp_printf(l, o, depth, "%m%d", get_int(op));
 		break;
@@ -210,9 +210,9 @@ int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth) {
 		lisp_printf(l, o, depth, "%m%f", get_float(op));
 		break;
 	case CONS:
-		if(depth && o->pretty)
+		if (depth && o->pretty)
 			lisp_printf(l, o, depth, "\n%@ ");
-		if(op->mark) {
+		if (op->mark) {
 			op->mark = 0;
 			lisp_printf(l, o, depth, "%g<recurse:%d>%t", (intptr_t)op);
 			return 0;
@@ -220,18 +220,18 @@ int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth) {
 		tmp = op;
 		op->mark = 1;
 		io_putc('(', o);
-		for(;;) {
+		for (;;) {
 			printer(l, o, car(op), depth + 1);
-			if(is_nil(cdr(op))) {
+			if (is_nil(cdr(op))) {
 				io_putc(')', o);
 				break;
 			}
 			op = cdr(op);
-			if(op->mark) {
+			if (op->mark) {
 				lisp_printf(l, o, depth, "%g <recurse:%d>%t)", (intptr_t)op);
 				break;
 			}
-			if(!is_cons(op)) {
+			if (!is_cons(op)) {
 				lisp_printf(l, o, depth, " . %S)", op);
 				break;
 			}
@@ -240,7 +240,7 @@ int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth) {
 		tmp->mark = 0;
 		break;
 	case SYMBOL:
-		if(is_nil(op)) lisp_printf(l, o, depth, "%rnil");
+		if (is_nil(op)) lisp_printf(l, o, depth, "%rnil");
 		else           lisp_printf(l, o, depth, "%y%s", get_sym(op));
 		break;
 	case STRING:
@@ -254,9 +254,9 @@ int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth) {
 			is_proc(op) ? "(%ylambda%t %S %S " :
 				      "(%yflambda%t %S %S ",
 					get_func_docstring(op), get_proc_args(op));
-		for(tmp = get_proc_code(op); !is_nil(tmp); tmp = cdr(tmp)) {
+		for (tmp = get_proc_code(op); !is_nil(tmp); tmp = cdr(tmp)) {
 			printer(l, o, car(tmp), depth+1);
-			if(!is_nil(cdr(tmp)))
+			if (!is_nil(cdr(tmp)))
 				io_putc(' ', o);
 		}
 		io_putc(')', o);
@@ -270,7 +270,7 @@ int printer(lisp_t *l, io_t *o, lisp_cell_t *op, unsigned depth) {
 				(is_in(op)? "in" : "out"), get_int(op));
 		break;
 	case USERDEF:
-		if(l && l->ufuncs[get_user_type(op)].print)
+		if (l && l->ufuncs[get_user_type(op)].print)
 			(l->ufuncs[get_user_type(op)].print)(o, depth, op);
 		else lisp_printf(l, o, depth, "<user:%d:%d>",
 			get_user_type(op), get_int(op)); break;

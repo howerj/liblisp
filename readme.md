@@ -21,7 +21,9 @@ interpreter. The project runs (and has been tested under) Linux and Windows.
 * License:
   - LGPL v2.1 or later version
 * Email:
-  - <howe.r.j.89@gmail.com>
+  - <mailto:howe.r.j.89@gmail.com>
+* Repo:
+  - <https://github.com/howerj/liblisp>
 
 This project should probably be rewritten when I get around to it, as the
 current project:
@@ -32,6 +34,10 @@ current project:
 so (and portably) by using indexing instead of pointers.
 * Is not image based, so saving and restoring state is not possible,
 again using indexing instead of pointers would help.
+
+There are a few interesting things in this project but I would do it
+differently if I got the chance to, both my understanding of lisp has improved
+and my C. I would probably use a more liberal license as well.
 
 The rewrite will be my forth attempt, if I get around to it...
 

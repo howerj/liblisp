@@ -129,7 +129,7 @@ static char *read_string(lisp_t * l, io_t * i) {
 			case '2':
 			case '3':
 				num[0] = ch;
-				if(io_read(num+1, 2, i) != 2)
+				if (io_read(num+1, 2, i) != 2)
 				       goto fail;
 				if (num[strspn(num, "01234567")])
 					goto fail;
@@ -156,9 +156,9 @@ static char *read_string(lisp_t * l, io_t * i) {
 
 static int keyval(lisp_t * l, io_t * i, hash_table_t *ht, char *key) {
 	lisp_cell_t *val;
-	if(!(val = reader(l, i)))
+	if (!(val = reader(l, i)))
 		return -1;
-	if(hash_insert(ht, key, cons(l, mk_str(l, key), val)) < 0)
+	if (hash_insert(ht, key, cons(l, mk_str(l, key), val)) < 0)
 		return -1;
 	return 0;
 }
@@ -169,11 +169,11 @@ static lisp_cell_t *read_hash(lisp_t * l, io_t * i) {
 	if (!(ht = hash_create(SMALL_DEFAULT_LEN)))
 		lisp_out_of_memory(l);
 	lisp_cell_t *ret = mk_hash(l, ht);
-	for(;;) {
+	for (;;) {
 		token = lexer(l, i);
-		if(!token)
+		if (!token)
 			goto fail;
-		switch(token[0]) {
+		switch (token[0]) {
 		case '}':
 			free(token);
 			return ret;
@@ -188,27 +188,27 @@ static lisp_cell_t *read_hash(lisp_t * l, io_t * i) {
 			char *key;
 			free(token);
 			token = NULL;
-			if(!(key = read_string(l, i)))
+			if (!(key = read_string(l, i)))
 				goto fail;
-			if(keyval(l, i, ht, key) < 0)
+			if (keyval(l, i, ht, key) < 0)
 				goto fail;
 			continue;
 		}
 		default:
-			if(parse_ints && is_number(token)) {
+			if (parse_ints && is_number(token)) {
 				goto fail;
-			} else if(parse_floats && is_fnumber(token)) {
+			} else if (parse_floats && is_fnumber(token)) {
 				goto fail;
 			}
 
-			if(keyval(l, i, ht, new_token(l)) < 0)
+			if (keyval(l, i, ht, new_token(l)) < 0)
 				goto fail;
 			free(token);
 			continue;
 		}
 	}
 fail:
-	if(token)
+	if (token)
 		LISP_RECOVER(l, "%y'invalid-hash-key%t %r\"%s\"%t", token);
 	hash_destroy(ht); /* BUG: Need to remove from garbage collector as well */
 	if (ret)
@@ -221,12 +221,12 @@ fail:
 static lisp_cell_t *new_sym(lisp_t *l, const char *token, size_t end) { /**@bug '2.a <=> (2 a) */
 	lisp_cell_t *ret;
 	assert(l && token && end);
-	if((parse_ints && is_number(token)) || (parse_floats && is_fnumber(token)))
+	if ((parse_ints && is_number(token)) || (parse_floats && is_fnumber(token)))
 		LISP_RECOVER(l, "%r\"unexpected integer or float\"\n %m%s%t", token);
 	char *tnew = lisp_calloc(l, end+1);
 	memcpy(tnew, token, end);
 	ret = lisp_intern(l, tnew);
-	if(get_sym(ret) != tnew)
+	if (get_sym(ret) != tnew)
 		free(tnew);
 	return ret;
 }
@@ -235,22 +235,22 @@ static const char symbol_splitters[] = ".!"; /**@note '~' (negate) and ':' (comp
 static lisp_cell_t *process_symbol(lisp_t *l, const char *token) {
 	size_t i;
 	assert(l && token);
-	if(!parse_sugar)
+	if (!parse_sugar)
 		goto nosugar;
-	if(!token[0])
+	if (!token[0])
 		goto fail;
 
-	if(strchr(symbol_splitters, token[0]))
+	if (strchr(symbol_splitters, token[0]))
 		LISP_RECOVER(l, "%r\"invalid prefix\"\n \"%s\"%t", token);
 
 	i = strcspn(token, symbol_splitters);
-	switch(token[i]) {
+	switch (token[i]) {
 	case '.': /* a.b <=> (a b) */
-		if(!token[i+1])
+		if (!token[i+1])
 			goto fail;
 		return mk_list(l, new_sym(l, token, i), process_symbol(l, token+i+1), NULL);
 	case '!': /* a!b <=> (a 'b) */
-		if(!token[i+1])
+		if (!token[i+1])
 			goto fail;
 		return mk_list(l, new_sym(l, token, i), mk_list(l, l->quote, process_symbol(l, token+i+1), NULL), NULL);
 	default:
@@ -280,12 +280,12 @@ lisp_cell_t *reader(lisp_t * l, io_t * i) {
 		assert(0);
 		break;
 	case '{':
-		if(!parse_hashes)
+		if (!parse_hashes)
 			goto nohash;
 		free(token);
 		return read_hash(l, i);
 	case '}':
-		if(!parse_hashes)
+		if (!parse_hashes)
 			goto nohash;
 		free(token);
 		LISP_RECOVER(l, "%r\"unmatched %s\"%t", "'}'");
@@ -297,23 +297,23 @@ lisp_cell_t *reader(lisp_t * l, io_t * i) {
 		if (!parse_strings)
 			goto nostring;
 		free(token);
-		if(!(s = read_string(l, i)))
+		if (!(s = read_string(l, i)))
 			return NULL;
 		return mk_str(l, s);
 	}
 	case '\'':
 		free(token);
-		if(!(ret = reader(l, i)))
+		if (!(ret = reader(l, i)))
 			return NULL;
 		return mk_list(l, l->quote, ret, NULL);
 /*	case '`': // TODO
 		free(token);
-		if(!(ret = reader(l, i)))
+		if (!(ret = reader(l, i)))
 			return NULL;
 		return mk_list(l, l->quasiquote, ret, NULL);
 	case ',':
 		free(token);
-		if(!(ret = reader(l, i)))
+		if (!(ret = reader(l, i)))
 			return NULL;
 		return mk_list(l, l->unquote, ret, NULL);*/
 	default:
