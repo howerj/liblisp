@@ -76,11 +76,15 @@ void hash_destroy(hash_table_t * h) {
 			for (hash_entry_t *cur = h->table[i]; cur; prev = cur, cur = cur->next) {
 				h->free_key(cur->key);
 				h->free_val(cur->val);
+				cur->key = NULL;
+				cur->val = NULL;
 				free(prev);
+				prev = NULL;
 			}
 			free(prev);
 		}
 	free(h->table);
+	h->table = NULL;
 	free(h);
 }
 

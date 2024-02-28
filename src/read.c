@@ -139,6 +139,8 @@ static char *read_string(lisp_t * l, io_t * i) {
 				add_char(l, ch);
 				continue;
  fail:				LISP_RECOVER(l, "%y'invalid-escape-literal\n %r\"%s\"%t", num);
+				assert(0);  /* not reached */
+				break;
 			case EOF:
 				return NULL;
 			default:
@@ -162,7 +164,7 @@ static int keyval(lisp_t * l, io_t * i, hash_table_t *ht, char *key) {
 }
 
 static lisp_cell_t *read_hash(lisp_t * l, io_t * i) {
-	hash_table_t *ht;
+	hash_table_t *ht = NULL;
 	char *token = NULL;
 	if (!(ht = hash_create(SMALL_DEFAULT_LEN)))
 		lisp_out_of_memory(l);
@@ -208,7 +210,10 @@ static lisp_cell_t *read_hash(lisp_t * l, io_t * i) {
 fail:
 	if(token)
 		LISP_RECOVER(l, "%y'invalid-hash-key%t %r\"%s\"%t", token);
-	hash_destroy(ht);
+	hash_destroy(ht); /* BUG: Need to remove from garbage collector as well */
+	if (ret)
+		ret->p[0].v = NULL;
+	ht = NULL;
 	free(token);
 	return NULL;
 }
@@ -272,6 +277,8 @@ lisp_cell_t *reader(lisp_t * l, io_t * i) {
 	case ')':
 		free(token);
 		LISP_RECOVER(l, "%r\"unmatched %s\"%t", "')'");
+		assert(0);
+		break;
 	case '{':
 		if(!parse_hashes)
 			goto nohash;
@@ -282,6 +289,8 @@ lisp_cell_t *reader(lisp_t * l, io_t * i) {
 			goto nohash;
 		free(token);
 		LISP_RECOVER(l, "%r\"unmatched %s\"%t", "'}'");
+		assert(0);
+		break;
 	case '"':
 	{
 		char *s;

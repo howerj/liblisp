@@ -434,6 +434,8 @@ lisp_cell_t *lisp_copy(lisp_t *l, lisp_cell_t *src) {
 	case IO:
 	case USERDEF:
 		LISP_RECOVER(l, "%y'cannot-copy%t\n %S", src);
+		assert(0);
+		break;
 	case INVALID:
 	default:
 		FATAL("internal inconsistency: unknown type");
@@ -712,6 +714,8 @@ lisp_cell_t *eval(lisp_t * l, unsigned depth, lisp_cell_t * exp, lisp_cell_t * e
 			goto tail;
 		}
 		LISP_RECOVER(l, "%r\"not a procedure\"%t\n '%S", first);
+		assert(0);
+		break;
 	case INVALID:
 	default:
 		FATAL("internal inconsistency: unknown type");

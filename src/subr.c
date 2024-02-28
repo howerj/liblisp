@@ -640,6 +640,7 @@ static lisp_cell_t *subr_hash_create(lisp_t * l, lisp_cell_t * args) {
 	}
 	return mk_hash(l, ht);
  fail:	hash_destroy(ht);
+	ht = NULL;
 	LISP_RECOVER(l, "\"expected ({symbol any}*)\"\n '%S", args);
 	return l->error;
 }
@@ -842,6 +843,7 @@ static lisp_cell_t *subr_reverse(lisp_t * l, lisp_cell_t * args) {
 			return mk_hash(l, new);
 hfail:
 			hash_destroy(new);
+			new = NULL;
 			LISP_RECOVER(l, "\"%s\" '%S", "unreversible hash", car(args));
 		}
 	default:
@@ -1057,10 +1059,13 @@ static lisp_cell_t *subr_tr(lisp_t * l, lisp_cell_t * args) {
 		break;
 	case TR_EINVAL:
 		LISP_RECOVER(l, "\"invalid mode\"\n \"%s\"", mode);
+		break; /* breaks here are to suppress warnings */
 	case TR_DELMODE:
 		LISP_RECOVER(l, "\"set 2 not NULL\"\n '%S", args);
+		break;
 	default:
 		LISP_RECOVER(l, "\"unknown tr error\"\n '%S", args);
+		break;
 	}
 	ret = lisp_calloc(l, len + 1);
 	tr_block(&st, (uint8_t *) tr, (uint8_t *) ret, len);

@@ -190,7 +190,7 @@ int main_lisp_env(lisp_t * l, int argc, char **argv) {
 		case OPTS_IN_FILE_NEXT_ARG:
 			if (!(++i < argc))
 				return fprintf(stderr, "-i and -- expects file\n"), -1;
-			/*--- fall through ---*/
+			/* fall-through */ 
 		case OPTS_IN_FILE:	/*read from a file */
 			lisp_log_note(l, "'input-file \"%s\"", argv[i]);
 			io_close(lisp_get_input(l));

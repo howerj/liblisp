@@ -241,8 +241,10 @@ io_t *io_sin(const char *sin, const size_t len) {
 	io_t *i = NULL;
 	if (!sin || !(i = calloc(1, sizeof(*i))))
 		return NULL;
-	if (!(i->p.str = calloc(len, 1)))
+	if (!(i->p.str = calloc(len, 1))) {
+		free(i);
 		return NULL;
+	}
 	memcpy(i->p.str, sin, len);
 	i->type = IO_SIN;
 	i->max = len;
