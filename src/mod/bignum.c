@@ -26,7 +26,7 @@ static uint8_t binlog2(size_t v) {
 	uint8_t r = 0;
 	while (v >>= 1)
 		 r++;
-	 return r;
+	return r;
 }
 
 /************************ bignum library **************************************/
@@ -378,6 +378,10 @@ void bignum_copy(bignum * dst, bignum * src) {
 	}
 
 	dst->digits = malloc(src->allocated * sizeof(dst->digits[0]));
+	if (!(dst->digits)) {
+		exit(EXIT_FAILURE);
+	}
+	assert(dst->digits);
 
 	memmove(dst->digits, src->digits, sizeof(src->digits[0]) * (src->lastdigit + 1));
 
